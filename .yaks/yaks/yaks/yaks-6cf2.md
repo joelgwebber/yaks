@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T17:51:08Z'
+updated: '2026-11-14T17:52:06Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -56,3 +56,10 @@ kind: pickup
 picked up
 
 Decision (Joel): accept all three (since `verified:` else the dok's last farm commit; no threshold; no code checkout means skip with an info line). Scope: `code:` links only. A pinned link should not drift in normal use, so only unpinned links count as findings (a pinned one still reports when its path has commits since the pin AND the dok has no `verified:` after them, per the original yak; keep it as the yak says). Host-URL code links are not read here: unifying their resolution is recorded on yaks-1151, and this is built through the resolver once that lands.
+
+---
+▸ 2026-11-14T17:52:06Z [linkplan-lead]
+
+Scope, restated from the yak (my pickup note above was muddled): a finding is a dok that cites `code:<path>` where the path has commits in the code repo since the pinned sha, or for an unpinned link since the dok's `verified:` date else its last farm commit. Joel's remark that pinned links "shouldn't drift" is about the link still meaning what it meant; the dok's claim can still be stale against the code today, which is what this finding is for. If that is not the intent, reply here.
+
+Decisions, per Joel: no count threshold; with no code checkout, skip with one info line. Read links through the resolver (`locate.rs`, landed with yaks-f505) so a host-URL code link (coming with the schema-9 migration) is read by the same code later; do not parse host URLs here.
