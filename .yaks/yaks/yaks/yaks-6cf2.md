@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T22:47:55Z'
+updated: '2026-11-14T22:48:06Z'
 parent: yaks-1c89
 depends_on:
 - yaks-f505
@@ -127,3 +127,14 @@ result: pass
 ---
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+---
+▸ 2026-11-14T22:48:06Z [check-1]
+
+Summary. New `code-moved` and `code-gone` findings in `src/check.rs`; `Command::Check` in `src/main.rs` prints the info lines (stdout in text mode, stderr with `--json`, so the array is unchanged); docs in `docs/cli.md`, `README.md`, the yaks-research skill and the clap help.
+
+- `code_refs` reads inline body links through `links::extract`/`links::parse`/`Space::resolve`, plus `code:` entries of frontmatter `sources:` and `code:` lists. The code repo is `links::code_base`.
+- Counts come from `git log --format=%ct [<sha>..HEAD] -- path` in the code repo (own helper in check.rs; no edits to links/locate/gitrepo).
+- Gate: `yaks verify yaks-6cf2` PASS (`cargo test -p yaks`); `cargo fmt --check` clean.
+
+Correction to my evidence note's hand check, plainly: the scratch dok was `verified: 2026-11-01`, which covers up to 2026-11-01T23:59:59Z. `git log --format='%h %cI' -- docs/README.md` has four commits after that (de32523e at 2026-11-02T01:50Z, 5cf76867, 6352ec29, 671320f9), so the reported 4 is right.
