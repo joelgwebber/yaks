@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T17:52:43Z'
-updated: '2026-11-14T23:30:20Z'
+updated: '2026-11-14T23:30:29Z'
 parent: yaks-1151
 tags:
 - links
@@ -134,3 +134,13 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-14T23:30:29Z [notefmt-1]
+
+Summary. Notes can be read and written in the new shape (`#### <ts>` heading, italic `*actor · key: value*` line, no `---`); nothing on disk changes until the migration yak bumps `store::SCHEMA` (still 8).
+
+- `store.rs`: `NoteShape`, `of_farm`, `format_note`, `append_note_meta_in`/`append_entry_in`, `scan_notes`/`parse_note_head`/`parse_italic_line`, `convert_notes`; `parse_notes`, `note_starts`, `description`, `with_description`, `drop_latest_request` read both shapes.
+- `farm.rs`/`store::move_task_with` write through `Farm::shape()`; `links.rs` anchors accept timestamp and slug; `mergedriver.rs`, `tui/content.rs` (`assemble_in`), `blockedit.rs`, `sessions.rs` follow the body's shape; `markdown_lint::note_heading_in_description` added (not wired into `doctor`: `check.rs` is not mine).
+- Docs: `docs/cli.md`, `docs/README.md`, the `yaks` skill's Metadata paragraph, the tidy-request text.
+- Gate: `cargo test -p yaks` all green (1187 unit tests plus integration), `cargo fmt --check` clean; `yaks verify` PASS. The GitHub render shows `<h4>` headings but the markdown API gives no `id=` (see the evidence note).
