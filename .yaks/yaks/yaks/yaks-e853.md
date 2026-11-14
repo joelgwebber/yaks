@@ -1,11 +1,11 @@
 ---
 id: yaks-e853
 title: '[/] selection of links in details should scroll horizontally into view when necessary'
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:44:34Z'
+updated: '2026-11-14T11:44:35Z'
 tags:
 - tui
 ---
@@ -63,3 +63,13 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 ▸ 2026-11-14T11:44:34Z [hscroll-1]
 
 Summary: `LineNav::jump_link` now takes the pane width and ends with `reveal_link_sideways`, which sets the block's `hscroll` minimally so the targeted link sits between the `‹`/`›` markers (columns measured on the unscrolled row text, gutter removed). Call sites: `App::jump_link` (detail_nav.rs) and the viewer's `Cmd::LinkNext/LinkPrev` (handlers.rs). Tests: `tab_onto_an_off_screen_table_link_scrolls_it_into_view_and_back` (detail), `tab_in_the_viewer_scrolls_a_wide_table_link_into_view` (viewer); existing linenav tests updated for the new arg. docs/tui.md updated. Evidence: before/after toque frames (rendered PNGs) attached; `cargo test -p yaks` all green (1130 unit tests), `cargo fmt --check` clean, `yaks verify` PASS.
+
+---
+▸ 2026-11-14T11:44:35Z [hscroll-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEii5IBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
