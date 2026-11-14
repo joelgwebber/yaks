@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T11:21:01Z'
-updated: '2026-11-14T11:57:21Z'
+updated: '2026-11-14T11:57:55Z'
 parent: yaks-1151
 tags:
 - links
@@ -96,3 +96,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEKLZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T11:57:55Z [linkplan-lead]
+kind: landed
+commit: 298b91ac7f0774fbc3a248c0f044d8fc96c81eee
+source: b20c4a925485e6dc3141ef941f94560108e85d97
+branch: main
+---
+
+landed: 298b91ac yaks-f505: locate.rs and hosting.rs, yaks url, /sources/<id> resolves in peek, doctor and the viewer
