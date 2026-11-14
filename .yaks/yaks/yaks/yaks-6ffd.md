@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T12:17:57Z'
+updated: '2026-11-14T12:33:07Z'
 parent: yaks-1151
 tags:
 - git
@@ -112,3 +112,11 @@ Decision: TUI per-user state. At `App::with_farm`, before anything loads, `views
 ▸ 2026-11-14T12:17:57Z [layout-1]
 
 Decision: `yaks init` is unchanged for a fresh farm (`.yaks/`), but on an existing branch `init.rs` now takes the root from `farm_root_in` and `branch_holds_farm` accepts `config.yaml`/`schema`/`.yaks` at the branch tip, so init no longer calls a root-layout branch "not a farm". `store::init` decides `AlreadyExists` by `config.yaml`/`schema`, or an existing `.yaks/` directory, not `root.exists()`.
+
+---
+▸ 2026-11-14T12:33:07Z [layout-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
