@@ -101,12 +101,7 @@ fn farm_worktree(root: &Path) -> Result<(PathBuf, String)> {
 /// The remote the farm branch syncs with: its configured `branch.<b>.remote`,
 /// else `origin`; `None` when that remote does not exist.
 fn remote_of(top: &Path, branch: &str) -> Option<String> {
-    let name = line(
-        top,
-        &["config", "--get", &format!("branch.{branch}.remote")],
-    )
-    .unwrap_or_else(|| "origin".to_string());
-    line(top, &["remote", "get-url", &name]).map(|_| name)
+    crate::gitrepo::remote_of(top, branch)
 }
 
 /// Fetch `branch` from `remote`. `Ok(false)` when the remote has no such

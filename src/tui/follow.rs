@@ -92,6 +92,8 @@ impl App {
         let root = self
             .farm_root()
             .ok_or_else(|| format!("{path}: no farm to read"))?;
+        // `sources/<id>` names a directory: it reads as its `source.md`.
+        let path = &*crate::locate::farm_file(path);
         let file = root.join(path);
         if rev.is_none() {
             if !file.is_file() {
@@ -201,7 +203,11 @@ impl App {
     pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
         // A farm file is under the farm root; an attachment is not (it lives
         // under its yak), so the path tells them apart.
-        if rev.is_some() || self.farm_root().is_some_and(|r| r.join(path).is_file()) {
+        if rev.is_some()
+            || self
+                .farm_root()
+                .is_some_and(|r| r.join(&*crate::locate::farm_file(path)).is_file())
+        {
             if rev.is_none() {
                 if let Some(v) = self.farm_image(path) {
                     return Ok(DocView::Image(v));
@@ -485,6 +491,26 @@ mod tests {
             }
         }
         panic!("no link {want}");
+    }
+
+    /// `/sources/<id>` names a directory: the viewer opens its `source.md`
+    /// (yaks-bede), and the history restores it.
+    #[test]
+    fn a_source_directory_link_opens_its_source_file() {
+        let (proj, mut app) = on_hub();
+        let dir = app.farm_root().unwrap().join("sources/2026-11-03-81364278");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("source.md"), "# A source\n\nText.\n").unwrap();
+        app.open_farm_doc("sources/2026-11-03-81364278", None, None);
+        let v = viewer(&app);
+        assert_eq!(v.target, "sources/2026-11-03-81364278/source.md");
+        assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
+        app.open_farm_doc("sources/nope", None, None);
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("sources/nope/source.md: not in this farm")
+        );
+        let _ = std::fs::remove_dir_all(proj);
     }
 
     #[test]

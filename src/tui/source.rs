@@ -17,7 +17,7 @@
 //! ([`App::open_source`]) does the file and git work when a link is followed.
 
 use super::*;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 /// A program for the event loop to run with the terminal suspended (the
 /// loop owns the terminal; a key handler only asks).
@@ -75,72 +75,13 @@ pub(crate) fn os_open(arg: &str) -> std::io::Result<std::process::Child> {
     Command::new(opener).arg(arg).spawn()
 }
 
-fn git(base: &Path, args: &[&str]) -> std::io::Result<std::process::Output> {
-    Command::new("git")
-        .arg("-C")
-        .arg(base)
-        .args(args)
-        .stdin(Stdio::null())
-        .output()
-}
-
-/// The file to show for a source link: the working copy, or for a pinned
-/// link whose file differs from the working tree, a read-only copy of
-/// `git show <rev>:<path>` in the temp directory. `Err` is a one-line message.
+/// The file to show for a source link: [`crate::locate::pinned_file`].
 pub(crate) fn resolve_source_file(
     base: &Path,
     path: &str,
     rev: Option<&str>,
 ) -> Result<(PathBuf, bool), String> {
-    let work = base.join(path);
-    let Some(rev) = rev else {
-        return if work.is_file() {
-            Ok((work, false))
-        } else {
-            Err(format!("{path}: no such file"))
-        };
-    };
-    let rel = format!("./{path}");
-    // `git diff <rev> -- <file>` is clean for an untracked file too, so first
-    // ask whether the commit has the file at all.
-    let has =
-        git(base, &["cat-file", "-e", &format!("{rev}:{rel}")]).map_err(|e| format!("git: {e}"))?;
-    if !has.status.success() {
-        let short = &rev[..rev.len().min(7)];
-        let err = String::from_utf8_lossy(&has.stderr);
-        return Err(
-            if err.contains("exists on disk, but not in") || err.contains("does not exist in") {
-                format!("{path} not in {short}")
-            } else {
-                format!("{short}: {}", err.lines().next().unwrap_or("not a commit"))
-            },
-        );
-    }
-    let diff = git(base, &["diff", "--quiet", rev, "--", &rel]).map_err(|e| format!("git: {e}"))?;
-    match diff.status.code() {
-        Some(0) if work.is_file() => return Ok((work, false)),
-        Some(0 | 1) => {}
-        _ => {
-            let err = String::from_utf8_lossy(&diff.stderr);
-            let line = err.lines().next().unwrap_or("git diff failed");
-            return Err(format!("{rev}: {line}"));
-        }
-    }
-    let shown = git(base, &["show", &format!("{rev}:{rel}")]).map_err(|e| format!("git: {e}"))?;
-    if !shown.status.success() {
-        return Err(format!("{path} not in {}", &rev[..rev.len().min(7)]));
-    }
-    let tmp = std::env::temp_dir().join("yaks-src").join(rev).join(path);
-    let write = || -> std::io::Result<()> {
-        std::fs::create_dir_all(tmp.parent().unwrap())?;
-        let _ = std::fs::remove_file(&tmp); // a previous copy is read-only
-        std::fs::write(&tmp, &shown.stdout)?;
-        let mut perm = std::fs::metadata(&tmp)?.permissions();
-        perm.set_readonly(true);
-        std::fs::set_permissions(&tmp, perm)
-    };
-    write().map_err(|e| format!("temp copy failed: {e}"))?;
-    Ok((tmp, true))
+    crate::locate::pinned_file(base, path, rev)
 }
 
 fn editor_from_env() -> Option<String> {

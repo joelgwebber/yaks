@@ -27,7 +27,7 @@ except `init` uses the first of:
 3. **This repository's farm branch.**
 
 Both git settings, and `yaks.branch`, are read from a Delta clone's host
-repository too, so agent clones need no setup. Nothing in the checkout's own
+repository too, so agent clones need no setup. `git config yaks.host github|gitlab|gitea|forgejo` names the kind of a custom git domain for [`url`](#links). Nothing in the checkout's own
 tree is read: a leftover `.yaks/` directory or file there is ignored.
 
 ```sh
@@ -157,6 +157,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `dep add\|remove <id> <dep>` | Add / remove a dependency. |
 | `render <svg> [-o PNG] [--scale N]` | Rasterize an SVG (a file, farm path or attachment) to a PNG with the built-in fonts. [Details](#links) |
 | `peek <link>` | Print only what a link names: lines, a section, a dok's head. [Details](#links) |
+| `url <target> [--pin]` | Print the web URL (GitHub and GHES, GitLab, Gitea/Forgejo) of a link, yak, attachment or file. A farm file is on the farm branch's remote, a `code:` file on the code repository's. [Details](#links) |
 | `conflicts [--json]` | List farm documents holding a merge conflict to settle: conflict markers in prose, or a dok's `merge_conflicts:`. [Details](#merge-driver) |
 | `undo <commit>... \| --by <actor> [--since <when>]` | Revert farm commits as one new commit. [Details](#undo) |
 | `mv <from> <to>` | Move a dok and rewrite every link to it. [Details](#links) |
@@ -357,13 +358,17 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 
 `peek <link> [--context N]` prints only what a link names: the lines (numbered; `--context` widens them), the section under a heading (up to the next heading of the same or a higher level), or with no anchor a dok's frontmatter and first paragraph (the first 20 lines of anything else). A pinned link reads the file as it was at that commit. Exits non-zero, saying why, for a missing file, heading or line.
 
+`url <target> [--pin]` prints the web URL of what a link, a yak id, an attachment (`<id>/<file>`) or a file path names, on the host of the repository it lives in: a farm file on the farm branch's remote (`branch.<farm branch>.remote`, else `origin`), a `code:` file on the code repository's, which differ when `yaks.farm` shares another repo's farm. `<target>` is a link as written (`/doks/x.md#setup`, `code:src/foo.rs@3f2a9c1#L12-L20`) or a path to a file in the farm or the code checkout. Without `--pin` the URL names the branch, so it stays good; with `--pin` it names the commit (HEAD of the farm or the code checkout), a permalink. A `code:` link already pinned with `@<sha>` always names that commit, and `#L12-L20` becomes the host's line fragment (`?plain=1` first on a GitHub `.md` file). The URL is only worth giving once the remote has what it names: when the commit or the file is not on the remote as last fetched, `url` falls back to the branch where it can and says so on stderr. It refuses, saying why, with no remote, with a local-path remote, with a private farm (`yaks.private`) and with a host it does not know. GitHub, GitLab and Gitea/Forgejo are supported (Bitbucket and Azure DevOps are not); a custom domain declares its kind with `git config yaks.host github|gitlab|gitea|forgejo`. Read-only.
+
+`/sources/<id>` names a source's directory and reads as its `source.md` everywhere (`peek`, `doctor`, the TUI viewer); `/sources/<id>/source.md` is the same file.
+
 `render <svg> [-o <png>] [--scale N]` rasterizes an SVG to a PNG with the fonts built into yaks, the same rasterizer and fonts as the TUI's image viewer, so the PNG is what `yaks tui` shows on any machine (no browser, no system fonts). `<svg>` is a file path, else a farm path (`/doks/x.svg`) or an attachment (`yaks-1a2b/frame.svg`). The PNG goes to `<stem>.png` in the current directory unless `-o` names a file (`-o -`: stdout); the path is printed. `--scale` is pixels per SVG pixel (default 2). Characters the fonts lack draw as a visible box; the fonts cover Latin, box drawing, blocks, braille, arrows, common symbols and about 250 common emoji (not CJK, flags or Powerline glyphs).
 
 `refs <dok path> [--incoming] [--json]` lists the links a dok holds (marking any that lead nowhere), or with `--incoming` every yak and dok that links to it, with the line.
 
 `mv <from> <to> [--dry-run]` moves a dok and rewrites every link to it, in yaks and doks, in the farm-root form, keeping each link's `@rev` and `#anchor`; the moved dok's own relative links are rewritten to keep their targets. The destination follows `dok new`'s naming rule. The dok's attachment directory (its sibling `doks/x/`, see [`attach`](#attach)) moves with it, and links into it follow (the dok's own `x/shot.png` becomes `<new-name>/shot.png`, a link from elsewhere `/doks/new/<new-name>/shot.png`); `mv` refuses when that directory also holds doks, which would move without their links fixed. (Links from session notes are not rewritten.)
 
-`doctor` reports `broken-link`: a farm path or attachment that does not exist, or a `../` link outside the legacy code forms. Placeholder links in prose (`[x](path)`, `[x](<id>/<file>)`) are not checked.
+`doctor` reports `broken-link`: a farm path or attachment that does not exist (a `/sources/<id>` or `/sessions/...` path without a file extension included, and the wrong `/doks/sources/<id>` spelling, which is not a path), or a `../` link outside the legacy code forms. Placeholder links in prose (`[x](path)`, `[x](<id>/<file>)`) are not checked.
 
 ## Verification
 

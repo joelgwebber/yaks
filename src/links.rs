@@ -599,16 +599,22 @@ pub fn edges(root: &Path) -> Result<Vec<Edge>> {
 /// URLs, code links and in-document anchors are not checked here: `None`.
 pub fn exists(root: &Path, link: &Link) -> Option<bool> {
     // Placeholder syntax in prose (`[x]({id}/{name})`, `[a](path)`) is an
-    // example, not a link: only a destination naming a file (with an
-    // extension) is checked.
-    let looks_like_file = |p: &str| {
-        !p.contains(['{', '}', '<', '>']) && p.rsplit('/').next().is_some_and(|f| f.contains('.'))
+    // example, not a link: a destination is checked when it names a file
+    // (has an extension) or sits in a namespace that holds directories and
+    // files without one (`/sources/<id>`, `/sessions/...`, and the wrong
+    // `/doks/sources/<id>` spelling); any other extensionless path is prose.
+    let checkable = |p: &str| {
+        let ns = |s: &str| matches!(s, "sources" | "sessions" | "schemas");
+        let first = p.split('/').next().unwrap_or("");
+        let below_doks = p.strip_prefix("doks/").and_then(|r| r.split('/').next());
+        !p.contains(['{', '}', '<', '>'])
+            && (p.rsplit('/').next().is_some_and(|f| f.contains('.'))
+                || (p.contains('/') && (ns(first) || below_doks.is_some_and(ns))))
     };
     match link {
-        Link::Farm { path, .. } | Link::Attachment { name: path, .. } if !looks_like_file(path) => {
-            None
-        }
-        Link::Farm { path, .. } => Some(root.join(path).exists()),
+        Link::Farm { path, .. } if !checkable(path) => None,
+        Link::Attachment { name: path, .. } if path.contains(['{', '}', '<', '>']) => None,
+        Link::Farm { path, .. } => Some(root.join(&*crate::locate::farm_file(path)).exists()),
         Link::Attachment { id, name, .. } => {
             Some(crate::farm::locate_attachment(root, id, name).is_some())
         }
@@ -822,6 +828,8 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             }
         }
         Link::Farm { path, rev, anchor } => {
+            // `/sources/<id>` names a directory: its `source.md` is the file.
+            let path = &*crate::locate::farm_file(path);
             let text = match rev {
                 // A farm path at a commit: the farm root is `.yaks/` in its
                 // worktree, so read through git from there.
@@ -1259,6 +1267,27 @@ mod tests {
             exists(&root, &parse(&format!("yaks-1a2b#{ts}"), From::Cli, yak)),
             Some(true)
         );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn exists_checks_directories_and_extensionless_paths_but_not_placeholders() {
+        let root = std::env::temp_dir().join(format!("yaks-exists-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("sources/2026-11-03-81364278")).unwrap();
+        std::fs::write(root.join("sources/2026-11-03-81364278/source.md"), "x").unwrap();
+        std::fs::create_dir_all(root.join("doks")).unwrap();
+        let check = |dest: &str| exists(&root, &parse(dest, From::Cli, yak));
+        // `/sources/<id>` is its source.md; a wrong id or a wrong namespace is broken.
+        assert_eq!(check("/sources/2026-11-03-81364278"), Some(true));
+        assert_eq!(check("/sources/nope"), Some(false));
+        assert_eq!(check("/doks/sources/2026-11-03-81364278"), Some(false));
+        assert_eq!(check("/doks/sessions/2026/11/x"), Some(false));
+        // Prose placeholders and one bare word are examples, not links.
+        assert_eq!(check("/doks/{name}"), None);
+        assert_eq!(check("path"), None);
+        assert_eq!(check("doks/path"), None);
+        assert_eq!(check("<id>/<file>"), None);
         let _ = std::fs::remove_dir_all(&root);
     }
 }

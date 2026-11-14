@@ -20,10 +20,12 @@ mod fields;
 mod filter;
 mod find;
 mod gitrepo;
+mod hosting;
 mod init;
 mod json;
 mod land;
 mod links;
+mod locate;
 mod markdown_lint;
 mod mergedriver;
 mod migrate;
@@ -1010,6 +1012,25 @@ enum Command {
         /// Widen a line range by this many lines either side.
         #[arg(long, default_value_t = 0)]
         context: u32,
+    },
+    /// Print the web URL of a link, a yak or a file, on the host of its
+    /// repository (GitHub and GHES, GitLab, Gitea/Forgejo).
+    ///
+    /// `<target>` is a link as written in a yak or dok (`yaks-1a2b`,
+    /// `yaks-1a2b/log.txt`, `/doks/x.md#setup`, `code:src/foo.rs@3f2a9c1#L12-L20`)
+    /// or a path to a file in the farm or the code checkout. A farm file is
+    /// linked on the farm branch's remote, a `code:` file on the code
+    /// repository's (they differ when `yaks.farm` shares another repo's
+    /// farm). Without `--pin` a link names the branch; with it, the commit
+    /// (a `code:` link pinned with `@<sha>` always names that commit). When
+    /// the commit is not on the remote yet, the branch is linked and stderr
+    /// says so. A custom domain declares its kind with `git config yaks.host
+    /// github|gitlab|gitea`. Read-only.
+    Url {
+        target: String,
+        /// Name the commit rather than the branch (a permalink).
+        #[arg(long)]
+        pin: bool,
     },
     /// What the farm costs to clone: its commits, history size, the bytes a
     /// clone of this repository fetches for it, the current tree by kind
@@ -2265,6 +2286,23 @@ fn main() -> Result<()> {
                 Ok(p) => {
                     println!("── {}", p.label);
                     print!("{}", p.text);
+                }
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                }
+            }
+        }
+        Command::Url { target, pin } => {
+            let cwd = env::current_dir()?;
+            let space = locate::Space::new(farm.root(), links::code_base(farm.root(), Some(&cwd)));
+            let link = locate::parse_target(&space, &cwd, &target);
+            match space.web_url(&space.resolve(&link), pin) {
+                Ok(web) => {
+                    println!("{}", web.url);
+                    if let Some(note) = web.note {
+                        eprintln!("note: {note}");
+                    }
                 }
                 Err(e) => {
                     eprintln!("error: {e}");

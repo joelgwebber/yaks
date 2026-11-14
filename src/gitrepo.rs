@@ -163,6 +163,97 @@ pub(crate) fn host_checkout(host: &Host) -> Option<PathBuf> {
     Some(canonical(main))
 }
 
+/// The remote a branch of the checkout at `top` syncs with: its configured
+/// `branch.<b>.remote`, else `origin`; `None` when that remote does not
+/// exist. The one "which remote" rule (`yaks sync` and `yaks url` use it).
+pub(crate) fn remote_of(top: &Path, branch: &str) -> Option<String> {
+    let name = git(
+        top,
+        &["config", "--get", &format!("branch.{branch}.remote")],
+    )
+    .ok()
+    .filter(|s| !s.is_empty())
+    .unwrap_or_else(|| "origin".to_string());
+    git(top, &["remote", "get-url", &name])
+        .ok()
+        .filter(|u| !u.is_empty())
+        .map(|_| name)
+}
+
+/// The branch checked out in `dir`, `None` when HEAD is detached.
+pub(crate) fn current_branch(dir: &Path) -> Option<String> {
+    git(dir, &["symbolic-ref", "--short", "-q", "HEAD"])
+        .ok()
+        .filter(|b| !b.is_empty())
+}
+
+/// The commit `rev` names in `dir`, in full (`None` for an unknown rev).
+pub(crate) fn commit_of(dir: &Path, rev: &str) -> Option<String> {
+    git(
+        dir,
+        &["rev-parse", "--verify", "-q", &format!("{rev}^{{commit}}")],
+    )
+    .ok()
+    .filter(|s| !s.is_empty())
+}
+
+/// Whether some branch of `remote` that this checkout knows contains `sha`:
+/// the remote has the commit (as of the last fetch or push).
+pub(crate) fn remote_has(dir: &Path, remote: &str, sha: &str) -> bool {
+    git(
+        dir,
+        &[
+            "branch",
+            "-r",
+            "--contains",
+            sha,
+            "--list",
+            &format!("{remote}/*"),
+        ],
+    )
+    .is_ok_and(|o| !o.is_empty())
+}
+
+/// Whether `path` (repo-relative) exists at `rev` (a commit or ref).
+pub(crate) fn has_path(dir: &Path, rev: &str, path: &str) -> bool {
+    git(dir, &["cat-file", "-e", &format!("{rev}:{path}")]).is_ok()
+}
+
+/// Whether `remote` has a branch `branch` as of the last fetch or push.
+pub(crate) fn remote_branch_exists(dir: &Path, remote: &str, branch: &str) -> bool {
+    git(
+        dir,
+        &[
+            "rev-parse",
+            "--verify",
+            "-q",
+            &format!("refs/remotes/{remote}/{branch}"),
+        ],
+    )
+    .is_ok_and(|o| !o.is_empty())
+}
+
+/// The web host of the repository the checkout at `top` pushes `branch` to:
+/// the remote's name ([`remote_of`]) and the recognised host, with
+/// `git config yaks.host` ([`crate::hosting::HOST_KEY`]) declaring the kind
+/// of a custom domain. `Err` says what is missing.
+pub(crate) fn hosting_repo(
+    top: &Path,
+    branch: Option<&str>,
+) -> Result<(String, crate::hosting::Repo)> {
+    let Some(remote) = remote_of(top, branch.unwrap_or("")) else {
+        bail!(
+            "{} has no remote to link to (no `origin`, and the branch has no \
+             `branch.<name>.remote`); add one with `git remote add origin <url>`",
+            top.display()
+        );
+    };
+    let url = git(top, &["remote", "get-url", &remote])?;
+    let declared = crate::store::repo_config(top, crate::hosting::HOST_KEY);
+    let repo = crate::hosting::Repo::from_remote(&url, declared.as_deref())?;
+    Ok((remote, repo))
+}
+
 /// The shared (common) git dir of the checkout at `checkout`.
 ///
 /// Asked once per checkout per process: discovery and the farm's git facts

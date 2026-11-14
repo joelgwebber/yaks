@@ -286,7 +286,8 @@ min_version: 0.0.31    # an older yaks warns (and names the upgrade) on every co
 
 Repo settings are git config: `yaks.branch` (the farm branch, default
 `yaks`), `yaks.farm` and `yaks.herd` (share another repo's farm),
-`yaks.private` (set by `yaks private`).
+`yaks.private` (set by `yaks private`), `yaks.host` (the kind of a custom
+git domain for `yaks url`: `github`, `gitlab`, `gitea` or `forgejo`).
 
 ## License
 
