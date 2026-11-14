@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-09T23:51:02Z'
-updated: '2026-11-14T11:41:38Z'
+updated: '2026-11-14T11:44:28Z'
 tags:
 - tui
 ---
@@ -50,3 +50,11 @@ Milestone: implemented `LineNav::reveal_link_sideways` called at the end of `jum
 ![after-tab2](yaks-e853/after-tab2.png "AFTER: Tab to 'two' scrolls on, minimal")
 
 ![after-backtab](yaks-e853/after-backtab.png "AFTER: Shift-Tab back to 'one' scrolls back left")
+
+---
+▸ 2026-11-14T11:44:28Z [hscroll-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
