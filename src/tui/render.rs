@@ -1555,6 +1555,27 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // A single-line editor field owns the status line while active.
     if let Overlay::Edit(ed) = &app.overlay {
         if ed.single_line {
+            // The `L` field completes tags on Tab: say so at the right edge,
+            // beside the line (the line editor owns the rest of the bar).
+            let hint = "  Tab → complete tag";
+            let hint_w = hint.chars().count() as u16;
+            if matches!(ed.action, crate::tui::EditAction::Labels(_))
+                && tag_completion(&ed.state).is_some()
+                && area.width > hint_w + 24
+            {
+                let [main, hint_area] =
+                    Layout::horizontal([Constraint::Min(0), Constraint::Length(hint_w)])
+                        .areas(area);
+                render_line_editor(ed, frame, main);
+                frame.render_widget(
+                    Paragraph::new(Span::styled(
+                        hint,
+                        Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                    )),
+                    hint_area,
+                );
+                return;
+            }
             render_line_editor(ed, frame, area);
             return;
         }
@@ -1578,6 +1599,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     // on the help bar (opt-in: nothing pops up until you press Tab).
     let ref_context = match &app.overlay {
         Overlay::Edit(ed) if !ed.single_line => completion_context(&ed.state, &app.ref_prefix),
+        Overlay::Drawer(d) if d.row == 3 => tag_completion(&d.tags),
         Overlay::BlockEdit(be) => completion_context(&be.editor.state, &app.ref_prefix),
         Overlay::Create(f) if f.is_tags_row() => tag_completion(&f.tags),
         Overlay::Create(f) => f

@@ -350,10 +350,17 @@ pub(crate) fn editor_key(
     // out.
     let esc_cancels = ed.single_line && k.code == KeyCode::Esc && !ed.vim;
     let cancel = (ctrl && k.code == KeyCode::Char('c')) || esc_cancels || double_esc;
-    // Tab opens the ref completer when the cursor is in a `<prefix>-…` context;
-    // otherwise it falls through as a normal editor key.
+    // Tab opens the completer when the cursor is in a `<prefix>-…` context (a
+    // partial tag in the `L` field); otherwise it falls through as a normal
+    // editor key.
     let complete = if k.code == KeyCode::Tab {
-        completion_context(&ed.state, ref_prefix)
+        if matches!(ed.action, EditAction::Labels(_)) {
+            // The `L` field holds tags, not markdown: a tag completes, and a
+            // `<prefix>-…` tag is a tag, not a yak ref.
+            tag_completion(&ed.state)
+        } else {
+            completion_context(&ed.state, ref_prefix)
+        }
     } else {
         None
     };
@@ -1811,6 +1818,18 @@ impl App {
             || (ctrl && k.code == KeyCode::Char('p'))
             || (!is_text && vim && k.code == KeyCode::Char('k'))
             || (text_normal && k.code == KeyCode::Char('k'));
+        // Tab on a partial tag in the tags row opens the tag picker; with
+        // nothing typed since the last comma or space it moves on as usual.
+        if k.code == KeyCode::Tab && row == 3 {
+            let complete = match &self.overlay {
+                Overlay::Drawer(d) => tag_completion(&d.tags),
+                _ => None,
+            };
+            if let Some(c) = complete {
+                self.open_ref_picker(&c);
+                return;
+            }
+        }
         if nav_down || nav_up {
             let carry = text_normal && matches!(k.code, KeyCode::Char('j') | KeyCode::Char('k'));
             if let Overlay::Drawer(d) = &mut self.overlay {
@@ -2360,34 +2379,42 @@ impl App {
             return;
         };
         let mut ov = *back;
+        let mut redo_preview = false;
         if let Some(id) = &picked {
             // Replace the typed token with the chosen id or path, in
             // whichever editor the picker was opened over.
             match &mut ov {
+                Overlay::Edit(ed) if fp.tags.is_some() => {
+                    insert_tag(&mut ed.handler, &ed.state, id, fp.replace_len);
+                }
                 Overlay::Edit(ed) => {
                     delete_into(&mut ed.handler, &ed.state, fp.replace_len);
                     insert_into(&mut ed.handler, &ed.state, id);
+                }
+                Overlay::Drawer(d) => {
+                    insert_tag(&mut d.handler, &d.tags, id, fp.replace_len);
+                    redo_preview = true;
                 }
                 Overlay::BlockEdit(be) => {
                     let ed = &mut be.editor;
                     delete_into(&mut ed.handler, &ed.state, fp.replace_len);
                     insert_into(&mut ed.handler, &ed.state, id);
                 }
+                Overlay::Create(f) if fp.tags.is_some() => {
+                    insert_tag(&mut f.handler, &f.tags, id, fp.replace_len);
+                }
                 Overlay::Create(f) => {
-                    // A tag pick goes into the tags field, the rest into the
-                    // description.
-                    let field = if fp.tags.is_some() {
-                        &f.tags
-                    } else {
-                        &f.description
-                    };
-                    delete_into(&mut f.handler, field, fp.replace_len);
-                    insert_into(&mut f.handler, field, id);
+                    delete_into(&mut f.handler, &f.description, fp.replace_len);
+                    insert_into(&mut f.handler, &f.description, id);
                 }
                 _ => {}
             }
         }
         self.overlay = ov;
+        // The filter drawer applies as you type: a picked tag re-runs it.
+        if redo_preview {
+            self.drawer_live_preview();
+        }
     }
 
     pub(crate) fn commit_fuzzy(&mut self, fp: FuzzyPick) {

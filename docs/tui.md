@@ -620,6 +620,8 @@ list holds every status but dead.
 Tag fields (the `L` editor, the create/edit form's `tags`, the drawer's
 tag filter) take tags separated by commas and/or spaces — `ui, docs`,
 `ui docs`, and `ui,docs` all mean `[ui, docs]`; a tag can contain neither.
+`Tab` on a partial tag completes it from the farm's tags (see
+"Completing a tag" under Following links and peek).
 
 **Edit form** (`E`) — the shared create/edit form: the header fields, then a
 `description` editor, the same shape as creating. The header fields are `title`, `type`, `priority`, `tags`, `source` (the external-issue
@@ -786,15 +788,18 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   (`/doks/design/x.md`), `Ctrl-C` (or `Esc` out of Normal mode) leaves it as typed. It is the same
   picker as `Tab` after `<prefix>-` for a yak id; heading anchors (`#…`),
   relative links and sources are not completed.
-- **Completing a tag**: in the create/edit form's `Tags` field, `Tab` on a
-  partial tag (the text since the last comma or space) opens the same picker,
-  seeded with it, and the hint line says `Tab → complete tag`. Rows are the
-  farm's known tags first (`tags:` in `schemas/yak.md`, each with its
-  description), then every other tag in use, most used first (with its yak
-  count). `Enter` replaces just the partial tag; `Ctrl-C` leaves it as typed.
-  With nothing typed since a comma or space, or in an empty field, `Tab` moves
-  to the next field as before. Tags in the filter drawer and the single-line
-  `L` editor are not completed.
+- **Completing a tag**: in any tags field (the create/edit form's `Tags`, the
+  `L` editor, and the filter drawer's tags row), `Tab` on a partial tag (the
+  text since the last comma or space) opens the same picker, seeded with it,
+  and the hint line says `Tab → complete tag`. Rows are the farm's known tags
+  first (`tags:` in `schemas/yak.md`, each with its description), then every
+  other tag in use, most used first (with its yak count). `Enter` replaces just
+  the partial tag and leaves the cursor after a `, `, so the next `Tab` moves
+  to the next field (in the drawer, to the next row) instead of reopening the
+  picker; in the drawer the pick also re-runs the live filter. `Ctrl-C` leaves
+  the text as typed. With nothing typed since a comma or space, or in an empty
+  field, `Tab` moves on as before (in the `L` editor, which has no next field,
+  it does nothing). A `<prefix>-…` token in these fields is a tag, not a yak ref.
 
 ## Doks tab
 

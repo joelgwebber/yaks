@@ -8121,7 +8121,133 @@ fn tag_picker_replaces_only_the_partial_tag() {
     insta::assert_snapshot!("tag_picker_over_form", draw(&app, 72, 14));
     enter_key(&mut app);
     assert!(matches!(app.overlay, Overlay::Create(_)));
-    assert_eq!(tags_text(&app), "docs, rust");
+    // The pick leaves the cursor past a separator (yaks-1a16).
+    assert_eq!(tags_text(&app), "docs, rust, ");
+}
+
+#[test]
+fn tab_after_a_picked_tag_moves_to_the_next_field() {
+    let (_dir, mut app) = tag_form_app();
+    typ(&mut app, "ru");
+    tab(&mut app);
+    enter_key(&mut app);
+    assert_eq!(tags_text(&app), "rust, ");
+    tab(&mut app);
+    match &app.overlay {
+        Overlay::Create(f) => assert_eq!(f.row, 4, "Tab moved on, no picker"),
+        _ => panic!("expected the form, not a picker"),
+    }
+}
+
+#[test]
+fn picking_a_tag_before_a_separator_steps_over_it_instead_of_adding_one() {
+    let (_dir, mut app) = tag_form_app();
+    typ(&mut app, "ru, docs");
+    // Back up to just after `ru`.
+    for _ in 0..6 {
+        handle_key(&mut app, KeyEvent::new(KeyCode::Left, KeyModifiers::NONE));
+    }
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Fuzzy(fp) if fp.query_text() == "ru"));
+    enter_key(&mut app);
+    assert_eq!(tags_text(&app), "rust, docs");
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Create(f) if f.row == 4));
+}
+
+/// The `L` editor on the first yak of the tag farm.
+fn labels_editor_app() -> (std::path::PathBuf, App) {
+    let (dir, mut app) = tag_form_app();
+    app.overlay = Overlay::None;
+    app.cursor = 0;
+    handle_key(&mut app, key('L'));
+    assert!(matches!(&app.overlay, Overlay::Edit(ed)
+        if matches!(ed.action, crate::tui::EditAction::Labels(_))));
+    (dir, app)
+}
+
+fn labels_text(app: &App) -> String {
+    match &app.overlay {
+        Overlay::Edit(ed) => ed.text(),
+        _ => panic!("expected the `L` editor"),
+    }
+}
+
+#[test]
+fn tab_in_the_l_editor_completes_a_tag_and_a_pick_moves_past_it() {
+    let (_dir, mut app) = labels_editor_app();
+    // Clear the existing tags, then type a partial one.
+    if let Overlay::Edit(ed) = &mut app.overlay {
+        ed.state.borrow_mut().lines = edtui::Lines::from("");
+        ed.state.borrow_mut().cursor = edtui::Index2::new(0, 0);
+    }
+    typ(&mut app, "docs, tu");
+    let hint = draw(&app, 80, 10);
+    assert!(hint.contains("Tab → complete tag"), "{hint}");
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Fuzzy(fp)
+        if fp.tags.is_some() && fp.query_text() == "tu"));
+    // Cancel keeps the text.
+    handle_key(
+        &mut app,
+        KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL),
+    );
+    assert_eq!(labels_text(&app), "docs, tu");
+    tab(&mut app);
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Edit(_)));
+    assert!(
+        labels_text(&app).starts_with("docs, "),
+        "{}",
+        labels_text(&app)
+    );
+    assert!(labels_text(&app).ends_with(", "), "{}", labels_text(&app));
+    // Right after the separator Tab has nothing to complete: no picker.
+    tab(&mut app);
+    assert!(matches!(app.overlay, Overlay::Edit(_)));
+}
+
+/// The filter drawer opened over the tag farm, on its tags row.
+fn tag_drawer_app() -> (std::path::PathBuf, App) {
+    let (dir, mut app) = tag_form_app();
+    app.overlay = Overlay::None;
+    app.open_drawer();
+    if let Overlay::Drawer(d) = &mut app.overlay {
+        d.row = 3;
+    }
+    (dir, app)
+}
+
+fn drawer_tags(app: &App) -> String {
+    match &app.overlay {
+        Overlay::Drawer(d) => d.tags.borrow().lines.to_string(),
+        _ => panic!("expected the filter drawer"),
+    }
+}
+
+#[test]
+fn tab_in_the_drawer_tags_row_completes_and_the_pick_reruns_the_filter() {
+    let (_dir, mut app) = tag_drawer_app();
+    typ(&mut app, "ru");
+    assert!(app.filter.tags.is_empty() || app.filter.tags == ["ru"]);
+    assert!(draw(&app, 80, 24).contains("Tab → complete tag"));
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Fuzzy(fp)
+        if fp.tags.is_some() && fp.query_text() == "ru"));
+    enter_key(&mut app);
+    assert!(matches!(app.overlay, Overlay::Drawer(_)));
+    assert_eq!(drawer_tags(&app), "rust, ");
+    assert_eq!(app.filter.tags, ["rust"], "the live preview re-ran");
+    // Nothing partial: Tab goes to the next row.
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Drawer(d) if d.row == 4));
+}
+
+#[test]
+fn tab_on_a_complete_drawer_tags_row_still_moves_to_the_next_row() {
+    let (_dir, mut app) = tag_drawer_app();
+    tab(&mut app);
+    assert!(matches!(&app.overlay, Overlay::Drawer(d) if d.row == 4));
 }
 
 #[test]

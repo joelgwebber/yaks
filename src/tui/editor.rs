@@ -261,7 +261,8 @@ pub(crate) enum CompleteKind {
     Yak,
     /// A dok's farm-root link path, after `/doks/` or `/<herd>/doks/`.
     Dok,
-    /// A tag, in the form's `tags` field ([`tag_completion`]).
+    /// A tag, in a tags field: the form's, the `L` editor's or the filter
+    /// drawer's ([`tag_completion`]).
     Tag,
 }
 
@@ -328,7 +329,8 @@ pub(crate) fn completion_context(state: &RefCell<EditorState>, prefix: &str) -> 
         })
 }
 
-/// The tag completion at the cursor of the form's `tags` field: the run of
+/// The tag completion at the cursor of a tags field (the form's, the `L`
+/// editor's, the filter drawer's): the run of
 /// non-space, non-comma chars before the cursor, seeding the picker. `None`
 /// right after a comma or space, or in an empty field (Tab then moves on).
 pub(crate) fn tag_completion(state: &RefCell<EditorState>) -> Option<Completion> {
@@ -345,6 +347,33 @@ pub(crate) fn tag_completion(state: &RefCell<EditorState>) -> Option<Completion>
         seed: before[i..].iter().collect(),
         kind: CompleteKind::Tag,
     })
+}
+
+/// Replace the partial tag `replaced` chars before the cursor with `tag`, and
+/// leave the cursor past a separator so the next Tab is not another completion
+/// (yaks-1a16): `", "` after the tag, or, when a comma or space already
+/// follows, the cursor stepped over it.
+pub(crate) fn insert_tag(
+    handler: &mut EditorEventHandler,
+    state: &RefCell<EditorState>,
+    tag: &str,
+    replaced: usize,
+) {
+    delete_into(handler, state, replaced);
+    insert_into(handler, state, tag);
+    let next = {
+        let st = state.borrow();
+        let full = st.lines.to_string();
+        let line = full.split('\n').nth(st.cursor.row).unwrap_or("");
+        line.chars().nth(st.cursor.col)
+    };
+    match next {
+        Some(c) if c == ',' || c.is_whitespace() => {
+            let k = KeyEvent::new(KeyCode::Right, KeyModifiers::NONE);
+            handler.on_key_event(k, &mut state.borrow_mut());
+        }
+        _ => insert_into(handler, state, ", "),
+    }
 }
 
 /// Short mode label shown next to a vim editor so the current mode is visible.
