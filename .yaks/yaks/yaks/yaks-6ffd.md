@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T11:21:02Z'
+updated: '2026-11-14T11:21:19Z'
 parent: yaks-1151
 tags:
 - git
@@ -34,3 +34,8 @@ The code half of dropping the `.yaks/` root (yaks-1151 decision 1). The audit wi
 ## Evidence
 
 Tests for both layouts through `Farm::at` / `discover_with`, with a fixture of each; the existing `.yaks` tests keep passing. A scratch repo whose farm branch has the farm at its root: `yaks create`, `shave`, `sync --no-push`, `status` and the land guard, with the autocommit visible in `git log`.
+
+---
+▸ 2026-11-14T11:21:19Z [linkplan-lead]
+
+Part of the plan with [yaks-f505](yaks-f505) (resolver, independent) and [yaks-acc0](yaks-acc0) (the migration that uses this). Shave the resolver and this in parallel only if the scopes stay disjoint: this owns `store.rs`, `init.rs`, `status.rs`, `sync.rs`, `weight.rs`, `preflight.rs`, `land.rs`, the TUI state files; the resolver owns the new `locate.rs`, `hosting.rs`, `links.rs` and `follow.rs`. `farm_git`'s `top == root` change lands first and the resolver rebases onto it.
