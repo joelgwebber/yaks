@@ -328,15 +328,39 @@ pub(crate) fn farm_worktree(dir: &Path, branch: &str) -> Option<PathBuf> {
         .or_else(|| shared_farm_worktree(dir, branch, &farm_home(dir)))
 }
 
-/// `home`, when it is a worktree with `branch` checked out and a `.yaks/`,
-/// belonging to a repository with the same [`origin_identity`] as `dir`'s.
+/// The farm root inside the farm branch's worktree `wt`: where the farm
+/// lives on the branch, which is one of two layouts.
+///
+/// - **Root layout:** the branch root IS the farm root (`config.yaml`,
+///   `schema`, `<herd>/yaks/` at the top, no `.yaks/` directory).
+/// - **`.yaks/` layout:** the farm sits in a `.yaks/` directory (every farm
+///   before the layout move, and what `yaks init` still writes).
+///
+/// Decision (yaks-6ffd), made here and nowhere else: a `config.yaml` at the
+/// worktree top means the root layout, and wins over a `.yaks/` directory
+/// beside it (the migration may leave a stub `.yaks/schema` so old binaries
+/// refuse instead of misreading); else a `.yaks/` directory means the old
+/// layout; else a bare `schema` at the top (a hand-made root farm without a
+/// config). `None` when the worktree holds no farm at all.
+pub(crate) fn farm_root_in(wt: &Path) -> Option<PathBuf> {
+    if wt.join("config.yaml").is_file() {
+        return Some(wt.to_path_buf());
+    }
+    let nested = wt.join(".yaks");
+    if nested.is_dir() {
+        return Some(nested);
+    }
+    wt.join("schema").is_file().then(|| wt.to_path_buf())
+}
+
+/// `home`, when it is a worktree with `branch` checked out and a farm in it
+/// ([`farm_root_in`]), belonging to a repository with the same
+/// [`origin_identity`] as `dir`'s.
 /// `None` for a repository without an `origin`: nothing names it across git
 /// dirs.
 pub(crate) fn shared_farm_worktree(dir: &Path, branch: &str, home: &Path) -> Option<PathBuf> {
     let id = origin_identity(dir)?;
-    if !home.join(".yaks").is_dir() {
-        return None;
-    }
+    farm_root_in(home)?;
     let home = crate::gitrepo::canonical(home);
     let top = git_line(&home, &["rev-parse", "--show-toplevel"])?;
     let on_branch = git_line(&home, &["symbolic-ref", "--short", "-q", "HEAD"]);
@@ -367,26 +391,26 @@ pub fn configured_farm_branch(dir: &Path) -> String {
     repo_config(dir, "yaks.branch").unwrap_or_else(|| FARM_BRANCH.to_string())
 }
 
-/// The farm root (`.yaks/`) of the worktree of the repository containing
-/// `dir` (its host, for a Delta clone) where the farm branch
+/// The farm root ([`farm_root_in`]) of the worktree of the repository
+/// containing `dir` (its host, for a Delta clone) where the farm branch
 /// ([`configured_farm_branch`]) is checked out. `Ok(None)` when the
 /// repository has no such branch at all; an error naming the fix when the
 /// branch exists (locally or as `origin/<branch>`) but no worktree has it
 /// ([`MissingFarmWorktree`], which [`discover_bootstrapping`] fixes), or that
-/// worktree holds no `.yaks/`.
+/// worktree holds no farm.
 fn farm_branch_worktree(dir: &Path) -> Result<Option<PathBuf>> {
     let branch = configured_farm_branch(dir);
     // A registered worktree whose directory is gone (deleted by hand) is no
     // worktree: bootstrap prunes the record and adds a fresh one.
     if let Some(wt) = farm_worktree(dir, &branch) {
-        let root = wt.join(".yaks");
-        if !root.is_dir() {
+        let Some(root) = farm_root_in(&wt) else {
             anyhow::bail!(
-                "the farm branch `{branch}` is checked out at {wt} but has no .yaks/ there; \
-                 restore it (`git -C {wt} checkout -- .yaks`) or set YAKS_DIR to the farm",
+                "the farm branch `{branch}` is checked out at {wt} but holds no farm there \
+                 (no config.yaml, schema or .yaks/); restore it (`git -C {wt} checkout -- .`) \
+                 or set YAKS_DIR to the farm",
                 wt = wt.display()
             );
-        }
+        };
         return Ok(Some(root));
     }
     let local = git_line(
@@ -450,6 +474,19 @@ pub(crate) struct FarmGit {
     pub top: PathBuf,
     /// The worktree's own git dir: where `HEAD`, `MERGE_HEAD` and the like live.
     pub git_dir: PathBuf,
+    /// Where the farm root sits under [`top`](Self::top), as a repo-relative
+    /// prefix: `""` when the branch root is the farm root, `".yaks/"` for the
+    /// `.yaks/` layout. The one source of truth for turning a farm-relative
+    /// path into a repository-relative one ([`FarmGit::repo_path`]).
+    pub prefix: String,
+}
+
+impl FarmGit {
+    /// The repository-relative path of `farm_rel`, a path relative to the
+    /// farm root.
+    pub fn repo_path(&self, farm_rel: &str) -> String {
+        format!("{}{farm_rel}", self.prefix)
+    }
 }
 
 /// The facts git gives about a worktree that never change under a running
@@ -520,8 +557,9 @@ fn worktree_facts(dir: &Path) -> Option<(PathBuf, PathBuf, String)> {
 /// is read from the worktree's `HEAD` file on every call, so a farm moved to
 /// another branch under a running TUI stops being a farm at once.
 pub(crate) fn farm_git(root: &Path) -> Option<FarmGit> {
-    let dir = root.parent()?;
-    let (top, git_dir, configured) = worktree_facts(dir)?;
+    // Git runs in the farm root itself: its top level is the root (the root
+    // layout) or the root's parent (the `.yaks/` layout).
+    let (top, git_dir, configured) = worktree_facts(root)?;
     // A `HEAD` file that is not a plain branch ref (a detached HEAD; the
     // reftable format's placeholder) is for git to say.
     let branch = match fs::read_to_string(git_dir.join("HEAD"))
@@ -530,13 +568,21 @@ pub(crate) fn farm_git(root: &Path) -> Option<FarmGit> {
         .filter(|b| b != ".invalid")
     {
         Some(b) => b,
-        None => git_line(dir, &["symbolic-ref", "--short", "-q", "HEAD"])?,
+        None => git_line(root, &["symbolic-ref", "--short", "-q", "HEAD"])?,
     };
-    let same = top.canonicalize().ok() == dir.canonicalize().ok();
-    (same && branch == configured).then_some(FarmGit {
+    let canon = |p: &Path| p.canonicalize().ok();
+    let prefix = if canon(&top) == canon(root) {
+        String::new()
+    } else if canon(&top) == root.parent().and_then(canon) {
+        format!("{}/", root.file_name()?.to_string_lossy())
+    } else {
+        return None;
+    };
+    (branch == configured).then_some(FarmGit {
         branch,
         top,
         git_dir,
+        prefix,
     })
 }
 
@@ -677,6 +723,26 @@ pub fn attachment_owner(rel: &str) -> Option<String> {
         [id, _, ..] if !id.starts_with('.') => Some(id.clone()),
         _ => None,
     }
+}
+
+/// `repo_path`, a path relative to a farm branch's top (what `git status`,
+/// `ls-tree` and `diff-tree` print), made relative to the farm root: after the
+/// last `.yaks` component for the `.yaks/` layout, else unchanged (the branch
+/// root IS the farm root). Decision (yaks-6ffd): the classifiers that see only
+/// a path, with no farm at hand, read both layouts through this one rule
+/// instead of threading [`FarmGit::prefix`] through every signature. No farm
+/// file has a `.yaks` component in the root layout, so it cannot misread one.
+pub fn farm_relative(repo_path: &str) -> &str {
+    let mut rest = repo_path;
+    let mut at = 0;
+    for part in repo_path.split('/') {
+        let end = at + part.len();
+        if part == ".yaks" && end < repo_path.len() {
+            rest = &repo_path[end + 1..];
+        }
+        at = end + 1;
+    }
+    rest
 }
 
 /// The id of the yak that `rel`, a path RELATIVE TO THE FARM ROOT, belongs
@@ -1472,19 +1538,22 @@ impl Default for InitConfig {
 
 /// Result of [`init`].
 pub enum InitOutcome {
-    /// A fresh farm was written at the `.yaks/` path.
+    /// A fresh farm was written at the root.
     Created,
-    /// The `.yaks/` directory already existed; nothing was written.
+    /// A farm already existed at the root; nothing was written.
     AlreadyExists,
 }
 
-/// Create a fresh farm at `root` (the `.yaks/` directory itself): a
-/// `config.yaml` seeded from `cfg` and the `schema` marker for this build.
+/// Create a fresh farm at `root` (a `.yaks/` directory, or a branch root):
+/// a `config.yaml` seeded from `cfg` and the `schema` marker for this build.
 /// Yak files go directly in `root` as they are created. Refuses to touch an
-/// existing `.yaks/` — the caller gets [`InitOutcome::AlreadyExists`] and
-/// nothing is written.
+/// existing farm: the caller gets [`InitOutcome::AlreadyExists`] and nothing
+/// is written. A farm exists when `config.yaml` or `schema` does, or when
+/// `root` is a `.yaks/` directory that already exists (whatever it holds). A
+/// branch root always exists, so the markers are what count there.
 pub fn init(root: &Path, cfg: &InitConfig) -> Result<InitOutcome> {
-    if root.exists() {
+    let legacy_dir = root.file_name().is_some_and(|n| n == ".yaks") && root.exists();
+    if legacy_dir || root.join("config.yaml").exists() || root.join("schema").exists() {
         return Ok(InitOutcome::AlreadyExists);
     }
     fs::create_dir_all(root).with_context(|| format!("creating {}", root.display()))?;
@@ -2676,8 +2745,12 @@ pub fn migration_refusal(root: &Path) -> Option<String> {
     let Some(name) = git_line(&fg.top, &["rev-parse", "--abbrev-ref", &upstream]) else {
         return Some(migrate);
     };
-    let theirs = git_line(&fg.top, &["show", &format!("{upstream}:.yaks/schema")])
-        .and_then(|s| s.trim().parse::<u32>().ok());
+    // The upstream may be either layout: the marker is `schema` at its root,
+    // else `.yaks/schema`.
+    let theirs = ["schema", ".yaks/schema"].iter().find_map(|file| {
+        git_line(&fg.top, &["show", &format!("{upstream}:{file}")])
+            .and_then(|s| s.trim().parse::<u32>().ok())
+    });
     Some(match theirs {
         Some(r) if r > v => format!(
             "{} is on schema {v}, but `{name}` is already on schema {r}: this checkout of the \
@@ -2760,6 +2833,18 @@ pub fn schema_status(root: &Path) -> SchemaStatus {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn farm_relative_reads_both_layouts() {
+        use super::farm_relative as rel;
+        assert_eq!(rel(".yaks/h/yaks/h-1.md"), "h/yaks/h-1.md");
+        assert_eq!(rel("sub/.yaks/h/yaks/h-1.md"), "h/yaks/h-1.md");
+        assert_eq!(rel("h/yaks/h-1.md"), "h/yaks/h-1.md");
+        assert_eq!(rel("config.yaml"), "config.yaml");
+        assert_eq!(rel(".yaks"), ".yaks");
+        assert_eq!(rel(".yaks/"), "");
+        assert_eq!(rel(".gitattributes"), ".gitattributes");
+    }
+
     /// yaks-0370: `attach --caption` writes the markdown title; a plain link
     /// is unchanged, and a caption cannot break out of its quotes.
     #[test]
@@ -4121,6 +4206,145 @@ mod discover_tests {
             "{msg}"
         );
         assert!(msg.contains("don't migrate"), "{msg}");
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    // -- the farm at the branch root (yaks-6ffd) -----------------------------
+
+    /// [`branch_repo`] with the farm at the branch ROOT: `config.yaml` and
+    /// `schema` at the top of the `yaks` branch, no `.yaks/`.
+    fn root_branch_repo() -> (PathBuf, PathBuf, PathBuf) {
+        let base = scratch();
+        let code = base.join("code");
+        fs::create_dir_all(&code).unwrap();
+        git(&code, &["init", "-q", "-b", "main"]);
+        fs::write(code.join("a.txt"), "a\n").unwrap();
+        git(&code, &["add", "."]);
+        git(&code, &["commit", "-q", "-m", "code"]);
+        let wt = base.join("farm");
+        git(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "--orphan",
+                "-b",
+                "yaks",
+                &wt.display().to_string(),
+            ],
+        );
+        fs::write(wt.join("config.yaml"), "herd: yak\n").unwrap();
+        fs::write(wt.join("schema"), format!("{SCHEMA}\n")).unwrap();
+        git(&wt, &["add", "."]);
+        git(&wt, &["commit", "-q", "-m", "yaks: seed"]);
+        (base, code, wt)
+    }
+
+    #[test]
+    fn farm_root_in_tells_the_layouts_apart() {
+        let base = scratch();
+        // Nothing: no farm.
+        assert_eq!(farm_root_in(&base), None);
+        // The `.yaks/` layout.
+        fs::create_dir_all(base.join(".yaks")).unwrap();
+        assert_eq!(farm_root_in(&base), Some(base.join(".yaks")));
+        // A config at the top wins over a `.yaks/` beside it (the stub).
+        fs::write(base.join(".yaks/schema"), "9\n").unwrap();
+        fs::write(base.join("config.yaml"), "herd: y\n").unwrap();
+        assert_eq!(farm_root_in(&base), Some(base.clone()));
+        // A bare schema at the top is a root farm too, but a `.yaks/` dir wins.
+        let b2 = scratch();
+        fs::write(b2.join("schema"), "8\n").unwrap();
+        assert_eq!(farm_root_in(&b2), Some(b2.clone()));
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&b2);
+    }
+
+    #[test]
+    fn a_branch_with_the_farm_at_its_root_is_found_and_is_a_farm_branch() {
+        let (base, code, wt) = root_branch_repo();
+        let found = discover_with(&code, None).unwrap().root;
+        assert_eq!(canon(&found), canon(&wt));
+        let fg = farm_git(&found).expect("a farm branch at the root layout");
+        assert_eq!(fg.prefix, "");
+        assert_eq!(canon(&fg.top), canon(&wt));
+        assert_eq!(fg.repo_path("h/yaks/h-1.md"), "h/yaks/h-1.md");
+        assert_eq!(farm_branch(&found).as_deref(), Some("yaks"));
+        // The same through a stub `.yaks/schema`: the root layout still wins.
+        fs::create_dir_all(wt.join(".yaks")).unwrap();
+        fs::write(wt.join(".yaks/schema"), "9\n").unwrap();
+        assert_eq!(canon(&discover_with(&code, None).unwrap().root), canon(&wt));
+        let _ = fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn the_dot_yaks_layout_has_the_dot_yaks_prefix() {
+        let (base, code, wt) = branch_repo(true);
+        let found = discover_with(&code, None).unwrap().root;
+        assert_eq!(canon(&found), canon(&wt.unwrap().join(".yaks")));
+        let fg = farm_git(&found).expect("a farm branch");
+        assert_eq!(fg.prefix, ".yaks/");
+        assert_eq!(fg.repo_path("h/yaks/h-1.md"), ".yaks/h/yaks/h-1.md");
+        // A `YAKS_DIR` scratch farm is no farm branch, in either layout.
+        let plain = scratch();
+        assert!(farm_git(&farm_at(&plain)).is_none());
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&plain);
+    }
+
+    #[test]
+    fn init_writes_a_farm_at_a_branch_root_and_refuses_an_existing_one() {
+        let base = scratch();
+        let cfg = InitConfig {
+            prefix: "acme".into(),
+            default_type: "chore".into(),
+            default_priority: 1,
+            vim_mode: false,
+        };
+        // The directory exists already (a worktree): the markers decide.
+        assert!(matches!(init(&base, &cfg).unwrap(), InitOutcome::Created));
+        assert!(base.join("config.yaml").is_file());
+        assert_eq!(fs::read_to_string(base.join("schema")).unwrap(), "8\n");
+        assert!(matches!(
+            init(&base, &cfg).unwrap(),
+            InitOutcome::AlreadyExists
+        ));
+        // An existing `.yaks/` is a farm whatever it holds.
+        let b2 = scratch();
+        fs::create_dir_all(b2.join(".yaks")).unwrap();
+        assert!(matches!(
+            init(&b2.join(".yaks"), &cfg).unwrap(),
+            InitOutcome::AlreadyExists
+        ));
+        let _ = fs::remove_dir_all(&base);
+        let _ = fs::remove_dir_all(&b2);
+    }
+
+    #[test]
+    fn a_stale_root_layout_farm_reads_the_upstream_schema_at_the_root() {
+        let (base, _code, wt) = root_branch_repo();
+        fs::write(wt.join("schema"), "7\n").unwrap();
+        git(&wt, &["commit", "-q", "-am", "schema 7"]);
+        let remote = base.join("remote.git");
+        git(
+            &base,
+            &["init", "-q", "--bare", &remote.display().to_string()],
+        );
+        git(
+            &wt,
+            &["remote", "add", "origin", &remote.display().to_string()],
+        );
+        git(&wt, &["push", "-q", "-u", "origin", "yaks"]);
+        fs::write(wt.join("schema"), format!("{SCHEMA}\n")).unwrap();
+        git(&wt, &["commit", "-q", "-am", "migrated"]);
+        git(&wt, &["push", "-q", "origin", "yaks"]);
+        git(&wt, &["reset", "-q", "--hard", "HEAD~1"]);
+        let msg = migration_refusal(&wt).unwrap();
+        assert!(
+            msg.contains("origin/yaks") && msg.contains("pull --ff-only"),
+            "{msg}"
+        );
         let _ = fs::remove_dir_all(&base);
     }
 

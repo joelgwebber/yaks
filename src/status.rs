@@ -129,8 +129,8 @@ pub fn collect(root: &Path) -> Result<Report> {
 /// is a dedicated farm-branch worktree ([`store::farm_branch`]) or git cannot
 /// say.
 pub fn sync_state(root: &Path) -> Option<SyncState> {
-    let branch = store::farm_branch(root)?;
-    let top = root.parent()?;
+    let fg = store::farm_git(root)?;
+    let (branch, top) = (fg.branch, fg.top.as_path());
     let line = |args: &[&str]| -> Option<String> {
         let out = changes::git(top, args).ok()?;
         let text = String::from_utf8_lossy(&out.stdout).trim().to_string();

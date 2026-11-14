@@ -1479,7 +1479,7 @@ enum Command {
     /// changes the worker's commit does not explain, unless `--force-discard`;
     /// refuses (exit 6) a SHA that is already an ancestor of HEAD but whose
     /// change is missing from HEAD's tree (a merge that dropped it); refuses (exit
-    /// 7) a commit that touches `.yaks/` when HEAD tracks none (a branch farm).
+    /// 7) a commit that touches yak files when HEAD tracks none (a branch farm).
     /// After landing, a note `kind: landed` (`commit:` the landed sha, `source:`
     /// the worker's sha, `branch:`) is appended to every yak the landed
     /// commit's message names, and to each `--yak`; `yaks commits <id>` reads

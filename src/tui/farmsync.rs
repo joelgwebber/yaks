@@ -137,9 +137,10 @@ fn autosync_disabled(value: Option<&str>) -> bool {
 /// remote, else `origin` (the same rule as `sync::run`'s), and the farm is a
 /// branch at all.
 fn has_remote(root: &Path) -> bool {
-    let (Some(top), Some(branch)) = (root.parent(), store::farm_branch(root)) else {
+    let Some(fg) = store::farm_git(root) else {
         return false;
     };
+    let (top, branch) = (fg.top.as_path(), fg.branch);
     let git = |args: &[&str]| {
         crate::branchfarm::git(top, args)
             .ok()
@@ -213,7 +214,7 @@ impl App {
             return self.regrow_due() || finished;
         }
         let opts = sync::Opts {
-            no_push: root.parent().is_some_and(privatefarm::is_private),
+            no_push: store::farm_git(&root).is_some_and(|g| privatefarm::is_private(&g.top)),
             ..sync::Opts::default()
         };
         let (tx, rx) = mpsc::channel();

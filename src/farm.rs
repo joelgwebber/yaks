@@ -1855,8 +1855,8 @@ impl Farm {
             .ok()
             .filter(|o| o.status.success())?;
         let top = PathBuf::from(String::from_utf8_lossy(&out.stdout).trim());
-        let is_farm_worktree = store::farm_branch(&self.root).is_some()
-            && self.root.parent().and_then(|p| p.canonicalize().ok()) == top.canonicalize().ok();
+        let is_farm_worktree = store::farm_git(&self.root)
+            .is_some_and(|g| g.top.canonicalize().ok() == top.canonicalize().ok());
         (!is_farm_worktree).then_some(top)
     }
 

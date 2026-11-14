@@ -510,6 +510,7 @@ impl App {
             .unwrap_or_default();
         let all = farm.list(FilterSpec::default(), true)?;
         let cfg = farm.config();
+        views_store::adopt_legacy_state(farm.root());
         let ui = cache::load(farm.root());
         let views = views_store::load_views(farm.root());
         let working_set = views_store::load_working_set(farm.root());

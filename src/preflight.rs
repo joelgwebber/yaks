@@ -167,13 +167,11 @@ fn git_state(root: &Path, report: &mut Report) -> Result<Option<BTreeSet<String>
     Ok(Some(changed))
 }
 
-/// The yak a repository path belongs to: `.yaks/<herd>/yaks/<id>.md` or an
-/// attachment `.yaks/<herd>/yaks/<id>/...`. Everything after the last `.yaks`
-/// component is relative to the farm root ([`store::path_owner`]).
+/// The yak a repository path belongs to: `<herd>/yaks/<id>.md` or an
+/// attachment `<herd>/yaks/<id>/...`, at the branch root or under `.yaks/`
+/// ([`store::farm_relative`], then [`store::path_owner`]).
 pub(crate) fn yak_id_of(path: &str) -> Option<String> {
-    let parts: Vec<&str> = path.split('/').collect();
-    let i = parts.iter().rposition(|p| *p == ".yaks")?;
-    crate::store::path_owner(&parts[i + 1..].join("/"))
+    crate::store::path_owner(crate::store::farm_relative(path))
 }
 
 /// Which shorn yaks the verify check looks at (see [`run`]).
@@ -771,6 +769,22 @@ mod tests {
         assert_eq!(yak_id_of(".yaks/.gitignore"), None);
         assert_eq!(yak_id_of("src/main.rs"), None);
         assert_eq!(yak_id_of("README.md"), None);
+    }
+
+    /// The farm at the branch root (yaks-6ffd): no `.yaks/` component, and the
+    /// same answers.
+    #[test]
+    fn yak_ids_come_from_root_layout_paths_too() {
+        assert_eq!(yak_id_of("x/yaks/x-1.md").as_deref(), Some("x-1"));
+        assert_eq!(
+            yak_id_of("yaks/yaks/yaks-aa49/frame.txt").as_deref(),
+            Some("yaks-aa49")
+        );
+        assert_eq!(yak_id_of("config.yaml"), None);
+        assert_eq!(yak_id_of(".gitignore"), None);
+        assert_eq!(yak_id_of("doks/x.md"), None);
+        assert_eq!(yak_id_of("sessions/2026/11/n.md"), None);
+        assert_eq!(yak_id_of("src/main.rs"), None);
     }
 
     /// A fresh non-bare repo on `main` with one commit: the human's checkout.

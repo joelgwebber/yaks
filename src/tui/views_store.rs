@@ -43,6 +43,38 @@ pub(super) fn config_dir(root: &Path) -> PathBuf {
     config_home().join("yaks").join(slug(root))
 }
 
+/// Copy the per-user state kept under the pre-move key (`<root>/.yaks`,
+/// yaks-6ffd) to this root's key: saved views, the working set, drafts and the
+/// UI-state cache. Run once at start-up, before anything is loaded. A file
+/// already there is kept (never overwritten, so a conflict keeps what the new
+/// key has), and the old files are left in place for an older yaks.
+pub fn adopt_legacy_state(root: &Path) {
+    if let Some(old) = super::cache::legacy_root(root) {
+        copy_missing(&config_dir(&old), &config_dir(root));
+    }
+    super::cache::adopt_legacy(root);
+}
+
+/// Copy every file under `old` to the same relative place under `new`
+/// unless that file exists there.
+fn copy_missing(old: &Path, new: &Path) {
+    if old == new {
+        return;
+    }
+    let Ok(entries) = fs::read_dir(old) else {
+        return;
+    };
+    for e in entries.flatten() {
+        let (from, to) = (e.path(), new.join(e.file_name()));
+        if from.is_dir() {
+            copy_missing(&from, &to);
+        } else if !to.exists() {
+            let _ = fs::create_dir_all(new);
+            let _ = fs::copy(&from, &to);
+        }
+    }
+}
+
 pub fn views_path(root: &Path) -> PathBuf {
     config_dir(root).join("views.json")
 }
@@ -352,6 +384,36 @@ pub fn toggle_working_set(ids: &[String], tid: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// yaks-6ffd: the per-user state dir of the pre-move key is copied (drafts
+    /// included) to the new one; a file the new key has is never overwritten.
+    #[test]
+    fn legacy_state_is_copied_without_overwriting() {
+        let base = std::env::temp_dir().join(format!("yaks-vs-adopt-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let (old, new) = (base.join("old"), base.join("new"));
+        fs::create_dir_all(old.join("drafts")).unwrap();
+        fs::create_dir_all(&new).unwrap();
+        fs::write(old.join("views.json"), "old views").unwrap();
+        fs::write(old.join("working_set.json"), "old set").unwrap();
+        fs::write(old.join("drafts/d1.json"), "draft").unwrap();
+        fs::write(new.join("views.json"), "new views").unwrap();
+        copy_missing(&old, &new);
+        assert_eq!(
+            fs::read_to_string(new.join("views.json")).unwrap(),
+            "new views"
+        );
+        assert_eq!(
+            fs::read_to_string(new.join("working_set.json")).unwrap(),
+            "old set"
+        );
+        assert_eq!(
+            fs::read_to_string(new.join("drafts/d1.json")).unwrap(),
+            "draft"
+        );
+        assert!(old.join("drafts/d1.json").is_file(), "old files stay");
+        let _ = fs::remove_dir_all(&base);
+    }
 
     #[test]
     fn reconcile_appends_missing_builtins_and_keeps_custom() {

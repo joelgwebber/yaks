@@ -382,23 +382,18 @@ pub fn classify(changes: &[Change]) -> Classified {
     out
 }
 
-/// `path` made relative to the farm root: everything after the last `.yaks`
-/// component (a committed farm is always a `.yaks/` directory, as
-/// [`yak_id_of`] relies on), or `path` itself when it has none.
+/// `path` made relative to the farm root ([`store::farm_relative`]: the
+/// branch root, or after the last `.yaks` component).
 fn farm_rel(path: &str) -> String {
-    let parts: Vec<&str> = path.split('/').collect();
-    match parts.iter().rposition(|p| *p == ".yaks") {
-        Some(i) => parts[i + 1..].join("/"),
-        None => path.to_string(),
-    }
+    store::farm_relative(path).to_string()
 }
 
-/// A file under `.yaks/<herd>/yaks/<id>/`.
+/// A file under `<herd>/yaks/<id>/` (under `.yaks/` in the old layout).
 fn is_attachment(path: &str) -> bool {
     store::attachment_owner(&farm_rel(path)).is_some()
 }
 
-/// A yak's own file: `.yaks/<herd>/yaks/<id>.md`.
+/// A yak's own file: `<herd>/yaks/<id>.md` (under `.yaks/` in the old layout).
 fn is_flat_yak_file(path: &str) -> bool {
     let rel = farm_rel(path);
     store::path_owner(&rel).is_some() && store::attachment_owner(&rel).is_none()

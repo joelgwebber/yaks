@@ -269,6 +269,14 @@ fn ensure_farm(root: &Path, cfg: &store::InitConfig, args: &Args, rep: &mut Repo
     Ok(())
 }
 
+/// Whether the commit or branch `rev` holds a farm, in either layout: a
+/// `config.yaml` or `schema` at its root, or a `.yaks` directory.
+fn branch_holds_farm(top: &Path, rev: &str) -> bool {
+    [".yaks", "config.yaml", "schema"]
+        .iter()
+        .any(|f| git(top, &["cat-file", "-e", &format!("{rev}:{f}")]).is_ok())
+}
+
 /// This repository's own farm: on an orphan branch, in a worktree at
 /// [`store::farm_home`], found by discovery from every checkout of the
 /// repository. Reuses the branch when it exists (a worktree is added if none
@@ -288,7 +296,7 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
     // you are on is otherwise never a farm: a code branch has history.
     if git(top, &["symbolic-ref", "--short", "-q", "HEAD"]).is_ok_and(|b| b == branch)
         && ref_exists(top, &format!("refs/heads/{branch}"))
-        && git(top, &["cat-file", "-e", &format!("{branch}:.yaks")]).is_err()
+        && !branch_holds_farm(top, &branch)
     {
         bail!("`{branch}` is the branch you are on, not a farm; pick another with --branch");
     }
@@ -333,10 +341,10 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
             } else {
                 format!("origin/{branch}")
             };
-            if git(top, &["cat-file", "-e", &format!("{tip}:.yaks")]).is_err() {
+            if !branch_holds_farm(top, &tip) {
                 bail!(
-                    "the branch `{branch}` exists but holds no .yaks/, so it is not a farm; pick \
-                     another name with --branch"
+                    "the branch `{branch}` exists but holds no farm (no config.yaml, schema or \
+                     .yaks/), so it is not a farm; pick another name with --branch"
                 );
             }
             let made = branchfarm::bootstrap(top, &branch, |_| wt.clone())?;
@@ -377,7 +385,9 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
         rep.done(format!("config: set yaks.branch = {branch}"));
     }
 
-    let root = worktree.join(".yaks");
+    // A fresh farm is written to `.yaks/` (the migration yak flips this
+    // default); an existing branch keeps the layout it has.
+    let root = store::farm_root_in(&worktree).unwrap_or_else(|| worktree.join(".yaks"));
     ensure_farm(&root, &cfg, args, rep)?;
     // The farm's first commit: config, schema and .gitignore (a farm branch
     // commits per change, yaks-a838). The lock's snapshot sees them as

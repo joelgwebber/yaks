@@ -218,10 +218,7 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
         .other
         .iter()
         .filter_map(|c| {
-            let rel = c
-                .path
-                .split_once(".yaks/")
-                .map_or(c.path.as_str(), |(_, r)| r);
+            let rel = crate::store::farm_relative(&c.path);
             let is_doc = rel.starts_with("doks/")
                 || rel.starts_with("sources/")
                 || rel.starts_with("schemas/")
@@ -236,10 +233,7 @@ pub(crate) fn generate_message(changes: &[Change]) -> String {
         .other
         .iter()
         .filter_map(|c| {
-            let rel = c
-                .path
-                .split_once(".yaks/")
-                .map_or(c.path.as_str(), |(_, r)| r);
+            let rel = crate::store::farm_relative(&c.path);
             rel.starts_with("sessions/").then(|| rel.to_string())
         })
         .collect();
@@ -449,6 +443,23 @@ mod tests {
         assert_eq!(
             generate_message(&changes),
             "yaks: created yak-0001, yak-0002, yak-0003, yak-0004, yak-0005 and 3 more"
+        );
+    }
+
+    /// The farm at the branch root: the same message as under `.yaks/`.
+    #[test]
+    fn root_layout_paths_read_as_yaks_doks_and_sessions() {
+        let changes = vec![
+            Change::new('A', "yak/yaks/yak-0001.md".to_string(), false),
+            Change::new('M', "yak/yaks/yak-0002/b.txt".to_string(), false),
+            Change::new('M', "doks/howto/x.md".to_string(), false),
+            Change::new('A', "sessions/2026/11/n.md".to_string(), false),
+            Change::new('M', "config.yaml".to_string(), false),
+        ];
+        assert_eq!(
+            generate_message(&changes),
+            "yaks: created yak-0001; artifacts for yak-0002; doks doks/howto/x.md; \
+             sessions sessions/2026/11/n.md; farm config"
         );
     }
 

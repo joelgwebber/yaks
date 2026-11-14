@@ -224,9 +224,10 @@ impl Freshness {
     /// Read from the farm worktree at `root` for its `upstream` ref.
     /// Read-only; never fetches.
     pub fn read(root: &Path, upstream: &str) -> Freshness {
-        let Some(top) = root.parent() else {
+        let Some(fg) = crate::store::farm_git(root) else {
             return Freshness::default();
         };
+        let top = fg.top.as_path();
         let git = |args: &[&str]| -> Option<String> {
             let out = std::process::Command::new("git")
                 .arg("-C")

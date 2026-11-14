@@ -10,7 +10,7 @@
 
 use anyhow::{Context, Result, bail};
 use serde_json::{Value as Json, json};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 fn git(dir: &Path, args: &[&str]) -> Result<String> {
@@ -35,19 +35,15 @@ fn git(dir: &Path, args: &[&str]) -> Result<String> {
 
 /// The farm worktree (git top-level) and its branch; refuses a farm that is
 /// not on its own branch.
-fn farm_top(root: &Path) -> Result<(PathBuf, String)> {
-    let Some(branch) = crate::store::farm_branch(root) else {
+fn farm_top(root: &Path) -> Result<crate::store::FarmGit> {
+    let Some(fg) = crate::store::farm_git(root) else {
         bail!(
             "{} is not on its own farm branch, so it has no git weight to measure \
              (start one with `yaks init`)",
             root.display()
         );
     };
-    let top = root
-        .parent()
-        .context("the farm directory has no parent")?
-        .to_path_buf();
-    Ok((top, branch))
+    Ok(fg)
 }
 
 /// One kind of file in the farm's current tree.
@@ -86,12 +82,10 @@ pub struct Report {
     pub binary_in_git: u64,
 }
 
-/// The kind of a farm-tree path (relative to the farm branch's top, so
-/// starting `.yaks/`).
+/// The kind of a farm-tree path (relative to the farm branch's top: at the
+/// branch root, or under `.yaks/` in the old layout).
 fn kind_of(path: &str) -> &'static str {
-    let Some(rel) = path.strip_prefix(".yaks/") else {
-        return "other";
-    };
+    let rel = crate::store::farm_relative(path);
     let parts: Vec<&str> = rel.split('/').collect();
     if parts.first() == Some(&crate::sources::SOURCES_DIR) {
         return "sources";
@@ -128,7 +122,8 @@ const LARGEST: usize = 10;
 
 /// Measure the farm at `root` (a farm branch).
 pub fn report(root: &Path) -> Result<Report> {
-    let (top, branch) = farm_top(root)?;
+    let fg = farm_top(root)?;
+    let (top, branch) = (fg.top, fg.branch);
     let commits = git(&top, &["rev-list", "--count", &branch])?
         .trim()
         .parse()
@@ -350,7 +345,8 @@ pub enum LfsOutcome {
 /// keeps their plain blobs. The commit holds only those paths (anything else
 /// staged stays staged). Refuses when `git lfs` is not installed.
 pub fn enable_lfs(root: &Path) -> Result<LfsOutcome> {
-    let (top, _) = farm_top(root)?;
+    let fg = farm_top(root)?;
+    let top = fg.top.clone();
     if git(&top, &["lfs", "version"]).is_err() {
         bail!(
             "git-lfs is not installed (`git lfs version` failed): install it (https://git-lfs.com), \
@@ -393,7 +389,12 @@ pub fn enable_lfs(root: &Path) -> Result<LfsOutcome> {
     // Binaries already in the tree would otherwise show as modified (git now
     // cleans them through LFS): convert them in the same commit. History
     // keeps their old blobs.
-    let committed: Vec<String> = git(&top, &["ls-files", "--", ".yaks"])?
+    // The farm's own files: the `.yaks/` directory, or the whole branch.
+    let farm_spec = match fg.repo_path("") {
+        p if p.is_empty() => ".".to_string(),
+        p => p,
+    };
+    let committed: Vec<String> = git(&top, &["ls-files", "--", &farm_spec])?
         .lines()
         .filter(|p| is_binary(p))
         .map(String::from)
@@ -455,6 +456,17 @@ mod tests {
         );
         assert_eq!(kind_of(".yaks/config.yaml"), "other");
         assert_eq!(kind_of(".gitattributes"), "other");
+    }
+
+    #[test]
+    fn kinds_follow_the_root_layout_too() {
+        assert_eq!(kind_of("yak/yaks/yak-1.md"), "yaks");
+        assert_eq!(kind_of("yak/yaks/yak-1/shot.png"), "attachments");
+        assert_eq!(kind_of("doks/topics/x.md"), "doks");
+        assert_eq!(kind_of("yak/doks/x/shot.png"), "doks");
+        assert_eq!(kind_of("sources/2026-01-01-abcd1234/a.pdf"), "sources");
+        assert_eq!(kind_of("sessions/2026/11/n/shot.png"), "other");
+        assert_eq!(kind_of("config.yaml"), "other");
     }
 
     #[test]

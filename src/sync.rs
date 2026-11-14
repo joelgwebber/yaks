@@ -84,18 +84,14 @@ fn line(dir: &Path, args: &[&str]) -> Option<String> {
 /// The farm's worktree (the git top-level holding `root`) and its branch.
 /// Refuses a farm that is not on its own branch.
 fn farm_worktree(root: &Path) -> Result<(PathBuf, String)> {
-    let Some(branch) = store::farm_branch(root) else {
+    let Some(fg) = store::farm_git(root) else {
         bail!(
             "{} is not on its own farm branch, so there is nothing for `yaks sync` to do: \
              start a farm branch with `yaks init`",
             root.display()
         );
     };
-    let top = root
-        .parent()
-        .context("the farm has no parent directory")?
-        .to_path_buf();
-    Ok((top, branch))
+    Ok((fg.top, fg.branch))
 }
 
 /// The remote the farm branch syncs with: its configured `branch.<b>.remote`,
@@ -244,9 +240,12 @@ pub fn run(root: &Path, opts: &Opts) -> Result<Report> {
 
     // A dirty farm cannot be rebased; with --no-commit the uncommitted edits
     // stay put and the pull is skipped rather than fail half-way.
+    // The whole worktree top, which is the farm in either layout (`.yaks/` and
+    // `.gitattributes` before the layout move). Not `.agents/`: skills
+    // installed from inside the worktree are untracked, and no part of the farm.
     let dirty = !ok(
         &top,
-        &["status", "--porcelain", "--", ".yaks", ".gitattributes"],
+        &["status", "--porcelain", "--", ".", ":(exclude).agents"],
     )?
     .is_empty();
     let mut pulled = false;

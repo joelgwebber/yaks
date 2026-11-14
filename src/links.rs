@@ -678,13 +678,23 @@ pub fn read_at(base: &Path, path: &str, rev: Option<&str>) -> Result<String> {
     };
     let mut out = git(base, &["show", &format!("{rev}:./{path}")])?;
     // A pin from before schema 8 names a commit where the dok was still under
-    // `wiki/`: read it from there (only revs before the rename can miss).
-    if !out.status.success()
-        && let Some(old) = pre_doks_path(path)
-    {
-        let older = git(base, &["show", &format!("{rev}:./{old}")])?;
-        if older.status.success() {
-            out = older;
+    // `wiki/`: read it from there (only revs before the rename can miss). A pin
+    // from before the layout move names a commit where the whole farm was in
+    // `.yaks/` (`{rev}:.yaks/...` is from the repository top, not the cwd), so
+    // each spelling is tried there too.
+    let old_doks = pre_doks_path(path);
+    let mut tries = vec![format!("{rev}:.yaks/{path}")];
+    if let Some(old) = &old_doks {
+        tries.push(format!("{rev}:./{old}"));
+        tries.push(format!("{rev}:.yaks/{old}"));
+    }
+    for spec in tries {
+        if out.status.success() {
+            break;
+        }
+        let next = git(base, &["show", &spec])?;
+        if next.status.success() {
+            out = next;
         }
     }
     if !out.status.success() {
@@ -858,15 +868,15 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
 
 /// The checkout `code:` links (and legacy `../` ones) resolve in. For a farm
 /// reached through `YAKS_DIR` that is the farm's parent. A farm branch lives
-/// in a worktree holding only `.yaks/`, so there it is the code checkout: the
+/// in a worktree holding only the farm, so there it is the code checkout: the
 /// git top-level of `cwd` unless that is the farm worktree itself, else the
 /// repository's main checkout (yaks-6c4f). `None` when nothing fits.
 pub fn code_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBuf> {
-    let own = farm_root.parent().map(Path::to_path_buf);
-    if crate::store::farm_branch(farm_root).is_none() {
-        return own;
-    }
-    let farm_wt = own.as_deref().map(crate::gitrepo::canonical);
+    let Some(fg) = crate::store::farm_git(farm_root) else {
+        // A `YAKS_DIR` farm: the code checkout holds it as `.yaks/`.
+        return farm_root.parent().map(Path::to_path_buf);
+    };
+    let farm_wt = Some(crate::gitrepo::canonical(&fg.top));
     let top = |dir: &Path| {
         git(dir, &["rev-parse", "--show-toplevel"])
             .ok()
@@ -1182,6 +1192,119 @@ mod tests {
         );
         assert_eq!(pre_doks_path("sources/x.md"), None);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A pin into a commit from before the layout move (yaks-6ffd): the farm
+    /// was in `.yaks/` then, and the worktree top is now the farm root. The
+    /// `.yaks/` spelling is tried after the plain one, for both the current
+    /// and the `wiki/` names.
+    #[test]
+    fn a_pin_from_before_the_layout_move_reads_the_dot_yaks_path() {
+        let dir = std::env::temp_dir().join(format!("yaks-pin-layout-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(dir.join(".yaks/doks/topics")).unwrap();
+        std::fs::create_dir_all(dir.join(".yaks/wiki/topics")).unwrap();
+        let run = |args: &[&str]| {
+            let o = Command::new("git")
+                .arg("-C")
+                .arg(&dir)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                o.status.success(),
+                "{args:?}: {}",
+                String::from_utf8_lossy(&o.stderr)
+            );
+            String::from_utf8_lossy(&o.stdout).trim().to_string()
+        };
+        run(&["init", "-q"]);
+        run(&["config", "user.email", "t@t"]);
+        run(&["config", "user.name", "t"]);
+        std::fs::write(dir.join(".yaks/doks/topics/a.md"), "old layout\n").unwrap();
+        std::fs::write(dir.join(".yaks/wiki/topics/w.md"), "old layout wiki\n").unwrap();
+        run(&["add", "."]);
+        run(&["commit", "-qm", "old"]);
+        let old = run(&["rev-parse", "HEAD"]);
+        run(&["mv", ".yaks/doks", "doks"]);
+        std::fs::write(dir.join("doks/topics/a.md"), "root layout\n").unwrap();
+        run(&["commit", "-qam", "move"]);
+        let new = run(&["rev-parse", "HEAD"]);
+
+        assert_eq!(
+            read_at(&dir, "doks/topics/a.md", Some(&old)).unwrap(),
+            "old layout\n"
+        );
+        assert_eq!(
+            read_at(&dir, "doks/topics/a.md", Some(&new)).unwrap(),
+            "root layout\n"
+        );
+        // Both moves at once: a `doks/` link at a commit with `.yaks/wiki/`.
+        assert_eq!(
+            read_at(&dir, "doks/topics/w.md", Some(&old)).unwrap(),
+            "old layout wiki\n"
+        );
+        let err = read_at(&dir, "doks/topics/none.md", Some(&old))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("none.md"), "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// `code:` links resolve in the code checkout for a farm branch in either
+    /// layout, never in the farm worktree itself (yaks-6ffd).
+    #[test]
+    fn code_base_is_the_code_checkout_for_both_layouts() {
+        let base = std::env::temp_dir().join(format!("yaks-codebase-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let code = base.join("code");
+        std::fs::create_dir_all(&code).unwrap();
+        let run = |dir: &Path, args: &[&str]| {
+            let o = Command::new("git")
+                .arg("-C")
+                .arg(dir)
+                .args(["-c", "user.email=t@t", "-c", "user.name=t"])
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(o.status.success(), "{args:?}: {o:?}");
+        };
+        run(&code, &["init", "-q", "-b", "main"]);
+        std::fs::write(code.join("a.txt"), "a\n").unwrap();
+        run(&code, &["add", "."]);
+        run(&code, &["commit", "-qm", "code"]);
+        let code = code.canonicalize().unwrap();
+        for (name, nested) in [("root", false), ("dotyaks", true)] {
+            let wt = base.join(format!("farm-{name}"));
+            run(
+                &code,
+                &[
+                    "worktree",
+                    "add",
+                    "-q",
+                    "--orphan",
+                    "-b",
+                    "yaks",
+                    wt.to_str().unwrap(),
+                ],
+            );
+            let farm = if nested { wt.join(".yaks") } else { wt.clone() };
+            std::fs::create_dir_all(&farm).unwrap();
+            std::fs::write(farm.join("config.yaml"), "herd: y\n").unwrap();
+            run(&wt, &["add", "."]);
+            run(&wt, &["commit", "-qm", "farm"]);
+            let farm = farm.canonicalize().unwrap();
+            // From the code checkout: itself.
+            assert_eq!(code_base(&farm, Some(&code)), Some(code.clone()), "{name}");
+            // From inside the farm worktree: the repository's main checkout.
+            assert_eq!(code_base(&farm, Some(&farm)), Some(code.clone()), "{name}");
+            run(
+                &code,
+                &["worktree", "remove", "--force", wt.to_str().unwrap()],
+            );
+            run(&code, &["branch", "-q", "-D", "yaks"]);
+        }
+        let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]

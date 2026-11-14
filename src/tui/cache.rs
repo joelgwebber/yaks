@@ -24,8 +24,22 @@ pub struct UiState {
     pub family: HashMap<String, FamilyScope>,
 }
 
+/// The farm root the per-user state was keyed by before the farm moved to the
+/// branch root (yaks-6ffd): `<root>/.yaks`. `None` when `root` is itself a
+/// `.yaks/` directory, whose key never changed.
+pub(super) fn legacy_root(root: &Path) -> Option<PathBuf> {
+    if root.file_name().is_some_and(|n| n == ".yaks") {
+        return None;
+    }
+    Some(
+        fs::canonicalize(root)
+            .unwrap_or_else(|_| root.to_path_buf())
+            .join(".yaks"),
+    )
+}
+
 /// FNV-1a 64-bit over the absolute root path → 12 hex chars.
-fn slug(root: &Path) -> String {
+pub(super) fn slug(root: &Path) -> String {
     let abs = fs::canonicalize(root).unwrap_or_else(|_| root.to_path_buf());
     let mut h: u64 = 0xcbf2_9ce4_8422_2325;
     for b in abs.to_string_lossy().bytes() {
@@ -84,6 +98,25 @@ pub fn ui_state_path(root: &Path) -> PathBuf {
 
 pub fn load(root: &Path) -> UiState {
     load_from(&ui_state_path(root))
+}
+
+/// Copy the state kept under the pre-move key (`<root>/.yaks`) to this root's
+/// key, when this root has none yet. Never overwrites, never deletes: the
+/// old file stays for an older yaks still reading it.
+pub fn adopt_legacy(root: &Path) {
+    if let Some(old) = legacy_root(root) {
+        adopt_file(&ui_state_path(&old), &ui_state_path(root));
+    }
+}
+
+fn adopt_file(old: &Path, new: &Path) {
+    if old == new || new.exists() || !old.is_file() {
+        return;
+    }
+    if let Some(dir) = new.parent() {
+        let _ = fs::create_dir_all(dir);
+    }
+    let _ = fs::copy(old, new);
 }
 
 pub fn save(root: &Path, state: &UiState) {
@@ -188,5 +221,42 @@ mod tests {
         let b = slug(Path::new("/tmp/some/farm"));
         assert_eq!(a, b);
         assert_eq!(a.len(), 12);
+    }
+
+    /// The farm root changed from `<wt>/.yaks` to `<wt>` (yaks-6ffd): state kept
+    /// under the old key is copied to the new, never overwriting what the new
+    /// key already has, and the old files stay.
+    #[test]
+    fn state_under_the_pre_move_key_is_adopted_once() {
+        let base = std::env::temp_dir().join(format!("yaks-adopt-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&base);
+        let wt = base.join("farm");
+        fs::create_dir_all(wt.join(".yaks")).unwrap();
+        let new_root = fs::canonicalize(&wt).unwrap();
+        assert_eq!(
+            legacy_root(&new_root),
+            Some(new_root.join(".yaks")),
+            "a branch-root farm's old key is its `.yaks/`"
+        );
+        assert_eq!(legacy_root(&new_root.join(".yaks")), None);
+        // A cache file and a view dir for the old key.
+        let old_cache = base.join("cache-old.json");
+        let new_cache = base.join("cache-new.json");
+        let mut st = UiState::default();
+        st.collapsed.insert("yak-1".to_string());
+        save_to(&old_cache, &st);
+        adopt_file(&old_cache, &new_cache);
+        assert_eq!(load_from(&new_cache).collapsed, st.collapsed);
+        // An existing new file wins.
+        let mut other = UiState::default();
+        other.collapsed.insert("yak-2".to_string());
+        save_to(&new_cache, &other);
+        adopt_file(&old_cache, &new_cache);
+        assert_eq!(load_from(&new_cache).collapsed, other.collapsed);
+        assert!(
+            old_cache.is_file(),
+            "the old file is left for an older yaks"
+        );
+        let _ = fs::remove_dir_all(&base);
     }
 }

@@ -160,6 +160,23 @@ impl Say<'_> {
     }
 }
 
+/// A repository path that is a yak's file or attachment: `<herd>/yaks/<id>.md`
+/// or `<herd>/yaks/<id>/...`, at the top of the tree (the farm branch's root
+/// layout) or under `.yaks/` (its old layout).
+fn is_yak_path(path: &str) -> bool {
+    crate::store::path_owner(crate::store::farm_relative(path)).is_some()
+}
+
+/// Whether a tree listing (`git ls-tree -r --name-only`) holds a farm: a path
+/// under `.yaks/`, a yak file, or the root layout's `config.yaml` and `schema`
+/// together (either alone is an ordinary code-repo file).
+fn tracks_farm(names: &str) -> bool {
+    names
+        .lines()
+        .any(|p| p.starts_with(".yaks/") || is_yak_path(p))
+        || (names.lines().any(|p| p == "config.yaml") && names.lines().any(|p| p == "schema"))
+}
+
 /// git in one checkout. The `GIT_*` location variables are removed so a hook
 /// or an outer git cannot point it somewhere else.
 struct Git {
@@ -604,20 +621,21 @@ pub fn run(dir: &Path, opts: &Opts, out: &mut dyn Write) -> R<Outcome> {
         .collect();
 
     // yaks-7bfd: a worker never stages yak files under a branch farm (the farm
-    // lives on its own branch, so HEAD tracks no `.yaks/`): they would land in code.
-    let yak_files: Vec<&String> = worker_paths
-        .iter()
-        .filter(|p| p.starts_with(".yaks/"))
-        .collect();
+    // lives on its own branch, so HEAD tracks none): they would land in code.
+    // A yak file is `<herd>/yaks/<id>.md` (or an attachment), at the top of the
+    // tree or under `.yaks/`. HEAD "tracks a farm" ([`tracks_farm`]) when it
+    // holds any such file or other farm file, so a repo that really keeps a
+    // farm (or yak-shaped fixtures) is left alone.
+    let yak_files: Vec<&String> = worker_paths.iter().filter(|p| is_yak_path(p)).collect();
     if !yak_files.is_empty()
-        && g.text(&["ls-tree", "-r", "--name-only", "HEAD", "--", ".yaks"])
-            .is_some_and(|t| t.is_empty())
+        && g.text(&["ls-tree", "-r", "--name-only", "HEAD"])
+            .is_some_and(|t| !tracks_farm(&t))
     {
         let list: Vec<String> = yak_files.iter().map(|p| format!("  {p}")).collect();
         return die(
             EXIT_YAK_FILES,
             format!(
-                "the worker commit touches yak files, but HEAD tracks no `.yaks/` (the farm lives on its own branch); a worker must never stage them under a branch farm:\n{}",
+                "the worker commit touches yak files, but HEAD tracks none (the farm lives on its own branch); a worker must never stage them under a branch farm:\n{}",
                 list.join("\n")
             ),
         );
@@ -1431,6 +1449,52 @@ mod tests {
         // A dry run refuses too.
         let (res, _) = land(&r.dir, &r.w, true, false);
         assert_eq!(code(&res), EXIT_YAK_FILES);
+    }
+
+    /// The farm branch's root layout has no `.yaks/`: a worker still must not
+    /// stage `<herd>/yaks/<id>.md` into code (yaks-6ffd; the guard used to key
+    /// on `.yaks/`, so it could never fire).
+    #[test]
+    fn a_worker_commit_staging_a_root_layout_yak_file_is_refused() {
+        let r = setup_with(
+            "rootyakfiles",
+            &[
+                ("yaks/yaks/yaks-1.md", "x\n"),
+                ("yaks/yaks/yaks-1/shot.txt", "x\n"),
+            ],
+        );
+        let before = git(&r.dir, &["rev-parse", "HEAD"]);
+        let (res, out) = land(&r.dir, &r.w, false, false);
+        assert_eq!(code(&res), EXIT_YAK_FILES, "{res:?}\n{out}");
+        assert!(msg(&res).contains("yaks/yaks/yaks-1.md"), "{res:?}");
+        assert_eq!(git(&r.dir, &["rev-parse", "HEAD"]), before);
+        let (res, _) = land(&r.dir, &r.w, true, false);
+        assert_eq!(code(&res), EXIT_YAK_FILES, "a dry run refuses too");
+    }
+
+    #[test]
+    fn yak_files_land_when_head_tracks_a_root_layout_farm() {
+        // HEAD is itself a farm (config.yaml + schema at the root): not a
+        // branch farm's code checkout, so yak files are fine.
+        let d = temp("rootyakfiles-tracked");
+        git(&d, &["init", "-q", "-b", "main"]);
+        git(&d, &["config", "user.name", "t"]);
+        git(&d, &["config", "user.email", "t@t"]);
+        write(&d, "config.yaml", "herd: yak\n");
+        write(&d, "schema", "8\n");
+        write(&d, "a.txt", "a\n");
+        git(&d, &["add", "-A"]);
+        git(&d, &["commit", "-q", "-m", "base"]);
+        git(&d, &["checkout", "-q", "-b", "worker"]);
+        write(&d, "yak/yaks/yak-1.md", "x\n");
+        git(&d, &["add", "-A"]);
+        git(&d, &["commit", "-q", "-m", "worker"]);
+        let w = git(&d, &["rev-parse", "HEAD"]);
+        git(&d, &["checkout", "-q", "main"]);
+        let (res, out) = land(&d, &w, false, false);
+        assert_eq!(code(&res), 0, "{res:?}\n{out}");
+        assert!(d.join("yak/yaks/yak-1.md").is_file());
+        let _ = std::fs::remove_dir_all(&d);
     }
 
     #[test]
