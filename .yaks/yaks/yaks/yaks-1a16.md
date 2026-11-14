@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-11T20:23:06Z'
-updated: '2026-11-14T13:25:27Z'
+updated: '2026-11-14T13:25:55Z'
 tags:
 - tui
 ---
@@ -46,3 +46,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEdQZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-14T13:25:55Z [linkplan-lead]
+kind: landed
+commit: dc8aaa9262eabb88682bb15854bbf0cc9ea55171
+source: c4a04a95d6384105c8474fcc15405135fa8fa146
+branch: main
+---
+
+landed: dc8aaa92 yaks-bf1b, yaks-1a16: tag completion in the L editor and the filter drawer; a pick leaves the cursor past a separator so Tab moves on
