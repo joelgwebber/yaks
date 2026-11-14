@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T22:59:43Z'
+updated: '2026-11-14T23:36:07Z'
 depends_on:
 - yaks-f505
 tags:
@@ -89,3 +89,20 @@ Start: Sat Nov 14 22:59:38 UTC 2026 (viewer-1).
 
 - farm path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-c3d0.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/5qj7ed84tg41/yaks
+
+---
+▸ 2026-11-14T23:36:07Z [viewer-1]
+
+Checkpoint (viewer-1), `date -u` ~23:40. Honest state: design read, first code in; the viewer and menu are NOT written yet.
+
+Done in the tree (uncommitted):
+
+- `locate.rs`: `Space::link`, `content`, `local_path` are now `pub` with their `#[allow(dead_code)]` removed; new `Space::code_text` (whole file text for the viewer, with the missing-commit message), `Space::rel_path`, and `locate::missing_commit` (`git rev-parse --verify <rev>^{commit}`; "commit abc1234 is not in this checkout; fetch it or open on the host"). `pinned_file` now checks `missing_commit` first, so `p`/`e`/`o` degrade the same way.
+- `follow.rs`: `read_farm_doc` and `read_doc` use `locate::farm_file_in(&root, path)` (the bare-id source request from the coordinator), plus test `a_bare_source_id_link_opens_the_slugged_directory`.
+- Fast-forwarded my checkout to d3965452 (needed for `farm_file_in`); will rebase on current main before finishing.
+
+Plan (next):
+
+- `DocKind::Code { lang }` viewer: rows coloured with `syntax::Lang` (new `Lang::from_path`), landing on `#L`; `AttachView::code` constructor.
+- `Overlay::TakeOut` modal menu (e/o/p/r/g), opened by one new `Cmd::TakeOut` (`O`) in Viewer, Detail pane (yak), List Doc rows and List Yak rows; replaces `LinkOpenExternal`/`FileOpenExternal` on `O` in the text viewer and the pane. Image viewer keeps `O` = open externally (it is the only thing it can do, and it already shares the name `file.open_external`).
+- `EXTRAS` rows for the menu keys, docs/tui.md, hints, tests, frames.
