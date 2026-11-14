@@ -1,11 +1,11 @@
 ---
 id: yaks-b2ed
 title: Autocompletion UI infrastructure
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-08-26T13:27:01Z'
-updated: '2026-11-11T20:35:42Z'
+updated: '2026-11-14T18:03:34Z'
 tags:
 - tui
 ---
@@ -34,3 +34,13 @@ Partly done, not fully: yaks-5656 shipped Tab-triggered yak-id completion inside
 ▸ 2026-10-03T20:31:56Z [Joel Webber]
 
 (a) SGTM
+
+---
+▸ 2026-11-14T18:03:34Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
