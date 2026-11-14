@@ -5,8 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T16:24:07Z'
-updated: '2026-11-14T11:19:34Z'
+updated: '2026-11-14T11:21:18Z'
 parent: yaks-1c89
+depends_on:
+- yaks-f505
 tags:
 - cli
 - doks
