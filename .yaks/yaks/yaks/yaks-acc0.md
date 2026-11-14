@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T22:38:00Z'
+updated: '2026-11-14T22:38:06Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -43,3 +43,8 @@ A rehearsal on this farm: `yaks doctor` clean before and after; the census's "re
 ▸ 2026-11-14T11:21:18Z [linkplan-lead]
 
 Dependencies: layout [yaks-6ffd](yaks-6ffd), resolver [yaks-f505](yaks-f505), note format [yaks-6c65](yaks-6c65). Docs follow in [yaks-df4e](yaks-df4e).
+
+---
+▸ 2026-11-14T22:38:06Z [linkplan-lead]
+
+New dependency: [yaks-7729](yaks-7729) (source directory slugs, decided on [yaks-49c5](yaks-49c5)). The migration also renames each `sources/<date>-<sha8>/` to the slugged name with `git mv` and rewrites links and `sources:` entries to it, using `sources::plan_slugs` and the link-rewrite function that yak ships. Source files are snapshots: link text inside a source's own `extracted.md` is never rewritten.
