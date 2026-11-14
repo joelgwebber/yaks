@@ -82,3 +82,8 @@ Done so far:
 Next: TUI per-user state copy, then tests for both layouts, then the scratch-repo run.
 
 [layout1-evidence](yaks-6ffd/layout1-evidence.txt "Scratch repo, farm at the branch root: create/shave/note/shorn autocommits, status, commit, sync --no-push, weight, land guard exit 7")
+
+---
+▸ 2026-11-14T12:17:54Z [layout-1]
+
+Decision: layouts are told apart in one place, `store::farm_root_in(worktree)`: a `config.yaml` at the worktree top means the root layout and wins over a `.yaks/` beside it (the migration's stub `.yaks/schema`); else a `.yaks/` directory means the old layout; else a bare top-level `schema`. Rejected: probing `schema` first (the stub would then make a migrated farm read as old) and looking at `git ls-tree` (slower, needs a commit).
