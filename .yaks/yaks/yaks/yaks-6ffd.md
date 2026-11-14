@@ -97,3 +97,8 @@ Decision: path-only classifiers (`preflight::yak_id_of`, `changes::farm_rel`, `c
 ▸ 2026-11-14T12:17:56Z [layout-1]
 
 Decision: land guard rule. A worker commit is refused (exit 7) when it touches a path that `path_owner` says is a yak file or attachment (at the top or under `.yaks/`) AND HEAD tracks no farm. HEAD tracks a farm when any tracked path is under `.yaks/` or is a yak file, or it has both `config.yaml` and `schema` at the root. Rejected: refusing on the path alone (a repo that legitimately keeps a farm or yak fixtures would never land), and only checking `.yaks/` (what could never fire after the move). Known residual: a code repo with a tracked `*/yaks/*.md` of its own is not guarded.
+
+---
+▸ 2026-11-14T12:17:56Z [layout-1]
+
+Decision: `sync` dirty check is `git status --porcelain -- . ':(exclude).agents'` from the top. The old `-- .yaks .gitattributes` matched nothing in the root layout (the farm then read clean and a rebase was attempted on a dirty tree). `.` alone broke two sync tests: `yaks init` run from inside the farm worktree installs untracked `.agents/skills`, which are no part of the farm; excluded. Rejected: listing farm top-level names (a new herd dir would be missed).
