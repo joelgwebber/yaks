@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T11:32:52Z'
+updated: '2026-11-14T12:03:01Z'
 parent: yaks-1151
 tags:
 - git
@@ -64,3 +64,19 @@ Start: layout-1. date -u: Sat Nov 14 11:32:45 UTC 2026.
 - checkout top-level: /Users/joel/src/yaks/.delta/worktrees/rknhx6hbsrkc/yaks (main e4d0ff5a)
 
 Read the brief, the claim note and the audit (W1-W3, W9). Starting with store::farm_git / FarmGit.
+
+---
+▸ 2026-11-14T12:03:01Z [layout-1]
+
+Milestone: core compiles clean (`cargo build`, no warnings). Not yet tested.
+
+Done so far:
+
+- `store::farm_root_in(wt)`: the one place that tells the layouts apart.
+- `FarmGit.prefix` + `FarmGit::repo_path`; `farm_git` runs git in the root and accepts `top == root` (prefix `""`) or `top == root.parent()` (prefix `.yaks/`).
+- `store::init` (`config.yaml`/`schema` markers instead of `root.exists()`), `migration_refusal` (`{upstream}:schema` then `:.yaks/schema`), `init.rs` (`branch_holds_farm`, root via `farm_root_in`, still creates `.yaks/` when fresh), `shared_farm_worktree`, `farm_branch_worktree`.
+- `store::farm_relative` shared by `preflight::yak_id_of`, `changes::farm_rel`, `commit::generate_message`, `weight::kind_of`, and the land guard (`land::is_yak_path`).
+- `root.parent()` users now go through `farm_git().top`: `status::sync_state`, `sync::farm_worktree` (+ dirty pathspec `-- .`), `weight::farm_top`, `sheds::Freshness::read`, `tui/farmsync.rs` x2, `farm::code_repo`, `links::code_base`.
+- `links::read_at`: `{rev}:.yaks/{path}` fallback (and `.yaks/wiki/...`).
+
+Next: TUI per-user state copy, then tests for both layouts, then the scratch-repo run.
