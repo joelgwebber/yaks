@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T05:31:38Z'
+updated: '2026-11-15T06:12:47Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -146,3 +146,22 @@ Bumping `SCHEMA` is the last change I make, after everything else is tested, bec
 Decision (scope change, coordinator, within what Joel allowed on yaks-6cf2): **the migration does not rewrite `code:` links.** Pinned `code:` to a host URL needs yaks to parse its own host's URLs back into code links, which it cannot: `links::parse` is pure and does not know the remote, so a rewritten link would open in the browser instead of the new viewer, and `yaks check` would stop seeing it. Rewriting first would regress what just landed. Filed as its own yak under yaks-1151 (unify the resolution, then rewrite); until then `code:` and the legacy `../` forms stay as written, plain text on GitHub exactly as today. Everything else in the migration is unaffected: yak links, attachment links, `/doks/sessions|sources/` paths, sources, notes, layout.
 
 This is a reduction of decision 4, so Joel: say so on yaks-1151 if you would rather have the URLs now and the parse-back in the same change; I would not, it makes the migration depend on a resolver change it does not otherwise need.
+
+---
+▸ 2026-11-15T06:12:47Z [linkplan-lead]
+
+Hand rehearsal of the layout move, on a `git clone --no-hardlinks` of this farm's branch in `/tmp` (2,246 commits, 87 MB `.git`, 1,292 files under `.yaks/`). No code involved: `git mv .yaks/* .` and `git mv .yaks/.gitignore .gitignore`, one commit. What git did:
+
+- **The move is clean.** The index showed all 1,292 paths as `R` (rename). `git show -M --name-status HEAD` reported 1,292 `R` and nothing else, both at the default rename limit and with `-c diff.renameLimit=100`. The audit's worry that 1,240 renames would exceed the rename limit does not bite: the limit applies to guessing renames between *changed* files, and these are all exact (100%) matches, which git pairs by blob id first. No `diff.renameLimit` setting is needed.
+- **History follows.** `git log --follow` on a yak across the move gave the same 20 commits as the plain log at the old path. For a dok it gave the plain log's commits plus the one that created it under its old `wiki/` name (`ff70dba1`), and it dropped two commits the plain log shows (`0f67b22c`, `95fba654`: a multi-file commit and its undo, where `--follow` picked a different rename source). So `--follow` is not a strict superset, it is git's best guess; the plain log at the old path stays complete, and nothing was lost.
+
+A late writer (old layout, never synced after the migration) adds one new yak, one new dok directory and edits an existing yak, then meets the migrated branch:
+
+| How it meets it | Edit to an existing yak | New yak in a renamed directory | New file in a new directory |
+|---|---|---|---|
+| `git rebase migrated` (what `yaks sync` does today) | follows the rename | **conflict** (`UA`) | left under `.yaks/` |
+| `git merge migrated` with `merge.directoryRenames=true` | follows the rename | follows the rename, lands in `yaks/yaks/` | left under `.yaks/doks/newdir/` |
+
+So the late-writer rule is: after the migration, a writer on an older yaks is refused by the stub marker anyway; one who already has uncommitted or unpushed work should `yaks sync` and push *before* the migration, which is what the refusal below enforces. A stray under `.yaks/` after a merge is what the strays step in a re-run moves into place. Whether `yaks sync`'s pull should merge rather than rebase in that one situation is a separate decision I am not making here.
+
+Consequence for the code: the layout stage can be a plain `git mv` of the tracked paths plus the untracked ones, in one commit; no rename-limit configuration, no history rewrite.
