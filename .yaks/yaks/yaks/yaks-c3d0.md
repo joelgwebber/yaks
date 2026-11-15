@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:18:31Z'
+updated: '2026-11-15T00:19:10Z'
 depends_on:
 - yaks-f505
 tags:
@@ -163,3 +163,13 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGNghZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+---
+▸ 2026-11-15T00:19:10Z [linkplan-lead]
+kind: landed
+commit: 2e2185f1f624d8fe255bc1e7e95257028ceddfd9
+source: 6f3a9b85dcfe78aad83b5175de3d07dcbf5887b5
+branch: main
+---
+
+landed: 2e2185f1 yaks-c3d0: code: links open in a read-only coloured viewer; O is the take-it-out menu (editor, system, paths, host link) everywhere; a missing commit degrades to one line
