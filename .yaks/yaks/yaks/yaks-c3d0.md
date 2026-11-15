@@ -1,11 +1,11 @@
 ---
 id: yaks-c3d0
 title: Display links to source files directly in the TUI
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:18:30Z'
+updated: '2026-11-15T00:18:31Z'
 depends_on:
 - yaks-f505
 tags:
@@ -153,3 +153,13 @@ Summary. Enter on `code:` opens the file in the read-only viewer (line gutter, c
 Evidence: unit tests in `tui/takeout.rs` (9: viewer + colours + landing, plain text, pinned, missing commit, menus on 4 surfaces, p/r/o/e, g with no remote / unknown domain / GitHub / pin / ghost, read-only E, o/i) and `syntax::tests::a_file_is_coloured_by_its_extension`. Real binary (`yaks tui --headless`, scratch checkout with a GitHub origin): (a), (b), (c) frames attached; (d) `r` = `copied src/links.rs`, `p` = `copied /tmp/viewer1-demo/src/links.rs` for the range link and the unchanged pin, `g` = `https://github.com/joelgwebber/yaks/blob/main/src/links.rs#L100-L120`, pin `g` = `.../blob/da1bdca71c070a...47de6b2/src/links.rs#L100`; ghost `p`/`e`/`o` = `commit deadbee is not in this checkout; fetch it or open on the host`, ghost `g` = `.../blob/deadbeefdeadbeef/src/links.rs#L100 (deadbee is not on origin as last fetched: ...)`. PNGs of the viewer, menu and missing-commit frames attached and looked at.
 
 Not done / assumed: the menu's `e` was verified to queue the editor command (and with none set, the message), not by running a real editor; `o` launched the real opener once in the demo. The clipboard is stubbed under `cargo test`; in the demo the real `arboard` was used (`copied ...` shown). `r` on a pane link in a yak (not a file) says "this link names no file" only for non-file places; a Yak place gives the yak's file path. Rebased onto 7585597e with no conflicts; gate re-run after: 1439 passed, 0 failed, `cargo fmt --check` clean.
+
+---
+▸ 2026-11-15T00:18:31Z [viewer-1]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGNghZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
