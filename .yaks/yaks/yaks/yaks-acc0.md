@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T05:01:02Z'
+updated: '2026-11-15T05:13:33Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -81,3 +81,33 @@ thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: hairy -> shaving
+
+---
+▸ 2026-11-15T05:13:33Z [linkplan-lead]
+
+Design for the build, from reading `migrate.rs`, `store::lock`, `autocommit`, `commit.rs`, `mergedriver::ensure_registered` and `weight::enable_lfs` (no code yet).
+
+## Shape
+
+`yaks migrate` today is `migrate::run(root, dry_run)` over a farm *root* (a directory), writing files in place and the `schema` marker last, "never touches git". Schema 9 moves the root itself, so it is a second, git-aware stage after the in-place one:
+
+1. **Content stage** (new fixups in `FIXUPS`, run in place on the old root, dry-run capable): yak ids and yak notes to `/<herd>/yaks/<id>.md`, cross-yak attachments to `/<herd>/yaks/<id>/<file>`, `/doks/sessions|sources/...` to the real path, pinned `code:` and legacy `../` forms to host URLs when the code repo's remote is a recognised host, `sources:` and `part_of:` references and links to the slugged source directory, notes to the new shape (`store::convert_notes`). Never inside a code fence or a source's own text.
+2. **Source rename** (`sources::plan_slugs`, with `duplicate_ids` checked first): the directory renames, applied before the layout move so one `git mv` pass sees the final names.
+3. **Layout stage** (git): `git mv .yaks/* .` on the farm branch's worktree, `.gitattributes` and LFS rules rewritten from `.yaks/**` to `**`, `.gitignore` carried over, a static `README.md`, a stub `.yaks/schema` holding `9`, then the `schema` marker. One migration commit holding all of it, made by `migrate` itself the way `yaks commit` does (`--only` the farm paths), not by the per-change autocommit, whose snapshot is keyed to a root that moves under it.
+
+## Why git-aware, and the refusals
+
+- Only a farm that is a farm branch (`store::farm_git`) is moved; a `YAKS_DIR` farm outside git keeps `.yaks/` (nothing to host) and gets the content stage only. Say so in the report.
+- Refuse unless the farm worktree is clean and in sync with its upstream (the audit's "everyone pushes first": a stranded `.yaks/**` file from a late writer is the failure to avoid). `yaks migrate --dry-run` reports the same refusals without writing.
+- A concurrent writer on an older yaks is refused after the migration by the stub marker (`newer schema, upgrade`); a late `.yaks/**` file from one is moved into place by a re-run (the strays step), not lost.
+
+## Decisions I am taking, each reversible in review
+
+- **Dry run is the report.** It lists, per farm: yaks to move, links rewritten by form, unresolvable links, sources renamed (and any slug collision), notes converted, bodies left in the old shape (the joel farm's 50 hand-headed yaks: a note header that is not a timestamp), and the layout refusals. Same numbers as the apply, so the rehearsal's before/after is the real thing.
+- **Unresolvable links are reported, never guessed.** A link the old rules could not resolve stays as written.
+- **Idempotent.** A re-run on a schema-9 farm is a no-op; a re-run after an interrupted content stage finishes (the marker is written last, as before).
+- **Rehearse on clones only.** `git clone --no-hardlinks` the farm branch of this farm, joel, hearth and schism into `/tmp`, run it there, never on a live farm.
+
+## Evidence I will gather before asking Joel to run it anywhere
+
+Per rehearsal clone: `yaks doctor` clean before and after; the census share of links resolving on GitHub before and after (`linkcensus.py`); `git log --follow` over a sample of moved yaks and `git show -M --stat` for the rename detection; the stub marker refusing an older binary (the installed 0.0.36 build is the "older" one once SCHEMA is 9); one real file viewed on GitHub's rendering, which needs a branch pushed somewhere Joel names (not done without his say-so).
