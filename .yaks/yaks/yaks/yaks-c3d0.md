@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:15:52Z'
+updated: '2026-11-15T00:15:53Z'
 depends_on:
 - yaks-f505
 tags:
@@ -118,3 +118,5 @@ Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin y
 ![tui-code-viewer](yaks-c3d0/tui-code-viewer.png "(a) Enter on [x](code:src/lib.rs#L4-L9): read-only viewer, line gutter, Rust colours, named lines in the accent gutter")
 
 ![tui-code-missing](yaks-c3d0/tui-code-missing.png "(c) pin to a commit not in the checkout: one line, no blank pane")
+
+![tui-take-out](yaks-c3d0/tui-take-out.png "(d) O: the take-out menu over the viewer")
