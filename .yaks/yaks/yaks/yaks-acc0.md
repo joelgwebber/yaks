@@ -1,11 +1,11 @@
 ---
 id: yaks-acc0
 title: 'Schema 9 migration: new layout, canonical links, note format, README, stub marker'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T08:24:27Z'
+updated: '2026-11-15T08:45:36Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -237,3 +237,13 @@ Gate: 1451 tests, fmt clean.
 ▸ 2026-11-15T08:24:27Z [linkplan-lead]
 
 link probe
+
+---
+▸ 2026-11-15T08:45:36Z [linkplan-lead]
+kind: move
+from: shaving
+to: shorn
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: shaving -> shorn
