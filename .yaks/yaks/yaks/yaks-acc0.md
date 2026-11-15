@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T05:13:33Z'
+updated: '2026-11-15T05:17:45Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -111,3 +111,17 @@ Design for the build, from reading `migrate.rs`, `store::lock`, `autocommit`, `c
 ## Evidence I will gather before asking Joel to run it anywhere
 
 Per rehearsal clone: `yaks doctor` clean before and after; the census share of links resolving on GitHub before and after (`linkcensus.py`); `git log --follow` over a sample of moved yaks and `git show -M --stat` for the rename detection; the stub marker refusing an older binary (the installed 0.0.36 build is the "older" one once SCHEMA is 9); one real file viewed on GitHub's rendering, which needs a branch pushed somewhere Joel names (not done without his say-so).
+
+---
+▸ 2026-11-15T05:17:45Z [linkplan-lead]
+
+Finding before any code (checked in a scratch farm with my own build): **yaks does not read its own canonical yak link.** With `[t](/wid/yaks/wid-74a1.md)` in a yak body, `yaks refs wid-74a1 --incoming` shows no reference (the bare `wid-74a1` form is found), `yaks doctor` reports `![x](/wid/yaks/wid-74a1/shot.png)` as a broken link, and a slug note anchor on that path is not resolved. `links::parse` turns a path starting with `/` into a plain farm file and only recognises a bare id as a yak. If the migration rewrote 453 links to the canonical form first, every farm would lose its backrefs and `doctor` would flag them.
+
+So the order is fixed: (1) teach `links::parse` that `/<herd>/yaks/<id>.md[#note]` is a yak and `/<herd>/yaks/<id>/<file>` is that yak's attachment, with tests; (2) only then the rewrite.
+
+Also settled while reading the code, for the record:
+
+- **Do not run `cargo install` once `store::SCHEMA` is 9.** The installed `yaks` would refuse every schema-8 farm on this machine, Joel's included, until each is migrated. The installed build stays the pre-bump one until Joel picks the moment.
+- **Frontmatter references to sources** (`sources:` lists, `part_of:`, `superseded_by:`) are not rewritten: they are not clickable on GitHub and resolve through the `<date>-<sha8>` prefix lookup that landed with yaks-7729.
+- **Attachment links:** an own-yak `<id>/<file>` link in a yak body already resolves on GitHub (the file sits beside the directory) and is left alone; the same link inside an attachment becomes the bare sibling name, and one from a dok or another yak becomes `/<herd>/yaks/<id>/<file>`.
+- **Unpinned `code:`** stays as it is; a pinned `code:` and a legacy `../blob/<sha>/...` become the host URL when the code repo is a recognised host; a legacy unpinned `../src/x` becomes `code:src/x`. If a farm has such links and no recognised host or no code checkout, the migration refuses and says why, rather than guess.
