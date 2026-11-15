@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:15:55Z'
+updated: '2026-11-15T00:18:13Z'
 depends_on:
 - yaks-f505
 tags:
@@ -122,3 +122,11 @@ Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin y
 ![tui-take-out](yaks-c3d0/tui-take-out.png "(d) O: the take-out menu over the viewer")
 
 [frames](yaks-c3d0/frames.txt "text frames (a) (b) (c) from the real binary: yaks tui --headless on a scratch checkout with a GitHub origin")
+
+---
+▸ 2026-11-15T00:18:13Z [viewer-1]
+kind: verify
+result: pass
+---
+
+verify: `cargo test --workspace` -> PASS (exit 0)
