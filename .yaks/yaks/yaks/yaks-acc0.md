@@ -1,11 +1,11 @@
 ---
 id: yaks-acc0
 title: 'Schema 9 migration: new layout, canonical links, note format, README, stub marker'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-14T23:35:38Z'
+updated: '2026-11-15T05:01:02Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -71,3 +71,13 @@ Every parse was identical before and after conversion, the conversion was idempo
 - Rewrite each such header into a timestamp with the date as written at 00:00:00Z and the rest of the line moved into the note's first line, so no text is lost. A mechanical, reviewable change, but it edits what a person wrote.
 
 Lean: leave them, and list them in the migration report so nobody is surprised.
+
+---
+▸ 2026-11-15T05:01:02Z [linkplan-lead]
+kind: move
+from: hairy
+to: shaving
+thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
+---
+
+moved: hairy -> shaving
