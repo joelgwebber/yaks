@@ -395,7 +395,7 @@ impl App {
             detail::Target::Url(u) => self.open_external(&u),
             detail::Target::Artifact(p) => self.open_external(&p),
             detail::Target::Source { path, lines, rev } => {
-                self.open_source(&path, lines, rev.as_deref())
+                self.open_code(&path, lines, rev.as_deref())
             }
             detail::Target::Footnote(n) => self.goto_footnote(&n),
             // A farm document opens in the viewer (yaks-7395).

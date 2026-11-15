@@ -96,6 +96,9 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
     if app.keys_popup {
         render_keys_popup(app, frame, mid);
     }
+    if let Overlay::TakeOut(t) = &app.overlay {
+        super::takeout::render(t, frame, mid);
+    }
     render_status(app, frame, bot);
 }
 
@@ -283,6 +286,7 @@ pub(crate) fn render_attachment(
     let kind = v.kind_label();
     let icon = match v.doc {
         super::handlers::DocKind::Attachment => "📎",
+        super::handlers::DocKind::Code { .. } => "{ }",
         _ => "📖",
     };
     // A pinned farm file says which commit it is shown at (yaks-7395).
@@ -551,6 +555,7 @@ pub(crate) fn overlay_name(o: &Overlay) -> &'static str {
         Overlay::Help(_) => "help",
         Overlay::Find(_) => "find",
         Overlay::ViewPicker(_) => "view-picker",
+        Overlay::TakeOut(_) => "take-out",
     }
 }
 
@@ -1650,6 +1655,19 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
+    if matches!(&app.overlay, Overlay::TakeOut(_)) {
+        frame.render_widget(
+            Paragraph::new(Span::styled(
+                "e editor · o system open · p absolute path · r relative path · g host link · Esc cancel",
+                Style::new()
+                    .fg(Color::Black)
+                    .bg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )),
+            area,
+        );
+        return;
+    }
     // Help reference hint.
     if matches!(&app.overlay, Overlay::Help(_)) {
         let scroll = if app.editor_vim() {
@@ -1671,7 +1689,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
     if app.attach().is_some() && matches!(app.overlay, Overlay::None) {
         let text = link_hint(app, area.width as usize).unwrap_or_else(|| {
             let mv = if app.editor_vim() { "j/k" } else { "↑/↓" };
-            format!("{mv} · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O open externally · Esc close · q quit")
+            format!("{mv} · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc close · q quit")
         });
         let text = with_match_chip(app, text);
         frame.render_widget(
@@ -1691,7 +1709,7 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         frame.render_widget(
             Paragraph::new(Span::styled(
                 format!(
-                    "zoom {} · +/- · 0 actual · w width · f fit{pan} · O open externally · Esc close · q quit",
+                    "zoom {} · +/- · 0 actual · w width · f fit{pan} · O take out · Esc close · q quit",
                     v.zoom_label()
                 ),
                 Style::new().fg(Color::DarkGray),

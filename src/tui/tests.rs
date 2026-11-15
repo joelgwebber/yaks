@@ -5027,7 +5027,7 @@ fn enter_on_a_markdown_attachment_opens_the_viewer_rendered() {
     );
     assert!(frame.contains("Some bold text that reflows."), "{frame}");
     assert!(frame.contains("• one"), "{frame}");
-    assert!(frame.contains("O open externally"), "{frame}");
+    assert!(frame.contains("O take out"), "{frame}");
     esc_key(&mut app);
     assert!(app.doc.is_none(), "Esc closes the viewer");
 }
@@ -5038,7 +5038,7 @@ fn a_plain_text_attachment_is_shown_verbatim_and_scrolls() {
         .map(|i| format!("line {i} **not bold**\n"))
         .collect();
     let (_dir, mut app) = app_on_attachment("run.log", text.as_bytes());
-    press(&mut app, "O");
+    enter_key(&mut app);
     let frame = draw(&app, 100, 24);
     assert!(frame.contains("t0/run.log  text"), "{frame}");
     assert!(frame.contains("line 1 **not bold**"), "{frame}");
@@ -5089,7 +5089,7 @@ fn enter_on_an_image_attachment_shows_it_in_the_pane() {
     let buf = term.backend().buffer();
     let text = buffer_to_string(buf);
     assert!(text.contains("t0/shot.png  image 64×64"), "{text}");
-    assert!(text.contains("O open externally"), "{text}");
+    assert!(text.contains("O take out"), "{text}");
     // Red over blue: pixels were drawn as colored cells, not a placeholder.
     let has = |rgb: Color| buf.content.iter().any(|c| c.fg == rgb || c.bg == rgb);
     assert!(has(Color::Rgb(255, 0, 0)), "no red cells:\n{text}");
@@ -5158,10 +5158,12 @@ fn an_svg_png_is_cached_by_content_and_reused() {
 }
 
 #[test]
-fn o_in_the_image_viewer_opens_externally_and_closes_it() {
+fn o_in_the_image_viewer_opens_the_take_out_menu_and_o_opens_externally() {
     let (_dir, mut app) = app_on_attachment("shot.png", &two_tone_png(8, 8));
     enter_key(&mut app);
     press(&mut app, "O");
+    assert!(matches!(app.overlay, Overlay::TakeOut(_)));
+    press(&mut app, "o");
     assert!(matches!(app.overlay, Overlay::None));
     assert_eq!(app.notification.as_deref(), Some("opened t0/shot.png"));
 }

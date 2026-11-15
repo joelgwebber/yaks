@@ -39,6 +39,7 @@ mod sheds_tab;
 mod source;
 mod surface;
 mod syntax;
+mod takeout;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]
@@ -143,6 +144,8 @@ pub(crate) enum Overlay {
     ViewPicker(usize),
     /// The keyboard-help reference (`??`): carries the scroll offset.
     Help(u16),
+    /// The take-it-out menu (`O`, yaks-c3d0): what to do with a file or link.
+    TakeOut(takeout::TakeOut),
 }
 
 /// A document open in the right pane (yaks-0906): the pane's subject while it

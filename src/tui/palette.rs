@@ -190,6 +190,16 @@ pub fn syntax_punct() -> Style {
     Style::new()
 }
 
+/// The line-number gutter of the code viewer (yaks-c3d0).
+pub fn line_number() -> Style {
+    marker()
+}
+
+/// The gutter of the lines a `code:...#L12-L20` link names.
+pub fn line_mark() -> Style {
+    Style::new().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+}
+
 // -- alerts ---------------------------------------------------------------
 
 /// A GitHub-style alert (`> [!NOTE]`).

@@ -121,8 +121,7 @@ commands! {
     NavForward => "nav.forward",
     LinkNext => "link.next",
     LinkPrev => "link.prev",
-    LinkOpenExternal => "link.open_external",
-    FileOpenExternal => "file.open_external",
+    TakeOut => "take.out",
     ImageZoomIn => "image.zoom_in",
     ImageZoomOut => "image.zoom_out",
     ImageZoomActual => "image.zoom_actual",
@@ -183,8 +182,8 @@ impl Cmd {
             | PaneScrollLeft | PaneScrollRight | LinkNext | LinkPrev | BlockNext | BlockPrev
             | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown | SelectVisual
             | SelectExtendDown | SelectExtendUp | SelectYank | RowCopy => Group::Move,
-            PaneOpen | PaneEnter | PanePeel | PaneClose | NavBack | NavForward
-            | LinkOpenExternal | FileOpenExternal | PeekToggle => Group::Open,
+            PaneOpen | PaneEnter | PanePeel | PaneClose | NavBack | NavForward | TakeOut
+            | PeekToggle => Group::Open,
             SearchOpen | FindOpen | FindNext | FindPrev | NavGoto | YakBackrefs => Group::Find,
             YakMark | YakState | YakPriority | YakType | YakTags | YakSlaughter | YakNew
             | YakNewChild | YakEdit | YakDep | YakReparent | YakHerd | YakStar | YakComment
@@ -215,11 +214,11 @@ impl Cmd {
             | ViewPrev | ViewPick | ViewRevert | FamilyCycle | TreeToggle | TreeLeft
             | TreeRight | PaneOpen | PaneEnter | PanePeel | PaneClose | PaneScrollLeft
             | PaneScrollRight | RowCopy | ListRefresh | SearchOpen | FilterDrawer | NavGoto
-            | NavBack | NavForward | LinkNext | LinkPrev | LinkOpenExternal | FileOpenExternal
-            | ImageZoomIn | ImageZoomOut | ImageZoomActual | ImageFitWidth | ImageFit
-            | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown | FindOpen | FindNext
-            | FindPrev | SelectVisual | SelectExtendDown | SelectExtendUp | SelectYank
-            | BlockNext | BlockPrev | PeekToggle | YakBackrefs => false,
+            | NavBack | NavForward | LinkNext | LinkPrev | TakeOut | ImageZoomIn | ImageZoomOut
+            | ImageZoomActual | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight
+            | ImagePanUp | ImagePanDown | FindOpen | FindNext | FindPrev | SelectVisual
+            | SelectExtendDown | SelectExtendUp | SelectYank | BlockNext | BlockPrev
+            | PeekToggle | YakBackrefs => false,
         }
     }
 }
@@ -679,6 +678,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Yak, &[c('A')], YakAttach, "Attach artifact", NoHint),
     bind_row(Yak, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
     bind_row(Yak, &[c('y')], RowCopy, "Copy yak id to clipboard", NoHint),
+    bind_row(Yak, &[c('O')], TakeOut, TAKE_OUT_ROW, NoHint),
     bind_row(Yak, &[c('/'), ctrl('f')], SearchOpen, "Search every view; Esc clears", NoHint),
     bind(List, &[c('n'), k(F(3))], FindNext, "Search again: the pane's last find becomes the query (no query set)", NoHint),
     bind(List, &[c('N'), shift(F(3))], FindPrev, "Search again, as n", NoHint),
@@ -710,6 +710,7 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[k(BackTab), c('[')], LinkPrev, "Previous link", NoHint),
     bind_pane(Yak, &[k(Enter)], PaneEnter, "Yank the selection, else follow the link / footnote / source file / farm dok (status bar: the destination; the peek pane shows what it names)", hint("Enter:follow")),
     bind_pane(Yak, &[c('p')], PeekToggle, "Show / hide the peek pane under the lines (what the farm link, source or code range under the cursor names)", hint("p:peek")),
+    bind_pane(Yak, &[c('O')], TakeOut, TAKE_OUT_LINE, hint("O:take out")),
     bind(Detail, &[c('i')], NavForward, "History forward: a jump you went back from (any pane)", hint("i/o:fwd/back")),
     bind(Detail, &[c('o')], NavBack, "History back: where the last jump left (a link, a view switch, #), position restored", NoHint),
     bind(Detail, &[c('J')], ItemNext, "Next task (stay in detail)", NoHint),
@@ -744,7 +745,6 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('Q')], YakAsk, "Ask a question: needs human", NoHint),
     bind_pane(Yak, &[c('Z')], YakSnooze, "Snooze: move the due date (+1d, +1w, a date)", NoHint),
     bind_pane(Yak, &[c('A')], YakAttach, "Attach artifact", NoHint),
-    bind_pane(Yak, &[c('O')], LinkOpenExternal, "Open the artifact / URL / source link on the line (a text file in the viewer)", NoHint),
     bind_pane(Yak, &[c('r')], AttachmentRename, "Rename the attachment at the cursor", NoHint),
     bind_pane(Yak, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
     bind_pane(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
@@ -785,7 +785,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok (the same flag as the yak pane's)", NoHint),
     bind(Viewer, &[c('*')], YakStar, "Star / unstar the dok (Starred view)", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
-    bind(Viewer, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
+    bind(Viewer, &[c('O')], TakeOut, TAKE_OUT_FILE, NoHint),
     bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the dok)", NoHint),
     bind(Viewer, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Viewer, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
@@ -805,7 +805,7 @@ static BINDINGS: &[Binding] = &[
     bind(Image, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
     bind(Image, &[c('o')], NavBack, "History back", NoHint),
     bind(Image, &[c('i')], NavForward, "History forward", NoHint),
-    bind(Image, &[c('O')], FileOpenExternal, "Open the file externally", NoHint),
+    bind(Image, &[c('O')], TakeOut, TAKE_OUT_FILE, NoHint),
     bind(Image, &[c('#')], NavGoto, "Go to any yak by id / title (closes the image)", NoHint),
     bind(Image, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Image, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
@@ -822,6 +822,7 @@ static BINDINGS: &[Binding] = &[
     bind_row(Doc, &[c('/'), ctrl('f')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
     bind_row(Doc, &[c('*')], YakStar, "Star / unstar the dok (Starred view)", NoHint),
     bind_row(Doc, &[c('y')], RowCopy, "Copy the path", hint("y:copy path")),
+    bind_row(Doc, &[c('O')], TakeOut, TAKE_OUT_ROW, hint("O:take out")),
     bind_row(Doc, &[ctrl('r')], ListRefresh, "Reread the doks (also on any farm change)", NoHint),
     bind_row(Doc, &[c('`')], ViewPick, "", NoHint),
     bind_row(Doc, &[c('?'), k(F(1))], AppHelp, "", hint("?:help")),
@@ -845,6 +846,12 @@ static BINDINGS: &[Binding] = &[
 /// The `?` lines of `view.next` / `view.prev` in the pane and the viewers.
 const VIEW_PANE_NEXT: &str = "Next view; the pane stays open on the new view's first row";
 const VIEW_PANE_PREV: &str = "Previous view; the pane stays open on the new view's first row";
+
+/// The `?` lines of `take.out`: what the menu takes out, by surface. The
+/// menu's own keys are in the [`EXTRAS`].
+const TAKE_OUT_LINE: &str = "Take out the link on the line (or the yak): a menu to open it in your editor, with the system, or copy its path or host link";
+const TAKE_OUT_FILE: &str = "Take out the file: a menu to open it in your editor at the cursor's line, with the system, or copy its path or host link";
+const TAKE_OUT_ROW: &str = "Take out the row's file (the yak's file): a menu to open it in your editor, with the system, or copy its path or host link";
 
 /// The `?` line of the help command: the popup first, the reference on a second press.
 const HELP_LINE: &str = "Keys of this context in a popup; ? again opens this full reference";
@@ -1167,11 +1174,35 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
+        "Take out (O: the menu over the foot of the screen; none of it changes a yak)",
+        &[
+            (
+                "e",
+                "Open in $VISUAL / $EDITOR at the line, the terminal suspended while it runs",
+            ),
+            ("o", "Open with the system (the default application)"),
+            (
+                "p",
+                "Copy the absolute path (a pinned code: file: the working file if unchanged since the pin, else a read-only copy of it)",
+            ),
+            ("r", "Copy the farm- or repo-relative path"),
+            (
+                "g",
+                "Copy the host link: GitHub, GitLab, Gitea/Forgejo (a custom domain: git config yaks.host)",
+            ),
+            ("Esc / q", "Close the menu"),
+        ],
+    ),
+    (
         "Files, links and images",
         &[
             (
                 "(text file)",
-                "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves), O opens externally",
+                "Opens in a viewer (.md rendered); E there edits it in place (Ctrl-S saves); O takes it out",
+            ),
+            (
+                "(code file)",
+                "A code: link opens in the viewer, read-only: line numbers, coloured by extension, at its #L lines; a pin is read from git. O then e edits it",
             ),
             (
                 "(farm links)",
@@ -1183,7 +1214,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             (
                 "(image)",
-                "Shown in the pane (png/jpg/gif/webp/svg); O opens externally, Esc/q closes",
+                "Shown in the pane (png/jpg/gif/webp/svg); O takes it out, Esc/q closes",
             ),
             (
                 "(body images)",
@@ -1318,7 +1349,7 @@ impl App {
         // The global commands run as anywhere; the rest of a viewer's are its own.
         let global = matches!(
             cmd,
-            AppQuit | AppHelp | NavGoto | FarmCommit | FarmSync | ViewNext | ViewPrev
+            AppQuit | AppHelp | NavGoto | FarmCommit | FarmSync | ViewNext | ViewPrev | TakeOut
         );
         match ctx {
             Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
@@ -1368,7 +1399,7 @@ impl App {
             NavForward => self.history_forward(),
             LinkNext => self.jump_link(1),
             LinkPrev => self.jump_link(-1),
-            LinkOpenExternal => self.open_current_external(),
+            TakeOut => self.open_take_out(ctx),
             FindOpen => self.open_find(),
             FindNext | FindPrev => {
                 let delta = if cmd == FindNext { 1 } else { -1 };
@@ -1418,9 +1449,8 @@ impl App {
             DokEdit => self.edit_doks_entry(),
             PeekToggle => self.toggle_peek(),
             // The viewers' own: `run_viewer_cmd` and `run_image_cmd`.
-            PaneClose | DocEdit | FileOpenExternal | ImageZoomIn | ImageZoomOut
-            | ImageZoomActual | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight
-            | ImagePanUp | ImagePanDown => {}
+            PaneClose | DocEdit | ImageZoomIn | ImageZoomOut | ImageZoomActual | ImageFitWidth
+            | ImageFit | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown => {}
         }
     }
 
@@ -1571,12 +1601,12 @@ mod tests {
             (
                 Ctx::Detail,
                 Some(RowKind::Yak),
-                "Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit",
+                "Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  /:search  q:quit",
             ),
             (
                 Ctx::List,
                 Some(RowKind::Doc),
-                "Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  ?:help  q:quit",
+                "Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  O:take out  ?:help  q:quit",
             ),
             (
                 Ctx::List,
@@ -1597,7 +1627,7 @@ mod tests {
         // With a filter active the drawer's hint changes, nothing else.
         assert_eq!(
             hint_for(Ctx::Detail, Some(RowKind::Yak), true),
-            "Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
+            "Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter  Esc:clear  q:quit"
         );
         assert_eq!(
             hint_for(Ctx::List, Some(RowKind::Yak), true),

@@ -138,8 +138,7 @@ impl Space {
     }
 
     /// The link a place came from (what [`links::peek`] reads).
-    #[allow(dead_code)] // with `content` and `local_path`: the TUI's one `follow(Place)` (yaks-c3d0) is their caller
-    fn link(place: &Place) -> Option<Link> {
+    pub fn link(place: &Place) -> Option<Link> {
         Some(match place {
             Place::Yak { id, note } => Link::Yak {
                 id: id.clone(),
@@ -166,7 +165,7 @@ impl Space {
     }
 
     /// What the place shows, as `yaks peek` prints it.
-    #[allow(dead_code)]
+    #[allow(dead_code)] // the TUI reads whole files (`code_text`); `peek` goes through `links::peek`
     pub fn content(&self, place: &Place, context: u32) -> Result<Peek> {
         let Some(link) = Self::link(place) else {
             let Place::Missing(why) = place else {
@@ -206,10 +205,42 @@ impl Space {
         }
     }
 
+    /// The whole text of code file `rel` (at commit `rev`, when pinned), for
+    /// the TUI viewer: [`Space::content`] cuts to the anchor, this does not.
+    /// `Err` is the one line the viewer shows instead: a pin this checkout
+    /// does not have ([`missing_commit`]) or a file the commit lacks say so,
+    /// rather than naming git's own error.
+    pub fn code_text(&self, rel: &str, rev: Option<&str>) -> Result<String, String> {
+        let Some(code) = &self.code else {
+            return Err(format!(
+                "code:{rel}: no code checkout to read it from (run from one)"
+            ));
+        };
+        if let Some(rev) = rev {
+            if let Some(why) = missing_commit(code, rev) {
+                return Err(why);
+            }
+            if !gitrepo::has_path(code, rev, &format!("./{rel}")) {
+                return Err(format!("{rel} is not in {}", &rev[..rev.len().min(7)]));
+            }
+        }
+        links::read_at(code, rel, rev).map_err(|e| format!("{e:#}"))
+    }
+
+    /// The path of the place inside its repository, as written to a person:
+    /// a `code:` file's path from the checkout root, a farm file's from the
+    /// farm root (a yak's file and an attachment included). `None` for a URL
+    /// or a place that names nothing.
+    pub fn rel_path(&self, place: &Place) -> Option<String> {
+        match place {
+            Place::CodeFile { rel, .. } => Some(rel.clone()),
+            other => self.farm_rel(other).map(|(rel, ..)| rel),
+        }
+    }
+
     /// The path of the place's file on this machine, and whether it is a
     /// read-only copy: a pinned file is the working file when it is unchanged
     /// since the pin, else a read-only copy of the pinned content.
-    #[allow(dead_code)]
     pub fn local_path(&self, place: &Place) -> Result<(PathBuf, bool), String> {
         if let Place::CodeFile { rel, rev, .. } = place {
             let Some(code) = &self.code else {
@@ -415,6 +446,20 @@ fn git(base: &Path, args: &[&str]) -> std::io::Result<std::process::Output> {
         .output()
 }
 
+/// Why `rev` cannot be read in the repository at `base`: `None` when the
+/// commit is there, else a one-line message. An agent on another machine can
+/// pin a commit this checkout never fetched (or one that was dropped); the
+/// reader needs to hear that, not git's error.
+pub fn missing_commit(base: &Path, rev: &str) -> Option<String> {
+    if gitrepo::commit_of(base, rev).is_some() {
+        return None;
+    }
+    Some(format!(
+        "commit {} is not in this checkout; fetch it or open on the host",
+        &rev[..rev.len().min(7)]
+    ))
+}
+
 /// The file to show for `path` of the repository at `base`: the working
 /// copy, or for a pinned link whose file differs from the working tree, a
 /// read-only copy of `git show <rev>:<path>` in the temp directory. The bool
@@ -428,6 +473,9 @@ pub fn pinned_file(base: &Path, path: &str, rev: Option<&str>) -> Result<(PathBu
             Err(format!("{path}: no such file"))
         };
     };
+    if let Some(why) = missing_commit(base, rev) {
+        return Err(why);
+    }
     let rel = format!("./{path}");
     // `git diff <rev> -- <file>` is clean for an untracked file too, so first
     // ask whether the commit has the file at all.

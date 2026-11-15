@@ -92,8 +92,9 @@ impl App {
         let root = self
             .farm_root()
             .ok_or_else(|| format!("{path}: no farm to read"))?;
-        // `sources/<id>` names a directory: it reads as its `source.md`.
-        let path = &*crate::locate::farm_file(path);
+        // `sources/<id>` names a directory (the bare `<date>-<sha8>` of a
+        // slugged one too): it reads as its `source.md`.
+        let path = &*crate::locate::farm_file_in(&root, path);
         let file = root.join(path);
         if rev.is_none() {
             if !file.is_file() {
@@ -201,12 +202,16 @@ impl App {
     /// farm path) and `rev` the farm commit of a pinned one. What
     /// [`super::history`] restores a dok by.
     pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
+        // A code file of the checkout, shown by `open_code`.
+        if let Some(rel) = path.strip_prefix("code:") {
+            return self.read_code_view(rel, rev, None).map(DocView::Text);
+        }
         // A farm file is under the farm root; an attachment is not (it lives
         // under its yak), so the path tells them apart.
         if rev.is_some()
             || self
                 .farm_root()
-                .is_some_and(|r| r.join(&*crate::locate::farm_file(path)).is_file())
+                .is_some_and(|r| r.join(&*crate::locate::farm_file_in(&r, path)).is_file())
         {
             if rev.is_none() {
                 if let Some(v) = self.farm_image(path) {
@@ -510,6 +515,27 @@ mod tests {
             app.notification.as_deref(),
             Some("sources/nope/source.md: not in this farm")
         );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// A source's directory carries a slug (`<date>-<sha8>-<slug>`, yaks-7729)
+    /// and a link names it by the bare `<date>-<sha8>` id: the viewer finds
+    /// the one directory, and the history re-reads it.
+    #[test]
+    fn a_bare_source_id_link_opens_the_slugged_directory() {
+        let (proj, mut app) = on_hub();
+        let dir = app
+            .farm_root()
+            .unwrap()
+            .join("sources/2026-11-03-81364278-a-readable-slug");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("source.md"), "# A source\n\nText.\n").unwrap();
+        app.open_farm_doc("sources/2026-11-03-81364278", None, None);
+        assert_eq!(
+            viewer(&app).target,
+            "sources/2026-11-03-81364278-a-readable-slug/source.md"
+        );
+        assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
         let _ = std::fs::remove_dir_all(proj);
     }
 

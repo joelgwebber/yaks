@@ -1,11 +1,11 @@
 ---
 source: src/tui/tests.rs
-assertion_line: 6010
 expression: "draw(&app, 100, 20)"
 ---
  🦬  Hairy (2)   🪒  Shaving (1)   🐑  Shorn (1)   🕒  Recent (4)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
 
 ◂ Help — keys
+│   h / ←           Scroll the code block / table under the cursor left
 │   l / →           Scroll the code block / table under the cursor right
 │   j / ↓           Move the line cursor down
 │   k / ↑           Move the line cursor up
@@ -19,7 +19,6 @@ expression: "draw(&app, 100, 20)"
 │   S-Tab / [       Previous link
 │   Enter           Yank the selection, else follow the link / footnote / source file / farm dok (s
 │   p               Show / hide the peek pane under the lines (what the farm link, source or code r
+│   O               Take out the link on the line (or the yak): a menu to open it in your editor, w
 │   i               History forward: a jump you went back from (any pane)
-│   o               History back: where the last jump left (a link, a view switch, #), position res
-│   J               Next task (stay in detail)
 j/k scroll · d/u page · g/G top/bottom · ?/q/Esc close

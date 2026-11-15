@@ -1,6 +1,5 @@
 ---
 source: src/tui/tests.rs
-assertion_line: 588
 expression: "draw(&app, 72, 24)"
 ---
  🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starr
@@ -26,4 +25,4 @@ expression: "draw(&app, 72, 24)"
 │
 │ ▸ Jan 2, 2026 00:00 UTC ─────────────────────────────────────────────
 │ second note
-Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/

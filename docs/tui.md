@@ -215,7 +215,7 @@ the register and the scroll and cursor from before; the status bar shows
 | `a` | Hand the yak to an agent (`needs: agent`): on a yak awaiting a human, answer; otherwise request agent work (like `yaks request`; on a yak already awaiting an agent the request is appended). Opens the same multi-line editor as `M`, headed `Answer <id>` / `Request <id>`; `Ctrl-S` answers or requests with the text as the note (an empty one does so with no note), cancel changes nothing |
 | `Z` | Snooze: a one-line prompt for the new `due:` (`+1d`, `+1w`, a date; Enter alone is `+1d`) that moves it and leaves a `kind: snooze` note, like `yaks snooze`. With rows marked (`m`) it snoozes them all (a shorn or dead one is skipped and counted); a date that does not read keeps the prompt with what you typed |
 | `Q` | Ask a question (`needs: human`, out of `next` until answered; on a yak awaiting an agent it flips back to a human). The same editor, headed `Ask <id>` |
-| `A` / `O` | Attach artifact / open it. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`O`, or `Enter` on the link) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown; `y` with nothing selected copies the file's `<id>/<file>`), `h`/`l` scroll a code block or table sideways (they never close it), `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` hands it to the OS opener. An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit at first, never enlarged, then zoomed and panned by key (see *Zooming and panning an image* below); `O` opens it externally, `Esc` closes. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
+| `A` / `O` | Attach artifact / take a link out. An empty path pastes the clipboard PNG, then prompts for its name (empty keeps `paste-<timestamp>.png`). Opening (`Enter` on the link; `O` is the [take-out menu](#code-files-and-taking-things-out)) finds the file in this farm. A text attachment (UTF-8, up to 1 MiB, not an image) opens **in the pane**: a `.md`/`.markdown` file rendered as a yak body is, anything else verbatim and wrapped. It navigates like the detail pane, by the same code: `j`/`k`, `d`/`u`, `g`/`G` move a line cursor, `Tab`/`[`/`]` cycle links and `Enter` follows one (the status bar shows a URL's destination; a footnote or `#section` jumps within the file and `o`/`i` go back/forward; a yak id opens that yak in the detail pane; a farm dok or source opens in the viewer at its anchor, `o` coming back (see [Following links](#following-links-and-peek)); an attachment, URL or source file opens as from the detail pane; a pane under the dok peeks the link under the cursor, `p` hides it), `/` finds (the same search register as the yak detail) with `n`/`N` cycling and wrapping, `v`/Shift-↑↓ select and `y`/`Enter` copy (a `.md` file copies its source markdown; `y` with nothing selected copies the file's `<id>/<file>`), `h`/`l` scroll a code block or table sideways (they never close it), `Esc` clears a selection, then the search, then closes. `E` edits it in place (the multi-line editor: `Ctrl-S` writes the file back under the farm lock and returns to the viewer, re-rendered; cancel returns unchanged, asking first if you typed anything; a file changed on disk meanwhile is not overwritten until a second `Ctrl-S`), `O` takes it out ([below](#code-files-and-taking-things-out)). An image (png, jpg, gif, webp up to 32 MiB; svg up to 4 MiB) opens **in the pane** too: drawn with the terminal's own graphics protocol (kitty, sixel, iTerm2) when it speaks one, else as half-block cells; shrunk to fit at first, never enlarged, then zoomed and panned by key (see *Zooming and panning an image* below); `O` takes it out, `Esc` closes. An svg is rasterized first (see *Svg attachments* below); a corrupt or undecodable image and binary files open with the OS opener |
 | `r` | (detail) Rename the attachment whose link (📎 or 🖼) the cursor is on (`Tab` to it); the file moves and every link is rewritten. The extension is kept if you omit it |
 | `X` | Slaughter (delete, with confirm); on a yak with hairy or shaving descendants the confirm offers to take them too, naming how many go (shorn ones stay shorn) |
 | `:w` / `:q` / `:wq` | Save / cancel / save+close (editor Normal mode) |
@@ -293,7 +293,7 @@ comment.
 
 ![M: an empty editor under a provisional header after the last comment](assets/tui-edit-inplace-new.svg)
 
-**Image attachments** — `Enter` (or `O`) on an image link opens it in the pane
+**Image attachments** — `Enter` on an image link opens it in the pane
 instead of the OS viewer. At startup the TUI asks the terminal which graphics
 protocol it speaks (kitty, sixel or iTerm2, via `ratatui-image`) and its cell
 size; a terminal that does not answer gets half-block cells, which is also what
@@ -558,11 +558,9 @@ file sat directly in `.yaks/`, still works in yaks); `#L12` or `#L12-L40` adds
 lines (GitHub's own fragment), and `@<sha>` before it (`code:src/foo.rs@3f2a9c1#L12`,
 or the older `../blob/<sha>/src/foo.rs#L12`) pins it to a commit (`<sha>` is 7 to 40 hex
 digits). It shows as plain link text; the status bar shows `src/foo.rs:L12-L40`
-(`@<sha7>` when pinned). `Enter`/`O` opens it in `$VISUAL`/`$EDITOR` at the line
-(the TUI suspends while it runs, so a full-screen editor works),
-else the OS opener. A pinned link whose file has changed since that commit opens
-a read-only copy of `git show <sha>:<path>` under the temp directory
-(`yaks-src/<sha>/…`); if the file is unchanged it opens the working copy. A link
+(`@<sha7>` when pinned). `Enter` opens it in the read-only
+[code viewer](#code-files-and-taking-things-out) at its lines, and `O` takes it out
+(an editor, the system, a path, a host link). A link
 to a **farm document** (a dok from the farm root, `[x](/doks/topics/x.md#setup)`;
 in a dok, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
 a session note's `/sessions/YYYY/MM/<note>.md`;
@@ -738,6 +736,52 @@ every tab. `o` goes back and `i` forward, in any pane and in the list.
   `moved` or `gone` after its name; a dok is read again from disk and its
   cursor clamped. Each notification names the view and the subject:
   `← Recent · yaks-1234`.
+
+## Code files and taking things out
+
+**`Enter` on a `code:` link** (`[x](code:src/links.rs#L100-L120)`, or the older
+`../src/...` forms) opens the file in the same read-only viewer a dok opens in,
+`o` coming back. Each row has its line number in a gutter that stays put when a
+long line scrolls sideways (`h`/`l`); the lines the link names carry a bold
+yellow gutter and the cursor lands on the first, at the top of the page. The
+text is coloured by the file's extension with the highlighter the markdown code
+blocks use (Rust, shell, JSON, TOML, YAML, Python, JS/TS, Java); a file with no
+known extension is plain, with no colour. A pinned link
+(`code:src/links.rs@3f2a9c1#L100`) is read with `git show`, the file as it was
+at that commit, whatever the working tree holds. `E` refuses (the file is the
+checkout's, not the farm's); `y` copies the selected lines (or the path).
+
+When a pinned commit is not in this checkout (an agent on another machine
+dropped it, or never pushed it) the viewer shows one line, `commit abc1234 is
+not in this checkout; fetch it or open on the host`, instead of a blank pane. A
+file the commit lacks, a file that is gone, a binary or a file over 1 MiB each
+get their own one line too.
+
+**`O` takes it out**, on every surface that has a file or link under the
+cursor: the text viewer (the cursor's line, or the selected lines), a link on a
+yak pane's line (with no link, the yak itself), a Doks row, a yak row, the image
+viewer. It opens a small menu over the foot of the screen; none of its keys
+changes a yak. `Enter` on a pane link still follows it.
+
+| Key | |
+|---|---|
+| `e` | Open in `$VISUAL`/`$EDITOR` at the line (the TUI suspends while it runs, so a full-screen editor works) |
+| `o` | Open with the system (`open`, `xdg-open`) |
+| `p` | Copy the absolute path. A pinned `code:path@sha` file gives the working-tree path when the file is unchanged since the pin, else a read-only copy of `git show <sha>:<path>` under the temp directory (`yaks-src/<sha>/…`), which the message says |
+| `r` | Copy the farm- or repo-relative path |
+| `g` | Copy the host link, `https://github.com/<owner>/<repo>/blob/<branch or sha>/<path>#L12-L20`: GitHub, GitLab and Gitea/Forgejo, the same link `yaks url` prints. A pin links its commit |
+
+`Esc` or `q` closes the menu; any other key leaves it up. The menu is modal, so
+its keys are listed in the `?` overlay's *Take out* section, not in the table
+(they cannot be rebound; the key that opens it is `take.out`, which can).
+
+Nothing here errors out of the TUI. `g` with no remote, or a domain yaks does
+not recognise, says so in one line and names `git config yaks.host
+github|gitlab|gitea` (which declares the kind of a custom domain). When the
+referenced commit is not in this checkout, `p`, `e` and `o` give the same
+missing-commit message as the viewer; `g` still works, since a link needs
+nothing local, and adds that the remote has not got the commit either when the
+last fetch did not see it there.
 
 ## Following links and peek
 

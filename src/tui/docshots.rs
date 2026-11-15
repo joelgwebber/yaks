@@ -1057,3 +1057,63 @@ fn docshots_yak_peek() {
     press_key(&mut app, KeyCode::Tab); // the cursor on the link
     write_svg("tui-yak-peek", &app, w, h);
 }
+
+/// A `code:` link opened in the read-only viewer, a pin to a commit this
+/// checkout lacks, and the take-out menu over it (yaks-c3d0), into
+/// `docs/assets/tui-code-viewer.svg`, `tui-code-missing.svg` and
+/// `tui-take-out.svg`. A scratch checkout holds this file's own source, so the
+/// frame is stable. Ignored by default; run explicitly:
+/// `cargo test -p yaks docshots_code -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-code-*.svg"]
+fn docshots_code() {
+    use crate::model::Status;
+    let git = |dir: &std::path::Path, args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {out:?}");
+    };
+    let mut t = crate::tui::test_support::task("t0", "Read the resolver", Status::Hairy, 3, None);
+    t.body = "The resolver is in [parse](code:src/lib.rs#L4-L9). The same lines [as pinned](code:src/lib.rs@deadbeefdeadbeef#L4), from a commit an agent never pushed.\n".into();
+    let (proj, farm) = crate::tui::test_support::temp_farm(&[t]);
+    std::fs::create_dir_all(proj.join("src")).unwrap();
+    std::fs::write(
+        proj.join("src/lib.rs"),
+        "//! Where a link points.\n\nuse std::path::Path;\n\n/// What a link resolves to.\n#[derive(Debug)]\npub enum Place {\n    Yak(String),\n    CodeFile { rel: String, line: Option<u32> },\n}\n\n/// The path of a place, when it is a file.\npub fn path(place: &Place, root: &Path) -> Option<String> {\n    match place {\n        Place::CodeFile { rel, .. } => Some(rel.clone()),\n        Place::Yak(id) => Some(format!(\"{}/{id}.md\", root.display())),\n    }\n}\n",
+    )
+    .unwrap();
+    git(&proj, &["init", "-q", "-b", "main"]);
+    git(&proj, &["add", "src"]);
+    git(&proj, &["commit", "-q", "-m", "first"]);
+    git(
+        &proj,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/joelgwebber/yaks.git",
+        ],
+    );
+    git(&proj, &["update-ref", "refs/remotes/origin/main", "HEAD"]);
+    let (w, h) = (100u16, 22u16);
+    let mut app = App::with_farm(farm).unwrap();
+    app.farm_sync = None;
+    HeadlessApp::on_resize(&mut app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-code-viewer", &app, w, h);
+    press(&mut app, 'O');
+    write_svg("tui-take-out", &app, w, h);
+    press_key(&mut app, KeyCode::Esc);
+    press(&mut app, 'o');
+    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-code-missing", &app, w, h);
+    let _ = std::fs::remove_dir_all(proj);
+}

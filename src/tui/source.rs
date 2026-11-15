@@ -66,6 +66,7 @@ pub(crate) fn editor_command(editor: &str, file: &Path, line: Option<u32>) -> Op
 }
 
 /// Open `arg` (a file or URL) with the OS default application.
+#[cfg_attr(test, allow(dead_code))] // a test never launches the opener (`App::os_open`)
 pub(crate) fn os_open(arg: &str) -> std::io::Result<std::process::Child> {
     let opener = if cfg!(target_os = "macos") {
         "open"
@@ -75,16 +76,7 @@ pub(crate) fn os_open(arg: &str) -> std::io::Result<std::process::Child> {
     Command::new(opener).arg(arg).spawn()
 }
 
-/// The file to show for a source link: [`crate::locate::pinned_file`].
-pub(crate) fn resolve_source_file(
-    base: &Path,
-    path: &str,
-    rev: Option<&str>,
-) -> Result<(PathBuf, bool), String> {
-    crate::locate::pinned_file(base, path, rev)
-}
-
-fn editor_from_env() -> Option<String> {
+pub(crate) fn editor_from_env() -> Option<String> {
     ["VISUAL", "EDITOR"]
         .iter()
         .filter_map(|k| std::env::var(k).ok())
@@ -97,51 +89,86 @@ pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBu
 }
 
 impl App {
-    /// Follow a source link: `$VISUAL`/`$EDITOR` at the line, else the OS
-    /// opener. The editor is queued ([`App::pending_editor`]) for the event
-    /// loop to run with the terminal suspended.
-    pub(crate) fn open_source(&mut self, path: &str, lines: Option<(u32, u32)>, rev: Option<&str>) {
-        self.open_source_with(editor_from_env().as_deref(), path, lines, rev)
-    }
-
-    pub(crate) fn open_source_with(
-        &mut self,
-        editor: Option<&str>,
-        path: &str,
-        lines: Option<(u32, u32)>,
-        rev: Option<&str>,
-    ) {
-        let label = source_label(path, lines, rev);
-        let Some(base) = self
-            .farm
-            .as_ref()
-            .and_then(|f| source_base(f.root(), self.sheds.cwd.as_deref()))
-        else {
-            self.notification = Some("no code checkout to resolve the link against".into());
-            return;
-        };
-        let (file, snapshot) = match resolve_source_file(&base, path, rev) {
-            Ok(f) => f,
+    /// Follow a `code:` link: open the file in the read-only viewer
+    /// ([`App::read_code_view`]) at the lines the link names (a jump: `o`
+    /// comes back). Taking it out to an editor is `O` then `e`
+    /// ([`super::takeout`]).
+    pub(crate) fn open_code(&mut self, path: &str, lines: Option<(u32, u32)>, rev: Option<&str>) {
+        let v = match self.read_code_view(path, rev, lines) {
+            Ok(v) => v,
             Err(e) => {
                 self.notification = Some(e);
                 return;
             }
         };
-        let note = if snapshot { " (read-only copy)" } else { "" };
-        match editor.and_then(|e| editor_command(e, &file, lines.map(|l| l.0))) {
-            Some(cmd) => {
-                self.pending_editor = Some(cmd);
-                self.notification = Some(format!("edited {label}{note}"));
-            }
-            None => {
-                self.notification = Some(match os_open(&file.display().to_string()) {
-                    Ok(_) => format!("opened {label}{note}"),
-                    Err(e) => format!("open failed: {e}"),
-                })
-            }
+        let failed = matches!(v.doc, super::handlers::DocKind::Code { error: Some(_), .. });
+        self.follow_to_doc(DocView::Text(v));
+        if failed {
+            return;
         }
+        if let Some((a, _)) = lines {
+            self.land_on_line(a as usize);
+        }
+        self.notification = Some(format!("viewing {}", source_label(path, lines, rev)));
+    }
+
+    /// The viewer for code file `path` at `rev`. A file or commit that cannot
+    /// be read still gives a viewer, whose one row says why (and from which
+    /// `O` still takes the link out: `g` needs nothing local). `Err` only
+    /// when there is no code checkout to look in.
+    pub(crate) fn read_code_view(
+        &self,
+        path: &str,
+        rev: Option<&str>,
+        marked: Option<(u32, u32)>,
+    ) -> Result<super::handlers::AttachView, String> {
+        let root = self
+            .farm
+            .as_ref()
+            .map(|f| f.root().to_path_buf())
+            .ok_or("no farm to resolve the link against")?;
+        let base = source_base(&root, self.sheds.cwd.as_deref())
+            .ok_or("no code checkout to resolve the link against")?;
+        let space = crate::locate::Space::new(&root, Some(base.clone()));
+        let too_big = rev.is_none()
+            && std::fs::metadata(base.join(path)).is_ok_and(|m| m.len() > CODE_MAX_BYTES);
+        let text = if too_big {
+            Err(format!(
+                "{path}: too big to view here (O then e opens it in your editor)"
+            ))
+        } else {
+            space.code_text(path, rev).and_then(|t| {
+                if t.contains('\0') || t.starts_with("(binary file") {
+                    Err(format!("{path}: not a text file (O then o opens it)"))
+                } else {
+                    Ok(t)
+                }
+            })
+        };
+        Ok(super::handlers::AttachView::code(
+            path,
+            base.join(path),
+            text,
+            rev.map(String::from),
+            marked,
+        ))
+    }
+
+    /// Put the open viewer's cursor on 1-based `line` at the top of the
+    /// page, as a `#L12` link lands on its row.
+    fn land_on_line(&mut self, line: usize) {
+        let Some((rows, vp)) = self.attachment_rows() else {
+            return;
+        };
+        let Some(v) = self.attach_mut() else { return };
+        let to = line.saturating_sub(1).min(rows.len().saturating_sub(1));
+        v.nav.line = to;
+        v.nav.scroll = to.min(vp.max_scroll(rows.len())) as u16;
     }
 }
+
+/// Largest code file the viewer reads (as for attachments).
+const CODE_MAX_BYTES: u64 = 1 << 20;
 
 #[cfg(test)]
 mod tests {
@@ -295,33 +322,44 @@ mod tests {
         let rev = git_ok(&proj, &["rev-parse", "HEAD"]);
 
         // Unchanged since the pin: the working copy itself.
-        let (f, snap) = resolve_source_file(&proj, "src/foo.rs", Some(&rev)).unwrap();
+        let (f, snap) = crate::locate::pinned_file(&proj, "src/foo.rs", Some(&rev)).unwrap();
         assert_eq!((f.clone(), snap), (proj.join("src/foo.rs"), false));
         // No pin: the working copy; a missing file is a message, not a panic.
         assert_eq!(
-            resolve_source_file(&proj, "src/foo.rs", None).unwrap().0,
+            crate::locate::pinned_file(&proj, "src/foo.rs", None)
+                .unwrap()
+                .0,
             proj.join("src/foo.rs")
         );
-        assert!(resolve_source_file(&proj, "src/nope.rs", None).is_err());
+        assert!(crate::locate::pinned_file(&proj, "src/nope.rs", None).is_err());
 
         // Edited since: the pinned content, in a read-only temp copy.
         std::fs::write(proj.join("src/foo.rs"), "changed\n").unwrap();
-        let (f, snap) = resolve_source_file(&proj, "src/foo.rs", Some(&rev[..10])).unwrap();
+        let (f, snap) = crate::locate::pinned_file(&proj, "src/foo.rs", Some(&rev[..10])).unwrap();
         assert!(snap);
         assert_eq!(std::fs::read_to_string(&f).unwrap(), "one\ntwo\n");
         assert!(std::fs::metadata(&f).unwrap().permissions().readonly());
         // Opening it again (a read-only copy already there) still works.
-        assert!(resolve_source_file(&proj, "src/foo.rs", Some(&rev[..10])).is_ok());
+        assert!(crate::locate::pinned_file(&proj, "src/foo.rs", Some(&rev[..10])).is_ok());
 
         // A file the commit did not have, and a commit that does not exist.
         std::fs::write(proj.join("src/new.rs"), "x\n").unwrap();
-        let err = resolve_source_file(&proj, "src/new.rs", Some(&rev)).unwrap_err();
+        let err = crate::locate::pinned_file(&proj, "src/new.rs", Some(&rev)).unwrap_err();
         assert!(err.contains("not in"), "{err}");
-        assert!(resolve_source_file(&proj, "src/foo.rs", Some("deadbeef")).is_err());
+        assert!(crate::locate::pinned_file(&proj, "src/foo.rs", Some("deadbeef")).is_err());
 
-        // Through the app: the editor is queued with the line, on that copy.
+        // Through the menu: `e` queues the editor with the line, on that copy.
         let mut app = App::with_farm(farm).unwrap();
-        app.open_source_with(Some("vim"), "src/foo.rs", Some((2, 3)), Some(&rev[..10]));
+        let t = crate::tui::takeout::TakeOut {
+            place: crate::locate::Place::CodeFile {
+                rel: "src/foo.rs".into(),
+                rev: Some(rev[..10].into()),
+                anchor: None,
+            },
+            line: Some(2),
+            label: "src/foo.rs:L2-L3@".into(),
+        };
+        app.take_out_with(Some("vim"), &t, 'e');
         let cmd = app.pending_editor.take().expect("editor queued");
         assert_eq!(cmd.program, "vim");
         assert_eq!(cmd.args[0], "+2");
@@ -373,7 +411,8 @@ mod tests {
         // The old rule (the farm's parent) is what broke: no src there.
         assert!(!wt.join("src/foo.rs").exists());
         assert!(
-            resolve_source_file(&source_base(&root, None).unwrap(), "src/foo.rs", None).is_ok()
+            crate::locate::pinned_file(&source_base(&root, None).unwrap(), "src/foo.rs", None)
+                .is_ok()
         );
         // A farm in its own checkout keeps resolving against its parent.
         let (proj, _farm) = crate::tui::test_support::temp_farm(&[]);
@@ -382,24 +421,5 @@ mod tests {
             Some(proj.clone())
         );
         let _ = std::fs::remove_dir_all(&base);
-    }
-
-    #[test]
-    fn following_a_source_link_queues_the_editor_at_the_line() {
-        let (proj, farm) = crate::tui::test_support::temp_farm(&[]);
-        std::fs::create_dir_all(proj.join("src")).unwrap();
-        std::fs::write(proj.join("src/foo.rs"), "a\nb\nc\n").unwrap();
-        let mut app = App::with_farm(farm).unwrap();
-        app.open_source_with(Some("nvim"), "src/foo.rs", Some((2, 2)), None);
-        let cmd = app.pending_editor.take().expect("editor queued");
-        let file = proj.join("src/foo.rs").display().to_string();
-        assert_eq!(cmd.args, ["+2".to_string(), file]);
-        // A missing file: a message, nothing queued.
-        app.open_source_with(Some("nvim"), "src/gone.rs", None, None);
-        assert!(app.pending_editor.is_none());
-        assert_eq!(
-            app.notification.as_deref(),
-            Some("src/gone.rs: no such file")
-        );
     }
 }

@@ -113,6 +113,68 @@ impl AttachView {
         }
     }
 
+    /// The viewer for code file `rel` of the checkout (at commit `rev` when
+    /// pinned), read from `path`. `text` is the file's text, or `Err` the
+    /// one line to show in its place ([`DocKind::Code`]). `marked` is the
+    /// line range the link named. The target is `code:<rel>`, which is how
+    /// the history and the take-out menu tell it from a farm file.
+    pub(crate) fn code(
+        rel: &str,
+        path: PathBuf,
+        text: Result<String, String>,
+        rev: Option<String>,
+        marked: Option<(u32, u32)>,
+    ) -> Self {
+        let (text, error) = match text {
+            Ok(t) => (t, None),
+            Err(e) => (String::new(), Some(e)),
+        };
+        AttachView {
+            target: format!("code:{rel}"),
+            path,
+            text,
+            markdown: false,
+            doc: DocKind::Code {
+                lang: super::syntax::Lang::from_path(rel),
+                marked,
+                error,
+            },
+            rev,
+            nav: LineNav::default(),
+            width: Cell::new(0),
+        }
+    }
+
+    /// The repository path of a code file's viewer (`None` for any other).
+    pub(crate) fn code_rel(&self) -> Option<&str> {
+        match self.doc {
+            DocKind::Code { .. } => self.target.strip_prefix("code:"),
+            _ => None,
+        }
+    }
+
+    /// The 1-based line of the file the cursor is on, for `e` in the take-out
+    /// menu to open the editor at: a code or plain text file's line, a
+    /// markdown file's line of the row's source (a dok's frontmatter counted).
+    /// `None` when the cursor is on nothing with a line of its own.
+    pub(crate) fn source_line(&self, rows: &[detail::DLine]) -> Option<u32> {
+        let row = rows.get(self.nav.line)?;
+        match &self.doc {
+            DocKind::Code { error: Some(_), .. } => None,
+            DocKind::Code { .. } => Some(self.nav.line as u32 + 1),
+            DocKind::Attachment | DocKind::File if !self.markdown => {
+                Some(rows[..=self.nav.line].iter().filter(|r| !r.cont).count() as u32)
+            }
+            _ => {
+                let src = row.src.filter(|s| s.block == 0)?;
+                let (a, _) = src.lines?;
+                let body = self.blocks()[0];
+                let front = self.text[..self.text.len() - body.len()].lines().count();
+                Some((a + front + 1) as u32)
+            }
+        }
+    }
+
     /// The document links in it are written from: an attachment of its yak
     /// (`target` is `<id>/<file>`), or the farm file at its path, so a
     /// relative link means what [`crate::links::parse`] says it means there.
@@ -142,6 +204,7 @@ impl AttachView {
                 .strip_suffix("/source.md")
                 .unwrap_or(&self.target),
             DocKind::Dok | DocKind::File => &self.target,
+            DocKind::Code { .. } => self.code_rel().unwrap_or(&self.target),
         }
     }
 
@@ -153,6 +216,7 @@ impl AttachView {
             DocKind::Attachment | DocKind::File => "text".into(),
             DocKind::Dok => crate::doks::Dok::parse(&self.target, &self.text).kind(),
             DocKind::Source { .. } => "source".into(),
+            DocKind::Code { .. } => "code".into(),
         }
     }
 
@@ -161,7 +225,9 @@ impl AttachView {
     /// frontmatter (a dok, a source's note), then a source's extracted text.
     pub(crate) fn blocks(&self) -> Vec<&str> {
         match &self.doc {
-            DocKind::Attachment | DocKind::File => vec![self.text.as_str()],
+            DocKind::Attachment | DocKind::File | DocKind::Code { .. } => {
+                vec![self.text.as_str()]
+            }
             DocKind::Dok => vec![self.body()],
             DocKind::Source { extracted } => {
                 let mut v = vec![self.body()];
@@ -212,6 +278,14 @@ impl AttachView {
         let md_rows = |text: &str, block: usize| -> Vec<detail::DLine> {
             detail::md_rows(text, width, known, self.from(), block, images)
         };
+        if let DocKind::Code {
+            lang,
+            marked,
+            error,
+        } = &self.doc
+        {
+            return code_rows(&self.text, *lang, *marked, error.as_deref(), width);
+        }
         if matches!(self.doc, DocKind::Dok | DocKind::Source { .. }) {
             let blocks = self.blocks();
             let mut out = frontmatter_rows(&self.text);
@@ -243,14 +317,119 @@ impl AttachView {
 }
 
 /// What a viewer shows: a yak attachment, a dok, a saved source with
-/// its extracted text (`None` when it has none), or another farm file (a
-/// link to `/sources/<id>/extracted.md`, an image's sibling note, ...).
+/// its extracted text (`None` when it has none), another farm file (a
+/// link to `/sources/<id>/extracted.md`, an image's sibling note, ...), or a
+/// file of the code checkout.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum DocKind {
     Attachment,
     Dok,
-    Source { extracted: Option<String> },
+    Source {
+        extracted: Option<String>,
+    },
     File,
+    /// A `code:` file of the code checkout (yaks-c3d0), read-only: shown with
+    /// line numbers, coloured by its extension (`lang`), the lines the link
+    /// named (`marked`) in the gutter's accent. `error` is why there is no
+    /// text (a commit this checkout lacks, a missing file): the viewer then
+    /// shows that one line instead of the file.
+    Code {
+        lang: Option<super::syntax::Lang>,
+        marked: Option<(u32, u32)>,
+        error: Option<String>,
+    },
+}
+
+/// A code file as rows: a line-number gutter that stays put when a long line
+/// scrolls sideways (a no-wrap block, so `h`/`l` work as in a code fence),
+/// the text coloured by `lang` ([`super::syntax`], the highlighter the
+/// markdown code blocks use; none: uncoloured), and the gutter of the lines
+/// `marked` in an accent. Every row records its source line (block 0), so a
+/// yank copies the file's own text and `#L12` lands on row 11. `error` is the
+/// one row shown instead of a file that could not be read.
+fn code_rows(
+    text: &str,
+    lang: Option<super::syntax::Lang>,
+    marked: Option<(u32, u32)>,
+    error: Option<&str>,
+    width: usize,
+) -> Vec<detail::DLine> {
+    use super::markdown::MdSpan;
+    let mut out = Vec::new();
+    let mut row = |text: String, md: Vec<MdSpan>, i: usize, gutter: Option<usize>| {
+        out.push(detail::DLine {
+            text,
+            kind: detail::Kind::Body,
+            links: vec![],
+            md,
+            cont: false,
+            src: gutter.map(|_| detail::Src {
+                block: 0,
+                lines: Some((i, i)),
+            }),
+            nowrap: gutter.map(|gutter| super::mdrender::NoWrap { id: 0, gutter }),
+            image: None,
+        });
+    };
+    if let Some(e) = error {
+        let msg = detail::DLine {
+            text: e.to_string(),
+            kind: detail::Kind::Body,
+            links: vec![],
+            md: vec![MdSpan {
+                start: 0,
+                len: e.chars().count(),
+                style: ratatui::style::Style::new().fg(ratatui::style::Color::Yellow),
+            }],
+            cont: false,
+            src: None,
+            nowrap: None,
+            image: None,
+        };
+        return detail::wrap(vec![msg], width);
+    }
+    if text.is_empty() {
+        row("(empty file)".into(), vec![], 0, None);
+        return out;
+    }
+    let count = text.lines().count();
+    let digits = count.to_string().len();
+    let gutter = digits + 3;
+    let mut state = super::syntax::State::default();
+    for (i, l) in text.lines().enumerate() {
+        let n = i as u32 + 1;
+        let shown = l.replace('\t', "    ");
+        let chars: Vec<char> = shown.chars().collect();
+        let on = marked.is_some_and(|(a, b)| a <= n && n <= b);
+        let mut md = vec![MdSpan {
+            start: 0,
+            len: gutter,
+            style: if on {
+                super::palette::line_mark()
+            } else {
+                super::palette::line_number()
+            },
+        }];
+        if let Some(lang) = lang {
+            let base = ratatui::style::Style::new();
+            for run in super::syntax::highlight(lang, &mut state, &chars, base) {
+                if run.style != base {
+                    md.push(MdSpan {
+                        start: gutter + run.start,
+                        len: run.len,
+                        style: run.style,
+                    });
+                }
+            }
+        }
+        row(
+            format!("{n:>digits$} \u{2502} {shown}"),
+            md,
+            i,
+            Some(gutter),
+        );
+    }
+    out
 }
 
 fn plain_row(text: String, kind: detail::Kind) -> detail::DLine {
@@ -1402,11 +1581,6 @@ impl App {
                 }
             }
             Cmd::DocEdit => self.open_attachment_edit(),
-            Cmd::FileOpenExternal => {
-                let (target, arg) = (v.target.clone(), v.path.display().to_string());
-                self.close_doc();
-                self.os_open(&target, &arg);
-            }
             _ => {}
         }
         // A no-wrap block's sideways scroll lives only while the cursor is on it.
@@ -1468,7 +1642,7 @@ impl App {
             detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
             detail::Target::Url(u) | detail::Target::Artifact(u) => self.open_external(&u),
             detail::Target::Source { path, lines, rev } => {
-                self.open_source(&path, lines, rev.as_deref())
+                self.open_code(&path, lines, rev.as_deref())
             }
             detail::Target::Farm { path, rev, anchor } => {
                 self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
@@ -1488,6 +1662,14 @@ impl App {
                 "{}@{}: a past version is read-only",
                 v.target,
                 &rev[..rev.len().min(7)]
+            ));
+            return;
+        }
+        // A code file is the checkout's, not the farm's (yaks-c3d0).
+        if v.code_rel().is_some() {
+            self.notification = Some(format!(
+                "{}: a code file is read-only here; O then e opens your editor",
+                v.target
             ));
             return;
         }
@@ -1617,30 +1799,6 @@ impl App {
             id,
             &crate::links::percent_decode(name),
         )
-    }
-
-    /// O — open the artifact/URL/source link on the current detail line (a
-    /// text attachment in the viewer, anything else externally).
-    pub(crate) fn open_current_external(&mut self) {
-        match self.detail_link() {
-            Some(j) => match j.target {
-                detail::Target::Artifact(p) => self.open_external(&p),
-                detail::Target::Url(u) => self.open_external(&u),
-                detail::Target::Source { path, lines, rev } => {
-                    self.open_source(&path, lines, rev.as_deref())
-                }
-                detail::Target::Farm { path, rev, anchor } => {
-                    self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
-                }
-                detail::Target::Task(_)
-                | detail::Target::Note { .. }
-                | detail::Target::Footnote(_)
-                | detail::Target::Local(_) => {
-                    self.notification = Some("not an artifact/link".into())
-                }
-            },
-            None => self.notification = Some("no link on this line".into()),
-        }
     }
 
     /// M — append a timestamped comment/note to the selected task (multi-line).
@@ -2225,6 +2383,7 @@ impl App {
             | Overlay::Find(_)
             | Overlay::ViewPicker(_)
             | Overlay::Help(_) => {}
+            Overlay::TakeOut(t) => self.take_out_key(t, k),
             Overlay::Pick {
                 prompt,
                 keys,

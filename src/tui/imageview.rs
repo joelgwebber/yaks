@@ -424,11 +424,6 @@ impl App {
             Cmd::PaneClose => self.close_doc(),
             Cmd::NavBack => self.history_back(),
             Cmd::NavForward => self.history_forward(),
-            Cmd::FileOpenExternal => {
-                let (target, arg) = (v.target.clone(), v.path.display().to_string());
-                self.close_doc();
-                self.os_open(&target, &arg);
-            }
             _ => {}
         }
     }

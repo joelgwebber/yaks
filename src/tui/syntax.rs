@@ -56,6 +56,18 @@ impl Lang {
         })
     }
 
+    /// The language of a file by its extension (`src/a.rs`, `x.YML`): the
+    /// same table as a fence's info string. `None` for no or an unknown
+    /// extension, which the viewer leaves uncoloured.
+    pub fn from_path(path: &str) -> Option<Lang> {
+        let name = path.rsplit('/').next()?;
+        let (stem, ext) = name.rsplit_once('.')?;
+        if stem.is_empty() {
+            return None;
+        }
+        Lang::from_info(ext)
+    }
+
     fn spec(self) -> &'static Spec {
         match self {
             Lang::Rust => &RUST,
@@ -723,6 +735,23 @@ mod tests {
             ("brainfuck", None),
         ] {
             assert_eq!(Lang::from_info(info), want, "{info:?}");
+        }
+    }
+
+    #[test]
+    fn a_file_is_coloured_by_its_extension() {
+        for (path, want) in [
+            ("src/links.rs", Some(Lang::Rust)),
+            ("a/b.YML", Some(Lang::Yaml)),
+            ("Cargo.toml", Some(Lang::Toml)),
+            ("x.tsx", Some(Lang::Js)),
+            ("run.sh", Some(Lang::Sh)),
+            ("README", None),
+            (".gitignore", None),
+            ("notes.txt", None),
+            ("dir.rs/file", None),
+        ] {
+            assert_eq!(Lang::from_path(path), want, "{path}");
         }
     }
 
