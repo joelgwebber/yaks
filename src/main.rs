@@ -4274,7 +4274,7 @@ fn report_migrate(r: &migrate::Report) {
             }
         }
     }
-    for f in &r.fixups {
+    for f in r.fixups.iter().filter(|f| !f.yaks.is_empty()) {
         let total: usize = f.yaks.iter().map(|(_, n)| n).sum();
         println!(
             "  {}: {total} {} in {} yak(s)",
@@ -4288,12 +4288,15 @@ fn report_migrate(r: &migrate::Report) {
             }
         }
     }
+    report_schema9(r);
     let mut line = format!(
         "{} yak file(s) {}",
         r.files,
         if r.applied { "rewritten" } else { "to rewrite" }
     );
-    if r.applied && r.git_tracked {
+    if r.applied && r.s9.commit.is_some() {
+        line.push_str("; the migration is committed (two commits: the move, then the rewrite)");
+    } else if r.applied && r.git_tracked {
         line.push_str(&format!(
             "; commit with: yaks commit -m \"yaks: migrate the farm to schema {}\"",
             store::SCHEMA
@@ -4302,6 +4305,72 @@ fn report_migrate(r: &migrate::Report) {
         line.push_str(" (dry run: nothing written; re-run without --dry-run)");
     }
     println!("{line}");
+}
+
+/// The schema-9 part of a `yaks migrate` report: the layout move, the link
+/// and note rewrites, the source renames, and what stops a real run. A dry
+/// run and a real run print the same numbers (one plan feeds both).
+fn report_schema9(r: &migrate::Report) {
+    let s = &r.s9;
+    let done = r.applied;
+    if s.move_to_root {
+        let n = if done { s.moved.len() } else { s.files_to_move };
+        println!(
+            "  farm-at-branch-root: {n} file(s) {} `.yaks/` -> the branch root (git renames, no content change{})",
+            if done {
+                "moved out of"
+            } else {
+                "to move out of"
+            },
+            s.move_commit
+                .as_deref()
+                .map(|c| format!("; commit {c}"))
+                .unwrap_or_default()
+        );
+    }
+    if s.links.total() > 0 {
+        let l = &s.links;
+        println!(
+            "  links: {} edit(s) in {} file(s) ({} yak, {} attachment, {} sessions/sources path, {} source name)",
+            l.total(),
+            s.link_files,
+            l.yak,
+            l.attachment,
+            l.namespace,
+            l.source
+        );
+    }
+    if s.notes > 0 {
+        println!(
+            "  notes: {} note(s) in {} yak(s) {} the schema-9 shape (`#### <timestamp>` + an italic line)",
+            s.notes,
+            s.note_yaks,
+            if done { "put into" } else { "to put into" }
+        );
+    }
+    if !s.old_shape.is_empty() {
+        println!(
+            "  notes left as written: {} yak(s) have note headers that are not timestamps",
+            s.old_shape.len()
+        );
+        if !done {
+            println!("    {}", s.old_shape.join(" "));
+        }
+    }
+    if !s.sources.is_empty() {
+        println!(
+            "  sources: {} director{} {} a slug (`<date>-<sha8>-<slug>`)",
+            s.sources.len(),
+            if s.sources.len() == 1 { "y" } else { "ies" },
+            if done { "given" } else { "to give" }
+        );
+    }
+    if let Some(c) = &s.commit {
+        println!("  rewrite commit {c}");
+    }
+    for why in s.blocked.iter().chain(&s.plan_blocked) {
+        println!("  BLOCKED: {why}");
+    }
 }
 
 /// `--set key=value` for a dok: any key (doks have no built-in fields

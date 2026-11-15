@@ -2,15 +2,18 @@
 //! It reads the farm and reports what a person or an agent should look at,
 //! and never edits.
 //!
-//! Ten kinds of finding. Four are `doctor`'s own issues, reused as they are
+//! Eleven kinds of finding. Four are `doctor`'s own issues, reused as they are
 //! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
-//! are ported from Hearth's `internal/check/scan.go`, and three are yaks's own:
+//! are ported from Hearth's `internal/check/scan.go`, and four are yaks's own:
 //!
 //! - `stale`: a dok past its `stale_after` (its own, else its schema's);
 //! - `uncited`: a source nothing in the farm cites;
 //! - `similar-kinds`: dok kinds that differ only by plural or hyphens;
 //! - `no-description` (yaks-2755): a dok with no `description:`, the index
 //!   line `dok list` shows. Only doks: session notes and schemas are not.
+//! - `stray-layout` (yaks-acc0): a file under `.yaks/` of a farm that moved to the
+//!   branch root at schema 9. A writer who had not synced committed it at the old
+//!   path, so no yaks command sees it until it is moved.
 //! - `code-moved` and `code-gone` (yaks-6cf2): a dok cites `code:<path>` and the
 //!   code repo has commits to that path since the dok was written, or the path
 //!   is gone. Evidence, not a verdict: an agent reads the dok against the code
@@ -38,6 +41,7 @@ pub enum Kind {
     Uncited,
     SimilarKinds,
     NoDescription,
+    StrayLayout,
     CodeMoved,
     CodeGone,
 }
@@ -54,6 +58,7 @@ impl Kind {
             Kind::Uncited => "uncited",
             Kind::SimilarKinds => "similar-kinds",
             Kind::NoDescription => "no-description",
+            Kind::StrayLayout => "stray-layout",
             Kind::CodeMoved => "code-moved",
             Kind::CodeGone => "code-gone",
         }
@@ -78,6 +83,10 @@ on purpose with `yaks source mark`)"
             Kind::NoDescription => {
                 "Dok with no description (`description:` is the index line `yaks dok list` \
 shows: one sentence on when to read it)"
+            }
+            Kind::StrayLayout => {
+                "Files left under `.yaks/` (the farm is at the branch root since schema 9: \
+`git mv` each to the same path without `.yaks/`)"
             }
             Kind::CodeMoved => {
                 "Code has changed since the dok was written or last verified (commits to a \
@@ -152,6 +161,7 @@ pub fn run_at(farm: &Farm, now: DateTime<Utc>, code: Option<PathBuf>) -> Result<
     out.extend(uncited(root)?);
     out.extend(similar_kinds(&all_doks, &all_schemas));
     out.extend(no_description(&all_doks));
+    out.extend(stray_layout(root));
     let (moved, notes) = code_changes(&Space::new(root, code), &all_doks);
     out.extend(moved);
     Ok(Report {
@@ -199,6 +209,47 @@ pub fn render(found: &[Finding]) -> String {
         );
     }
     s
+}
+
+// ---- stray layout --------------------------------------------------------
+
+/// Files under `<root>/.yaks/` other than the stub the migration leaves
+/// (`README.md`, `schema`) and the lock. Only a farm at the branch root has
+/// them: for a farm still at `.yaks/` the root *is* that directory.
+fn stray_layout(root: &Path) -> Vec<Finding> {
+    let stub = root.join(".yaks");
+    if !stub.is_dir() || !root.join("schema").is_file() {
+        return Vec::new();
+    }
+    let mut found = Vec::new();
+    let mut stack = vec![stub.clone()];
+    while let Some(dir) = stack.pop() {
+        let Ok(rd) = std::fs::read_dir(&dir) else {
+            continue;
+        };
+        for e in rd.flatten() {
+            let path = e.path();
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            let rel = path.strip_prefix(&stub).unwrap_or(&path);
+            if matches!(
+                rel.to_str(),
+                Some("README.md" | "schema" | ".lock" | ".gitignore")
+            ) {
+                continue;
+            }
+            let rel = rel.to_string_lossy().replace('\\', "/");
+            found.push(Finding {
+                kind: Kind::StrayLayout,
+                message: format!(".yaks/{rel} should be at {rel}"),
+                ids: vec![format!(".yaks/{rel}")],
+            });
+        }
+    }
+    found.sort_by(|a, b| a.message.cmp(&b.message));
+    found
 }
 
 // ---- stale ---------------------------------------------------------------
@@ -743,6 +794,28 @@ from one)",
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_file_left_under_the_old_layout_is_flagged_but_not_the_stub() {
+        let root = std::env::temp_dir().join(format!("yaks-check-stray-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join(".yaks/hearth/yaks")).unwrap();
+        std::fs::write(root.join("schema"), "9\n").unwrap();
+        std::fs::write(root.join(".yaks/schema"), "9\n").unwrap();
+        std::fs::write(root.join(".yaks/README.md"), "stub\n").unwrap();
+        assert!(stray_layout(&root).is_empty(), "the stub alone is fine");
+        std::fs::write(root.join(".yaks/hearth/yaks/hearth-ffff.md"), "x").unwrap();
+        let found = stray_layout(&root);
+        assert_eq!(found.len(), 1);
+        assert_eq!(
+            found[0].message,
+            ".yaks/hearth/yaks/hearth-ffff.md should be at hearth/yaks/hearth-ffff.md"
+        );
+        // A farm still at `.yaks/` has no `schema` at its parent: not flagged.
+        std::fs::remove_file(root.join("schema")).unwrap();
+        assert!(stray_layout(&root).is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
 
     #[test]
     fn a_dok_without_a_usable_description_is_flagged_once_by_path() {
