@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T06:23:54Z'
+updated: '2026-11-15T06:31:42Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -189,3 +189,12 @@ Shape of `run` after this, so review can check the code against it:
 2. **Refusals first**, before any write: farm branch with uncommitted changes, behind or diverged from its upstream, a merge in progress, `YAKS_DIR` outside git (content stage only, said so).
 3. **Apply under the farm lock**: content writes, source renames, then for a farm branch the `git mv`, `.gitattributes`, `.gitignore`, README, stub `.yaks/schema`, the `schema` marker last, and ONE commit with the `Yaks-Actor` trailer, made by `migrate` with `git commit --only` the way `yaks commit` does. Not the per-change autocommit: its snapshot is keyed to a root that moves under it.
 4. **Report** with per-form counts, left-alone bodies, unresolvable links, source renames, and the commit.
+
+---
+▸ 2026-11-15T06:31:42Z [linkplan-lead]
+
+Found by the first end-to-end test of the git stage (a scratch farm branch at schema 8): **running the migration on a schema-8 farm rewrites yak files through the older fixups too, and the new refusal then sees them as uncommitted.** `comment_header_blank_line` (schema 5) wants a blank line between a note header and its first line; a note with metadata (`▸ <ts> [actor]` then `kind: move`) has none by design, and the fixup inserts one, which breaks the meta block. The real farm has 363 such headers. On a farm already at schema 8, schemas 5, 7 and 8's fixups are pure noise (they are what brought it to 8) and in this one case wrong.
+
+So the older steps run only for a farm older than the schema they belong to: each `Fixup` gets the schema it belongs to, and `run` applies those above the farm's marker. A schema-8 farm gets none of them; a schema-4 farm still gets all of them, then schema 9. This is also the correct reading of "idempotent": a step is not re-run on a farm that has had it. The farm's own behaviour at schemas below 8 is covered by the existing tests, which keep passing.
+
+Also from the same test: the refusal for uncommitted changes must run **before** any write, not after the content stage, or the migration itself makes the farm dirty and then refuses. Moved up.
