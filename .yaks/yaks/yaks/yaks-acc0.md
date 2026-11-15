@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T06:31:42Z'
+updated: '2026-11-15T07:05:38Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -198,3 +198,18 @@ Found by the first end-to-end test of the git stage (a scratch farm branch at sc
 So the older steps run only for a farm older than the schema they belong to: each `Fixup` gets the schema it belongs to, and `run` applies those above the farm's marker. A schema-8 farm gets none of them; a schema-4 farm still gets all of them, then schema 9. This is also the correct reading of "idempotent": a step is not re-run on a farm that has had it. The farm's own behaviour at schemas below 8 is covered by the existing tests, which keep passing.
 
 Also from the same test: the refusal for uncommitted changes must run **before** any write, not after the content stage, or the migration itself makes the farm dirty and then refuses. Moved up.
+
+---
+▸ 2026-11-15T07:05:38Z [linkplan-lead]
+
+Decision (coordinator), a change to the yak's "one commit": **the migration is two commits, a pure move and then the content rewrite.** Found by the first end-to-end test of the git stage. With one commit that both moves and rewrites each file, git pairs renames by similarity (50% by default), so a small file with many link edits shows as delete plus add, and a yak with many notes drops toward the threshold (the test's yaks came out `R051` and `R072`). On a real farm every note header changes shape, so many yaks would lose `git log --follow` across the migration. The hand rehearsal on this farm's clone showed the opposite for a pure move: all 1,292 files `R100`, whatever the rename limit.
+
+So:
+
+1. **Commit 1, the move:** `git mv` of every tracked path (and the source directory renames), `.gitattributes` rules, README, the stub, the root `schema` carried at its old value. Every farm file is a 100% rename; history follows.
+2. **Commit 2, the rewrite:** links, notes, then the `schema` marker, at the new paths, as modifications. `git blame` and `--follow` both work across it.
+3. A farm older than schema 8 gets a commit of its own for the older steps first (they move directories and edit files), so commit 1 stays pure.
+
+An interrupted run is safe at each boundary: after commit 1 the farm is at the root with its marker still 8 (a re-run skips the move and does the rewrite); the stub says 9, so an older yaks says "upgrade" in either state.
+
+Also found: `Farm::migrate` takes `store::lock`, whose guard autocommits whatever changed when it drops. A migration that makes its own commits must take `lock_uncommitted` (the doc on it names `yaks sync` and `yaks commit` for exactly this); otherwise the autocommit could add a stray third commit, keyed to a root that no longer exists.
