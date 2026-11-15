@@ -33,8 +33,12 @@ use std::process::Command;
 /// The actor of the note a merge conflict is recorded under.
 const ACTOR: &str = "merge-driver";
 
-/// The `.gitattributes` line routing farm markdown files to the driver.
-const ATTR_LINE: &str = ".yaks/**/*.md merge=yaks";
+/// The `.gitattributes` line routing farm markdown files to the driver, for a
+/// farm whose files sit under `prefix` in the repository (`".yaks/"`, or `""`
+/// at the branch root: [`crate::store::FarmGit::prefix`]).
+pub fn attr_line(prefix: &str) -> String {
+    format!("{prefix}**/*.md merge=yaks")
+}
 
 /// The result of merging three versions of one yak file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -630,19 +634,30 @@ fn driver_command() -> Result<String> {
 /// on the farm branch and the repository's `merge.yaks.driver` config.
 /// Idempotent; changes nothing that is already in place.
 pub fn ensure_registered(worktree: &Path) -> Result<()> {
+    // The rule follows where the farm sits in the repository, so a farm moved
+    // to the branch root is not given the `.yaks/` rule back by its next sync.
+    let prefix = crate::store::farm_root_in(worktree)
+        .map(|r| if r == worktree { "" } else { ".yaks/" })
+        .unwrap_or(".yaks/");
+    let want = attr_line(prefix);
     let attrs = worktree.join(".gitattributes");
     let text = match std::fs::read_to_string(&attrs) {
         Ok(t) => t,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
         Err(e) => return Err(e).with_context(|| format!("reading {}", attrs.display())),
     };
-    if !text.lines().any(|l| l.trim() == ATTR_LINE) {
+    // A rule in either form is the rule: a farm part-way through the schema-9
+    // move holds the old one until the migration commit rewrites it.
+    if !text
+        .lines()
+        .any(|l| l.trim() == want || l.trim() == attr_line(".yaks/") || l.trim() == attr_line(""))
+    {
         let sep = if text.is_empty() || text.ends_with('\n') {
             ""
         } else {
             "\n"
         };
-        store::write::atomic_write(&attrs, &format!("{text}{sep}{ATTR_LINE}\n"))?;
+        store::write::atomic_write(&attrs, &format!("{text}{sep}{want}\n"))?;
     }
     set_git_config(worktree, "merge.yaks.name", "yaks yak-file merge")?;
     set_git_config(worktree, "merge.yaks.driver", &driver_command()?)?;
@@ -1092,6 +1107,57 @@ mod tests {
         );
     }
 
+    /// The rule follows the layout (schema 9): a farm at the branch root gets
+    /// `**/*.md merge=yaks`, never the `.yaks/` one back, and a rule in either
+    /// form counts as present so a sync mid-migration adds no second one.
+    #[test]
+    fn ensure_registered_follows_the_farm_layout() {
+        let mk = |tag: &str, files: &[(&str, &str)]| {
+            let dir =
+                std::env::temp_dir().join(format!("yaks-md-layout-{tag}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            let out = Command::new("git")
+                .arg("-C")
+                .arg(&dir)
+                .args(["init", "-q"])
+                .output()
+                .unwrap();
+            assert!(out.status.success());
+            for (p, t) in files {
+                let p = dir.join(p);
+                std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+                std::fs::write(p, t).unwrap();
+            }
+            dir
+        };
+        let read = |d: &Path| std::fs::read_to_string(d.join(".gitattributes")).unwrap();
+
+        let root = mk("root", &[("config.yaml", "herd: y\n"), ("schema", "9\n")]);
+        ensure_registered(&root).unwrap();
+        ensure_registered(&root).unwrap();
+        assert_eq!(read(&root), "**/*.md merge=yaks\n");
+
+        let nested = mk("nested", &[(".yaks/config.yaml", "herd: y\n")]);
+        ensure_registered(&nested).unwrap();
+        assert_eq!(read(&nested), ".yaks/**/*.md merge=yaks\n");
+
+        // Part-way through the move: the farm is at the root, the old rule is
+        // still in the file. No second rule is added.
+        let mid = mk(
+            "mid",
+            &[
+                ("config.yaml", "herd: y\n"),
+                (".gitattributes", ".yaks/**/*.md merge=yaks\n"),
+            ],
+        );
+        ensure_registered(&mid).unwrap();
+        assert_eq!(read(&mid), ".yaks/**/*.md merge=yaks\n");
+        for d in [root, nested, mid] {
+            let _ = std::fs::remove_dir_all(d);
+        }
+    }
+
     #[test]
     fn ensure_registered_writes_the_rule_and_config_once() {
         let dir = std::env::temp_dir().join(format!("yaks-md-reg-{}", std::process::id()));
@@ -1112,6 +1178,7 @@ mod tests {
         ensure_registered(&dir).unwrap();
         ensure_registered(&dir).unwrap();
         let attrs = std::fs::read_to_string(dir.join(".gitattributes")).unwrap();
+        // No farm here yet: the default is the `.yaks/` layout's rule.
         assert_eq!(attrs, "*.png binary\n.yaks/**/*.md merge=yaks\n");
         assert_eq!(
             git(&["config", "merge.yaks.name"]).trim(),

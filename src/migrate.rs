@@ -97,6 +97,174 @@ pub fn wiki_links_become_doks_links(_: &Ctx, body: &str) -> (String, usize) {
     crate::links::rewrite(body, wiki_link_to_doks)
 }
 
+/// What the schema-9 link step reads about the text it rewrites.
+pub struct LinkCx<'a> {
+    /// Every yak id of the farm.
+    pub ids: &'a HashSet<String>,
+    /// Where the text sits, which decides what a relative link means.
+    pub from: crate::links::From<'a>,
+    /// The yak whose file or attachment this is; `None` for a dok or a session.
+    pub own: Option<&'a str>,
+    /// `sources::plan_slugs`: old source directory to its slugged name.
+    pub sources: &'a [(String, String)],
+}
+
+/// How many links of each kind the schema-9 link step rewrote in one text.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct LinkEdits {
+    /// A bare yak id (or its note) to `/<herd>/yaks/<id>.md[#note]`.
+    pub yak: usize,
+    /// An attachment link to the form that works from where it sits.
+    pub attachment: usize,
+    /// `/doks/sessions|sources/...` to the real farm path.
+    pub namespace: usize,
+    /// A source directory to its slugged name.
+    pub source: usize,
+}
+
+impl LinkEdits {
+    pub fn total(&self) -> usize {
+        self.yak + self.attachment + self.namespace + self.source
+    }
+    pub fn add(&mut self, o: LinkEdits) {
+        self.yak += o.yak;
+        self.attachment += o.attachment;
+        self.namespace += o.namespace;
+        self.source += o.source;
+    }
+}
+
+/// `/doks/sessions/...` and `/doks/sources/...` name a path that does not
+/// exist: sessions and sources sit beside `doks/`, not inside it (yaks-bede).
+/// The farm path they meant, or `None` for any other link.
+fn namespace_fix(dest: &str) -> Option<String> {
+    let rest = dest.strip_prefix("/doks/")?;
+    let first = rest.split(['/', '#', '@']).next()?;
+    matches!(first, "sessions" | "sources").then(|| format!("/{rest}"))
+}
+
+/// The link `dest` as it should be stored at schema 9, and which kind of edit
+/// that was; `None` when it is already right or is not one of ours.
+///
+/// - a yak (bare id, or `<id>#<note>`) is `/<herd>/yaks/<id>.md`, with a note
+///   anchor in its slug form, which is what a markdown host gives the
+///   `#### <timestamp>` heading;
+/// - an attachment is the bare sibling name inside its own yak's attachments,
+///   `<id>/<file>` in a yak of the same herd (the file sits beside the yak's
+///   directory, so that already resolves on a host), and the path from the
+///   farm root, `/<herd>/yaks/<id>/<file>`, everywhere else;
+/// - `/doks/sessions|sources/...` loses its `doks/`, and a source directory
+///   gains its slug.
+///
+/// Code links, URLs, pins and relative document links are left as written.
+fn canonical_dest(cx: &LinkCx, dest: &str) -> Option<(String, LinkEdits)> {
+    use crate::links::{From as At, Link};
+    let mut e = LinkEdits::default();
+    let mut cur = dest.to_string();
+    if let Some(fixed) = namespace_fix(&cur) {
+        cur = fixed;
+        e.namespace = 1;
+    }
+    if let Some(new) = crate::sources::rewrite_ref(&cur, cx.sources) {
+        cur = new;
+        e.source = 1;
+    }
+    let link = crate::links::parse(&cur, cx.from, |s| cx.ids.contains(s));
+    let frag = match cur.split_once('#') {
+        Some((_, f)) => format!("#{f}"),
+        None => String::new(),
+    };
+    let want = match &link {
+        Link::Yak { id, note } => {
+            let anchor = note
+                .as_deref()
+                .and_then(crate::links::slug_note_anchor)
+                .map(|s| format!("#{s}"))
+                .unwrap_or_default();
+            e.yak = 1;
+            format!("/{}/yaks/{id}.md{anchor}", store::herd_of(id))
+        }
+        // Already the path from the farm root: it resolves on a host from
+        // anywhere, so it is not shortened to a sibling name.
+        Link::Attachment { .. } if cur.starts_with('/') => {
+            return (cur != dest).then_some((cur, e));
+        }
+        Link::Attachment { id, name, .. } => {
+            let enc = crate::links::percent_encode_path(name);
+            let own_attachment = matches!(cx.from, At::Attachment(o) if o == id);
+            let beside_yak = matches!(cx.from, At::Yak)
+                && cx
+                    .own
+                    .is_some_and(|o| store::herd_of(o) == store::herd_of(id));
+            e.attachment = 1;
+            if own_attachment {
+                format!("{enc}{frag}")
+            } else if beside_yak {
+                format!("{id}/{enc}{frag}")
+            } else {
+                format!("/{}/yaks/{id}/{enc}{frag}", store::herd_of(id))
+            }
+        }
+        _ => return (cur != dest).then_some((cur, e)),
+    };
+    (want != dest).then_some((want, e))
+}
+
+/// Schema 9: rewrite every link of a markdown `text` that [`canonical_dest`]
+/// names, code spans and fences untouched ([`crate::links::rewrite`]). The new
+/// text and how many links of each kind changed. Idempotent.
+pub fn canonical_links(cx: &LinkCx, text: &str) -> (String, LinkEdits) {
+    let total = std::cell::Cell::new(LinkEdits::default());
+    let (out, _) = crate::links::rewrite(text, |dest| {
+        let (new, e) = canonical_dest(cx, dest)?;
+        let mut t = total.get();
+        t.add(e);
+        total.set(t);
+        Some(new)
+    });
+    (out, total.get())
+}
+
+/// The farm's `.gitattributes` with its rules moved from the `.yaks/`
+/// directory to the branch root, one line at a time: `.yaks/**/*.md
+/// merge=yaks` becomes `**/*.md merge=yaks`, and every LFS rule
+/// (`.yaks/**/*.[pP][nN][gG] filter=lfs ...`) likewise. A line that does not
+/// start with `.yaks/` (another rule, a comment, a blank) is kept as written,
+/// and so is the order, so a repository's own rules stay where they are.
+/// Returns the new text and the number of lines that moved. Idempotent.
+pub fn move_attribute_rules(text: &str) -> (String, usize) {
+    let mut moved = 0;
+    let mut out: Vec<String> = Vec::new();
+    for line in text.split('\n') {
+        match line.strip_prefix(".yaks/") {
+            Some(rest) => {
+                moved += 1;
+                out.push(rest.to_string());
+            }
+            None => out.push(line.to_string()),
+        }
+    }
+    (out.join("\n"), moved)
+}
+
+/// The comment above the LFS rules says where they apply: `.yaks/` becomes the
+/// farm. Kept apart from [`move_attribute_rules`] so the rule lines stay a pure
+/// prefix strip.
+pub(crate) fn lfs_marker_text(text: &str) -> String {
+    text.replace(
+        "# yaks lfs: binary originals under .yaks/ are stored in Git LFS",
+        "# yaks lfs: binary originals in the farm are stored in Git LFS",
+    )
+}
+
+/// Schema 9 (yaks-9f00): a yak's notes in the new shape, a `#### <timestamp>`
+/// heading each ([`store::convert_notes`]). A body whose note headers are not
+/// timestamps (a hand-written note header with a date and a title) comes back
+/// unchanged, still readable in the old shape.
+pub fn notes_new_shape(_: &Ctx, body: &str) -> (String, usize) {
+    store::convert_notes(body)
+}
+
 /// Schema 7 (yaks-fd7a): `](<id>/my shot.png)`, an attachment link whose file
 /// name holds a space (which CommonMark does not read as a link), becomes
 /// `](<id>/my%20shot.png)`, for any `<id>` that is a yak of this farm.
@@ -681,6 +849,145 @@ mod tests {
     }
 
     // -- schema 8: wiki -> doks --------------------------------------------
+
+    fn cx<'a>(
+        ids: &'a HashSet<String>,
+        from: crate::links::From<'a>,
+        own: Option<&'a str>,
+        sources: &'a [(String, String)],
+    ) -> LinkCx<'a> {
+        LinkCx {
+            ids,
+            from,
+            own,
+            sources,
+        }
+    }
+
+    fn links(text: &str, from: crate::links::From, own: Option<&str>) -> (String, LinkEdits) {
+        let ids = ctx(&["yaks-1a2b", "yaks-3c4d", "other-0001"]);
+        let plan = vec![(
+            "sources/2026-11-03-81364278".to_string(),
+            "sources/2026-11-03-81364278-a-title".to_string(),
+        )];
+        canonical_links(&cx(&ids, from, own, &plan), text)
+    }
+
+    #[test]
+    fn a_bare_yak_id_becomes_the_path_a_host_can_follow() {
+        use crate::links::From as At;
+        let (out, e) = links(
+            "see [a](yaks-1a2b) and [n](yaks-1a2b#2026-11-04T22:13:03Z) and [o](other-0001)",
+            At::Yak,
+            Some("yaks-3c4d"),
+        );
+        assert_eq!(
+            out,
+            "see [a](/yaks/yaks/yaks-1a2b.md) and \
+             [n](/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z) and [o](/other/yaks/other-0001.md)"
+        );
+        assert_eq!((e.yak, e.total()), (3, 3));
+        // A `-1` suffix (a second note in one second) keeps its meaning.
+        let (out, _) = links("[n](yaks-1a2b#2026-11-04T22:13:03Z-2)", At::Yak, None);
+        assert_eq!(out, "[n](/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z-2)");
+        // The same from a dok, which sits in another directory.
+        let (out, _) = links("[a](yaks-1a2b)", At::Dok("doks/topics/x.md"), None);
+        assert_eq!(out, "[a](/yaks/yaks/yaks-1a2b.md)");
+    }
+
+    #[test]
+    fn only_real_yak_ids_are_touched() {
+        use crate::links::From as At;
+        for text in [
+            "[x](yaks-9999)", // not a yak of this farm
+            "[x](https://x.test/yaks-1a2b)",
+            "[x](code:src/yaks-1a2b.rs)",
+            "[x](#yaks-1a2b)",
+            "`[x](yaks-1a2b)` in a code span",
+            "```\n[x](yaks-1a2b)\n```",
+        ] {
+            assert_eq!(
+                links(text, At::Yak, None),
+                (text.to_string(), LinkEdits::default()),
+                "{text}"
+            );
+        }
+    }
+
+    #[test]
+    fn an_attachment_link_becomes_the_form_that_works_from_where_it_sits() {
+        use crate::links::From as At;
+        // In a yak of the same herd the file sits beside its directory: left alone.
+        let (out, e) = links("![s](yaks-1a2b/shot.png)", At::Yak, Some("yaks-3c4d"));
+        assert_eq!((out.as_str(), e.total()), ("![s](yaks-1a2b/shot.png)", 0));
+        // In another herd's yak, in a dok, or in a session: the path from the root.
+        let (out, e) = links("![s](yaks-1a2b/shot.png)", At::Yak, Some("other-0001"));
+        assert_eq!(out, "![s](/yaks/yaks/yaks-1a2b/shot.png)");
+        assert_eq!(e.attachment, 1);
+        let (out, _) = links("[d](yaks-1a2b/log.txt)", At::Dok("doks/x.md"), None);
+        assert_eq!(out, "[d](/yaks/yaks/yaks-1a2b/log.txt)");
+        // Inside the attachment's own yak, a sibling is the bare name, and
+        // the `<id>/<file>` form is shortened to it.
+        let (out, _) = links(
+            "![s](yaks-1a2b/shot.png)",
+            At::Attachment("yaks-1a2b"),
+            None,
+        );
+        assert_eq!(out, "![s](shot.png)");
+        let (out, e) = links("![s](shot.png)", At::Attachment("yaks-1a2b"), None);
+        assert_eq!((out.as_str(), e.total()), ("![s](shot.png)", 0));
+        // A path already from the root is left alone, even where a shorter
+        // form would do.
+        let (out, e) = links(
+            "![s](/yaks/yaks/yaks-1a2b/shot.png)",
+            At::Yak,
+            Some("yaks-3c4d"),
+        );
+        assert_eq!(
+            (out.as_str(), e.total()),
+            ("![s](/yaks/yaks/yaks-1a2b/shot.png)", 0)
+        );
+        // In another yak's attachment, an attachment of a third yak is a path.
+        let (out, _) = links("![s](yaks-3c4d/a.png)", At::Attachment("yaks-1a2b"), None);
+        assert_eq!(out, "![s](/yaks/yaks/yaks-3c4d/a.png)");
+        // An encoded name stays encoded; an anchor is kept.
+        let (out, _) = links("[d](yaks-1a2b/my%20doc.md#top)", At::Dok("doks/x.md"), None);
+        assert_eq!(out, "[d](/yaks/yaks/yaks-1a2b/my%20doc.md#top)");
+    }
+
+    #[test]
+    fn sessions_and_sources_links_name_the_real_path_and_the_slugged_directory() {
+        use crate::links::From as At;
+        let (out, e) = links(
+            "[s](/doks/sessions/2026/11/x.md) [src](/doks/sources/2026-11-03-81364278) \
+             [ok](/sources/2026-11-03-81364278/source.md#top) [pin](/sources/2026-11-03-81364278/source.md@3f2a9c1)",
+            At::Dok("doks/x.md"),
+            None,
+        );
+        assert_eq!(
+            out,
+            "[s](/sessions/2026/11/x.md) [src](/sources/2026-11-03-81364278-a-title) \
+             [ok](/sources/2026-11-03-81364278-a-title/source.md#top) \
+             [pin](/sources/2026-11-03-81364278/source.md@3f2a9c1)"
+        );
+        assert_eq!((e.namespace, e.source), (2, 2));
+        // A `/doks/...` path that is not a session or a source is a dok.
+        let (out, e) = links("[d](/doks/sessionsx/a.md)", At::Dok("doks/x.md"), None);
+        assert_eq!((out.as_str(), e.total()), ("[d](/doks/sessionsx/a.md)", 0));
+    }
+
+    #[test]
+    fn the_link_step_is_idempotent() {
+        use crate::links::From as At;
+        let text = "[a](yaks-1a2b) [n](yaks-1a2b#2026-11-04T22:13:03Z) ![s](yaks-3c4d/a.png) \
+                    [src](/doks/sources/2026-11-03-81364278)";
+        let (once, e) = links(text, At::Dok("doks/x.md"), None);
+        // Four links, five edits: the last one needs its `doks/` dropped and
+        // its source directory slugged, and each is counted.
+        assert_eq!((e.yak, e.attachment, e.namespace, e.source), (2, 1, 1, 1));
+        let (twice, e2) = links(&once, At::Dok("doks/x.md"), None);
+        assert_eq!((twice, e2.total()), (once, 0));
+    }
 
     #[test]
     fn wiki_links_become_doks_links_only_where_they_are_farm_links() {

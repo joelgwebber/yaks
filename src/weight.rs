@@ -299,8 +299,15 @@ impl Report {
     }
 }
 
-/// The marker comment above the rules [`enable_lfs`] writes.
-const LFS_MARKER: &str = "# yaks lfs: binary originals under .yaks/ are stored in Git LFS";
+/// The marker comment above the rules [`enable_lfs`] writes, for a farm under
+/// `prefix` (`".yaks/"`, or `""` at the branch root).
+fn lfs_marker(prefix: &str) -> String {
+    if prefix.is_empty() {
+        "# yaks lfs: binary originals in the farm are stored in Git LFS".to_string()
+    } else {
+        format!("# yaks lfs: binary originals under {prefix} are stored in Git LFS")
+    }
+}
 
 /// A case-insensitive glob for one extension: `png` -> `[pP][nN][gG]`.
 fn ci_glob(ext: &str) -> String {
@@ -315,12 +322,14 @@ fn ci_glob(ext: &str) -> String {
         .collect()
 }
 
-/// The `.gitattributes` lines routing binary originals under `.yaks/` to LFS.
-pub fn lfs_rules() -> Vec<String> {
-    let mut out = vec![LFS_MARKER.to_string()];
+/// The `.gitattributes` lines routing binary originals in the farm to LFS, for
+/// a farm under `prefix` in the repository (`".yaks/"`, or `""` at the branch
+/// root: [`crate::store::FarmGit::prefix`]).
+pub fn lfs_rules(prefix: &str) -> Vec<String> {
+    let mut out = vec![lfs_marker(prefix)];
     out.extend(BINARY_EXTS.iter().map(|e| {
         format!(
-            ".yaks/**/*.{} filter=lfs diff=lfs merge=lfs -text",
+            "{prefix}**/*.{} filter=lfs diff=lfs merge=lfs -text",
             ci_glob(e)
         )
     }));
@@ -366,7 +375,7 @@ pub fn enable_lfs(root: &Path) -> Result<LfsOutcome> {
         Err(e) => return Err(e).with_context(|| format!("reading {}", attrs.display())),
     };
     let have: Vec<&str> = text.lines().map(str::trim).collect();
-    let missing: Vec<String> = lfs_rules()
+    let missing: Vec<String> = lfs_rules(&fg.prefix)
         .into_iter()
         .filter(|r| !have.contains(&r.as_str()))
         .collect();
@@ -471,8 +480,8 @@ mod tests {
 
     #[test]
     fn rules_are_case_insensitive_and_scoped_to_the_farm() {
-        let r = lfs_rules();
-        assert_eq!(r[0], LFS_MARKER);
+        let r = lfs_rules(".yaks/");
+        assert_eq!(r[0], lfs_marker(".yaks/"));
         assert!(
             r.contains(&".yaks/**/*.[pP][nN][gG] filter=lfs diff=lfs merge=lfs -text".to_string())
         );
@@ -480,6 +489,31 @@ mod tests {
         assert!(
             !r.iter()
                 .any(|l| l.contains("*.md") || l.contains("[sS][vV][gG]"))
+        );
+    }
+
+    /// A farm at the branch root (schema 9): the same rules, with no `.yaks/`
+    /// in them, and the migration's own rewrite of the old ones lands on
+    /// exactly these lines, so `yaks lfs` after a migration finds nothing missing.
+    #[test]
+    fn rules_at_the_branch_root_are_the_old_rules_without_the_prefix() {
+        let root = lfs_rules("");
+        let old = lfs_rules(".yaks/");
+        assert_eq!(root.len(), old.len());
+        assert_eq!(
+            root[0],
+            "# yaks lfs: binary originals in the farm are stored in Git LFS"
+        );
+        assert!(
+            root.contains(&"**/*.[pP][nN][gG] filter=lfs diff=lfs merge=lfs -text".to_string())
+        );
+        assert!(!root.iter().any(|l| l.contains(".yaks/")));
+        let (moved, n) = crate::migrate::move_attribute_rules(&old.join("\n"));
+        assert_eq!(n, old.len() - 1, "every rule line, not the comment");
+        let moved = crate::migrate::lfs_marker_text(&moved);
+        assert_eq!(
+            moved.split('\n').map(String::from).collect::<Vec<_>>(),
+            root
         );
     }
 }

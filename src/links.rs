@@ -298,6 +298,18 @@ fn split_note_anchor(frag: &str) -> (&str, usize) {
     (frag, 0)
 }
 
+/// A note anchor in its slug form, `2026-11-04t221303z` (`-<n>` kept): what a
+/// markdown host gives a `#### <timestamp>` heading. Accepts either form;
+/// `None` for a fragment that names no note. The migration writes links with it.
+pub fn slug_note_anchor(frag: &str) -> Option<String> {
+    if !is_note_anchor(frag) {
+        return None;
+    }
+    let (ts, n) = split_note_anchor(frag);
+    let slug = ts_slug(ts);
+    Some(if n == 0 { slug } else { format!("{slug}-{n}") })
+}
+
 /// The anchor naming `notes[i]` in a body of note shape `shape`: the slug of
 /// its timestamp (new shape) or the timestamp (old), suffixed `-<n>` when `n`
 /// earlier notes share it.
