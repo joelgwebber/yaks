@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T06:12:47Z'
+updated: '2026-11-15T06:19:30Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -165,3 +165,10 @@ A late writer (old layout, never synced after the migration) adds one new yak, o
 So the late-writer rule is: after the migration, a writer on an older yaks is refused by the stub marker anyway; one who already has uncommitted or unpushed work should `yaks sync` and push *before* the migration, which is what the refusal below enforces. A stray under `.yaks/` after a merge is what the strays step in a re-run moves into place. Whether `yaks sync`'s pull should merge rather than rebase in that one situation is a separate decision I am not making here.
 
 Consequence for the code: the layout stage can be a plain `git mv` of the tracked paths plus the untracked ones, in one commit; no rename-limit configuration, no history rewrite.
+
+---
+▸ 2026-11-15T06:19:30Z [linkplan-lead]
+
+Interaction found while reading the code, before it bites: `mergedriver::ensure_registered` and `weight::lfs_rules` write the `.yaks/**` rules unconditionally, and `ensure_registered` runs on every `yaks sync` (and on `yaks undo`). After the layout move, a plain `yaks sync` would append `.yaks/**/*.md merge=yaks` back beside the moved `**/*.md merge=yaks`, and `yaks lfs` would write the old LFS rules again (it checks `have.contains(rule)`, which the moved rules would no longer satisfy). The migration would be undone one sync later, silently.
+
+So both become layout-aware: the rule prefix is `.yaks/` when the farm sits under `.yaks/` (`FarmGit::prefix`) and empty at the branch root, taken from the same source as every other path conversion. `ensure_registered` also treats a rule in either form as present, so a farm mid-migration is not given a second one. Tests for both layouts, for each.
