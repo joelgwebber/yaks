@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T07:05:38Z'
+updated: '2026-11-15T07:59:30Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -213,3 +213,22 @@ So:
 An interrupted run is safe at each boundary: after commit 1 the farm is at the root with its marker still 8 (a re-run skips the move and does the rewrite); the stub says 9, so an older yaks says "upgrade" in either state.
 
 Also found: `Farm::migrate` takes `store::lock`, whose guard autocommits whatever changed when it drops. A migration that makes its own commits must take `lock_uncommitted` (the doc on it names `yaks sync` and `yaks commit` for exactly this); otherwise the autocommit could add a stray third commit, keyed to a root that no longer exists.
+
+---
+▸ 2026-11-15T07:59:30Z [linkplan-lead]
+
+Rehearsed on clones of five farms (in /tmp/lead/reh, each with a local bare remote; the real farms are untouched). Dry run and real run print the same numbers.
+
+| Farm | Yaks | Files moved | Links rewritten | Notes converted | Sources slugged | Time |
+|---|---|---|---|---|---|---|
+| yaks | 764 | 1292 | 233 | 3334 in 702 yaks | 14 | 48 s |
+| joel | 683 | 1314 | 187 | 901 in 358 yaks | 180 | 47 s |
+| hearth | 113 | 249 | 74 | 441 in 104 yaks | 5 | 9 s |
+| schism | 145 | 227 | 272 | 155 in 48 yaks | 0 | 8 s |
+| surveyor | 530 | 862 | 0 | 2214 in 481 yaks | 0 | 29 s |
+
+Checks, each farm: yak count unchanged; every note (id, timestamp, actor, meta) present before and after, and its text identical apart from link destinations (3241 notes on the yaks farm, all five farms 0 differences); `yaks check` findings unchanged except the intended ones (source names now slugged, `./x.md` links now `x.md`); second `yaks migrate` says nothing to migrate; worktree clean; `git log --follow` reaches back through the move; old yaks 0.0.36 on a migrated farm says "schema v9, newer than this yaks supports, upgrade"; `.gitattributes` merge and LFS rules lose `.yaks/`; GitHub's own renderer gives `#2026-11-04t221303z` for a `#### 2026-11-04T22:13:03Z` heading, as the links assume.
+Refusals (typed, before any write): uncommitted change; behind upstream.
+Gap found and fixed: a yak committed at the old path by a writer who had not synced is merged into `.yaks/` and then invisible. `yaks check` now reports `stray-layout`. A real conflict in the same yak on both sides is an ordinary merge conflict.
+Left as written: 50 `sightmap-*`/`fullstory-*` yaks in the joel farm whose note headers are hand-written, not timestamps.
+Gate: 1451 tests, fmt clean.
