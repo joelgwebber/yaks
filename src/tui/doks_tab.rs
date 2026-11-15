@@ -1008,7 +1008,13 @@ mod tests {
             2,
             None,
         )]);
-        let root = std::env::temp_dir().join(format!("yaks-star-{}", std::process::id()));
+        // One directory per call: tests run in parallel, and each removes its own.
+        static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let root = std::env::temp_dir().join(format!(
+            "yaks-star-{}-{}",
+            std::process::id(),
+            N.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
         fixture::write(&root);
         app.set_doks_entries(read_entries(&root).unwrap());
         let _ = std::fs::remove_dir_all(root);
