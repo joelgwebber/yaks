@@ -3,13 +3,13 @@
 **yaks** is a task tracker made of markdown files: a single self-contained Rust
 binary. Each task (a "yak") is one file with YAML frontmatter; its **status is a
 frontmatter field**. There is no database and no separate state file. The
-files live on the repo's **farm branch** (`yaks`, an orphan branch holding only
-`.yaks/`), checked out once per machine and shared by every checkout.
+files live on the repo's **farm branch** (`yaks`, an orphan branch whose root is the
+farm since schema 9), checked out once per machine and shared by every checkout.
 
 ```sh
-.yaks/            # the farm branch's worktree: ~/.local/share/yaks/farms/<repo>-<hash>/
+./                # the farm branch's worktree (its root): ~/.local/share/yaks/farms/<repo>-<hash>/
   config.yaml     # farm settings
-  schema          # the layout version (7; `yaks migrate` upgrades a 4, 5 or 6)
+  schema          # the layout version (9; `yaks migrate` upgrades a 4 to 8)
   yaks/           # one directory per herd (the id prefix)
     yaks/
       yaks-1a2b.md  # one file per yak; frontmatter status: hairy | shaving | shorn | dead
@@ -76,15 +76,15 @@ clone's host repo too, so agent clones need no setup. See the **yaks** skill
 for the habits that go with it.
 
 **Concurrent writers.** Every command that changes the farm holds an exclusive
-advisory lock on `.yaks/.lock` for its whole read-modify-write, so parallel
+advisory lock on `.lock` for its whole read-modify-write, so parallel
 processes (several agents, a TUI and a CLI) never drop each other's edits, even
 on one yak. Readers don't take it. The first write (and `yaks init`) adds a
-`.lock` line to `.yaks/.gitignore`, creating that file if needed and keeping any
+`.lock` line to `.gitignore`, creating that file if needed and keeping any
 other lines, so the lock is never shown or committed.
 
 ## Farms, herds, and families
 
-A **farm** is one `.yaks/` store; a **herd** is the yaks sharing an id prefix
+A **farm** is one store (a farm branch); a **herd** is the yaks sharing an id prefix
 within it (`yaks create --herd web`); a **family** is a parent yak and its
 descendants. Several repos share one farm by pointing at it with
 `yaks init --farm` (each repo routes new yaks into its own `yaks.herd`); fold

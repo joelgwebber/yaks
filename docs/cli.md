@@ -14,12 +14,12 @@ from `<path>`).
 ## Which farm a command uses
 
 Every farm is a **farm branch**: an orphan branch (`yaks`, or `git config
-yaks.branch`) whose tree is only `.yaks/`, checked out once per machine at
+yaks.branch`) whose root is the farm (schema 9; before it, the tree was only `.yaks/`), checked out once per machine at
 `$XDG_DATA_HOME/yaks/farms/<repo>-<hash>` (`~/.local/share/...`; see "One
 worktree per repository" below). Every command
 except `init` uses the first of:
 
-1. **`$YAKS_DIR`**: a `.yaks/` directory, or a directory containing one
+1. **`$YAKS_DIR`**: a farm directory (the branch root, or a pre-schema-9 `.yaks/`), or a directory containing one
    (relative to the cwd). A value that names no farm is an error.
 2. **`git config yaks.farm <checkout>`**: another repository's farm branch
    (any checkout of it). `git config yaks.herd <prefix>` is this repo's default
@@ -111,7 +111,7 @@ The text header lists `prs:` (comma-separated) after `source:`. `--json` is the 
 
 `path [<id>...]` / `path <filters>`
 
-Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `.yaks/<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `.yaks/<herd>/yaks/<id>/`.
+Print each yak's current file path (absolute, one per line), by id or by the shared filter flags (`--all` adds dead yaks). Each yak's file is `<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits it in place); its attachments are in `<herd>/yaks/<id>/`.
 
 An unknown id goes to stderr with a non-zero exit (known ids still print). Ids or filters, not both; with neither, prints the farm root this command resolved (the farm branch's worktree, when the farm is a branch): which farm am I on?
 
@@ -167,7 +167,7 @@ Mentions are whole real ids, matched exactly as `refs` and the TUI links do. Com
 | `promote <id>/<file> [--dok <path>]` | Move a yak's attachment into a source or a dok, rewriting links. [Details](#source) |
 | `dok list\|show\|new\|set\|query\|row\|types\|define` | The farm's doks: markdown documents under `doks/` or `<herd>/doks/` that are not yaks. [Details](#dok) |
 | `reparent <ids…> --parent <id>` | Move yaks under a new parent (or `--unparent` to top-level). |
-| `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `.yaks/<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
+| `rename <old> <new>` | Rename a yak's id, updating every reference across the farm (its file, its `<herd>/yaks/<id>/` attachment dir and the `](<old>/…)` links to it). |
 | `rename-herd <old> <new>` | Rename a whole herd: migrate every id from one prefix to another (e.g. `yaksrs` → `yaks`). (`rename-prefix` still works as an alias.) |
 | `merge <path> [--dry-run]` | Merge another farm's yaks (all statuses + attachments, byte for byte) into this one, preserving ids and status. Non-destructive; refuses on id collisions. [Details](#merge) |
 | `merge-driver <base> <ours> <theirs> <path>` | **Internal** (hidden from `--help`): git's merge driver for farm documents. Merges the three versions of a yak or dok into `<ours>` with fields merged by rule, never conflict markers in frontmatter. Needs no farm. [Details](#merge-driver) |
@@ -225,7 +225,7 @@ Non-destructive (source left intact); refuses on id collisions — reconcile the
 
 `merge-driver <base> <ours> <theirs> <path>`
 
-**Internal** (hidden from `--help`): git's merge driver for farm documents, run as `yaks merge-driver %O %A %B %P` (registered by `.gitattributes` `.yaks/**/*.md merge=yaks` + `git config merge.yaks.driver`). The rule: **fields merge by rule and never get conflict markers; prose may keep them** for a person or agent to resolve.
+**Internal** (hidden from `--help`): git's merge driver for farm documents, run as `yaks merge-driver %O %A %B %P` (registered by `.gitattributes` `**/*.md merge=yaks` + `git config merge.yaks.driver`). The rule: **fields merge by rule and never get conflict markers; prose may keep them** for a person or agent to resolve.
 
 - **A yak** (a file under `<herd>/yaks/`): note entries unioned (deduped, ordered by timestamp), `updated` the later, `tags`/`depends_on`/`prs` and any other list merged (base + additions − removals), every other field taken from the side that changed it. A field both sides changed differently keeps `<ours>` and is recorded in one `merge-driver` note (`merge conflict: status was X here, Y on the other side; kept X`).
 - **A dok or any other markdown file:** frontmatter merged by the same field rule; a field both sides set differently keeps `<ours>` and adds `{field, theirs}` to a `merge_conflicts:` list in the frontmatter (a dok has no notes log). Remove the entry once settled.
@@ -342,8 +342,8 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 
 | Target | Form | Example |
 |---|---|---|
-| a yak | its full id, bare in prose | `yaks-1a2b` |
-| one note of a yak | the id, `#` and the note's timestamp | `[the answer](yaks-1a2b#2026-11-04T22:13:03Z)` |
+| a yak | its full id, bare in prose; or its file path from the farm root, which a markdown host follows | `yaks-1a2b`, `/yaks/yaks/yaks-1a2b.md` |
+| one note of a yak | the id, `#` and the note's timestamp; or the file path and the heading's slug | `[the answer](yaks-1a2b#2026-11-04T22:13:03Z)`, `/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z` |
 | a farm document | path from the farm root, leading `/` | `/doks/topics/x.md`, `/sources/<id>/source.md` |
 | below the linking dok | relative, downward only | `notes/detail.md` (from `doks/topics/x.md`) |
 | a yak's attachment | `<id>/<file>`, from anywhere; inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `shot.png` |
@@ -352,7 +352,7 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 
 - `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/doks/x.md@91be0d2#setup`).
 - `#L12` or `#L12-L40` names lines; any other `#anchor` a heading, by GitHub's slug rule (lowercase, spaces to `-`, punctuation dropped; a repeated heading gets `-1`, `-2`).
-- **A note** is named by its timestamp, which it keeps for life (removing another note never shifts it). Notes written in the same second (a shear note and its move) share one: the first is the plain timestamp, later ones take `-1`, `-2`. `yaks update --note` prints the new note's link (`Updated yaks-1a2b: note yaks-1a2b#2026-11-04T22:13:03Z`), so copy it rather than building one; `peek` prints just that note and `doctor` reports a note link that leads nowhere. The TUI follows one to its yak, cursor on that note.
+- **A note** is named by its timestamp, which it keeps for life (removing another note never shifts it). Notes written in the same second (a shear note and its move) share one: the first is the plain timestamp, later ones take `-1`, `-2`. `yaks update --note` prints the new note's link (`Updated yaks-1a2b: note yaks-1a2b#2026-11-04T22:13:03Z`; on a farm at schema 9 the path form, `/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z`, which GitHub follows), so copy it rather than building one; `peek` prints just that note and `doctor` reports a note link that leads nowhere. The TUI follows one to its yak, cursor on that note.
 - **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; an attachment directory is flat, so only a bare name counts, and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
 - A relative link never climbs with `../`: link from the farm root instead. In yaks the older code forms stay valid: `../src/foo.rs` and the pinned `../blob/<sha>/src/foo.rs`.
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
@@ -376,8 +376,8 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 | Command | What it does |
 |---|---|
 | `verify <ids…>` | Run each yak's verification command with live output, and record `verify: <cmd> -> PASS/FAIL (exit N)` as an attributed note. Exits non-zero if any fails. Explicit only. [Details](#verify) |
-| `attach <id-or-doc-path> <path>...` | Copy local files under `.yaks/<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view; given a dok or session note path, into its sibling directory (`doks/x/`). `--no-link` stores them without a body link (the parts of a document that links them itself); `--caption` captions the image it links; `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
-| `rename-attachment <id> <old> <new>` | Rename `.yaks/<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
+| `attach <id-or-doc-path> <path>...` | Copy local files under `<herd>/yaks/<id>/` and link each in the yak's body — artifact evidence a human can view; given a dok or session note path, into its sibling directory (`doks/x/`). `--no-link` stores them without a body link (the parts of a document that links them itself); `--caption` captions the image it links; `--name` renames a single file; `--note`/`--as` record an attributed note. [Details](#attach) |
+| `rename-attachment <id> <old> <new>` | Rename `<herd>/yaks/<id>/<old>` and rewrite every link to it across the farm. Refuses to overwrite an existing attachment. [Details](#rename-attachment) |
 | `attachment <id> [<file>]` | Print the absolute path of a yak's attachments (all, or the one named). `--json`. Read-only. [Details](#attachment) |
 
 ### `verify`
@@ -390,7 +390,7 @@ The command is the yak's own `verify:` field if set, else the config default res
 
 The scriptable form of a yak's evidence contract: a check anyone (or CI) can re-run.
 
-Default verify commands live in `.yaks/config.yaml` under a nested `verify:` map (tag → command, plus an optional `default`); a yak with no explicit `verify:` field resolves its command from the first of its tags with an entry, else `default`. Name the project's levers once:
+Default verify commands live in `config.yaml` under a nested `verify:` map (tag → command, plus an optional `default`); a yak with no explicit `verify:` field resolves its command from the first of its tags with an entry, else `default`. Name the project's levers once:
 
 ```yaml
 verify:
@@ -419,7 +419,7 @@ A lever is the pass/fail **gate** for its tag — what `doctor --strict` enforce
 
 `attach <id-or-doc-path> <path>...`
 
-Copy local files (several attach in one write, one farm commit) under `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link each in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
+Copy local files (several attach in one write, one farm commit) under `<herd>/yaks/<id>/` (beside the yak's file) and link each in the yak's body as `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg) or `[name](<id>/<file>)` for any other file (what GitHub and every CommonMark viewer expect; a space or parenthesis in the file name is percent-encoded, `my%20shot.png`) — artifact evidence (screenshots, TUI frames) a human or yakherd can view.
 
 `--caption <text>` writes the image's markdown title, `![name](<id>/<file> "text")`, which `yaks tui` shows as a caption under the picture (one file, with its link: not with `--no-link`).
 
@@ -435,7 +435,7 @@ The non-scriptable, look-at-it form of evidence: an **external file** (committed
 
 `rename-attachment <id> <old> <new>`
 
-Rename `.yaks/<herd>/yaks/<id>/<old>` (e.g. an ugly `paste-….png`) and rewrite every link to it across the farm (the `![name]` / `[name]` text follows the new stem, and the link form follows the new extension). `<new>` is sanitized and keeps `<old>`'s extension if it omits one; refuses to overwrite an existing attachment. A markdown attachment of any yak that links the file (by bare name or `<id>/<file>`) is rewritten too, keeping the form it used.
+Rename `<herd>/yaks/<id>/<old>` (e.g. an ugly `paste-….png`) and rewrite every link to it across the farm (the `![name]` / `[name]` text follows the new stem, and the link form follows the new extension). `<new>` is sanitized and keeps `<old>`'s extension if it omits one; refuses to overwrite an existing attachment. A markdown attachment of any yak that links the file (by bare name or `<id>/<file>`) is rewritten too, keeping the form it used.
 
 ### `attachment`
 
@@ -694,7 +694,7 @@ Rules, the same for all four commands:
 
 `migrate [--dry-run]`
 
-Bring a farm on an older schema up to this yaks' (schema 4, 5, 6 or 7 → 8), under the farm lock, writing `.yaks/schema` last.
+Bring a farm on an older schema up to this yaks' (schema 4 to 8 → 9), under the farm lock, writing `schema` last.
 
 First the **`herd-directories`** layout step: every yak file (`<id>.md` at the farm root whose `id:` is its name) and its attachment dir (`<id>/`) moves to `<herd>/yaks/` (plain renames: git sees 100% renames and `git log --follow` keeps working; bodies are untouched, since attachment links are relative to the yak file); other root files stay; refuses, moving nothing, if a destination exists or a herd is named like a reserved directory (`docs`, `doks`, `sources`, `schemas`, `sessions`).
 
@@ -708,9 +708,11 @@ Idempotent: a current farm says `nothing to migrate`.
 
 Every OTHER command refuses an older farm, naming `yaks migrate` (`yaks sheds` is no exception). A farm branch's worktree whose upstream (as last fetched) is already on the newer schema is only behind, because another machine migrated it: the refusal then says so and names `git -C <farm worktree> pull --ff-only` instead of `yaks migrate`. Otherwise it reminds you to fetch before migrating, so a farm is never migrated twice.
 
-Never commits: it prints the `yaks commit` to run.
+**Schema 9** (yaks-1151) makes the farm readable on GitHub and similar hosts, in one step run last, on a farm that is a farm branch: **`farm-at-branch-root`** moves everything from `.yaks/` to the root of the branch with `git mv` (every path a 100% rename, so `git log --follow` and `git blame` reach back through it), rewrites the `.gitattributes` merge-driver and LFS rules to the root form, writes a landing `README.md`, and leaves a stub `.yaks/schema` holding `9` so an older yaks says "upgrade" and not "restore `.yaks/`" (delete it once every machine is upgraded). Then the content: **links** become paths a host follows (a yak as `/<herd>/yaks/<id>.md`, a note as `/<herd>/yaks/<id>.md#<slug>`, `/doks/sessions/…` as `/sessions/…`, a source as its slugged directory); **sources** are renamed `<date>-<sha8>-<slug>/`; **notes** go to the `#### <timestamp>` heading plus an italic `actor · key: value` line (see [Notes](#note-metadata)), except in a yak whose note headers are not timestamps (hand-written ones such as `▸ 2026-08-12 E2E VERIFIED`), which keep their shape and are listed in the report. `--dry-run` prints the same numbers the real run produces (one plan feeds both) and lists what would stop it.
 
-**Versions.** A farm on a newer schema than the binary is refused by every command, naming the upgrade (`npm i -g @j15r/yaks@latest`), and every write is refused too, so a long-running `yaks tui` that pulls a migrated farm goes read-only rather than writing the old shape into it. `min_version: 0.0.31` in `.yaks/config.yaml` makes an older yaks print `warning: this farm asks for yaks 0.0.31 or newer ...` on every command (not with `--json`) and in the TUI, but still run.
+It **refuses** on a farm branch, before any write, with uncommitted changes (`yaks commit` them first, so the migration is commits of its own), a merge or cherry-pick in progress, or when the branch is behind its upstream (`yaks sync` first: a commit that arrives later under `.yaks/` is not seen at the root; `yaks check` reports it as `stray-layout`). It makes **two commits** itself, the move and then the rewrite; a farm outside git, or one already at the root, gets the rewrite in place and prints the commit to make. An interrupted run is safe to repeat. Before schema 9 it never commits: it prints the `yaks commit` to run.
+
+**Versions.** A farm on a newer schema than the binary is refused by every command, naming the upgrade (`npm i -g @j15r/yaks@latest`), and every write is refused too, so a long-running `yaks tui` that pulls a migrated farm goes read-only rather than writing the old shape into it. `min_version: 0.0.31` in `config.yaml` makes an older yaks print `warning: this farm asks for yaks 0.0.31 or newer ...` on every command (not with `--json`) and in the TUI, but still run.
 
 Once synced, a migration locks out every older yaks, so the bundled skills tell agents never to run it: a human does, in this order. Set `min_version:` to the new release and sync; upgrade every machine; `yaks migrate --dry-run`, `yaks migrate`, commit and sync, once; restart every running `yaks tui`.
 
@@ -718,7 +720,7 @@ Once synced, a migration locks out every older yaks, so the bundled skills tell 
 
 `weight [--json]` measures what the farm costs: a plain `git clone` of a code repository fetches every branch, so each code clone pays for the farm branch's whole history (every attachment, source and per-change commit). It prints the farm branch's commit count, the bytes a clone fetches for it (objects no other branch has), the current tree by kind (yaks, attachments, doks, sources, other), the ten largest blobs only the farm branch holds, and whether LFS is on. Read-only.
 
-`lfs` stores the farm's binary originals in Git LFS: images, PDFs, office documents, audio, video and archives under `.yaks/` (any case of the extension). It installs LFS's hooks for this repository (`git lfs install --local`), writes the rules into the farm branch's `.gitattributes` (other lines kept), and commits them together with the binaries already in the tree, converted to pointers; that commit holds only those paths. Older history keeps the plain bytes. Afterwards a clone fetches small pointers, and the bytes come down only where the farm is checked out. Markdown, `source.md` and `extracted.md` stay plain text, so search, diffs and merges work without the originals. Needs `git-lfs` installed and a remote that accepts LFS (GitHub does). Idempotent.
+`lfs` stores the farm's binary originals in Git LFS: images, PDFs, office documents, audio, video and archives in the farm (any case of the extension). It installs LFS's hooks for this repository (`git lfs install --local`), writes the rules into the farm branch's `.gitattributes` (other lines kept), and commits them together with the binaries already in the tree, converted to pointers; that commit holds only those paths. Older history keeps the plain bytes. Afterwards a clone fetches small pointers, and the bytes come down only where the farm is checked out. Markdown, `source.md` and `extracted.md` stay plain text, so search, diffs and merges work without the originals. Needs `git-lfs` installed and a remote that accepts LFS (GitHub does). Idempotent.
 
 When a farm grows heavy with sources (many PDFs, several herds, or one farm shared by several repos), keep it in a repository of its own: `yaks init --farm <checkout>` points this repository at it, and code clones never see it.
 
@@ -814,6 +816,7 @@ Hearth's nightly check minus what needs a model: what a person or an agent shoul
 - `similar-kinds`: dok kinds, among the `type:` values in use and the names of `schemas/*.md`, that differ only by case, hyphens or a plural (`project`, `projects`, `work-project`). Pick one and `dok set` the others.
 - `no-description`: a dok with no `description:` in its frontmatter (absent, empty or not plain text), one finding per dok path. The description is the dok's index line, one sentence on when to read it, and [`dok list`](#dok) shows it under the title. Session notes and schemas are not doks and are not checked; a file with no frontmatter at all is a `dok-problem`, not listed twice. To clear it, `yaks dok set <path> --set 'description=When to read this.'`.
 - `code-moved`: a dok that cites `code:<path>` (an inline link in its body, or a `code:` entry of its frontmatter `sources:` or `code:` list) where the code repo has commits to that path since the dok was written. For a pinned link (`code:path@<sha>`) that is every commit touching the path in `<sha>..HEAD`, unless the dok's `verified:` is no earlier than the newest of them (it was re-checked after the code last moved). For an unpinned link it is the commits since the dok's `verified:`, else since its last commit on the farm branch (a dok with neither is skipped). A `verified:` date covers its whole day (UTC). Any count above zero is reported, with the number: `doks/x.md cites code:src/a.rs: 3 commits to it since it was verified 2026-11-01`; there is no threshold. Commits that only touch the path in the farm branch are not counted. This is evidence, not a verdict: `check` never decides the dok is wrong. To clear it, read the dok against the code, fix what drifted, then `yaks dok set <path> --set verified=<date>`. The report ends with that hint.
+- `stray-layout`: a file under `.yaks/` in a farm that moved to the branch root at schema 9, left by a writer who had not synced before the migration (`.yaks/hearth/yaks/hearth-ffff.md should be at hearth/yaks/hearth-ffff.md`). No other command sees it; `git mv` it to the same path without `.yaks/`. The stub (`.yaks/README.md`, `.yaks/schema`) is not reported.
 - `code-gone`: an unpinned `code:<path>` whose file is not in the code checkout (`doks/x.md cites code:src/a.rs, which is gone from the code repo`), whatever `verified:` says. A pinned link names history, so a file deleted since is `code-moved` (the deleting commit counts) instead. Same fix: update or drop the link, then set `verified:`.
 - **No code checkout:** the two code kinds need the code repo, found as `peek` finds it (the checkout you run from, else the farm's host checkout). With none reachable they are skipped and ONE `note: ...` line says so; a note is not a finding and leaves the exit code alone (with `--json` it goes to stderr, so stdout stays the array). A pin the checkout does not have is a note too.
 - `broken-link`, `schema-mismatch`, `merge-conflict` and `dok-problem`: the same issues, in the same words, as [`doctor`](#doctor) reports them; `check` does not check anything about yaks themselves.
@@ -879,7 +882,7 @@ What a yak cannot know (spawn title, how work lands, the model, scope by symbol)
 
 `status [--check] [--json]`
 
-What the farm has changed that git does not have yet, one line per yak, ordered by id, in yak terms: `created`, `moved hairy -> shaving` (the `status:` field of its `<id>.md` differs between HEAD and the working tree), `notes +2` (notes appended; the `moved:` entry a move writes is not counted), `edited` (a field, the description or an existing note changed), `removed`, `artifacts` (a new or changed file under `.yaks/<herd>/yaks/<id>/`, the yak's attachments); a yak with several kinds of change gets one line with all of them, and `config` is `config.yaml`.
+What the farm has changed that git does not have yet, one line per yak, ordered by id, in yak terms: `created`, `moved hairy -> shaving` (the `status:` field of its `<id>.md` differs between HEAD and the working tree), `notes +2` (notes appended; the `moved:` entry a move writes is not counted), `edited` (a field, the description or an existing note changed), `removed`, `artifacts` (a new or changed file under `<herd>/yaks/<id>/`, the yak's attachments); a yak with several kinds of change gets one line with all of them, and `config` is `config.yaml`.
 
 A `*` in the first column marks a yak whose changes are all staged.
 
@@ -903,7 +906,7 @@ The last line says how that branch stands against its upstream, from the refs as
 
 `sync [--no-commit] [--no-pull] [--no-push] [-m <msg>]`
 
-Sync the farm branch with its remote, in the farm worktree whatever the cwd: (1) registers the yak merge driver (`.gitattributes` rule `.yaks/**/*.md merge=yaks`, committed on the farm branch, plus `merge.yaks.driver` in the repo config); (2) commits what is dirty, as `yaks commit` (hand edits included); (3) fetches the farm branch from its remote (`branch.<b>.remote`, else `origin`) and rebases onto it, holding the farm lock, so concurrent edits to one yak on two machines merge into a valid yak (notes unioned, a field both sides changed: this side kept and the other recorded in a `merge-driver` note); (4) pushes, creating the remote branch with the same name and setting the upstream on the first publish, and pulls once more and retries if the remote moved meanwhile.
+Sync the farm branch with its remote, in the farm worktree whatever the cwd: (1) registers the yak merge driver (`.gitattributes` rule `**/*.md merge=yaks`, committed on the farm branch, plus `merge.yaks.driver` in the repo config); (2) commits what is dirty, as `yaks commit` (hand edits included); (3) fetches the farm branch from its remote (`branch.<b>.remote`, else `origin`) and rebases onto it, holding the farm lock, so concurrent edits to one yak on two machines merge into a valid yak (notes unioned, a field both sides changed: this side kept and the other recorded in a `merge-driver` note); (4) pushes, creating the remote branch with the same name and setting the upstream on the first publish, and pulls once more and retries if the remote moved meanwhile.
 
 Each step can be skipped: `--no-commit` (a dirty farm then skips the pull too, leaving its edits local), `--no-pull`, `--no-push`.
 
@@ -911,7 +914,7 @@ A private farm (`yaks private`) commits and pulls but is never pushed.
 
 A rebase that stops on a conflict the driver cannot settle (a non-yak file such as `config.yaml`) is aborted, leaving the branch exactly as it was, and the files are named. Refuses a `YAKS_DIR` farm that is not a farm branch.
 
-The CLI never syncs by itself (only `yaks tui` does, every `sync_interval` in `.yaks/config.yaml`: seconds or `30s`/`5m`, default `5m`, `0`/`off` to disable, `YAKS_NO_AUTOSYNC=1` to skip it for a run): run it at session start, after landings and before a machine switch. Ends with the `yaks status` sync line.
+The CLI never syncs by itself (only `yaks tui` does, every `sync_interval` in `config.yaml`: seconds or `30s`/`5m`, default `5m`, `0`/`off` to disable, `YAKS_NO_AUTOSYNC=1` to skip it for a run): run it at session start, after landings and before a machine switch. Ends with the `yaks status` sync line.
 
 ### Every change commits
 

@@ -590,7 +590,10 @@ pub fn render_saved(t: &Touched) -> String {
                 None if n.gist.is_empty() => "note".into(),
                 None => n.gist.clone(),
             };
-            s.push_str(&format!("  - [{label}]({}#{})\n", y.id, n.anchor));
+            s.push_str(&format!(
+                "  - [{label}]({})\n",
+                crate::links::note_link(&y.id, &n.anchor)
+            ));
         }
     }
     for f in &t.files {

@@ -120,7 +120,7 @@ an install (that's the `held` rule). When iterating locally, use
 
 | Skill | Use it when… |
 |---|---|
-| **`yaks`** | Managing tasks in a `.yaks/` farm — the commands, the workflow, where the farm lives and when to sync. |
+| **`yaks`** | Managing tasks in a farm — the commands, the workflow, where the farm lives and when to sync. |
 | **`yaks-tracker`** | Relating yaks to external issue trackers (Jira/Linear/GitHub) as a one-way roll-up projection. |
 | **`yaks-working`** | Taking one yak from hairy to shorn with a legible trail. |
 | **`yaks-coordinating`** | Coordinating a shared farm across parallel agents and humans, in Delta threads or git worktrees. |

@@ -5,7 +5,7 @@ description: Yaks task tracking workflow. Use when the project tracks work with 
 
 # Yaks — Task tracking workflow
 
-This project tracks work with yaks: each task (a **yak**) is a markdown file with YAML frontmatter in a `.yaks/` **farm** that lives on its own git branch. Follow this workflow so task state stays accurate.
+This project tracks work with yaks: each task (a **yak**) is a markdown file with YAML frontmatter in a **farm** that lives on its own git branch (its root is the farm: `<herd>/yaks/<id>.md`, `doks/`, `sources/`, `config.yaml`). Follow this workflow so task state stays accurate.
 
 ## Running yaks
 
@@ -17,7 +17,7 @@ A plain CLI, run from the shell (no slash commands, nothing to keep running): `y
 
 ## Where the farm lives
 
-The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone, and any other copy of the repository with the same `origin` URL) reads and writes that one farm, so yak edits are live everywhere.
+The farm is an orphan branch (`yaks`) whose root is the farm, checked out once per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo (yours, the human's, each agent clone, and any other copy of the repository with the same `origin` URL) reads and writes that one farm, so yak edits are live everywhere.
 
 ```sh
 yaks path                  # which farm am I on?
@@ -29,7 +29,7 @@ yaks sync                  # commit, pull (yak-aware merge), push
 yaks conflicts             # documents a merge left for you to settle
 ```
 
-- **Never stage `.yaks/` with your code.** Code commits never contain yaks.
+- **Never stage the farm with your code.** Code commits never contain yaks.
 - **Sync at session start, after landing work, and before switching machines.** Nothing syncs on its own, and nothing you write reaches another machine until you sync. On a machine nobody is sitting at (a cloud runner, a VM, a remote box: no human there reads this farm directly), also **sync after every note or state move** you make: that is the only way anyone else sees your progress, and a reset there deletes the farm worktree with every unsynced write. If a yakherd coordinates you, it syncs and you don't, unless your brief says otherwise. In `yaks tui`, `W` commits and `U` syncs.
 - **Starting one:** `yaks init` (the branch, its worktree and these skills; idempotent). A clone of a repo with `origin/yaks` needs no setup.
 - **Sharing another repo's farm:** `yaks init --farm <checkout> --herd <h>` sets `git config yaks.farm`/`yaks.herd`; this repo then uses that farm, and `yaks create` puts new yaks in herd `<h>`.
@@ -43,7 +43,7 @@ yaks conflicts             # documents a merge left for you to settle
 
 - **States** (adjectives): **hairy** (not started), **shaving** (in progress), **shorn** (done), and the hidden **dead**.
 - **Verbs** (the commands): **shave** (hairy → shaving), **shear** / `yaks shorn` (shaving → shorn), **regrow** (shorn → hairy), **slaughter** (→ dead), **revive** (dead → hairy).
-- **Farm**: one `.yaks/` store, on its own branch. **Herd**: the yaks sharing one id prefix (a farm can hold several; `yaks create --herd <h>`). **Family**: a parent yak and its descendants. **Shed**: someone working in the farm (a human, a worker, a thread), known by the actor name on their notes; `yaks sheds` lists them, on any machine once the farm is synced.
+- **Farm**: one store, on its own branch. **Herd**: the yaks sharing one id prefix (a farm can hold several; `yaks create --herd <h>`). **Family**: a parent yak and its descendants. **Shed**: someone working in the farm (a human, a worker, a thread), known by the actor name on their notes; `yaks sheds` lists them, on any machine once the farm is synced.
 
 ## Hard rules
 
@@ -125,7 +125,7 @@ Next: G3's question, which belongs with yak-7af5.
 **Links.**
 
 - Another yak: its **full id** (`yak-0af1`, never the bare `0af1`); the TUI makes it a link and `yaks refs <id> [--incoming]` lists the references (`--incoming` includes the doks and session notes that link it).
-- One note of a yak: `[the answer](yak-0af1#2026-11-04T22:13:03Z)`, the note's timestamp as the anchor (`-1`, `-2` for later notes of the same second). `yaks update --note` prints the new note's link: copy it rather than building one.
+- One note of a yak: `[the answer](yak-0af1#2026-11-04T22:13:03Z)`, the note's timestamp as the anchor (`-1`, `-2` for later notes of the same second). `yaks update --note` prints the new note's link: copy it rather than building one. On a schema-9 farm it is a path a markdown host follows (`/<herd>/yaks/<id>.md#2026-11-04t221303z`, the heading's slug); either form resolves in yaks.
 - Repo code: `code:` and a path from the repo root, with GitHub's line fragment: `[fn parse](code:src/foo.rs#L12-L40)`; `@<sha>` before the fragment pins it to a commit (`code:src/foo.rs@3f2a9c1#L12`). The older `../src/foo.rs` and `../blob/<sha>/src/foo.rs` still work in yaks.
 - A dok: from the farm root, `[link grammar](/doks/design/link-grammar.md#heading)`; a relative link only goes down (`notes/detail.md`), never `../`. `@<sha>` pins a dok too.
 - `yaks peek <link>` prints just what a link names (the lines, the section, or a dok's frontmatter and first paragraph): read that rather than a whole file. `yaks doctor` reports links that lead nowhere (a `/sources/<id>` link is that source's `source.md`; `sources/` and `sessions/` sit beside `doks/`, so `/doks/sources/...` is wrong).
@@ -154,7 +154,7 @@ Skip what makes no sense for the change; never skip it because it is effort.
 
 **The summary note** is short: what changed and, unless that already says it all (a typo fix), the shape of the fix in a sentence or two; the evidence (linked or attached, per the list above), and any yaks spawned. Not a bare "done", and not a design doc: a long write-up goes in an attachment the note links to.
 
-`yaks attach` stores the file beside the yak in `.yaks/<herd>/yaks/<id>/` and links it in the body (given a dok or session note path instead of an id, beside that document).
+`yaks attach` stores the file beside the yak in `<herd>/yaks/<id>/` and links it in the body (given a dok or session note path instead of an id, beside that document).
 
 ## Tags
 
@@ -225,11 +225,11 @@ yaks next --tag auth
 yaks bulk --parent-of yak-c3d4 --add-tag spike --commit
 ```
 
-**Large farms.** Don't summarize yak files through `ls .yaks/... | xargs`: past a few thousand paths `xargs` splits the list and a total like `xargs wc -l | tail -1` is silently wrong, and an absolute glob fails with "argument list too long". List with `yaks list --json` or `yaks path <filters>` (one path per line); to total, feed one stream to one counter (`yaks path --status shorn | xargs cat | wc -l`, never `xargs wc` or `find -exec wc {} +`, which print a total per batch).
+**Large farms.** Don't summarize yak files through `ls <farm>/... | xargs`: past a few thousand paths `xargs` splits the list and a total like `xargs wc -l | tail -1` is silently wrong, and an absolute glob fails with "argument list too long". List with `yaks list --json` or `yaks path <filters>` (one path per line); to total, feed one stream to one counter (`yaks path --status shorn | xargs cat | wc -l`, never `xargs wc` or `find -exec wc {} +`, which print a total per batch).
 
 ## Task format
 
-Each yak is one file, `.yaks/<herd>/yaks/<id>.md`, at the same path for life (a state move edits `status:` in place):
+Each yak is one file, `<herd>/yaks/<id>.md`, at the same path for life (a state move edits `status:` in place):
 
 ```markdown
 ---
@@ -273,4 +273,4 @@ round's uncleared one is kept, not stacked). The **yaks-scheduling** skill is
 the whole procedure: running a round, creating a recurring yak, and the rules for
 a skill that mirrors an outside queue into yaks.
 
-Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `.yaks/config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep; `min_version:` makes an older yaks warn that it should upgrade. A farm on an older schema is refused by every command but `yaks migrate`, and one on a newer schema by every command.
+Don't parse ids for hierarchy (old dotted ids like `yak-a1b2.1` are opaque). `config.yaml` sets the default `herd`, `default_type`, `default_priority` and a `verify:` map (tag → command, plus `default`); a `herds:` map overrides those per herd, one level deep; `min_version:` makes an older yaks warn that it should upgrade. A farm on an older schema is refused by every command but `yaks migrate`, and one on a newer schema by every command.

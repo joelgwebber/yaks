@@ -2,7 +2,7 @@
 //!
 //! This binary is a thin CLI over `farm::Farm` (the print-free core ops
 //! facade): every command is parse args -> call one Farm op -> render (text or
-//! --json). Tasks live as markdown files under `.yaks/`; status is the folder.
+//! --json). Tasks live as markdown files in a farm on its own branch; status is a frontmatter field.
 
 mod actor;
 mod autocommit;
@@ -184,7 +184,7 @@ enum Command {
     /// One path per line: by id
     /// (`yaks path yaks-1a2b ...`) or by the shared filter flags
     /// (`yaks path --status shorn --tag cli`). Each yak's file is
-    /// `.yaks/<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits
+    /// `<herd>/yaks/<id>.md`, the same path for its whole life (a status move edits
     /// it in place), handy for `git add`. Paths are absolute. An unknown
     /// id is reported on stderr and the exit status is non-zero (known ids are
     /// still printed). Give ids or filter flags, not both. With neither, print
@@ -265,7 +265,7 @@ enum Command {
     /// Attach a local file to a yak as evidence (or to a dok or session note).
     ///
     /// Copies the file under
-    /// `.yaks/<herd>/yaks/<id>/` (beside the yak's file) and link it in the body as
+    /// `<herd>/yaks/<id>/` (beside the yak's file) and link it in the body as
     /// `![name](<id>/<file>)` for an image (png, jpg, jpeg, gif, webp, svg)
     /// or `[name](<id>/<file>)` for any other file. Use for artifact
     /// evidence a human or coordinator can look at (screenshots, TUI frames).
@@ -312,14 +312,14 @@ enum Command {
     },
     /// Rename a yak's attachment and rewrite every link to it.
     ///
-    /// Renames the attachment in `.yaks/<herd>/yaks/<id>/` and rewrites every
+    /// Renames the attachment in `<herd>/yaks/<id>/` and rewrites every
     /// link to it across the farm (the link text follows the new stem, and
     /// the `!` of an image link follows the new extension). NEW is sanitized
     /// and keeps OLD's extension if it omits one; refuses to overwrite an
     /// existing attachment.
     RenameAttachment {
         id: String,
-        /// Current filename under `.yaks/<herd>/yaks/<id>/`.
+        /// Current filename under `<herd>/yaks/<id>/`.
         old: String,
         /// New filename (e.g. `login-page`, becomes `login-page.png`).
         new: String,
@@ -331,7 +331,7 @@ enum Command {
     /// has no such attachment. Read-only.
     Attachment {
         id: String,
-        /// An attachment filename under `.yaks/<herd>/yaks/<id>/` (as in its link).
+        /// An attachment filename under `<herd>/yaks/<id>/` (as in its link).
         file: Option<String>,
         #[arg(long)]
         json: bool,
@@ -483,7 +483,7 @@ enum Command {
     ///
     /// Git's merge driver for yak files (`git config merge.yaks.driver
     /// "yaks merge-driver %O %A %B %P"`, registered for the farm branch with
-    /// `.yaks/**/*.md merge=yaks`). Merges the three versions of one yak into
+    /// `**/*.md merge=yaks`). Merges the three versions of one yak into
     /// `<ours>` as a valid yak, never conflict markers: notes unioned by
     /// timestamp, tags/deps merged, the later `updated`, and a field both
     /// sides changed differently keeps this side and records the other in a
@@ -1045,7 +1045,7 @@ enum Command {
         json: bool,
     },
     /// Store the farm's binary originals (images, PDFs, office files, audio,
-    /// video, archives under `.yaks/`) in Git LFS from now on.
+    /// video, archives in the farm) in Git LFS from now on.
     ///
     /// Writes the rules into the farm branch's `.gitattributes`, commits only
     /// that file, and installs LFS's hooks for this repository (`git lfs
@@ -1243,18 +1243,25 @@ enum Command {
     },
     /// Bring an older-schema farm up to this yaks' schema, or move it to a branch.
     ///
-    /// Brings a farm on an older schema up to this yaks' (schema 4, 5, 6 or 7 -> 8):
+    /// Brings a farm on an older schema up to this yaks' (schema 4 to 8 -> 9):
     /// moves every yak file and attachment dir from the farm root into its
     /// herd's directory (`<herd>/yaks/<id>.md`, `<herd>/yaks/<id>/`), renames
     /// `labels:` to `tags:`, puts the blank line after every comment's
     /// `▸ <ts> [actor]` header, fixes attachment links, and (schema 8) renames
     /// the wiki to doks: `wiki/` and `<herd>/wiki/` become `doks/` and
     /// `<herd>/doks/`, `/wiki/...` links become `/doks/...`, and a schema's
-    /// `type: Page Type` becomes `Dok Type`. Works under the
-    /// farm lock, then sets `.yaks/schema` to 8. Idempotent: a current farm
-    /// reports "nothing to migrate". Every other command refuses an older farm
-    /// and names this one. Never commits: it prints the commit to make (a
-    /// migration touches nearly every yak file, so land it on its own).
+    /// `type: Page Type` becomes `Dok Type`. Schema 9 moves the farm from
+    /// `.yaks/` to the root of its branch (so GitHub and similar hosts render
+    /// it), rewrites links to paths a host follows (a yak as
+    /// `/<herd>/yaks/<id>.md`), gives each source directory a slug
+    /// (`<date>-<sha8>-<slug>`), puts notes in the `#### <timestamp>` shape,
+    /// and leaves a stub `.yaks/schema` so an older yaks says "upgrade". On a
+    /// farm branch it refuses first with uncommitted changes, a merge in
+    /// progress or commits it has not pulled, then commits twice itself (the
+    /// move, with no content change, then the rewrite). Works under the farm
+    /// lock. Idempotent: a current farm reports "nothing to migrate". Every
+    /// other command refuses an older farm and names this one. Before schema 9
+    /// it never commits: it prints the commit to make.
     ///
     /// Once synced, every machine with an older yaks is refused the farm: a
     /// human decides when to migrate (agents ask). Upgrade every machine
@@ -1291,7 +1298,7 @@ enum Command {
     /// any incoming herd in this farm's config; refuses on id collisions.
     /// Non-destructive — the source is left intact.
     Merge {
-        /// Path to the source farm: a `.yaks/` directory or a dir containing one.
+        /// Path to the source farm: a farm directory or a dir containing one.
         source: String,
         /// Preview the plan without copying anything.
         #[arg(long)]
@@ -1299,8 +1306,8 @@ enum Command {
     },
     /// Start a farm on its own branch, or join another repo's, and install the skills.
     ///
-    /// Every farm is an orphan git branch (`yaks`, or --branch) holding only
-    /// `.yaks/`, checked out once per machine at
+    /// Every farm is an orphan git branch (`yaks`, or --branch) whose root is
+    /// the farm (schema 9; older farms keep it under `.yaks/`), checked out once per machine at
     /// `~/.local/share/yaks/farms/<repo>-<hash>` (named by the `origin` URL, so
     /// every copy of the repository shares it). A branch that already exists
     /// (locally or on origin) only gets its worktree. Nothing is committed or
@@ -1443,14 +1450,14 @@ enum Command {
         #[arg(short, long)]
         message: Option<String>,
     },
-    /// Commit the farm's own changes (only `.yaks/`) with a generated message.
+    /// Commit the farm's own changes (only the farm's files) with a generated message.
     ///
-    /// Commits everything under `.yaks/` (yak files, attachments, config) and
+    /// Commits everything in the farm (yak files, attachments, config) and
     /// nothing else, with a generated message such
     /// as `yaks: shorn yaks-abc1; updated yaks-def2`. Code
     /// staged or modified elsewhere is left alone (staged files stay staged). Runs a normal
     /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
-    /// farm (nothing under `.yaks/` tracked by git) and while a merge or
+    /// farm (nothing in the farm tracked by git) and while a merge or
     /// cherry-pick is in progress (git forbids a partial commit then; finish it
     /// with a plain `git commit`); a farm with no changes is a no-op that exits 0.
     ///
@@ -1556,7 +1563,7 @@ enum Command {
     /// command (plus `YAKS_DIR` with `--yaks-dir`, or for a farm that is not a
     /// farm branch), this binary's path, the yak's `verify:` gate (else the
     /// config default), the forbidden moves, how to finish (never stage
-    /// `.yaks/`; after `yaks private`, no yak ids in commits), how to ask, the
+    /// the farm; after `yaks private`, no yak ids in commits), how to ask, the
     /// `Decision:` note rule and the final-message format. Read-only. Claim the
     /// yak first (`yaks shave`): an unclaimed yak still prints, with a warning
     /// on stderr. An unknown id fails with nothing on stdout. The coordinator

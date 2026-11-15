@@ -20,7 +20,7 @@ report plainly that nothing landed and why.
 Conflicts: pause. Report the conflict and wait for the user; do not resolve it.
 
 Sources for commands: `AGENTS.md` (Verifying changes, Keeping docs current,
-Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
+Delegating), `config.yaml` on the farm branch (`yaks path`) for `verify:`,
 `yaks land --help`, `yaks preflight --help`, `.agents/skills/yaks-coordinating/SKILL.md` §6, §9.
 
 ## 1. Track the work
@@ -36,7 +36,7 @@ Delegating), `.yaks/config.yaml` on the farm branch (`yaks path`) for `verify:`,
 
 ## 2. Gate
 
-1. Commit the code (never stage `.yaks/`; stage explicit paths). Put the yak id
+1. Commit the code (never stage the farm; stage explicit paths). Put the yak id
    in the commit message: the farm is published.
 2. `cargo fmt`, then `cargo fmt --check` must pass: `main` is kept format-clean,
    so it touches only your files.

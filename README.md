@@ -6,7 +6,7 @@ your repo shares one live task list and your code branches carry no task churn.
 No database, no daemon, no server: one self-contained binary.
 
 ```text
-yaks branch  ->  ~/.local/share/yaks/farms/<repo>-<hash>/.yaks/
+yaks branch  ->  ~/.local/share/yaks/farms/<repo>-<hash>/   (the branch root)
   config.yaml
   yaks/yaks/yaks-1a2b.md     one file per yak; `status: hairy|shaving|shorn|dead`
   yaks/yaks/yaks-1a2b/       its attachments
@@ -240,7 +240,8 @@ npx openskills install joelgwebber/yaks
 
 ## Where the farm lives
 
-The farm is an orphan branch (`yaks`) holding only `.yaks/`, checked out once
+The farm is an orphan branch (`yaks`) whose root is the farm (since schema 9, so
+GitHub and similar hosts render it: browse the branch, links follow), checked out once
 per machine under `~/.local/share/yaks/farms/`. Every checkout of the repo
 (the main one, git worktrees, agent clones, and Delta's own copy of the repo,
 which shares it by `origin` URL) finds it, so edits are live everywhere and no
@@ -266,7 +267,7 @@ yaks create "Fix the header"             # -> web-xxxx, in ~/src/api's farm
 ```
 
 `git config yaks.farm <checkout>` / `yaks.herd <prefix>` by hand does the same.
-`YAKS_DIR=<dir>` overrides everything for one command (a `.yaks/` directory, or
+`YAKS_DIR=<dir>` overrides everything for one command (the farm directory, or
 a directory containing one). `yaks merge <farm>` folds another farm in.
 
 ## Configuration

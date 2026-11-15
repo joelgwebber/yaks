@@ -1,14 +1,14 @@
 # AGENTS.md — yaks
 
 yaks is a filesystem-native task tracker: a single self-contained Rust binary.
-Tasks are markdown files with YAML frontmatter under a `.yaks/` directory; a
-task's status is a frontmatter field; each yak is one file, `.yaks/<herd>/yaks/<id>.md`.
+Tasks are markdown files with YAML frontmatter at the root of its own branch (before schema 9, under `.yaks/`); a
+task's status is a frontmatter field; each yak is one file, `<herd>/yaks/<id>.md`.
 
 ## Invariants
 
 - **Files are authoritative.** Status is a frontmatter field (`status: hairy|
   shaving|shorn|dead`) and each yak is one file at the stable path
-  `.yaks/<herd>/yaks/<id>.md` (attachments in `.yaks/<herd>/yaks/<id>/`); a status change edits the
+  `<herd>/yaks/<id>.md` (attachments in `<herd>/yaks/<id>/`); a status change edits the
   file in place. (A farm from before 0.0.16, with status directories, refuses
   to open; 0.0.16's `yaks migrate` converts it.) Parentage is a frontmatter `parent:`
   field; ids are flat and stable (any legacy dotted ids are inert — the `parent:`
@@ -16,10 +16,10 @@ task's status is a frontmatter field; each yak is one file, `.yaks/<herd>/yaks/<
 - **Any index is derived.** If a lookup index is added, it must be a per-user,
   rebuildable cache — never committed, never a second source of truth.
 - **Mutations hold the farm lock.** Any new `Farm` method that reads then
-  writes must take `store::lock` first (`.yaks/.lock`, advisory, not
+  writes must take `store::lock` first (`.lock`, advisory, not
   re-entrant: lock once, at the outermost method). It keeps `.lock` in
-  `.yaks/.gitignore`.
-- **Don't change the on-disk format lightly.** The `.yaks/` layout is the
+  `.gitignore`.
+- **Don't change the on-disk format lightly.** The farm layout is the
   contract; task files are meant to be readable, greppable, and diffable.
 
 ## Farms, herds, families
@@ -40,7 +40,7 @@ they live in the code.
   them. `create` routes a herd as `--herd` > `yaks.herd` > config. Tests use
   `discover_with` (or `Farm::at` for a scratch farm dir), never `set_var`.
 - **This repo's farm is the branch `yaks`**, checked out at `yaks path`; `main`
-  has no `.yaks/`, and no code commit ever contains it.
+  has no farm files, and no code commit ever contains it.
 
 ## Layout
 
@@ -48,7 +48,7 @@ A single Cargo package (the `yaks` binary). The root keeps a `[workspace]`
 table only to exclude the local `.edtui` clone.
 
 - `src/model.rs` — `Status`, `Task`.
-- `src/store.rs` — `.yaks/` discovery + frontmatter parsing (hand-rolled fast path).
+- `src/store.rs` — farm discovery + frontmatter parsing (hand-rolled fast path).
 - `src/main.rs` — clap CLI + command dispatch.
 - `src/farm.rs` — the core facade the CLI and TUI both call.
 - `src/tui/keymap.rs` — the TUI's command table: `Cmd` (dotted names), `Ctx` (a key's

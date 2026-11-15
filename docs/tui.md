@@ -1,7 +1,7 @@
 # TUI guide
 
 `yaks tui` opens an interactive terminal UI over the same farm the CLI operates
-on. Every mutation writes the same `.yaks/` files, so the TUI and CLI are
+on. Every mutation writes the same farm files, so the TUI and CLI are
 interchangeable.
 
 ## Layout
@@ -44,7 +44,7 @@ interchangeable.
   up to date and nothing is overdue. When the full text does not fit beside the
   tabs it shortens to `⏰2`, `●3` and `unpub`, and is hidden if even that does
   not fit. It is re-read whenever the farm is (re)loaded: at
-  startup, after every TUI change, and when files under `.yaks/` change; it
+  startup, after every TUI change, and when files in the farm change; it
   does not notice a commit or push made elsewhere until then (the interval sync
   below is what brings it up to date). The family label
   and notifications sit just left of it. A notification lasts until the next key
@@ -59,7 +59,7 @@ interchangeable.
   `regrew …` notice (`(awaiting agent)` or `(awaiting human)` for a yak with
   `wake:`, which then also shows in the Inbox), and the list reloads. `YAKS_NO_AUTOSYNC` stops the ticks;
   the load-time pass still runs.
-- **Interval sync** — every `sync_interval` (`.yaks/config.yaml`; seconds or
+- **Interval sync** — every `sync_interval` (`config.yaml`; seconds or
   `30s` / `5m` / `2h`; default `5m`; `0` or `off` turns it off) the TUI runs the
   same sync as `U` on a background thread, so the UI never waits for the
   network, then reloads, and upstream changes appear with no key pressed. A
@@ -94,7 +94,7 @@ interchangeable.
 - The tab row's right edge shows the active **family scope** for tree views
   (`family: remaining`; a leading `~` means it inherits the global default).
   Cycle it with `F`.
-- In a **multi-herd farm** (one `.yaks/` holding several id prefixes / herds),
+- In a **multi-herd farm** (one farm holding several id prefixes / herds),
   each row's id prefix is tinted by herd so herds are easy to scan, the create
   form's header shows which herd a new yak will join, and the detail pane gains a
   `Herd` field (between `Type` and `Priority`) that `H` moves the yak between.
@@ -260,7 +260,7 @@ failed), the draft is saved too.
 
 A draft is one JSON file per form and yak, under the farm's per-user config
 dir next to `views.json` (`$XDG_CONFIG_HOME/yaks/<farm>/drafts/`, by default
-`~/.config/yaks/...`), never under `.yaks/`: it is yours, not the farm's. The
+`~/.config/yaks/...`), never in the farm: it is yours, not the farm's. The
 keys are `edit:<id>`, `comment:<id>` and `create:<parent id or root>`, so a
 create under yak X offers X's draft, and a create at the root the root's. A
 newer draft replaces the older one.
@@ -349,7 +349,7 @@ picture selects that row (a second click opens the viewer). An svg is drawn like
 any other image (its size comes from rasterizing it, once per content, see *Svg
 attachments*). A remote (`http://`) image, which is not kept in the farm and so
 can break later, a missing or undecodable file stays the link row. Set
-`inline_images: false` in `.yaks/config.yaml` to keep every image a link row (for
+`inline_images: false` in `config.yaml` to keep every image a link row (for
 a terminal whose image protocol misbehaves).
 
 **Image captions** — an image's markdown **title**, `![shot](<id>/shot.png "The

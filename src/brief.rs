@@ -164,7 +164,7 @@ fn commands(b: &Brief) -> String {
     }
     if b.yaks_dir.is_none() {
         s.push_str(
-            "\n- The farm is one copy per machine, on its own branch, shared by every checkout. `yaks path` (no arguments) prints it; never create or stage a `.yaks/` in your own checkout.",
+            "\n- The farm is one copy per machine, on its own branch, shared by every checkout. `yaks path` (no arguments) prints it; never create or stage a farm directory in your own checkout.",
         );
     }
     s
@@ -236,8 +236,8 @@ fn finish(b: &Brief) -> String {
         Publication::Published { branch } => format!(
             "Finish (the yakherd commits the farm on branch `{branch}`, never you)\n\
              {shear}\n\
-             3. ONE commit of your own source files only: `git add -A -- <your files>`. Never stage anything under `.yaks/`. Message `{id}: <what changed>`.\n\
-             4. `git show --stat` must list every file you expect and nothing under `.yaks/`."
+             3. ONE commit of your own source files only: `git add -A -- <your files>`. Never stage the farm (`yaks path`). Message `{id}: <what changed>`.\n\
+             4. `git show --stat` must list every file you expect and nothing from the farm."
         ),
         Publication::Private => format!(
             "Finish (private farm: yak ids stay out of git)\n\
@@ -495,7 +495,7 @@ mod tests {
         let publication = published_yaks();
         let text = render(&facts(&t, &publication, None, None));
         assert!(text.contains("Finish (the yakherd commits the farm on branch `yaks`"));
-        assert!(text.contains("Never stage anything under `.yaks/`"));
+        assert!(text.contains("Never stage the farm"));
         assert!(
             text.contains("Message `yak-0001: <what changed>`"),
             "ids are fine: the farm is in git"

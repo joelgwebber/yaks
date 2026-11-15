@@ -339,11 +339,27 @@ pub fn find_note(notes: &[crate::store::NoteEntry], anchor: &str) -> Option<usiz
         .map(|(i, _)| i)
 }
 
-/// The link to a yak's latest note, `<id>#<anchor>`, or `None` without notes.
+/// The link to a yak's latest note, or `None` without notes. A body in the new
+/// shape gets the form a markdown host follows, `/<herd>/yaks/<id>.md#<slug>`;
+/// an old-shape body keeps `<id>#<timestamp>`, which an older yaks can follow.
 pub fn latest_note_link(id: &str, body: &str) -> Option<String> {
     let notes = crate::store::parse_notes(body);
     let shape = crate::store::body_shape(body).unwrap_or_default();
-    (!notes.is_empty()).then(|| format!("{id}#{}", note_anchor(shape, &notes, notes.len() - 1)))
+    if notes.is_empty() {
+        return None;
+    }
+    Some(note_link(id, &note_anchor(shape, &notes, notes.len() - 1)))
+}
+
+/// The link to the note `anchor` (as [`note_anchor`] writes it) of yak `id`: a
+/// slug anchor, which only a new-shape body has, goes with the file path a
+/// markdown host follows; a timestamp anchor keeps the bare id.
+pub fn note_link(id: &str, anchor: &str) -> String {
+    if is_slug_ts(split_note_anchor(anchor).0) {
+        format!("/{}/yaks/{id}.md#{anchor}", crate::store::herd_of(id))
+    } else {
+        format!("{id}#{anchor}")
+    }
 }
 
 /// `L12`, `L12-L40` (reordered if reversed), else a heading slug. Empty is none.
@@ -1507,6 +1523,16 @@ mod tests {
         assert_eq!(p.text, "5  \n6  First para\n7  still.\n8  \n");
         assert!(peek(&parse("/doks/none.md", From::Cli, yak), &b, 0).is_err());
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_latest_note_link_of_a_new_shape_body_is_a_host_path() {
+        let body = "Desc.\n\n#### 2026-11-04T22:13:03Z\n\n*a*\n\nhello\n";
+        assert_eq!(
+            latest_note_link("yaks-1a2b", body).unwrap(),
+            "/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z"
+        );
+        assert!(latest_note_link("yaks-1a2b", "Desc.").is_none());
     }
 
     /// A note is named by its timestamp; later notes of the same second take

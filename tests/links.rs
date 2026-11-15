@@ -184,10 +184,19 @@ fn a_note_link_from_update_peeks_and_is_checked() {
         .strip_prefix(&format!("Updated {id}: note "))
         .unwrap_or_else(|| panic!("no note link in {out:?}"))
         .to_string();
-    assert!(link.starts_with(&format!("{id}#20")), "{link}");
+    let herd = id.rsplit_once('-').unwrap().0;
+    assert!(
+        link.starts_with(&format!("/{herd}/yaks/{id}.md#20")),
+        "a schema-9 farm prints the path a host follows: {link}"
+    );
     let peek = f.run(&["peek", &link]);
     assert!(peek.ends_with("\n\nThe finding.\n"), "{peek}");
-    assert!(peek.starts_with(&format!("── {link}\n#### ")), "{peek}");
+    // The header names the note as the yak and anchor, whichever form was given.
+    let anchor = link.rsplit_once('#').unwrap().1;
+    assert!(
+        peek.starts_with(&format!("── {id}#{anchor}\n#### ")),
+        "{peek}"
+    );
 
     let other = f.create(&[]);
     f.run(&["update", &other, "--note", &format!("See [it]({link}).")]);
@@ -215,7 +224,7 @@ fn refs_incoming_lists_doks_and_session_notes() {
         .strip_prefix(&format!("Updated {id}: note "))
         .unwrap()
         .to_string();
-    let ts = link.strip_prefix(&format!("{id}#")).unwrap().to_string();
+    let ts = link.rsplit_once('#').unwrap().1.to_string();
     let other = f.create(&["--parent", &id]);
     f.run(&[
         "dok",
