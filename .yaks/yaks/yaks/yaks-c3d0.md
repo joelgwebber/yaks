@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:05:09Z'
+updated: '2026-11-15T00:15:51Z'
 depends_on:
 - yaks-f505
 tags:
@@ -114,3 +114,5 @@ Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin y
 
 - Enter on `code:` opens `DocKind::Code` in the viewer (line gutter, `syntax::Lang::from_path`, `#L` lands, marked lines in accent gutter). `O` is `Cmd::TakeOut` (`take.out`) on Viewer, Image, Detail/Yak pane, List/Yak row, List/Doc row; menu is `Overlay::TakeOut` (e/o/p/r/g, Esc/q), rows in `EXTRAS`. Missing commit: `locate::missing_commit`, shown as the viewer's one row and as the notification for p/e/o.
 - Left: docs/tui.md and README/skills grep, rendered frames (toque + PNG) attached, gate tail, rebase on current main, commit.
+
+![tui-code-viewer](yaks-c3d0/tui-code-viewer.png "(a) Enter on [x](code:src/lib.rs#L4-L9): read-only viewer, line gutter, Rust colours, named lines in the accent gutter")
