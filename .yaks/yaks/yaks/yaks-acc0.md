@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T07:59:30Z'
+updated: '2026-11-15T08:24:27Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -232,3 +232,8 @@ Refusals (typed, before any write): uncommitted change; behind upstream.
 Gap found and fixed: a yak committed at the old path by a writer who had not synced is merged into `.yaks/` and then invisible. `yaks check` now reports `stray-layout`. A real conflict in the same yak on both sides is an ordinary merge conflict.
 Left as written: 50 `sightmap-*`/`fullstory-*` yaks in the joel farm whose note headers are hand-written, not timestamps.
 Gate: 1451 tests, fmt clean.
+
+---
+▸ 2026-11-15T08:24:27Z [linkplan-lead]
+
+link probe
