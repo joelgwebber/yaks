@@ -1,0 +1,63 @@
+# (a) headless frame: Tab, Enter on [lines](code:src/links.rs#L100-L120)
+=== frame 3 · 110x30 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-3c84 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (0)
+viewing src/links.rs:L100-L120
+◂ { } code:src/links.rs  code
+│  100 │ /// Classify a link destination written in `from`. `is_yak` says whether a
+│  101 │ /// token is a yak id (attachments are `<id>/<name>`).
+│  102 │ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
+│  103 │     let dest = dest.trim();
+│  104 │     if dest.contains("://") || dest.starts_with("mailto:") {
+│  105 │         return Link::Url(dest.to_string());
+│  106 │     }
+│  107 │     let (body, frag) = match dest.split_once('#') {
+│  108 │         Some((b, f)) => (b, Some(f)),
+│  109 │         None => (dest, None),
+│  110 │     };
+│  111 │     let anchor = frag.and_then(parse_anchor);
+│  112 │     if body.is_empty() {
+│  113 │         return match anchor {
+│  114 │             Some(a) => Link::Local(a),
+│  115 │             None => Link::Upward(dest.to_string()),
+│  116 │         };
+│  117 │     }
+│  118 │     let body = percent_decode(body);
+│  119 │     if let Some(rest) = body.strip_prefix("code:") {
+│  120 │         let (path, rev) = split_rev(rest);
+│  121 │         return match clean(path.trim_start_matches('/')) {
+│  122 │             Some(path) => Link::Code { path, rev, anchor },
+│  123 │             None => Link::Upward(dest.to_string()),
+│  124 │         };
+│  125 │     }
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc close · q qui
+=== end ===
+
+# (b) pinned code:src/links.rs@da1bdca71c#L100
+=== frame 4 · 100x14 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-3c84 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+viewing src/links.rs:L100@da1bdca
+◂ { } code:src/links.rs@da1bdca  code
+│  100 │ /// Classify a link destination written in `from`. `is_yak` says whether a
+│  101 │ /// token is a yak id (attachments are `<id>/<name>`).
+│  102 │ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
+│  103 │     let dest = dest.trim();
+│  104 │     if dest.contains("://") || dest.starts_with("mailto:") {
+│  105 │         return Link::Url(dest.to_string());
+│  106 │     }
+│  107 │     let (body, frag) = match dest.split_once('#') {
+│  108 │         Some((b, f)) => (b, Some(f)),
+│  109 │         None => (dest, None),
+
+# (c) pin @deadbeefdeadbeef (not in checkout)
+=== frame 5 · 100x14 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-3c84 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ { } code:src/links.rs@deadbee  code
+│ commit deadbee is not in this checkout; fetch it or open on the host
+│
+│
+│
+│
+│
+│
+│

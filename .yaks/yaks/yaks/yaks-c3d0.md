@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:15:53Z'
+updated: '2026-11-15T00:15:55Z'
 depends_on:
 - yaks-f505
 tags:
@@ -120,3 +120,5 @@ Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin y
 ![tui-code-missing](yaks-c3d0/tui-code-missing.png "(c) pin to a commit not in the checkout: one line, no blank pane")
 
 ![tui-take-out](yaks-c3d0/tui-take-out.png "(d) O: the take-out menu over the viewer")
+
+[frames](yaks-c3d0/frames.txt "text frames (a) (b) (c) from the real binary: yaks tui --headless on a scratch checkout with a GitHub origin")
