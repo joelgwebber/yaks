@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-14T23:36:07Z'
+updated: '2026-11-15T00:05:09Z'
 depends_on:
 - yaks-f505
 tags:
@@ -106,3 +106,11 @@ Plan (next):
 - `DocKind::Code { lang }` viewer: rows coloured with `syntax::Lang` (new `Lang::from_path`), landing on `#L`; `AttachView::code` constructor.
 - `Overlay::TakeOut` modal menu (e/o/p/r/g), opened by one new `Cmd::TakeOut` (`O`) in Viewer, Detail pane (yak), List Doc rows and List Yak rows; replaces `LinkOpenExternal`/`FileOpenExternal` on `O` in the text viewer and the pane. Image viewer keeps `O` = open externally (it is the only thing it can do, and it already shares the name `file.open_external`).
 - `EXTRAS` rows for the menu keys, docs/tui.md, hints, tests, frames.
+
+---
+▸ 2026-11-15T00:05:09Z [viewer-1]
+
+Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin yaks` was green (1192 passed) before the new tests; new `src/tui/takeout.rs` has 9 tests, all passing.
+
+- Enter on `code:` opens `DocKind::Code` in the viewer (line gutter, `syntax::Lang::from_path`, `#L` lands, marked lines in accent gutter). `O` is `Cmd::TakeOut` (`take.out`) on Viewer, Image, Detail/Yak pane, List/Yak row, List/Doc row; menu is `Overlay::TakeOut` (e/o/p/r/g, Esc/q), rows in `EXTRAS`. Missing commit: `locate::missing_commit`, shown as the viewer's one row and as the notification for p/e/o.
+- Left: docs/tui.md and README/skills grep, rendered frames (toque + PNG) attached, gate tail, rebase on current main, commit.
