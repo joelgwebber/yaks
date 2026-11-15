@@ -144,6 +144,29 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         };
     }
     if let Some(rest) = path.strip_prefix('/') {
+        // A yak by its file, `/<herd>/yaks/<id>.md[#note]`, and its
+        // attachment, `/<herd>/yaks/<id>/<file>`: the form that works on a
+        // markdown host (a bare id does not), so it names the same yak or
+        // attachment as the bare id and the `<id>/<file>` form do. Only when
+        // the id is a real yak whose herd is the directory's, so a lookalike
+        // path stays a plain farm file.
+        if rev.is_none() {
+            if let Some((id, tail)) = yak_file_parts(rest) {
+                if is_yak(id) {
+                    return match tail {
+                        None => Link::Yak {
+                            id: id.to_string(),
+                            note: frag.filter(|f| is_note_anchor(f)).map(String::from),
+                        },
+                        Some(name) => Link::Attachment {
+                            id: id.to_string(),
+                            name: name.to_string(),
+                            anchor,
+                        },
+                    };
+                }
+            }
+        }
         return match clean(rest) {
             Some(path) => Link::Farm { path, rev, anchor },
             None => Link::Upward(dest.to_string()),
@@ -181,6 +204,25 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         Some(path) => Link::Farm { path, rev, anchor },
         None => Link::Upward(dest.to_string()),
     }
+}
+
+/// `<herd>/yaks/<id>.md` -> `(id, None)` and `<herd>/yaks/<id>/<file>` ->
+/// `(id, Some(file))`, when the id's herd is the directory's (`store::herd_of`).
+/// The shape of a yak's own file and attachments in the farm (a path from the
+/// farm root, no leading `/`); `None` for any other path.
+fn yak_file_parts(path: &str) -> Option<(&str, Option<&str>)> {
+    let mut parts = path.split('/');
+    let (herd, dir, third) = (parts.next()?, parts.next()?, parts.next()?);
+    if dir != crate::store::YAKS_SUBDIR || herd.is_empty() {
+        return None;
+    }
+    let rest: Vec<&str> = parts.collect();
+    let (id, tail) = match (third.strip_suffix(".md"), rest.as_slice()) {
+        (Some(id), []) => (id, None),
+        (None, [name]) if !name.is_empty() => (third, Some(*name)),
+        _ => return None,
+    };
+    (crate::store::herd_of(id) == herd).then_some((id, tail))
 }
 
 /// `path@<rev>` -> `(path, Some(rev))` when what follows the last `@` is 7-40
@@ -964,6 +1006,74 @@ mod tests {
             rev: rev.map(String::from),
             anchor,
         }
+    }
+
+    /// The form a markdown host can follow (yaks-acc0): a yak by its file
+    /// and its attachment by their path from the farm root. The same `Link`s as
+    /// the bare id and the `<id>/<file>` forms give, so a farm that mixes the
+    /// two reads alike.
+    #[test]
+    fn a_yak_and_its_attachment_by_path_from_the_farm_root() {
+        let f = From::Dok("doks/topics/x.md");
+        let yak_link = |id: &str, note: Option<&str>| Link::Yak {
+            id: id.into(),
+            note: note.map(String::from),
+        };
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b.md", f, yak),
+            yak_link("yaks-1a2b", None)
+        );
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b.md", f, yak),
+            parse("yaks-1a2b", f, yak)
+        );
+        // A note, by either anchor form.
+        for frag in [
+            "2026-11-04T22:13:03Z",
+            "2026-11-04t221303z",
+            "2026-11-04t221303z-1",
+        ] {
+            assert_eq!(
+                parse(&format!("/yaks/yaks/yaks-1a2b.md#{frag}"), f, yak),
+                yak_link("yaks-1a2b", Some(frag)),
+                "{frag}"
+            );
+        }
+        // An attachment, from a dok, a yak or an attachment alike.
+        let att = Link::Attachment {
+            id: "yaks-1a2b".into(),
+            name: "shot.png".into(),
+            anchor: None,
+        };
+        for from in [f, From::Yak, From::Attachment("yaks-9999")] {
+            assert_eq!(parse("/yaks/yaks/yaks-1a2b/shot.png", from, yak), att);
+        }
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b/shot.png", f, yak),
+            parse("yaks-1a2b/shot.png", f, yak)
+        );
+        // Not a yak: another herd's directory, an unknown id, a deeper path, a
+        // pin, and a dok that happens to sit under a `yaks/` directory.
+        assert_eq!(
+            parse("/other/yaks/yaks-1a2b.md", f, yak),
+            farm("other/yaks/yaks-1a2b.md", None, None)
+        );
+        assert_eq!(
+            parse("/yaks/yaks/yaks-nope.md", f, |s| s == "yaks-1a2b"),
+            farm("yaks/yaks/yaks-nope.md", None, None)
+        );
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b/sub/x.png", f, yak),
+            farm("yaks/yaks/yaks-1a2b/sub/x.png", None, None)
+        );
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b.md@3f2a9c1", f, yak),
+            farm("yaks/yaks/yaks-1a2b.md", Some("3f2a9c1"), None)
+        );
+        assert_eq!(
+            parse("/doks/yaks/notes.md", f, yak),
+            farm("doks/yaks/notes.md", None, None)
+        );
     }
 
     #[test]
