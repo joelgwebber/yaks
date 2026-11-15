@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T05:26:14Z'
+updated: '2026-11-15T05:31:38Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -139,3 +139,10 @@ Build order for the rest (`migrate.rs` stays the home; each step is a pure funct
 4. `store::SCHEMA` to 9, the README text, the report, then the rehearsals.
 
 Bumping `SCHEMA` is the last change I make, after everything else is tested, because it makes the build I install refuse every schema-8 farm on this machine until it is migrated.
+
+---
+▸ 2026-11-15T05:31:38Z [linkplan-lead]
+
+Decision (scope change, coordinator, within what Joel allowed on yaks-6cf2): **the migration does not rewrite `code:` links.** Pinned `code:` to a host URL needs yaks to parse its own host's URLs back into code links, which it cannot: `links::parse` is pure and does not know the remote, so a rewritten link would open in the browser instead of the new viewer, and `yaks check` would stop seeing it. Rewriting first would regress what just landed. Filed as its own yak under yaks-1151 (unify the resolution, then rewrite); until then `code:` and the legacy `../` forms stay as written, plain text on GitHub exactly as today. Everything else in the migration is unaffected: yak links, attachment links, `/doks/sessions|sources/` paths, sources, notes, layout.
+
+This is a reduction of decision 4, so Joel: say so on yaks-1151 if you would rather have the URLs now and the parse-back in the same change; I would not, it makes the migration depend on a resolver change it does not otherwise need.
