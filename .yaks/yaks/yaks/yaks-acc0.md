@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T05:17:45Z'
+updated: '2026-11-15T05:26:14Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -125,3 +125,17 @@ Also settled while reading the code, for the record:
 - **Frontmatter references to sources** (`sources:` lists, `part_of:`, `superseded_by:`) are not rewritten: they are not clickable on GitHub and resolve through the `<date>-<sha8>` prefix lookup that landed with yaks-7729.
 - **Attachment links:** an own-yak `<id>/<file>` link in a yak body already resolves on GitHub (the file sits beside the directory) and is left alone; the same link inside an attachment becomes the bare sibling name, and one from a dok or another yak becomes `/<herd>/yaks/<id>/<file>`.
 - **Unpinned `code:`** stays as it is; a pinned `code:` and a legacy `../blob/<sha>/...` become the host URL when the code repo is a recognised host; a legacy unpinned `../src/x` becomes `code:src/x`. If a farm has such links and no recognised host or no code checkout, the migration refuses and says why, rather than guess.
+
+---
+▸ 2026-11-15T05:26:14Z [linkplan-lead]
+
+Progress, `8fcd2b0d`: yaks now reads its own canonical yak link. `/<herd>/yaks/<id>.md[#note]` is a yak and `/<herd>/yaks/<id>/<file>` is its attachment, only when the id is a real yak whose herd is the directory's (a lookalike path stays a plain farm file). Checked end to end in a scratch farm: `refs --incoming` finds the backref, `doctor` accepts a real attachment at that path, `peek` reads a note by timestamp and by slug. 1226 tests pass. This had to come first, or the rewrite below would have made every backref vanish.
+
+Build order for the rest (`migrate.rs` stays the home; each step is a pure function with its own test, run by `run` under the existing lock, with the schema marker written last):
+
+1. `FIXUPS`: the link rewrite (`links::rewrite`, so code spans and fences are untouched), then `store::convert_notes`.
+2. Source rename (`sources::plan_slugs`, refusing on `duplicate_ids`) and the links and `sources:` entries to it (`sources::rewrite_ref`).
+3. Layout: only for a farm branch, only when clean and not behind its upstream. `git mv` to the branch root, rewrite `.gitattributes` and the LFS rules, README, stub `.yaks/schema`.
+4. `store::SCHEMA` to 9, the README text, the report, then the rehearsals.
+
+Bumping `SCHEMA` is the last change I make, after everything else is tested, because it makes the build I install refuse every schema-8 farm on this machine until it is migrated.
