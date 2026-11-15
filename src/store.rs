@@ -3029,8 +3029,12 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
 /// migrated by `yaks migrate` (see [`migration_refusal`]); 3, the old layout,
 /// is refused outright (see [`old_layout`]). Schema 8 renames the wiki to doks
 /// (`doks/`, `<herd>/doks/`, `/doks/...` links, `type: Dok Type`); schema 7 is
-/// read and migrated like the older ones.
-pub const SCHEMA: u32 = 8;
+/// read and migrated like the older ones. Schema 9 makes the farm browsable on
+/// a markdown host: a farm branch holds the farm at its root (no `.yaks/`),
+/// links to a yak and its attachments are paths from that root, notes are
+/// `#### <timestamp>` headings ([`NEW_NOTES_SCHEMA`]), and a source directory
+/// carries a readable slug. Schema 8 is read and migrated like the older ones.
+pub const SCHEMA: u32 = 9;
 
 /// The first schema with the flat layout. Older farms are the old layout.
 pub const FLAT_SCHEMA: u32 = 4;
@@ -4008,12 +4012,13 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("8"))),
+            schema_status(&temp_root(Some("9"))),
             SchemaStatus::Compatible
         );
+        assert_eq!(schema_status(&temp_root(Some("8"))), SchemaStatus::Older(8));
         assert_eq!(
-            schema_status(&temp_root(Some("9\n"))),
-            SchemaStatus::Newer(9)
+            schema_status(&temp_root(Some("10\n"))),
+            SchemaStatus::Newer(10)
         );
         assert_eq!(schema_status(&temp_root(Some("7"))), SchemaStatus::Older(7));
         assert_eq!(schema_status(&temp_root(Some("6"))), SchemaStatus::Older(6));
@@ -4045,7 +4050,13 @@ mod schema_tests {
                 .unwrap()
                 .contains("yaks migrate")
         );
-        assert!(migration_refusal(&temp_root(Some("8"))).is_none());
+        // Schema 8 is one `yaks migrate` behind now; the current schema is not.
+        assert!(
+            migration_refusal(&temp_root(Some("8")))
+                .unwrap()
+                .contains("yaks migrate")
+        );
+        assert!(migration_refusal(&temp_root(Some("9"))).is_none());
         assert!(migration_refusal(&temp_root(None)).is_none());
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(
@@ -4088,7 +4099,10 @@ mod init_tests {
         for sub in ["hairy", "shaving", "shorn", "dead"] {
             assert!(!root.join(sub).exists(), "unexpected {sub}/");
         }
-        assert_eq!(fs::read_to_string(root.join("schema")).unwrap(), "8\n");
+        assert_eq!(
+            fs::read_to_string(root.join("schema")).unwrap(),
+            format!("{SCHEMA}\n")
+        );
 
         // The seeded config round-trips through the reader.
         let read = read_config(&root);
@@ -4653,7 +4667,10 @@ mod discover_tests {
         // The directory exists already (a worktree): the markers decide.
         assert!(matches!(init(&base, &cfg).unwrap(), InitOutcome::Created));
         assert!(base.join("config.yaml").is_file());
-        assert_eq!(fs::read_to_string(base.join("schema")).unwrap(), "8\n");
+        assert_eq!(
+            fs::read_to_string(base.join("schema")).unwrap(),
+            format!("{SCHEMA}\n")
+        );
         assert!(matches!(
             init(&base, &cfg).unwrap(),
             InitOutcome::AlreadyExists

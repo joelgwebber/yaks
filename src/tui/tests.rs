@@ -2234,7 +2234,7 @@ mod live {
         let t = app.task("t0").unwrap();
         assert_eq!(t.status, Status::Shorn);
         // Only the transition's own `moved:` note, no comment.
-        assert_eq!(t.body.matches("▸ ").count(), 1, "{}", t.body);
+        assert_eq!(crate::store::parse_notes(&t.body).len(), 1, "{}", t.body);
     }
 
     #[test]
@@ -3180,7 +3180,10 @@ mod live {
         assert!(matches!(app.overlay, Overlay::None));
         let body = &app.task("t0").unwrap().body;
         assert!(body.contains("a helpful note"), "note text present");
-        assert!(body.contains('\u{25b8}'), "timestamp sigil present");
+        assert!(
+            !crate::store::parse_notes(body).is_empty(),
+            "the comment is a note with a timestamp"
+        );
     }
 
     #[test]
@@ -3496,7 +3499,7 @@ mod live {
         press(&mut app, "M");
         press(&mut app, "note to remove");
         ctrl_s(&mut app);
-        assert!(app.task("t0").unwrap().body.contains('\u{25b8}'));
+        assert!(!crate::store::parse_notes(&app.task("t0").unwrap().body).is_empty());
         app.open_block_edit(Some(1)); // the comment, in place
         press(&mut app, "dd"); // Normal mode: delete its only line
         ctrl_s(&mut app);

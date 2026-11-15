@@ -7,7 +7,7 @@ use assert_cmd::Command;
 use std::path::{Path, PathBuf};
 
 /// The farm schema this yaks writes (`store::SCHEMA`).
-const SCHEMA: u32 = 8;
+const SCHEMA: u32 = 9;
 
 fn tmp(tag: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("yaks-mdriver-{tag}-{}", std::process::id()));

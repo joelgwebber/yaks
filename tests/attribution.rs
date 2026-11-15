@@ -67,28 +67,22 @@ impl Drop for Farm {
     }
 }
 
-/// The marker line `▸ <ts> [<actor>]`, the move's metadata (`kind: move`,
-/// `from`, `to`) closed by `---`, a blank line, then the transition text.
+/// A move note, in the shape a schema-9 farm writes: a `#### <ts>` heading, a
+/// blank line, the italic line `*<actor> \u{b7} kind: move \u{b7} from: <from> \u{b7}
+/// to: <to>*` (a move made inside a harness thread also records `thread:
+/// <id>` after `to:`, yaks-5d1c), a blank line, then the transition text.
 fn has_move(file: &str, actor: &str, from: &str, to: &str) -> bool {
     let lines: Vec<&str> = file.lines().collect();
-    let want = [
-        "kind: move".to_string(),
-        format!("from: {from}"),
-        format!("to: {to}"),
-        "---".to_string(),
-        String::new(),
-        format!("moved: {from} -> {to}"),
-    ];
-    // A move made inside a harness thread also records `thread: <id>`
-    // (yaks-5d1c), after `to:`; drop that line before comparing.
-    let lines: Vec<&str> = lines
-        .into_iter()
-        .filter(|l| !l.starts_with("thread: "))
-        .collect();
-    lines.windows(1 + want.len()).any(|w| {
-        w[0].starts_with("\u{25b8} ")
-            && w[0].ends_with(&format!(" [{actor}]"))
-            && w[1..].iter().zip(&want).all(|(a, b)| a == b)
+    let line = format!("*{actor} \u{b7} kind: move \u{b7} from: {from} \u{b7} to: {to}");
+    let text = format!("moved: {from} -> {to}");
+    lines.windows(5).any(|w| {
+        w[0].starts_with("#### ")
+            && w[1].is_empty()
+            && w[2].starts_with(&line)
+            && (w[2].len() == line.len() + 1 || w[2][line.len()..].starts_with(" \u{b7} thread: "))
+            && w[2].ends_with('*')
+            && w[3].is_empty()
+            && w[4] == text
     })
 }
 
@@ -135,7 +129,7 @@ fn move_actor_from_delta_thread_title_then_id() {
     f.run(&[("DELTA_CURRENT_THREAD_ID", "t-123")], &["shorn", &id]);
     assert!(has_move(&f.file(&id), "delta:t-123", "shaving", "shorn"));
     // Both moves name the thread that made them.
-    assert_eq!(f.file(&id).matches("\nthread: t-123\n").count(), 2);
+    assert_eq!(f.file(&id).matches(" \u{b7} thread: t-123*\n").count(), 2);
 }
 
 /// `$YAKS_THREAD` names the thread a move records, and wins over Delta's id
@@ -150,11 +144,15 @@ fn move_thread_is_yaks_thread_over_the_delta_thread_id() {
     ];
     f.run(&env, &["shave", &id]);
     let file = f.file(&id);
-    assert_eq!(file.matches("\nthread: hearth-9\n").count(), 1, "{file}");
+    assert_eq!(
+        file.matches(" \u{b7} thread: hearth-9*\n").count(),
+        1,
+        "{file}"
+    );
     assert!(!file.contains("thread: t-123"), "{file}");
     // Alone, outside Delta, it is the thread too.
     f.run(&[("YAKS_THREAD", "solo-1")], &["shorn", &id]);
-    assert_eq!(f.file(&id).matches("\nthread: solo-1\n").count(), 1);
+    assert_eq!(f.file(&id).matches(" \u{b7} thread: solo-1*\n").count(), 1);
 }
 
 /// `yaks whoami` reports `$YAKS_THREAD` over Delta's thread id (yaks-f4ea).
@@ -247,7 +245,7 @@ fn a_file_without_move_entries_still_works_and_doctor_accepts_the_marker() {
     // stripping them must still parse and move.
     let path = PathBuf::from(f.run(&[], &["path", &id]).trim());
     let text = std::fs::read_to_string(&path).unwrap();
-    let stripped: String = text.split("\n\n---\n\u{25b8} ").next().unwrap().to_string();
+    let stripped: String = text.split("\n\n#### ").next().unwrap().to_string();
     std::fs::write(&path, format!("{stripped}\n")).unwrap();
     f.run(&[], &["regrow", &id, "--as", "z"]);
     assert!(has_move(&f.file(&id), "z", "shorn", "hairy"));

@@ -88,9 +88,14 @@ fn update_meta_writes_lines_under_the_marker_and_show_json_lists_them() {
         "msg=a=b: c",
     ]);
     let body = f.body(&id);
+    // Schema 9 writes the metadata on the italic line under the heading; a
+    // value that would read as a `key: value` pair is quoted.
     assert!(
-        body.contains("kind: checkpoint\ncommit: 47076b0\nmsg: 'a=b: c'\n---\n\nsaved")
-            || body.contains("kind: checkpoint\ncommit: 47076b0\nmsg: \"a=b: c\"\n---\n\nsaved"),
+        body.contains(
+            "*tester \u{b7} kind: checkpoint \u{b7} commit: 47076b0 \u{b7} msg: 'a=b: c'*\n\nsaved"
+        ) || body.contains(
+            "*tester \u{b7} kind: checkpoint \u{b7} commit: 47076b0 \u{b7} msg: \"a=b: c\"*\n\nsaved"
+        ),
         "{body}"
     );
     let notes = f.notes(&id);

@@ -187,7 +187,7 @@ fn a_note_link_from_update_peeks_and_is_checked() {
     assert!(link.starts_with(&format!("{id}#20")), "{link}");
     let peek = f.run(&["peek", &link]);
     assert!(peek.ends_with("\n\nThe finding.\n"), "{peek}");
-    assert!(peek.starts_with(&format!("── {link}\n▸ ")), "{peek}");
+    assert!(peek.starts_with(&format!("── {link}\n#### ")), "{peek}");
 
     let other = f.create(&[]);
     f.run(&["update", &other, "--note", &format!("See [it]({link}).")]);

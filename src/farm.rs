@@ -2840,12 +2840,21 @@ impl Farm {
         Ok(changed)
     }
 
-    /// Bring a schema-4 farm up to the current schema: every fixup in
-    /// [`crate::migrate::FIXUPS`] over every yak file, then the `schema`
-    /// marker. Under the farm lock (a dry run only reads). Idempotent: on a
-    /// current farm it changes nothing. Never touches git.
+    /// Bring an older farm up to the current schema: the fixups in
+    /// [`crate::migrate::FIXUPS`] it has not had, over every yak file, then the
+    /// schema-9 stage, then the `schema` marker. Under the farm lock (a dry run
+    /// only reads). Idempotent: on a current farm it changes nothing.
+    ///
+    /// On a farm branch the schema-9 stage makes its own two commits (the move,
+    /// then the rewrite), so the lock is the one that does not autocommit on
+    /// release ([`store::lock_uncommitted`], as `yaks sync` and `yaks commit`
+    /// use): a per-change commit keyed to a root that has moved would add a
+    /// third. Anything else it wrote (a farm outside git) is left for the
+    /// person to commit, as before.
     pub fn migrate(&self, dry_run: bool) -> Result<crate::migrate::Report> {
-        let _lock = (!dry_run).then(|| store::lock(&self.root)).transpose()?;
+        let _lock = (!dry_run)
+            .then(|| store::lock_uncommitted(&self.root))
+            .transpose()?;
         crate::migrate::run(&self.root, dry_run)
     }
 
@@ -5079,7 +5088,11 @@ mod tests {
             .unwrap()
             .body;
         assert!(body.contains("child: yak-0004"), "{body}");
-        assert!(body.contains("[w]"), "{body}");
+        let notes = store::parse_notes(&body);
+        assert!(
+            notes.iter().any(|n| n.actor.as_deref() == Some("w")),
+            "{body}"
+        );
 
         // Already shaving: a no-op lifts nothing; a regrow never lifts.
         assert_eq!(
@@ -5750,7 +5763,7 @@ mod tests {
             .body;
         assert_eq!(
             body,
-            "see [log](yak-0001/log.txt) and ![s](yak-0001/s.png)\n\n---\n\u{25b8} 2026-01-01T00:00:00Z [a]\n\nold shape\n\n---\n\u{25b8} 2026-01-02T00:00:00Z\n\nnew shape"
+            "see [log](yak-0001/log.txt) and ![s](yak-0001/s.png)\n\n#### 2026-01-01T00:00:00Z\n\n*a*\n\nold shape\n\n#### 2026-01-02T00:00:00Z\n\nnew shape"
         );
         // Frontmatter (incl. `updated:`) is untouched: only the shape moves.
         let after = std::fs::read_to_string(store::task_path(&root, "yak-0001")).unwrap();
@@ -5888,10 +5901,7 @@ mod tests {
             .unwrap()
             .unwrap()
             .body;
-        assert!(
-            body.starts_with("New description.\n\n---\n\u{25b8} "),
-            "{body}"
-        );
+        assert!(body.starts_with("New description.\n\n#### "), "{body}");
         assert!(body.ends_with("\n\na concurrent note"), "{body}");
         assert!(!body.contains("Old description."), "{body}");
     }
@@ -6002,7 +6012,7 @@ mod tests {
                 assert_eq!(body.lines().filter(|l| *l == want).count(), 1, "{want}");
             }
         }
-        assert_eq!(body.matches("\u{25b8} ").count(), 200);
+        assert_eq!(store::parse_notes(&body).len(), 200);
         assert!(farm.doctor(false).unwrap().is_empty());
     }
 

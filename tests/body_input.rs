@@ -131,7 +131,11 @@ fn update_description_and_note_from_stdin_and_file() {
     );
     let file = f.file(&id);
     assert!(ends_with_text(&file), "{file}");
-    assert!(file.contains("[tester]"), "{file}");
+    // The note is stamped with its actor, in whichever shape the farm writes.
+    assert!(
+        file.contains("[tester]") || file.contains("*tester*"),
+        "{file}"
+    );
 
     let path = f.write("n.md", &format!("{TEXT}\n"));
     f.ok(&["update", &id, "--note-file", &path], None);

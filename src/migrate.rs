@@ -33,6 +33,11 @@ pub struct Ctx<'a> {
 /// number of edits made (0 = body returned unchanged).
 pub struct Fixup {
     pub name: &'static str,
+    /// The schema this fixup brought a farm to. It runs only on a farm marked
+    /// below it: on a farm that has had it, it is at best noise, and the
+    /// comment-header one is wrong (it would split a note's metadata block
+    /// from its header).
+    pub schema: u32,
     /// What one counted edit is, for the report ("comment headers", ...).
     pub unit: &'static str,
     pub apply: fn(&Ctx, &str) -> (String, usize),
@@ -45,35 +50,46 @@ pub struct Fixup {
 pub const FIXUPS: &[Fixup] = &[
     Fixup {
         name: "labels-become-tags",
+        schema: 7,
         unit: "key(s)",
         apply: labels_become_tags,
         front: true,
     },
     Fixup {
         name: "comment-header-blank-line",
+        schema: 5,
         unit: "comment(s)",
         apply: comment_header_blank_line,
         front: false,
     },
     Fixup {
         name: "attachment-links",
+        schema: 5,
         unit: "link(s)",
         apply: attachment_links,
         front: false,
     },
     Fixup {
         name: "attachment-link-encoding",
+        schema: 7,
         unit: "link(s)",
         apply: attachment_link_encoding,
         front: false,
     },
     Fixup {
         name: "wiki-links-become-doks-links",
+        schema: 8,
         unit: "link(s)",
         apply: wiki_links_become_doks_links,
         front: false,
     },
 ];
+
+/// Whether `f` runs on a farm whose marker says `from` (`None`: no usable
+/// marker, which is read as the oldest: every fixup runs).
+fn fixup_due(f: &Fixup, from: Option<u32>) -> bool {
+    from.is_none_or(|v| v < f.schema)
+}
 
 /// The farm-root link `dest` with its `wiki` directory renamed: `/wiki/x.md`
 /// becomes `/doks/x.md` and `/<herd>/wiki/x.md` becomes `/<herd>/doks/x.md`,
@@ -623,6 +639,48 @@ fn apply_layout(moves: &[Move]) -> Result<()> {
     Ok(())
 }
 
+/// What the schema-9 stage found, or did: the same numbers on a dry run and
+/// on the real run, since both come from one plan.
+#[derive(Debug, Default)]
+pub struct Schema9 {
+    /// Links rewritten, by kind, and how many files held one.
+    pub links: LinkEdits,
+    pub link_files: usize,
+    /// Notes put into the new shape, and in how many yaks.
+    pub notes: usize,
+    pub note_yaks: usize,
+    /// Yaks whose note headers are not timestamps, left in the old shape.
+    pub old_shape: Vec<String>,
+    /// Source directories given a slug: `(old, new)`.
+    pub sources: Vec<(String, String)>,
+    /// The files the layout stage moved out of `.yaks/`: `(from, to)`, from
+    /// the repository top. Empty on a dry run (the count is `files_to_move`).
+    pub moved: Vec<(String, String)>,
+    /// How many files a dry run says the layout stage would move.
+    pub files_to_move: usize,
+    /// The farm is a farm branch (it has git to commit to).
+    pub on_branch: bool,
+    /// The farm sits under `.yaks/` of a farm branch and moves to its root.
+    pub move_to_root: bool,
+    /// Why the real run refuses; a dry run lists them and goes on. The farm
+    /// branch's state (uncommitted changes, behind its upstream, a merge in
+    /// progress), which `run` checks before any write.
+    pub blocked: Vec<String>,
+    /// Why the plan cannot be applied even on a clean farm (two directories
+    /// for one source id): also listed by a dry run, found by planning.
+    pub plan_blocked: Vec<String>,
+    /// The move commit (short hash): every farm file renamed, none changed.
+    pub move_commit: Option<String>,
+    /// The rewrite commit (short hash): links, notes and the `schema` marker.
+    pub commit: Option<String>,
+}
+
+impl Schema9 {
+    fn is_empty(&self) -> bool {
+        self.links.total() == 0 && self.notes == 0 && self.sources.is_empty() && !self.move_to_root
+    }
+}
+
 /// Result of a [`run`].
 #[derive(Debug)]
 pub struct Report {
@@ -644,6 +702,8 @@ pub struct Report {
     /// Whether anything under the farm is tracked by git (so the result
     /// should be committed with `yaks commit`); false for a farm outside git.
     pub git_tracked: bool,
+    /// The schema-9 stage.
+    pub s9: Schema9,
 }
 
 impl Report {
@@ -653,8 +713,155 @@ impl Report {
             && self.layout.is_empty()
             && self.doks_roots.is_empty()
             && self.docs.is_empty()
+            && self.s9.is_empty()
             && self.from.is_none_or(|v| v == store::SCHEMA)
     }
+}
+
+/// The schema-9 content stage, planned and not applied: every file whose
+/// text changes (`(path, new text)`), the source renames, and the counts for
+/// the report. Reads the farm as it is at `root`, in the layout `run` has
+/// already put it in; writes nothing.
+///
+/// Per file kind: a yak body gets its links and its notes; the attachment
+/// documents of a yak get their links (as siblings of that yak); a dok, a
+/// schema and a session get their links. A source is a snapshot and is never
+/// read. `code:` links and every URL stay as written ([`canonical_dest`]).
+fn plan_schema9(root: &Path) -> Result<(Vec<(std::path::PathBuf, String)>, Schema9)> {
+    let mut blocked = Vec::new();
+    // Two directories carrying one source id is the same source saved twice
+    // (two branches): do not guess which to keep.
+    let dups = crate::sources::duplicate_ids(root);
+    if !dups.is_empty() {
+        let list: Vec<String> = dups.iter().map(|d| d.join(" and ")).collect();
+        blocked.push(format!(
+            "sources saved twice under one id, which the slug rename cannot choose between: {}",
+            list.join("; ")
+        ));
+    }
+    let (writes, mut s9) = plan_schema9_with(root, &crate::sources::plan_slugs(root))?;
+    s9.plan_blocked = blocked;
+    Ok((writes, s9))
+}
+
+/// [`plan_schema9`] with the source renames given (`sources`: the plan, taken
+/// before the directories were renamed), for the rewrite at the new root:
+/// links to a source name its slugged directory, which is by then the real one.
+fn plan_schema9_with(
+    root: &Path,
+    sources: &[(String, String)],
+) -> Result<(Vec<(std::path::PathBuf, String)>, Schema9)> {
+    let mut s9 = Schema9 {
+        sources: sources.to_vec(),
+        ..Schema9::default()
+    };
+    let ids = store::all_ids(root);
+    let mut writes: Vec<(std::path::PathBuf, String)> = Vec::new();
+    let mut link_files = 0;
+    let mut note_yaks = 0;
+    let rel = |p: &Path| {
+        p.strip_prefix(root)
+            .unwrap_or(p)
+            .to_string_lossy()
+            .into_owned()
+    };
+
+    // Yaks: links, then notes.
+    for path in store::yak_files(root) {
+        let text = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading {}", path.display()))?;
+        let Some((_, body)) = store::split_frontmatter(&text) else {
+            continue;
+        };
+        let id = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or_default()
+            .to_string();
+        let head = &text[..text.len() - body.len()];
+        let (body, e) = canonical_links(
+            &LinkCx {
+                ids: &ids,
+                from: crate::links::From::Yak,
+                own: Some(&id),
+                sources: &s9.sources,
+            },
+            body,
+        );
+        let notes_before = store::parse_notes(&body);
+        let (body, converted) = store::convert_notes(&body);
+        if converted == 0
+            && !notes_before.is_empty()
+            && store::body_shape(&body) == Some(store::NoteShape::Old)
+        {
+            s9.old_shape.push(id.clone());
+        }
+        if e.total() > 0 {
+            s9.links.add(e);
+            link_files += 1;
+        }
+        if converted > 0 {
+            s9.notes += converted;
+            note_yaks += 1;
+        }
+        let new = format!("{head}{body}");
+        if new != text {
+            writes.push((path, new));
+        }
+    }
+
+    // The markdown documents attached to a yak (an evidence write-up): links,
+    // as siblings of that yak's attachments.
+    for id in &ids {
+        for a in crate::farm::list_attachments(root, id) {
+            if !crate::links::is_markdown_name(&a.name) {
+                continue;
+            }
+            let Ok(text) = std::fs::read_to_string(&a.path) else {
+                continue;
+            };
+            let (new, e) = canonical_links(
+                &LinkCx {
+                    ids: &ids,
+                    from: crate::links::From::Attachment(id),
+                    own: None,
+                    sources: &s9.sources,
+                },
+                &text,
+            );
+            if e.total() > 0 {
+                s9.links.add(e);
+                link_files += 1;
+                writes.push((a.path, new));
+            }
+        }
+    }
+
+    // Doks, schemas and sessions.
+    for path in document_files(root, true) {
+        let Ok(text) = std::fs::read_to_string(&path) else {
+            continue;
+        };
+        let rel_path = rel(&path);
+        let (new, e) = canonical_links(
+            &LinkCx {
+                ids: &ids,
+                from: crate::links::From::Dok(&rel_path),
+                own: None,
+                sources: &s9.sources,
+            },
+            &text,
+        );
+        if e.total() > 0 {
+            s9.links.add(e);
+            link_files += 1;
+            writes.push((path, new));
+        }
+    }
+    s9.link_files = link_files;
+    s9.note_yaks = note_yaks;
+    writes.sort_by(|a, b| a.0.cmp(&b.0));
+    Ok((writes, s9))
 }
 
 /// Apply every fixup to every yak file under `root` (rewriting each file
@@ -669,6 +876,14 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     // The layout step first, so the fixups below read every yak at its
     // schema-6 path. A dry run plans it and reads the files where they are.
     let moves = plan_layout(root)?;
+    // Refuse before the first write: the migration must not be what makes the
+    // farm dirty and then trip over it. Only the real run refuses; a dry run
+    // reports the same reasons (see `describe_layout_stage`).
+    if !dry_run {
+        if let Some((_, why)) = layout_refusal(root) {
+            anyhow::bail!("{why}");
+        }
+    }
     let mut layout: std::collections::BTreeMap<String, (usize, usize)> = Default::default();
     for m in &moves {
         let name = m
@@ -739,6 +954,9 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
         let mut head = text[..text.len() - body.len()].to_string();
         let mut body = body.to_string();
         for (f, report) in FIXUPS.iter().zip(&mut fixups) {
+            if !fixup_due(f, from) {
+                continue;
+            }
             let target = if f.front { &mut head } else { &mut body };
             let (next, edits) = (f.apply)(&ctx, target);
             if edits > 0 {
@@ -768,7 +986,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
             doc_writes.push((path, new));
         }
     }
-    let report = Report {
+    let mut report = Report {
         applied: !dry_run,
         from,
         layout,
@@ -777,16 +995,380 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
         docs,
         files: writes.len(),
         git_tracked: tracked_by_git(root),
+        s9: Schema9::default(),
     };
-    if dry_run || report.is_noop() {
+    if dry_run {
+        // Earlier schemas' steps are not applied, so the farm is read as it
+        // lies: plan the schema-9 stage only for a farm already at 8, whose
+        // layout is the one it assumes.
+        if from.is_none_or(|v| v >= 8) {
+            let (_, s9) = plan_schema9(root)?;
+            report.s9 = s9;
+            describe_layout_stage(root, &mut report.s9);
+        }
+        return Ok(report);
+    }
+    if report.is_noop() && from.is_none_or(|v| v >= store::SCHEMA) {
         return Ok(report);
     }
     for (path, text) in writes.iter().chain(&doc_writes) {
         store::write::atomic_write(path, text)?;
     }
-    let schema = root.join("schema");
-    store::write::atomic_write(&schema, &format!("{}\n", store::SCHEMA))?;
+    report.s9 = apply_schema9(root)?;
     Ok(report)
+}
+
+/// The schema-9 stage, applied, on the farm the earlier steps left at schema
+/// 8. Two commits on a farm branch, so git can follow every file across it:
+///
+/// 1. the move: every tracked path renamed with no change to its bytes (a 100%
+///    rename, which git pairs by blob id whatever the rename limit), the
+///    source directories renamed, `.gitattributes`, the README and the stub;
+/// 2. the rewrite: links and notes at the new paths, then the `schema` marker.
+///
+/// A farm outside git, or one already at the branch root, has no move and
+/// gets the rewrite in place. An interrupted run is safe between the two: the
+/// farm is at the root with its marker still below 9, so a re-run skips the
+/// move and does the rewrite (the stub says 9, so an older yaks says
+/// "upgrade" in either state).
+fn apply_schema9(root: &Path) -> Result<Schema9> {
+    // Plan against the farm as it is, with the source renames the second
+    // commit's links point at. Nothing is written until it is known to apply.
+    let (_, mut s9) = plan_schema9(root)?;
+    describe_layout_stage(root, &mut s9);
+    if let Some(why) = s9.plan_blocked.first() {
+        anyhow::bail!("{why}");
+    }
+    // The farm root after the move: the branch top, or where it was.
+    let mut now = root.to_path_buf();
+    if s9.move_to_root {
+        apply_source_renames(root, &s9.sources)?;
+        let moved = apply_layout_stage(root)?;
+        let top = store::farm_git(root)
+            .context("the farm is not on its own farm branch")?
+            .top;
+        let count = moved.len();
+        s9.moved = moved;
+        s9.move_commit = Some(commit_all(
+            &top,
+            &format!(
+                "yaks: move the farm to the branch root, schema 9 ({count} file(s), no content change)"
+            ),
+        )?);
+        now = top;
+    } else {
+        apply_source_renames(root, &s9.sources)?;
+    }
+    // The rewrite, planned again at the new paths: the plan is pure, and its
+    // source renames are now empty (they were applied), so links to a source
+    // are rewritten from the plan taken before the move.
+    let (writes, again) = plan_schema9_with(&now, &s9.sources)?;
+    for (path, text) in &writes {
+        store::write::atomic_write(path, text)?;
+    }
+    s9.links = again.links;
+    s9.link_files = again.link_files;
+    s9.notes = again.notes;
+    s9.note_yaks = again.note_yaks;
+    s9.old_shape = again.old_shape;
+    store::write::atomic_write(&now.join("schema"), &format!("{}\n", store::SCHEMA))?;
+    if s9.move_to_root {
+        let n = writes.len() + 1;
+        s9.commit = Some(commit_all(
+            &now,
+            &format!(
+                "yaks: migrate the farm to schema {} (links, notes: {n} file(s))",
+                store::SCHEMA
+            ),
+        )?);
+    }
+    Ok(s9)
+}
+
+/// Fill in what the layout stage would do and whether it must refuse: whether
+/// the farm is a farm branch, whether it sits under `.yaks/`. The stage itself
+/// is [`apply_layout_stage`], run after the content is written.
+fn describe_layout_stage(root: &Path, s9: &mut Schema9) {
+    let Some(fg) = store::farm_git(root) else {
+        return;
+    };
+    s9.on_branch = true;
+    s9.move_to_root = !fg.prefix.is_empty();
+    if s9.move_to_root {
+        let nested = fg.prefix.trim_end_matches('/').to_string();
+        let tracked = crate::branchfarm::git(&fg.top, &["ls-files", "-z", "--", &nested])
+            .map(|o| o.split('\0').filter(|p| !p.is_empty()).count())
+            .unwrap_or(0);
+        let loose = untracked_under(&fg.top, &nested).map_or(0, |u| u.len());
+        s9.files_to_move = tracked + loose;
+    }
+    if let Some((_, why)) = layout_refusal(root) {
+        s9.blocked.push(why);
+    }
+}
+
+/// A farm branch that is not safe to migrate, and why: uncommitted changes
+/// (the migration commit would sweep them in, and `--only` could not tell
+/// them from its own), a merge in progress, or behind its upstream (what is
+/// there would arrive under `.yaks/`). `None` when the farm may go ahead. The
+/// branch name comes with it for the message.
+fn layout_refusal(root: &Path) -> Option<(String, String)> {
+    let fg = store::farm_git(root)?;
+    let branch = fg.branch.clone();
+    if let Ok(Some((head, what))) = crate::changes::pending_operation(root) {
+        return Some((
+            branch,
+            format!("a {what} is in progress ({head} is set): finish or abort it first"),
+        ));
+    }
+    if let Ok(Some(changes)) = crate::changes::read(root) {
+        if !changes.is_empty() {
+            return Some((
+                branch,
+                format!(
+                    "the farm has {} uncommitted change(s): `yaks commit` them first, so the \
+                     migration is one commit of its own",
+                    changes.len()
+                ),
+            ));
+        }
+    }
+    // Behind (or diverged) is the risk: what the upstream holds that this
+    // checkout lacks would arrive under `.yaks/` after the move. Ahead is
+    // harmless, the push stays a fast-forward. A farm never published has no
+    // upstream and nobody to strand.
+    if let Some(s) = crate::status::sync_state(root) {
+        if let (Some(up), b) = (&s.upstream, s.behind) {
+            if b > 0 {
+                return Some((
+                    branch,
+                    format!(
+                        "the farm branch is {b} commit(s) behind {up}: `yaks sync` first, so \
+                         work already there is in this checkout before the move"
+                    ),
+                ));
+            }
+        }
+    }
+    None
+}
+
+/// What the landing `README.md` of a farm branch says. Static: it is written
+/// once by the migration and by `yaks init`, and names no yak, so nothing in it
+/// goes stale.
+pub const README: &str = "\
+# yaks farm
+
+This branch is a [yaks](https://github.com/joelgwebber/yaks) farm: tasks, notes
+and working knowledge kept as markdown files, one per thing, so they read on
+the web as they do in the terminal.
+
+| Where | What |
+|---|---|
+| `<herd>/yaks/<id>.md` | a yak (a task), its notes at the end; attachments in `<herd>/yaks/<id>/` |
+| `doks/`, `<herd>/doks/` | doks: documents that outlive a yak (designs, research, how-tos) |
+| `sessions/` | session notes: how a working session went |
+| `sources/` | outside material, saved once and cited |
+| `schemas/` | the shape of typed doks, and the known tags |
+| `config.yaml`, `schema` | the farm's settings and schema version |
+
+Links between these files are paths from the root of this branch
+(`/doks/design/x.md`), which GitHub and most hosts follow.
+
+To work with it, install yaks (`npm i -g @j15r/yaks`) and run `yaks tui` from a
+checkout of the repository this branch belongs to.
+";
+
+/// What the old-binary stub `.yaks/schema` holds: the new schema number, so a
+/// yaks that predates it finds no farm at the old place but, reading the
+/// marker, says "newer schema, upgrade" and not "restore .yaks/".
+pub const STUB_NOTE: &str = "\
+This directory is a stub. The farm moved to the root of this branch at
+schema 9; an older yaks reads this file to say it needs upgrading
+(`npm i -g @j15r/yaks@latest`). Safe to delete once every machine is upgraded.
+";
+
+/// The layout stage, applied: move the farm from `<top>/.yaks/` to `<top>/`,
+/// with git, and rewrite the rules that named `.yaks/`. Order matters for an
+/// interrupted run: nothing here changes the `schema` marker, which `run`
+/// writes after, so a half-moved farm is read as the old layout (its
+/// `config.yaml` is still under `.yaks/`) and a re-run finishes the job.
+///
+/// 1. `git mv` every tracked path, then move anything untracked that sits under
+///    `.yaks/` (the lock file is ignored and left behind).
+/// 2. `.gitattributes`: the rules lose their `.yaks/`.
+/// 3. `README.md`, and the stub `.yaks/schema` holding the new number.
+///
+/// The caller commits ([`commit_all`]). Returns the paths it moved.
+fn apply_layout_stage(root: &Path) -> Result<Vec<(String, String)>> {
+    let fg = store::farm_git(root).context("the farm is not on its own farm branch")?;
+    let top = fg.top.clone();
+    let git = |args: &[&str]| -> Result<String> { crate::branchfarm::git(&top, args) };
+    if fg.prefix.is_empty() {
+        return Ok(Vec::new());
+    }
+    let nested = fg.prefix.trim_end_matches('/').to_string(); // ".yaks"
+    // The content stage rewrote files and renamed source directories on disk,
+    // so the index still lists the old paths. Stage the farm first, so what
+    // `git mv` is asked to move is what exists (and a renamed source is a
+    // rename git can follow, not a delete and an add).
+    git(&["add", "-A", "--", &nested])?;
+    let listed = git(&["ls-files", "-z", "--", &nested])?;
+    let mut moved: Vec<(String, String)> = Vec::new();
+    for rel in listed.split('\0').filter(|p| !p.is_empty()) {
+        let Some(to) = rel.strip_prefix(&fg.prefix) else {
+            continue;
+        };
+        if top.join(to).exists() {
+            anyhow::bail!(
+                "cannot move {rel} to {to}: {to} already exists at the branch root; \
+                 nothing was moved"
+            );
+        }
+        moved.push((rel.to_string(), to.to_string()));
+    }
+    for (from, to) in &moved {
+        if let Some(parent) = Path::new(to).parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(top.join(parent))
+                .with_context(|| format!("creating {}", parent.display()))?;
+        }
+        git(&["mv", "--", from, to])?;
+    }
+    // Untracked files under `.yaks/` (a new yak not yet committed) follow.
+    for (from, to) in untracked_under(&top, &nested)? {
+        if top.join(&to).exists() {
+            anyhow::bail!("cannot move {from} to {to}: {to} already exists at the branch root");
+        }
+        if let Some(parent) = Path::new(&to)
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(top.join(parent))?;
+        }
+        std::fs::rename(top.join(&from), top.join(&to))
+            .with_context(|| format!("moving {from} to {to}"))?;
+        moved.push((from, to));
+    }
+    // The rules that named `.yaks/`.
+    let attrs = top.join(".gitattributes");
+    if let Ok(text) = std::fs::read_to_string(&attrs) {
+        let (text, n) = move_attribute_rules(&text);
+        if n > 0 {
+            store::write::atomic_write(&attrs, &lfs_marker_text(&text))?;
+        }
+    }
+    // `git mv` leaves the emptied directories behind: remove every directory
+    // under `.yaks/` that holds nothing (the ignored lock file is not a file
+    // worth keeping a directory for, and goes with it).
+    let _ = std::fs::remove_file(top.join(&nested).join(".lock"));
+    remove_empty_dirs(&top.join(&nested));
+    // The landing page and the stub.
+    let readme = top.join("README.md");
+    if !readme.exists() {
+        store::write::atomic_write(&readme, README)?;
+    }
+    // The marker moved with everything else, so the farm at the root still
+    // reads as the schema it was (the rewrite commit bumps it). The stub the
+    // old binaries find already says the new one.
+    let stub = top.join(&nested);
+    std::fs::create_dir_all(&stub)?;
+    store::write::atomic_write(&stub.join("schema"), &format!("{}\n", store::SCHEMA))?;
+    store::write::atomic_write(&stub.join("README.md"), STUB_NOTE)?;
+    Ok(moved)
+}
+
+/// Remove `dir` and every directory under it that holds no file, deepest
+/// first. A directory with any file in it is left as it is.
+fn remove_empty_dirs(dir: &Path) {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for e in rd.flatten() {
+        if e.path().is_dir() {
+            remove_empty_dirs(&e.path());
+        }
+    }
+    let _ = std::fs::remove_dir(dir);
+}
+
+/// Untracked, non-ignored files under `dir` of the repository at `top`, as
+/// `(path from top, path with `dir/` removed)`.
+fn untracked_under(top: &Path, dir: &str) -> Result<Vec<(String, String)>> {
+    let out = crate::branchfarm::git(
+        top,
+        &[
+            "ls-files",
+            "-z",
+            "--others",
+            "--exclude-standard",
+            "--",
+            dir,
+        ],
+    )?;
+    let prefix = format!("{dir}/");
+    Ok(out
+        .split('\0')
+        .filter(|p| !p.is_empty())
+        .filter_map(|p| {
+            p.strip_prefix(&prefix)
+                .map(|to| (p.to_string(), to.to_string()))
+        })
+        .collect())
+}
+
+/// Commit everything under the farm worktree `top` as one commit, stamped with
+/// the actor like every farm commit (`Yaks-Actor` trailer, and the identity
+/// fallback for a machine with none). Returns the short hash.
+fn commit_all(top: &Path, message: &str) -> Result<String> {
+    let git = |args: &[&str]| -> Result<String> { crate::branchfarm::git(top, args) };
+    git(&["add", "-A", "--", "."])?;
+    let actor = crate::actor::resolve_detail(None)
+        .map(|(n, _)| n)
+        .unwrap_or_default();
+    let ident = crate::autocommit::identity_env(top, &actor);
+    let trailer = format!("{}: {actor}", crate::autocommit::ACTOR_TRAILER);
+    // `--only` with the whole farm worktree: anything staged elsewhere in the
+    // repository stays staged and out of this commit. (The refusal for a dirty
+    // farm already makes the tree clean; this is the belt to that brace.)
+    let out = std::process::Command::new("git")
+        .arg("-C")
+        .arg(top)
+        .args([
+            "commit",
+            "-q",
+            "--only",
+            "-m",
+            message,
+            "-m",
+            trailer.as_str(),
+            "--",
+            ".",
+        ])
+        .envs(ident.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+        .output()
+        .context("running git commit")?;
+    if !out.status.success() {
+        anyhow::bail!(
+            "git commit failed ({}); the farm is migrated and staged, not committed: {}",
+            out.status,
+            String::from_utf8_lossy(&out.stderr).trim()
+        );
+    }
+    git(&["rev-parse", "--short", "HEAD"])
+}
+
+/// Rename each source directory to its slugged name, in place. The caller has
+/// checked [`Schema9::blocked`]; a destination that already exists is an error
+/// (nothing is overwritten).
+fn apply_source_renames(root: &Path, plan: &[(String, String)]) -> Result<()> {
+    for (old, new) in plan {
+        let (from, to) = (root.join(old), root.join(new));
+        if std::fs::symlink_metadata(&to).is_ok() {
+            anyhow::bail!("cannot rename {old} to {new}: {new} already exists");
+        }
+        std::fs::rename(&from, &to).with_context(|| format!("renaming {old} to {new}"))?;
+    }
+    Ok(())
 }
 
 /// Whether git tracks anything under the farm at `root` (a farm branch).
@@ -1051,7 +1633,7 @@ mod tests {
     }
 
     #[test]
-    fn schema_8_moves_the_wikis_and_rewrites_links_once() {
+    fn a_schema_7_farm_gets_the_wiki_move_and_goes_on_to_the_current_schema_once() {
         let root = schema_7_farm("run");
         let src_before =
             std::fs::read(root.join("sources/2026-01-01-abcd1234/extracted.md")).unwrap();
@@ -1071,7 +1653,13 @@ mod tests {
 
         let r = run(&root, false).unwrap();
         assert!(r.applied && !r.is_noop());
-        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "8\n");
+        // A farm outside git has no branch to move: it stays where it is and
+        // gets the marker of the schema this build writes.
+        assert!(!r.s9.on_branch && r.s9.commit.is_none());
+        assert_eq!(
+            std::fs::read_to_string(root.join("schema")).unwrap(),
+            format!("{}\n", store::SCHEMA)
+        );
         assert!(!root.join("wiki").exists() && !root.join("yak/wiki").exists());
         let read = |rel: &str| std::fs::read_to_string(root.join(rel)).unwrap();
         let yak = read("yak/yaks/yak-0001.md");
@@ -1096,6 +1684,386 @@ mod tests {
         let again = run(&root, false).unwrap();
         assert!(again.is_noop(), "{again:?}");
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// A schema-8 farm holding one of each thing the schema-9 stage touches:
+    /// two yaks (one linking the other by bare id and by note, one with an
+    /// evidence document), a dok, a session, a source, and a yak whose note
+    /// header is not a timestamp.
+    fn schema_8_farm(tag: &str) -> std::path::PathBuf {
+        let root = std::env::temp_dir().join(format!("yaks-mig-s9-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let w = |rel: &str, text: &str| {
+            let p = root.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, text).unwrap();
+        };
+        let fm = |id: &str, body: &str| {
+            format!(
+                "---\nid: {id}\ntitle: T\nstatus: hairy\ntype: task\npriority: 3\ncreated: \"2026-01-01T00:00:00Z\"\nupdated: \"2026-01-01T00:00:00Z\"\n---\n\n{body}"
+            )
+        };
+        w("config.yaml", "herd: yak\n");
+        w("schema", "8\n");
+        w(
+            "yak/yaks/yak-0001.md",
+            &fm(
+                "yak-0001",
+                "See [two](yak-0002), [its note](yak-0002#2026-01-02T00:00:00Z) and \
+                 [shot](yak-0002/a.png) and [doc](yak-0002/ev.md).\n\n\
+                 [code](code:src/a.rs#L1) [url](https://x.test/yak-0002)\n\n---\n\
+                 \u{25b8} 2026-01-01T00:00:00Z [a]\n\nhello\n",
+            ),
+        );
+        w(
+            "yak/yaks/yak-0002.md",
+            &fm(
+                "yak-0002",
+                "Two.\n\n---\n\u{25b8} 2026-01-02T00:00:00Z [b]\nkind: move\n---\n\nmoved\n",
+            ),
+        );
+        w("yak/yaks/yak-0002/a.png", "png");
+        w(
+            "yak/yaks/yak-0002/ev.md",
+            "Evidence: ![a](a.png) and [back](yak-0001) and [other](yak-0002/a.png).\n",
+        );
+        w(
+            "yak/yaks/yak-0003.md",
+            &fm(
+                "yak-0003",
+                "Three.\n\n---\n\u{25b8} 2026-08-12 E2E VERIFIED (by hand)\n\ndone\n",
+            ),
+        );
+        w(
+            "doks/topics/a.md",
+            "---\ntype: topic\ntitle: A\n---\n\nSee [y](yak-0001), [s](/doks/sessions/2026/11/s.md) \
+             and [src](/doks/sources/2026-01-01-abcd1234) and [att](yak-0002/a.png).\n",
+        );
+        w(
+            "sessions/2026/11/s.md",
+            "---\ntype: session-review\n---\n\nRef [y](yak-0002#2026-01-02T00:00:00Z).\n",
+        );
+        w(
+            "sources/2026-01-01-abcd1234/source.md",
+            "---\ntype: source\ntitle: A Saved Page\n---\n",
+        );
+        w(
+            "sources/2026-01-01-abcd1234/extracted.md",
+            "A page linking [x](yak-0001): a snapshot, never rewritten.\n",
+        );
+        root
+    }
+
+    #[test]
+    fn the_schema_9_plan_finds_every_kind_and_writes_nothing() {
+        let root = schema_8_farm("plan");
+        let before = std::fs::read_to_string(root.join("yak/yaks/yak-0001.md")).unwrap();
+        let (writes, s9) = plan_schema9(&root).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(root.join("yak/yaks/yak-0001.md")).unwrap(),
+            before,
+            "planning writes nothing"
+        );
+        // yak-0001: 2 yak links, one note anchor slugged, 1 cross-yak attachment
+        // from the same herd (left alone) and a document attachment (left alone);
+        // code and the URL untouched.
+        let text = |p: &str| {
+            writes
+                .iter()
+                .find(|(path, _)| path.ends_with(p))
+                .map(|(_, t)| t.clone())
+                .unwrap_or_else(|| panic!("{p} not rewritten"))
+        };
+        let y1 = text("yak-0001.md");
+        assert!(y1.contains("[two](/yak/yaks/yak-0002.md)"), "{y1}");
+        assert!(
+            y1.contains("[its note](/yak/yaks/yak-0002.md#2026-01-02t000000z)"),
+            "{y1}"
+        );
+        assert!(y1.contains("[shot](yak-0002/a.png)"), "same herd: kept");
+        assert!(y1.contains("[code](code:src/a.rs#L1) [url](https://x.test/yak-0002)"));
+        assert!(
+            y1.contains("\n#### 2026-01-01T00:00:00Z\n\n*a*\n\nhello"),
+            "notes converted: {y1}"
+        );
+        // yak-0002's note carries meta.
+        assert!(
+            text("yak-0002.md").contains("#### 2026-01-02T00:00:00Z\n\n*b \u{b7} kind: move*\n")
+        );
+        // The evidence document: a sibling of yak-0002's attachments.
+        let ev = text("yak-0002/ev.md");
+        assert!(ev.contains("[back](/yak/yaks/yak-0001.md)"), "{ev}");
+        assert!(ev.contains("[other](a.png)"), "{ev}");
+        // A dok, a session.
+        let dok = text("doks/topics/a.md");
+        assert!(dok.contains("[y](/yak/yaks/yak-0001.md)"), "{dok}");
+        assert!(dok.contains("[s](/sessions/2026/11/s.md)"), "{dok}");
+        assert!(
+            dok.contains("[src](/sources/2026-01-01-abcd1234-a-saved-page)"),
+            "{dok}"
+        );
+        assert!(dok.contains("[att](/yak/yaks/yak-0002/a.png)"), "{dok}");
+        assert!(
+            text("sessions/2026/11/s.md").contains("(/yak/yaks/yak-0002.md#2026-01-02t000000z)")
+        );
+        // The hand-headed yak is left alone, and reported.
+        assert!(!writes.iter().any(|(p, _)| p.ends_with("yak-0003.md")));
+        assert_eq!(s9.old_shape, ["yak-0003".to_string()]);
+        // A source is a snapshot: not in the plan, but renamed.
+        assert!(
+            !writes
+                .iter()
+                .any(|(p, _)| p.to_string_lossy().contains("sources/"))
+        );
+        assert_eq!(
+            s9.sources,
+            [(
+                "sources/2026-01-01-abcd1234".to_string(),
+                "sources/2026-01-01-abcd1234-a-saved-page".to_string()
+            )]
+        );
+        assert_eq!((s9.notes, s9.note_yaks), (2, 2));
+        assert!(s9.blocked.is_empty() && s9.plan_blocked.is_empty());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    fn git(dir: &Path, args: &[&str]) -> String {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "git {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8_lossy(&out.stdout).into_owned()
+    }
+
+    /// A code repository with a farm branch under `.yaks/` (the schema-8
+    /// layout), as the farm worktree would be. Returns `(code, farm worktree)`.
+    pub(super) fn farm_branch_at_8_pub(tag: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+        farm_branch_at_8(tag)
+    }
+
+    fn farm_branch_at_8(tag: &str) -> (std::path::PathBuf, std::path::PathBuf) {
+        let base = std::env::temp_dir().join(format!("yaks-mig-git-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let code = base.join("code");
+        std::fs::create_dir_all(&code).unwrap();
+        git(&code, &["init", "-q", "-b", "main"]);
+        std::fs::write(code.join("a.txt"), "a\n").unwrap();
+        git(&code, &["add", "."]);
+        git(&code, &["commit", "-q", "-m", "code"]);
+        let wt = base.join("farm");
+        git(
+            &code,
+            &[
+                "worktree",
+                "add",
+                "-q",
+                "--orphan",
+                "-b",
+                "yaks",
+                &wt.display().to_string(),
+            ],
+        );
+        // The same farm `schema_8_farm` makes, under `.yaks/`.
+        let scratch = schema_8_farm(&format!("git-{tag}"));
+        copy_dir(&scratch, &wt.join(".yaks"));
+        let _ = std::fs::remove_dir_all(&scratch);
+        std::fs::write(
+            wt.join(".gitattributes"),
+            ".yaks/**/*.md merge=yaks\n\n# yaks lfs: binary originals under .yaks/ are stored in Git LFS\n\
+             .yaks/**/*.[pP][nN][gG] filter=lfs diff=lfs merge=lfs -text\n",
+        )
+        .unwrap();
+        std::fs::write(wt.join(".yaks/.gitignore"), ".lock\n").unwrap();
+        git(&wt, &["add", "-A"]);
+        git(&wt, &["commit", "-q", "-m", "seed"]);
+        (code, wt)
+    }
+
+    fn copy_dir(from: &Path, to: &Path) {
+        std::fs::create_dir_all(to).unwrap();
+        for e in std::fs::read_dir(from).unwrap().flatten() {
+            let (p, q) = (e.path(), to.join(e.file_name()));
+            if p.is_dir() {
+                copy_dir(&p, &q);
+            } else {
+                std::fs::copy(&p, &q).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn a_farm_branch_moves_to_the_branch_root_in_two_commits_a_move_and_a_rewrite() {
+        let (code, wt) = farm_branch_at_8("move");
+        let root = wt.join(".yaks");
+        let commits_before = git(&wt, &["rev-list", "--count", "HEAD"])
+            .trim()
+            .to_string();
+        let tracked_before: Vec<String> = git(&wt, &["ls-files"])
+            .lines()
+            .filter(|l| l.starts_with(".yaks/"))
+            .map(String::from)
+            .collect();
+
+        // A dry run says what it would do and writes nothing.
+        let dry = run(&root, true).unwrap();
+        assert!(dry.s9.on_branch && dry.s9.move_to_root, "{dry:?}");
+        assert_eq!(dry.s9.files_to_move, tracked_before.len());
+        assert!(dry.s9.blocked.is_empty(), "{:?}", dry.s9.blocked);
+        assert!(root.join("yak/yaks/yak-0001.md").exists());
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "8\n");
+
+        let done = run(&root, false).unwrap();
+        assert!(done.applied);
+        let (mv, rewrite) = (
+            done.s9.move_commit.clone().expect("the move commit"),
+            done.s9.commit.clone().expect("the rewrite commit"),
+        );
+        assert_eq!(
+            git(&wt, &["rev-list", "--count", "HEAD"])
+                .trim()
+                .parse::<usize>()
+                .unwrap(),
+            commits_before.parse::<usize>().unwrap() + 2,
+            "exactly two commits"
+        );
+        assert_eq!(git(&wt, &["rev-parse", "--short", "HEAD"]).trim(), rewrite);
+        assert_eq!(git(&wt, &["rev-parse", "--short", "HEAD~1"]).trim(), mv);
+        for sha in [&mv, &rewrite] {
+            assert!(git(&wt, &["log", "-1", "--format=%B", sha]).contains("Yaks-Actor:"));
+        }
+        // The move changes no bytes: every farm file in it is a 100% rename
+        // (the new files, the README and the stub, are additions).
+        let status = git(&wt, &["show", "-M", "--name-status", "--format=", &mv]);
+        for l in status.lines() {
+            let kind = l.split('\t').next().unwrap();
+            assert!(
+                kind == "R100" || kind == "A" || kind == "M" || kind == "D",
+                "{l}"
+            );
+        }
+        let r100 = status.lines().filter(|l| l.starts_with("R100")).count();
+        assert!(r100 >= tracked_before.len() - 3, "{status}");
+        assert!(
+            !status
+                .lines()
+                .any(|l| l.starts_with('R') && !l.starts_with("R100")),
+            "a rename git is unsure of would break --follow: {status}"
+        );
+        // The rewrite is modifications only, at the new paths.
+        let rw = git(&wt, &["show", "-M", "--name-status", "--format=", &rewrite]);
+        assert!(rw.lines().all(|l| l.starts_with('M')), "{rw}");
+        assert!(
+            rw.contains("yak/yaks/yak-0001.md") && rw.contains("\tschema"),
+            "{rw}"
+        );
+        assert!(
+            git(&wt, &["status", "--porcelain"]).trim().is_empty(),
+            "clean after"
+        );
+
+        // The farm is at the root; `.yaks/` holds only the stub.
+        for f in [
+            "config.yaml",
+            "yak/yaks/yak-0001.md",
+            "doks/topics/a.md",
+            "README.md",
+        ] {
+            assert!(wt.join(f).is_file(), "{f}");
+        }
+        assert!(!wt.join(".yaks/yak").exists() && !wt.join(".yaks/doks").exists());
+        let stub: Vec<String> = git(&wt, &["ls-files", ".yaks"])
+            .lines()
+            .map(String::from)
+            .collect();
+        assert_eq!(stub, [".yaks/README.md", ".yaks/schema"]);
+        assert_eq!(
+            std::fs::read_to_string(wt.join(".yaks/schema"))
+                .unwrap()
+                .trim(),
+            store::SCHEMA.to_string()
+        );
+        assert_eq!(
+            std::fs::read_to_string(wt.join("schema")).unwrap().trim(),
+            store::SCHEMA.to_string()
+        );
+        assert_eq!(
+            std::fs::read_to_string(wt.join(".gitattributes")).unwrap(),
+            "**/*.md merge=yaks\n\n# yaks lfs: binary originals in the farm are stored in Git LFS\n\
+             **/*.[pP][nN][gG] filter=lfs diff=lfs merge=lfs -text\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(wt.join(".gitignore")).unwrap(),
+            ".lock\n"
+        );
+        // History follows a yak across both commits.
+        assert!(
+            git(
+                &wt,
+                &[
+                    "log",
+                    "--follow",
+                    "--format=%h",
+                    "--",
+                    "yak/yaks/yak-0001.md"
+                ]
+            )
+            .lines()
+            .count()
+                >= 3,
+            "--follow reaches back past the move"
+        );
+        // The sources were renamed to their slugs; the page is a snapshot.
+        assert!(
+            wt.join("sources/2026-01-01-abcd1234-a-saved-page/source.md")
+                .is_file()
+        );
+        assert!(!wt.join("sources/2026-01-01-abcd1234").exists());
+
+        // The farm is found and read from the new root, and a second run is a no-op.
+        assert_eq!(
+            store::discover_with(&code, None)
+                .unwrap()
+                .root
+                .canonicalize()
+                .unwrap(),
+            wt.canonicalize().unwrap()
+        );
+        assert!(run(&wt, false).unwrap().is_noop());
+        let _ = std::fs::remove_dir_all(wt.parent().unwrap());
+    }
+
+    #[test]
+    fn a_dirty_or_behind_farm_branch_refuses_before_writing_anything() {
+        let (_code, wt) = farm_branch_at_8("refuse");
+        let root = wt.join(".yaks");
+        std::fs::write(
+            root.join("yak/yaks/yak-0001.md"),
+            "---\nid: yak-0001\n---\nedited\n",
+        )
+        .unwrap();
+        let dry = run(&root, true).unwrap();
+        assert!(
+            dry.s9.blocked.iter().any(|b| b.contains("uncommitted")),
+            "{:?}",
+            dry.s9.blocked
+        );
+        let before = std::fs::read(root.join("yak/yaks/yak-0001.md")).unwrap();
+        let err = run(&root, false).unwrap_err().to_string();
+        assert!(err.contains("uncommitted"), "{err}");
+        assert_eq!(
+            std::fs::read(root.join("yak/yaks/yak-0001.md")).unwrap(),
+            before
+        );
+        assert_eq!(std::fs::read_to_string(root.join("schema")).unwrap(), "8\n");
+        let _ = std::fs::remove_dir_all(wt.parent().unwrap());
     }
 
     #[test]

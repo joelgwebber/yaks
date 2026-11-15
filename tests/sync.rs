@@ -301,7 +301,7 @@ fn a_yaks_dir_farm_is_refused() {
     let farm = base.join(".yaks");
     std::fs::create_dir_all(&farm).unwrap();
     std::fs::write(farm.join("config.yaml"), "herd: t\n").unwrap();
-    std::fs::write(farm.join("schema"), "8\n").unwrap();
+    std::fs::write(farm.join("schema"), "9\n").unwrap();
     git(&base, &["init", "-q", "-b", "main"]);
     let out = Command::cargo_bin("yaks")
         .unwrap()
