@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-11T21:09:28Z'
-updated: '2026-11-15T00:18:13Z'
+updated: '2026-11-15T00:18:30Z'
 depends_on:
 - yaks-f505
 tags:
@@ -130,3 +130,26 @@ result: pass
 ---
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+---
+▸ 2026-11-15T00:18:30Z [viewer-1]
+
+Decision: `O` takes the one `take.out` command on every surface (viewer, image viewer, yak pane, Doks row, yak row); `LinkOpenExternal` and `FileOpenExternal` are removed, not kept beside it. The image viewer's `O` also opens the menu (its `o` is system open), rather than staying a direct open: one rule, one extra key.
+
+Decision: the menu is `Overlay::TakeOut`, a bottom panel like the `?` popup, with a yellow status line; its keys are `EXTRAS` rows. Rejected: reusing `Overlay::Pick` (one status-line prompt, no room to say what each key does).
+
+Decision: a code file is a new `DocKind::Code`, rendered by `code_rows` (not the markdown path): a line-number gutter as a no-wrap gutter (so `h`/`l` scroll the text and the numbers stay), colours from `syntax::highlight`, `Lang::from_path` (same table as fence info strings). Plain files get the gutter only.
+
+Decision: an unreadable file or commit still opens the viewer, with one row saying why (so `o` history, `O` and `g` still work); `Err` only when there is no checkout. `locate::missing_commit` is the one check, used by the viewer and by `pinned_file` (p/e/o).
+
+Decision: `e` with no `$VISUAL`/`$EDITOR` says so and points at `o` (it does not fall back to the system opener as the old Enter did).
+
+Decision: `p` in the viewer on a pinned file acts on the file's own pin (unchanged: working path; changed: read-only temp copy), via `Space::local_path`; `g` on a pin links the commit, on an unpinned link the branch (`yaks url`'s rule, `web_url(place, false)`).
+
+Decision: the menu title and the `e` line come from the viewer's cursor (selection range if any) for a code file, from the row's source line for a text/markdown file; a Doks/yak row has no line.
+
+Summary. Enter on `code:` opens the file in the read-only viewer (line gutter, colours by extension, `#L` lines in an accent gutter and landed on, pins read with `git show`); `O` opens a take-out menu (`e` `o` `p` `r` `g`) from the viewer, the pane link, a Doks row, a yak row and the image viewer; a commit not in this checkout is one line in the viewer and a notification for `p`/`e`/`o`, and `g` still gives the URL (noting when `origin` lacks the commit); no host names `git config yaks.host`. Also per the coordinator: `follow.rs` `read_farm_doc`/`read_doc` use `locate::farm_file_in` (test `a_bare_source_id_link_opens_the_slugged_directory`). Docs: `docs/tui.md` (new "Code files and taking things out" section, the old `O` text), `?` overlay (`EXTRAS`, binding lines), hint lines, snapshots, three new docshots (`docshots_code`). Files: src/locate.rs, tui.rs, tui/{detail_nav,docshots,follow,handlers,imageview,keymap,palette,render,source,syntax,takeout,tests}.rs, snapshots, docs.
+
+Evidence: unit tests in `tui/takeout.rs` (9: viewer + colours + landing, plain text, pinned, missing commit, menus on 4 surfaces, p/r/o/e, g with no remote / unknown domain / GitHub / pin / ghost, read-only E, o/i) and `syntax::tests::a_file_is_coloured_by_its_extension`. Real binary (`yaks tui --headless`, scratch checkout with a GitHub origin): (a), (b), (c) frames attached; (d) `r` = `copied src/links.rs`, `p` = `copied /tmp/viewer1-demo/src/links.rs` for the range link and the unchanged pin, `g` = `https://github.com/joelgwebber/yaks/blob/main/src/links.rs#L100-L120`, pin `g` = `.../blob/da1bdca71c070a...47de6b2/src/links.rs#L100`; ghost `p`/`e`/`o` = `commit deadbee is not in this checkout; fetch it or open on the host`, ghost `g` = `.../blob/deadbeefdeadbeef/src/links.rs#L100 (deadbee is not on origin as last fetched: ...)`. PNGs of the viewer, menu and missing-commit frames attached and looked at.
+
+Not done / assumed: the menu's `e` was verified to queue the editor command (and with none set, the message), not by running a real editor; `o` launched the real opener once in the demo. The clipboard is stubbed under `cargo test`; in the demo the real `arboard` was used (`copied ...` shown). `r` on a pane link in a yak (not a file) says "this link names no file" only for non-file places; a Yak place gives the yak's file path. Rebased onto 7585597e with no conflicts; gate re-run after: 1439 passed, 0 failed, `cargo fmt --check` clean.
