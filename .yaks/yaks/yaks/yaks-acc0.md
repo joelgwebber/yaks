@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-14T11:21:02Z'
-updated: '2026-11-15T06:19:30Z'
+updated: '2026-11-15T06:23:54Z'
 parent: yaks-1151
 depends_on:
 - yaks-6ffd
@@ -172,3 +172,20 @@ Consequence for the code: the layout stage can be a plain `git mv` of the tracke
 Interaction found while reading the code, before it bites: `mergedriver::ensure_registered` and `weight::lfs_rules` write the `.yaks/**` rules unconditionally, and `ensure_registered` runs on every `yaks sync` (and on `yaks undo`). After the layout move, a plain `yaks sync` would append `.yaks/**/*.md merge=yaks` back beside the moved `**/*.md merge=yaks`, and `yaks lfs` would write the old LFS rules again (it checks `have.contains(rule)`, which the moved rules would no longer satisfy). The migration would be undone one sync later, silently.
 
 So both become layout-aware: the rule prefix is `.yaks/` when the farm sits under `.yaks/` (`FarmGit::prefix`) and empty at the branch root, taken from the same source as every other path conversion. `ensure_registered` also treats a rule in either form as present, so a farm mid-migration is not given a second one. Tests for both layouts, for each.
+
+---
+▸ 2026-11-15T06:23:54Z [linkplan-lead]
+
+Progress, committed locally and not landed (it only changes behaviour once `SCHEMA` is 9, which I have not touched):
+
+- `migrate::canonical_links` (yak links, attachment links, `/doks/sessions|sources/` paths, source directory renames), with the rule that a path already from the root is left alone, 6 tests including idempotence.
+- `links::slug_note_anchor`.
+- `migrate::move_attribute_rules` and `lfs_marker_text`.
+- `mergedriver::attr_line(prefix)` and `weight::lfs_rules(prefix)`: both now follow the farm's layout (`""` at the branch root, `".yaks/"` under it), and `ensure_registered` treats a rule in either form as present. Tests for both layouts, and one asserting `lfs_rules("")` is exactly what the migration's rewrite of the old rules produces.
+
+Shape of `run` after this, so review can check the code against it:
+
+1. **Plan, read-only** (this is the dry run, and the apply runs the same plan): layout moves of schemas 6 and 8 as today; `sources::plan_slugs` (refuse on `duplicate_ids`); per yak and per dok, session and attachment document, the link rewrite, and for yaks the note conversion; the `.gitattributes` rewrite; the layout stage for a farm branch.
+2. **Refusals first**, before any write: farm branch with uncommitted changes, behind or diverged from its upstream, a merge in progress, `YAKS_DIR` outside git (content stage only, said so).
+3. **Apply under the farm lock**: content writes, source renames, then for a farm branch the `git mv`, `.gitattributes`, `.gitignore`, README, stub `.yaks/schema`, the `schema` marker last, and ONE commit with the `Yaks-Actor` trailer, made by `migrate` with `git commit --only` the way `yaks commit` does. Not the per-change autocommit: its snapshot is keyed to a root that moves under it.
+4. **Report** with per-form counts, left-alone bodies, unresolvable links, source renames, and the commit.
