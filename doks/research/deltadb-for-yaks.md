@@ -3,11 +3,28 @@ type: topic
 title: 'DeltaDB (Zed/Delta): what it is, what is open, and whether yaks can use it'
 created: '2026-11-16T21:34:27Z'
 tags:
+- research
 - delta
 - git
 - sync
 - crdt
 stale_after: P3M
+sources:
+- sources/2026-11-16-0df8e0eb/source.md
+- sources/2026-11-16-26496fb6/source.md
+- sources/2026-11-16-34edbef8/source.md
+- sources/2026-11-16-59d16db8/source.md
+- sources/2026-11-16-5b177191/source.md
+- sources/2026-11-16-662a0d4c/source.md
+- sources/2026-11-16-737a30ca/source.md
+- sources/2026-11-16-740faeed/source.md
+- sources/2026-11-16-985aa32d/source.md
+- sources/2026-11-16-a35b9190/source.md
+- sources/2026-11-16-b7f89c23/source.md
+- sources/2026-11-16-cea6b808/source.md
+- sources/2026-11-16-e5d7f476/source.md
+- sources/2026-11-16-f2ff0795/source.md
+description: What DeltaDB (the CRDT version control under Zed's Delta) is, what infrastructure it runs on, what is open source (only the AGPL Claude plugin), and why it is not yet a store or sync layer for a farm; read before considering CRDT or live sync for yaks.
 ---
 
 # DeltaDB: what it is, what is open, and whether yaks can use it
