@@ -16,32 +16,38 @@ Running log (append-only artifact, observation-log.md) of what we learn running 
 
 [observation-log](yaks-df61/observation-log.md)
 
----
-▸ 2026-10-03T20:36:49Z [delta-lead]
+#### 2026-10-03T20:36:49Z
+
+*delta-lead*
 
 Created the log with O1-O8 from the first Delta run and the resync. Append new entries to the attached artifact in place; do not re-attach.
 
----
-▸ 2026-10-03T20:39:13Z [delta-lead]
+#### 2026-10-03T20:39:13Z
+
+*delta-lead*
 
 Added O9 result, O10-O13 (private-mode walk-up in Delta, landing into the user's checkout, multi-worktree file tools). Log stays open while yaks-b5a0 runs.
 
----
-▸ 2026-10-03T20:40:03Z [delta-lead]
+#### 2026-10-03T20:40:03Z
+
+*delta-lead*
 
 O12 resolved: push to local main is refused while the user's checkout has unstaged changes (human yak drift counts). Options and recommendation in the log.
 
----
-▸ 2026-10-03T23:04:20Z [delta-lead]
+#### 2026-10-03T23:04:20Z
+
+*delta-lead*
 
 O35 resolved and O36 added: Delta mirrors every thread commit as refs/delta/<thread>/<repo>/<sha> in the user's repo; nothing reaches the user's main without an explicit push; asks reach the human's inbox only when main moves.
 
----
-▸ 2026-10-19T04:27:06Z [delta:herd-pass]
+#### 2026-10-19T04:27:06Z
+
+*delta:herd-pass*
 
 Shorn in the 2026-10-19 herd pass: the log did its job through the per-shed-farm era (O1-O62+); the model it observed was replaced by one farm per machine. New observations go on yaks-6a34.
 
----
-▸ 2026-10-19T04:27:08Z [delta:herd-pass]
+#### 2026-10-19T04:27:08Z
+
+*delta:herd-pass*
 
 moved: shaving -> shorn

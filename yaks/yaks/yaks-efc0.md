@@ -29,8 +29,9 @@ You can see here that it's difficult to tell the sheds apart from their contents
    find-1                    idle   8h ago       last: yaks-c215 TUI phase 6b: one search register for every text su
 ```
 
----
-▸ 2026-11-03T21:24:34Z [delta:starred-batch]
+#### 2026-11-03T21:24:34Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -42,13 +43,15 @@ moved: hairy -> shaving
 
 ![tui-sheds-docshot](yaks-efc0/tui-sheds-docshot.png)
 
----
-▸ 2026-11-03T21:40:27Z [delta:starred-batch]
+#### 2026-11-03T21:40:27Z
+
+*delta:starred-batch*
 
 Done in d3aa34a: a shed's yak rows are depth 2 (`Row::shed_yak`), so their ids start two columns right of the shed names instead of level with them. Docshot `tui-sheds.svg` regenerated and rasterized (attached).
 
----
-▸ 2026-11-03T21:40:29Z [delta:starred-batch]
+#### 2026-11-03T21:40:29Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

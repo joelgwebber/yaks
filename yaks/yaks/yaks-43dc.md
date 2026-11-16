@@ -18,12 +18,14 @@ Found by the cold-read for yaks-8aeb (2026-10-26), predates it:
 
 Pick one rule and state it once.
 
----
-▸ 2026-10-27T22:29:32Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T22:29:32Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 Folded into yaks-a99f (2026-10-27): pointer files and in-tree private farms are being removed, so the pointer-vs-private wording conflict goes away with them. The commit-id rule and the `--as` finding remain; handle them in that docs sweep.
 
----
-▸ 2026-10-27T23:23:34Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T23:23:34Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 yaks-a99f (3bb5937) settled the wording half. There is now one commit-id rule, keyed on `yaks private`: the skills, `brief` and docs agree, and pointer and excluded farms no longer exist. The `--as` finding is still open: `yaks create --as x` and `yaks --as x create` both fail, while the skill calls `--as` global. Moved back to top level.

@@ -14,13 +14,15 @@ tags:
 
 Encode the core rule in yaks-working (the per-yak verification discipline). Before shearing you must verify against the REAL ARTIFACT using the project's verification lever (drive the TUI/browser, reproduce the state, read the actual value) — 'it compiles'/self-report/a green proxy is not evidence (pstack prove-it-works). AND: if the project has NO lever for this kind of change (a TUI you can't snapshot, UI you can't drive, state you can't reproduce), do NOT shear on faith — 'yaks ask' the human whether to go build one, and/or create a 'build a lever for X' yak. The needs-block makes it unbypassable; the inbox makes it visible. Keep it minimal — a sharpened evidence rule + the ask escalation, not a framework.
 
----
-▸ 2026-09-08T01:52:22Z [coordinator]
+#### 2026-09-08T01:52:22Z
+
+*coordinator*
 
 [accept] Done = yaks-working gains a rule in its existing terse voice (NO new framework/bloat): (1) author an evidence contract / definition-of-done BEFORE work (coordinator, or self in solo mode); (2) before shearing, verify against the REAL ARTIFACT via the project's lever, not 'it compiles'/self-report/a green proxy; (3) if NO lever exists for this kind of change, 'yaks ask' the human rather than shear on faith. Stay consistent with 6624/f814: evidence generalized beyond code 'correctness' to 'outcome achieved+seen, appropriate to the yak kind'; dead exempt. Evidence to attach: quote the exact added lines in a note + confirm no contradiction with the existing 'Before you shear' bullets. Scope: skills/dev/yaks-working/SKILL.md ONLY.
 
----
-▸ 2026-09-08T01:54:42Z [worker-skill]
+#### 2026-09-08T01:54:42Z
+
+*worker-skill*
 
 Added to '## Before you shear' in skills/dev/yaks-working/SKILL.md. Exact added lines:
 
@@ -32,8 +34,9 @@ Extended existing 'Evidence over assertion' bullet to: Do not shear on 'it compi
 
 No contradiction with existing 'Before you shear' bullets: the contract/lever/ask bullets sharpen (not replace) the original Evidence-over-assertion bullet, which I extended in place rather than duplicating; the shorn-summary, team-mode-commit, and commit-hooks bullets are untouched and remain consistent.
 
----
-▸ 2026-10-26T23:22:49Z [Joel Webber]
+#### 2026-10-26T23:22:49Z
+
+*Joel Webber*
 
 requested: needs agent
 
@@ -41,15 +44,17 @@ Tidy request: change only the line structure of this yak's description and every
 
 Put a blank line between blocks, make run-on facts a list, and fence pasted output. Never change a word, a note header (`▸ <ts> [actor]`) or the frontmatter. Edit the file at `yaks path yaks-139b` directly: `update --description` replaces the whole body, notes included. Then `yaks pickup yaks-139b --note "<one line>"`.
 
----
-▸ 2026-10-26T23:30:50Z [delta-lead]
+#### 2026-10-26T23:30:50Z
+
+*delta-lead*
 
 picked up
 
 Tidying: the worker note's lines run into its list items; adding blank lines between those blocks, words unchanged.
 
----
-▸ 2026-10-26T23:31:06Z [delta-lead]
+#### 2026-10-26T23:31:06Z
+
+*delta-lead*
 
 Tidied (delta-lead). The worker-skill note had five adjacent lines: an intro, two list items and two paragraphs. CommonMark ran each paragraph line into the list item before it. I added a blank line between each pair; no words changed (`diff` shows only added blank lines).
 

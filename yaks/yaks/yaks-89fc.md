@@ -35,13 +35,15 @@ Follow-up to yaks-4305. Decide how a yak author says how big an image shows, and
 
 Writes touch: `src/tui/mdrender.rs` (the image link row), `docs/tui.md`, the `yaks` skill's markdown notes (what authors should write), and the `yaks attach` link form only if it should emit a size by default (probably not). Sits beside the inline-image yak: that one needs the row count this one decides.
 
----
-▸ 2026-10-22T20:47:07Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:47:07Z
+
+*delta:Add basic image attachment rendering*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T20:55:07Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:55:07Z
+
+*delta:Add basic image attachment rendering*
 
 Decision (yakherd): syntax is a trailing size token in the image's alt text: `![alt =50%](p)`, `![alt =300x200](p)`, `![alt =x120](p)`, `![=50%](p)`. Findings behind it: CommonMark has no image sizes; `pulldown-cmark` 0.13 has NO image-attribute extension (its only `ENABLE_*attributes` flag is for headings), so the `{width=50%}` form would mean hand-parsing text after the image; the alt-text form is valid CommonMark and degrades to harmless alt text on GitHub. Rejected: `{width=..}` (hand parsing; literal text elsewhere), Obsidian `|WxH` (the pipe collides with table cells and needs escaping), `(p =WxH)` (breaks image parsing on GitHub), inline HTML (not supported in bodies).
 
@@ -59,48 +61,57 @@ API to build (names are mine; change them if you have a reason and say why in a 
 
 Evidence: unit tests that fail first for `split_alt` (each form, `px`, `%`, zero, junk, a token not in last position, `=` inside normal alt text like `a = b`) and for `cells` (default shrink, never enlarge, height cap, width-only, height-only, both, pane clamp, 1x1 floor); an mdrender test that `🖼 shot` shows without the token and `MdRow.images` carries it; the existing attachment mdrender test unchanged. A docs/tui.md paragraph with the grammar and the defaults. Gate: `cargo test --workspace`.
 
----
-▸ 2026-10-22T20:59:51Z [size-1]
+#### 2026-10-22T20:59:51Z
+
+*size-1*
 
 Started: 2026-10-22T20:59:50Z; yak file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-89fc.md
 
----
-▸ 2026-10-22T20:59:51Z [size-1]
+#### 2026-10-22T20:59:51Z
+
+*size-1*
 
 Decision: API kept as briefed (`Dim`, `ImageSize`, `split_alt`, `cells`, `MdRow.images: Vec<MdImage>`). Additions: `cells` and `MdImage` carry `#[allow(dead_code)]` (no non-test caller until yaks-0bf0).
 
----
-▸ 2026-10-22T20:59:51Z [size-1]
+#### 2026-10-22T20:59:51Z
+
+*size-1*
 
 Decision: `cells` rounds UP (ceil, with a 1e-6 epsilon so exact fits stay whole), so a fractional natural size never crops; rejected round-to-nearest (a 1.4-cell image would lose 40%). Percent width is of `pane_cols`. A `Percent` height is not producible by the grammar; built by hand it means percent of the natural height (documented on `Dim`), rather than panicking or being a separate type.
 
----
-▸ 2026-10-22T20:59:51Z [size-1]
+#### 2026-10-22T20:59:51Z
+
+*size-1*
 
 Decision: height-only is also clamped to pane width (scale = min(height scale, pane scale)), so a tall request on a wide image cannot overflow; rejected "height only is unclamped" since the claim says width clamps to pane and nothing can draw past the pane. Zero cell size or natural size reads as 1 (no divide by zero); pane_cols 0 reads as 1; max_rows 0 reads as 1.
 
----
-▸ 2026-10-22T20:59:51Z [size-1]
+#### 2026-10-22T20:59:51Z
+
+*size-1*
 
 Decision: the size token is cut out of the shown alt in `Renderer::end_image` (after the alt text is in `buf`, truncating it), and the `MdImage` is parked by link index and attached to the first row that emits a cell with that link (`emit`). Rejected: parsing the alt from pulldown events up front (alt can arrive as several Text/Code events with styling; reading buf is the one source of what is shown). `split_alt` only recognises ASCII digits, so full-width digits stay alt text.
 
----
-▸ 2026-10-22T21:00:29Z [size-1]
+#### 2026-10-22T21:00:29Z
+
+*size-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-22T21:00:36Z [size-1]
+#### 2026-10-22T21:00:36Z
+
+*size-1*
 
 Summary: added src/tui/imagesize.rs (split_alt, cells + 14 unit tests written first; the cells zero-cell-size test needed its expectation corrected to (25,25) once I worked it through), MdRow.images/MdImage in mdrender.rs with the token hidden from the `🖼 alt` row (2 new mdrender tests; the existing attachment test is unchanged and passes), docs/tui.md "Image size" paragraph, one line in the yaks skill. Docs parity checked by grep of docs/ README.md .agents/skills/ src/ for 🖼/image: only docs/tui.md (:109, :246 describe the marker, still true) and imageview.rs's title (the viewer, untouched) mention it; README has nothing. Gate: cargo test --workspace green; yaks verify PASS. Nothing draws an image; yaks-0bf0 reads MdRow.images and calls imagesize::cells.
 
----
-▸ 2026-10-22T21:00:36Z [size-1]
+#### 2026-10-22T21:00:36Z
+
+*size-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-22T21:03:12Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:03:12Z
+
+*delta:Add basic image attachment rendering*
 
 Landed in the thread clone as 7462a6f (squash of size-1's 3a87135; base was HEAD, `yaks land --dry-run` clean). NOT yet pushed to the user's checkout `main`: waiting for the human's go-ahead, since this yak was asked for as "shear", not "land".
 

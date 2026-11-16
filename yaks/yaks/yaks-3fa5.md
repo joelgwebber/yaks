@@ -26,26 +26,21 @@ Covers:
 
 Cold-read it with a cheap model after writing (AGENTS.md).
 
----
-▸ 2026-11-06T04:57:02Z [herd-upkeep]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:57:02Z
+
+*herd-upkeep · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T04:57:21Z [herd-upkeep]
-kind: verify
-result: pass
----
+#### 2026-11-06T04:57:21Z
+
+*herd-upkeep · kind: verify · result: pass*
 
 verify: `cargo test --bin yaks skills && cargo test --test init_modes` -> PASS (exit 0)
 
----
-▸ 2026-11-06T04:58:07Z [herd-upkeep]
+#### 2026-11-06T04:58:07Z
+
+*herd-upkeep*
 
 Done on branch `upkeep` (505d2058): the [yaks-upkeep skill](code:.agents/skills/yaks-upkeep/SKILL.md@505d2058), bundled.
 
@@ -59,20 +54,14 @@ Not done: a cold read by a cheap model (AGENTS.md suggests one) and a run of the
 
 Evidence: `yaks verify` PASS (the skills guard tests, init installs it).
 
----
-▸ 2026-11-06T04:58:09Z [herd-upkeep]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:58:09Z
+
+*herd-upkeep · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-06T21:55:35Z [herd-upkeep]
-kind: landed
-commit: d78b25a7
----
+#### 2026-11-06T21:55:35Z
+
+*herd-upkeep · kind: landed · commit: d78b25a7*
 
 Landed on `main` as d78b25a7 (fast-forward of 505d2058, 40dea8f0, d78b25a7). Gate: full `cargo test` on that commit, 1169 passed, 0 failed; `yaks preflight --push-main` ok.

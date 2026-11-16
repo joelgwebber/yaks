@@ -24,13 +24,15 @@ Lean: the third or second, not `resvg` in yaks: this binary stays self-contained
 
 Acceptance: Enter on an `.svg` attachment either opens in the pane or has a documented reason it does not.
 
----
-▸ 2026-10-22T20:47:07Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:47:07Z
+
+*delta:Add basic image attachment rendering*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T20:48:08Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:48:08Z
+
+*delta:Add basic image attachment rendering*
 
 Claim (yakherd, thread of yaks-4305). Owner: `svg-1`. This is a SPIKE, not a landing: the dependency decision is the human's, so the output is evidence.
 
@@ -42,8 +44,9 @@ Scope: `Cargo.toml`, `src/tui/imageview.rs` (the decode step only), a test. Out 
 
 Gate: `cargo test --workspace`. Final message: the numbers, two PNGs, your recommendation (adopt / do not adopt / adopt behind a cargo feature), and the commit SHA.
 
----
-▸ 2026-10-22T20:48:42Z [svg-1]
+#### 2026-10-22T20:48:42Z
+
+*svg-1*
 
 Start (svg-1) 2026-10-22T20:48:42Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4e9c.md. Branch svg-1-resvg-spike. Baseline: 225 unique transitive crates.
 
@@ -57,8 +60,9 @@ Start (svg-1) 2026-10-22T20:48:42Z. Farm file: /Users/joel/.local/share/yaks/far
 
 ![tui-list-resvg-nofonts](yaks-4e9c/tui-list-resvg-nofonts.png)
 
----
-▸ 2026-10-22T20:55:51Z [svg-1]
+#### 2026-10-22T20:55:51Z
+
+*svg-1*
 
 Decision: rasterize svg with `resvg` (text + system-fonts + memmap-fonts only; default-features off). Rejected: default features (adds raster-images/svgz: +282 KB, +3 crates, and `image` already decodes embedded-raster formats we would never need); `usvg`+`tiny-skia` directly (same dep tree, more glue).
 
@@ -68,8 +72,9 @@ Decision: a malformed or empty-pixmap svg returns None from `ImageView::open`, s
 
 Decision: `an_undecodable_image_attachment_falls_back_to_the_os_opener` now uses a corrupt `logo.png` (svg is decodable now, so it no longer meant "undecodable"); added `enter_on_an_svg_attachment_rasterizes_it_into_the_pane` and `a_malformed_svg_attachment_falls_back_to_the_os_opener`.
 
----
-▸ 2026-10-22T20:55:51Z [svg-1]
+#### 2026-10-22T20:55:51Z
+
+*svg-1*
 
 Spike summary (svg-1; branch svg-1-resvg-spike, one commit, not landed, yak NOT shorn). resvg 0.48.1, default-features=false + text/system-fonts/memmap-fonts. Release build, macOS arm64, separate CARGO_TARGET_DIR per build.
 1. Binary: 6,238,736 B before; 9,060,352 B after (+2.82 MB, +45%). With resvg default features: 9,342,480 B.
@@ -87,15 +92,17 @@ Gate: `cargo test --workspace` green (710 lib + all integration tests, 0 failed)
 
 Recommendation: do not adopt as default; if the human wants svg in the viewer anyway, adopt behind a cargo feature (default off) with a fallback to the OS opener when no monospace face is found. Reasons: +2.8 MB (+45%) and +38 crates for a viewer whose main svg input (toque frames) renders worse than a browser (emoji, weight), silently loses all text without a font, and the existing lean (toque emits PNG / attach PNG next to SVG) gives a perfect image at zero binary cost.
 
----
-▸ 2026-10-22T20:56:02Z [svg-1]
+#### 2026-10-22T20:56:02Z
+
+*svg-1*
 
 Correction to the summary note after re-reading the PNG pairs side by side (the numbers stand; two "look" lines were loose):
 - Not verified: which font Chrome picked (I did not query it), and my "bold lost on human" guess was wrong. The real differences: (a) resvg ignores `opacity` on `<tspan>` (class `.s0{opacity:.6}`), so dimmed tabs/rows (Hairy, Shorn, the 4th list row) are full brightness; (b) in tui-detail, `Needs: human` has "human" jammed right after "Needs:" instead of at the x=136 value column, i.e. a per-tspan x position was not honoured for that bold run; (c) emoji are small monochrome/outline glyphs, not colour, and the Shaving pill clips its razor. Text itself, layout and colours otherwise match Chrome.
 - Font: resvg resolved the family list to Menlo (queried via fontdb: `ui-monospace`/`SF Mono` not matched by name, Menlo matched).
 
----
-▸ 2026-10-22T20:56:27Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:56:27Z
+
+*delta:Add basic image attachment rendering*
 
 Spike result (yakherd, from svg-1's report; not landed). Commit a703b64 on branch `svg-1-resvg-spike` in svg-1's clone (thread ksQQQTmKmfXeRfyO736_R3BpP5LOACmuQpIBxBCA0aLJyrhJPreUvVwLftHG); `cargo test --workspace` passes there. I have not re-run it on main because I am not merging it.
 
@@ -105,8 +112,9 @@ Spike result (yakherd, from svg-1's report; not landed). Commit a703b64 on branc
 
 Recommendation: do not adopt by default. The svgs we attach most (toque frames) look worse than in Chrome and render blank on a box with no monospace font. Cheaper: have toque or the attach step emit a PNG beside the svg (a perfect image, zero binary cost).
 
----
-▸ 2026-10-22T20:56:27Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:56:27Z
+
+*delta:Add basic image attachment rendering*
 
 asked: needs human
 
@@ -118,20 +126,23 @@ Decision for you: how should svg attachments display?
 
 If (a): I will close this yak with a note and file the toque/attach PNG yak (toque is a separate repo, so that is yours to point me at). If (b): the spike commit is a working base; it needs the feature gate and the font fallback. Branch `svg-1-resvg-spike` stays in svg-1's clone until you decide.
 
----
-▸ 2026-10-22T21:01:42Z [Joel Webber]
+#### 2026-10-22T21:01:42Z
+
+*Joel Webber*
 
 On `resvg`, can we not just render them to PNGs and cache the results? I'm not sure I've ever seen a system without a monospaced font, but if we absolutely must, can't we just embed a standard one? That would actually be really helpful for `toque`, where we always know we need it.
 
----
-▸ 2026-10-22T21:49:02Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:49:02Z
+
+*delta:Add basic image attachment rendering*
 
 picked up
 
 Read your answer: render svg to PNG once, cache the result, and embed a standard monospace font if a system one cannot be assumed (which would also help toque, where it is always needed). I like it; it removes both svg-1's objections that were fixable (silent text loss without a font; a 170 ms stall on every open). I am sending svg-1 a measurement-only follow-up on the two things the spike did not settle (color emoji; the embedded font). One more question follows on where it should live.
 
----
-▸ 2026-10-22T21:49:02Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:49:02Z
+
+*delta:Add basic image attachment rendering*
 
 asked: needs human
 
@@ -154,8 +165,9 @@ Questions:
 
 ![tui-detail-F-final-patched](yaks-4e9c/tui-detail-F-final-patched.png)
 
----
-▸ 2026-10-22T21:57:09Z [svg-1]
+#### 2026-10-22T21:57:09Z
+
+*svg-1*
 
 Follow-up spike (svg-1), commit 22b3849 on svg-1-resvg-spike (on top of a703b64); not landed, not shorn. Measured on the final tree; `cargo test --workspace` green (711 lib tests).
 
@@ -179,8 +191,9 @@ Decision: ship DejaVu (Bitstream) and Noto Emoji (OFL) license texts beside the 
 
 Remaining differences from Chrome: emoji artwork is Noto not Apple (Chrome on macOS uses Apple's); glyphs are DejaVu Sans Mono not SF Mono/Menlo, so letterforms differ but advance width is the same cell grid; the `opacity`/`white-space:pre` issues above until toque's SVG writer is changed; any non-covered codepoint (e.g. CJK, a different emoji) renders blank, since the subset is exactly the docs' set, so a real build should subset from a wider range (all of Box Drawing, Arrows, Geometric Shapes, and the emoji a yak may attach) at some KB cost.
 
----
-▸ 2026-10-22T21:57:46Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:57:46Z
+
+*delta:Add basic image attachment rendering*
 
 Spike round 2 (yakherd, from svg-1's report; not landed). Commit 22b3849 on `svg-1-resvg-spike` (on top of a703b64), in svg-1's clone; `cargo test --workspace` passes there (711 lib tests incl. one rendering text and a color emoji from embedded fonts alone). I have not merged or re-run it on main.
 
@@ -195,20 +208,23 @@ This reverses round 1's verdict: the two "look" objections were fixable.
 
 Open for the human (asked on this yak): the home (toque vs yaks), the cache, and what the font subset should cover. The spike also carried a stray `src/actor.rs` change (a `cargo fmt` reformat): not part of this work, never to be merged.
 
----
-▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:12:53Z
+
+*delta:Add basic image attachment rendering*
 
 Recorded by the yakherd from the human's comments in the Delta thread (not typed into this yak). Direction: "Groovy!" (render to PNG, cache, embed a font). toque attached ("Got it, just mapped that in for you"). Binary cost: "Oh yeah, that's fine. Binaries are getting huge these days anyway." Cache in `$XDG_CACHE_HOME/yaks/` keyed by content hash and render size: "Yup, that sounds perfect." Wider font subset: "Maybe a follow-up yak for this?" (filed as yaks-4f4d).
 
----
-▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:12:53Z
+
+*delta:Add basic image attachment rendering*
 
 picked up
 
 Home is toque behind a cargo feature; yaks consumes it. Briefing a worker for the toque side now.
 
----
-▸ 2026-10-22T22:13:34Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:13:34Z
+
+*delta:Add basic image attachment rendering*
 
 Claim (yakherd, thread of yaks-4305), reshaped by the human's answers: Owner of the toque half: `toque-1`. The yak is two pieces in two repos; this claim is piece 1.
 
@@ -223,13 +239,15 @@ Claim (yakherd, thread of yaks-4305), reshaped by the human's answers: Owner of 
 
 **Piece 2 (yaks, after piece 1 is published):** `ImageView` decodes svg through `toque::rasterize_svg`; a PNG cache under `$XDG_CACHE_HOME/yaks/` keyed by content hash and render size (human-approved); drop the spike's own resvg dependency (it was never merged). Needs toque pushed to origin (yaks pins it as a git dependency) and `cargo update -p toque`: the human's call to push. I do piece 2 myself.
 
----
-▸ 2026-10-22T22:14:10Z [toque-1]
+#### 2026-10-22T22:14:10Z
+
+*toque-1*
 
 Start (toque-1) 2026-10-22T22:14:10Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4e9c.md. Working in the toque worktree /Users/joel/src/toque/.delta/worktrees/xg3wm6rndqhj/toque.
 
----
-▸ 2026-10-22T22:17:07Z [toque-1]
+#### 2026-10-22T22:17:07Z
+
+*toque-1*
 
 Piece 1 (toque-1): toque commit 240eb5f on toque main (not pushed). `png` feature (default off): `rasterize_svg`, `svg_to_png`, `render_to_png`, `Raster`, in `src/raster.rs`; writer fixes always on in `src/svg.rs`.
 
@@ -251,13 +269,15 @@ Decision: `rasterize_svg` returns `Raster` with `take_demultiplied` straight RGB
 
 ![resvg-after-writer-fix](yaks-4e9c/resvg-after-writer-fix.png)
 
----
-▸ 2026-10-22T22:17:17Z [toque-1]
+#### 2026-10-22T22:17:17Z
+
+*toque-1*
 
 Correction (toque-1): my last note said the docs/assets svgs use only lines. Wrong for toque's own `docs/assets/yaks-session-{1,2,3}.svg`: they contain box corners/joins (┌ ┐ └ ┘ ├ ┤ etc.; grep counts 1-33 per glyph). The embedded subset (spiked against yaks's 22 docs/assets, not toque's 3) has no corners or joins, so `render_to_png` of those frames draws them blank. Attachments are not affected by this commit, but yaks-4f4d (wider subset) should be treated as needed, not optional, before the viewer shows toque frames: include all of Box Drawing U+2500-257F.
 
----
-▸ 2026-10-22T22:19:01Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:19:01Z
+
+*delta:Add basic image attachment rendering*
 
 Piece 1 done (yakherd, verified): toque `main` in the thread's toque worktree is at 240eb5f (fonts 4108e52, then toque-1's rasterizer, a clean fast-forward). NOT pushed to origin. I re-ran both gates myself: `cargo test` 13 lib + 1 doc, and `cargo test --features png` 16 lib + 1 doc, all pass. Read src/raster.rs and the src/svg.rs diff: matches the claim (`xml:space="preserve"` on each `<text>`; `fill-opacity:.6` for DIM; CSS rule kept for Chrome). toque-1 compared Chrome before and after the writer change: 383 of 45,568 px differ, all in the DIM row, max 2/255 per channel, 0 with `-fuzz 2%`.
 
@@ -265,8 +285,9 @@ Correction to a worker finding: toque-1 wrote that toque's own docs/assets use b
 
 Piece 2 (yaks: `ImageView` through `toque::rasterize_svg`, the XDG PNG cache, drop the spike's resvg) cannot be committed until toque is on origin: yaks pins it as a git dependency and a path dependency must never be committed. That push is the human's call (asked).
 
----
-▸ 2026-10-22T22:19:01Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:19:01Z
+
+*delta:Add basic image attachment rendering*
 
 asked: needs human
 
@@ -275,13 +296,15 @@ Piece 1 (toque) is done and verified in the toque worktree (240eb5f, not pushed)
 1. Order. yaks consumes toque as a git dependency, so piece 2 (the svg viewer in yaks) is blocked until toque is pushed. Before that, the font subset needs widening (yaks-4f4d): right now every box-drawing corner and join renders blank, which any ratatui `Block` border uses. My lean: do yaks-4f4d first (it is mostly regenerating the font files plus a script, small), push toque once, then do piece 2. Alternative: push toque now and widen later, accepting blank corners in the viewer until then.
 2. Pushing toque to `origin/main` is yours: say "push toque" and I will (or push it yourself).
 
----
-▸ 2026-10-23T01:45:26Z [delta:Add basic image attachment rendering]
+#### 2026-10-23T01:45:26Z
+
+*delta:Add basic image attachment rendering*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-23T01:46:27Z [delta:Add basic image attachment rendering]
+#### 2026-10-23T01:46:27Z
+
+*delta:Add basic image attachment rendering*
 
 Piece 2 done (yakherd): committed in the thread clone as 67122a0 (on ea538c8); not pushed to the user's `main`. toque was pushed to origin by the human's go-ahead ("push the toque changes, main is fine"): origin/main is 240eb5f; yaks pins it (Cargo.lock) with `features = ["png"]`.
 
@@ -297,13 +320,15 @@ Decision: svg inside an inline-image paragraph also works (same decoder), since 
 
 Not verified: that the shared cache behaves with two yaks processes writing the same file at once (a plain write: a torn file would fail decode and re-render next time; not exercised).
 
----
-▸ 2026-10-23T01:46:28Z [delta:Add basic image attachment rendering]
+#### 2026-10-23T01:46:28Z
+
+*delta:Add basic image attachment rendering*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-25T21:20:22Z [delta:Add basic image attachment rendering]
+#### 2026-10-25T21:20:22Z
+
+*delta:Add basic image attachment rendering*
 
 picked up
 

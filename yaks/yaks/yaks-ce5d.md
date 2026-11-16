@@ -16,8 +16,9 @@ tags:
 
 The TUI side of the explicit sync lifecycle (yaks-472e: no auto-commit, so the human needs to SEE that the farm has unpublished state and act on it in place).
 
----
-▸ 2026-10-21T21:11:20Z [delta:herd-dirs]
+#### 2026-10-21T21:11:20Z
+
+*delta:herd-dirs*
 
 Claim (delta:herd-dirs, yakherd). Owner: `tui-sync-1`.
 
@@ -38,18 +39,21 @@ Claim (delta:herd-dirs, yakherd). Owner: `tui-sync-1`.
 - a headless frame (`yaks tui --headless --size 120x30`, see tests/cli.rs `run_headless` for the stdin protocol) of the chip on a real dirty farm, attached to this yak with `yaks attach`.
 - `cargo test --release` green; the `?` overlay frame showing the two keys.
 
----
-▸ 2026-10-21T21:11:20Z [delta:herd-dirs]
+#### 2026-10-21T21:11:20Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T21:11:51Z [tui-sync-1]
+#### 2026-10-21T21:11:51Z
+
+*tui-sync-1*
 
 Start: Wed Oct 21 21:11:51 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ce5d.md
 
----
-▸ 2026-10-21T21:20:17Z [tui-sync-1]
+#### 2026-10-21T21:20:17Z
+
+*tui-sync-1*
 
 Decision: keys `W` (commit) and `U` (sync), both in list AND detail focus (like `S`/`P`); not on the Sheds tab (it owns its keys; out of scope).
 - Alternatives rejected: `c`/`C`/`s` taken or mnemonic clash; `Ctrl-` chords (not discoverable); a confirm prompt (spec: none, both non-destructive).
@@ -82,13 +86,15 @@ Decision: tests inject a `FarmSync` value for the snapshots (no real git remote)
 
 [farm-branch-W-then-U](yaks-ce5d/farm-branch-W-then-U.txt)
 
----
-▸ 2026-10-21T21:22:40Z [tui-sync-1]
+#### 2026-10-21T21:22:40Z
+
+*tui-sync-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-21T21:22:40Z [tui-sync-1]
+#### 2026-10-21T21:22:40Z
+
+*tui-sync-1*
 
 Summary: farm chip on the tab row (`● N uncommitted`, `not published`, `↑N`, `↓N` in warning yellow; compact form when tight), `W` commit / `U` sync in list and detail focus, result in the notification; `?` help section, docs/tui.md, one skill clause.
 - New `src/tui/farmsync.rs` (FarmSync, FarmOp, App refresh/request/run); hooks in tui.rs, viewmodel.rs (reloads), handlers.rs (keys), runtime.rs (run after draw), headless.rs (settle), render.rs (chip + help).
@@ -97,14 +103,16 @@ Summary: farm chip on the tab row (`● N uncommitted`, `not published`, `↑N`,
 - Gate: cargo test --release all green (785 unit + integration suites).
 - Not done / known: chip is not refreshed by commits/pushes made by another process until the next reload (documented).
 
----
-▸ 2026-10-21T21:22:40Z [tui-sync-1]
+#### 2026-10-21T21:22:40Z
+
+*tui-sync-1*
 
 moved: shaving -> shorn
 
 [real-farm-chip](yaks-ce5d/real-farm-chip.txt)
 
----
-▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
+#### 2026-10-21T21:44:08Z
+
+*delta:herd-dirs*
 
 Landed (delta:herd-dirs): 47120db (fast-forward, linear). Review: read the chip snapshots (ahead/behind, dirty), full gate 20 suites green, and a headless frame of THIS repo's real farm from Joel's checkout (attached real-farm-chip.txt): the tab row ends `family: ~remaining ● 2 uncommitted ↑13`. W/U not pressed on the real farm.

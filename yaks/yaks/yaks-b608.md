@@ -19,8 +19,9 @@ But the filter shows only "hairy":
 
 ![filters-with-herd](yaks-b608/filters-with-herd.png)
 
----
-▸ 2026-11-03T21:21:32Z [delta:starred-batch]
+#### 2026-11-03T21:21:32Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -34,8 +35,9 @@ moved: hairy -> shaving
 
 [b608-after-hairy-herd-fullstory](yaks-b608/b608-after-hairy-herd-fullstory.txt)
 
----
-▸ 2026-11-03T21:24:28Z [delta:starred-batch]
+#### 2026-11-03T21:24:28Z
+
+*delta:starred-batch*
 
 Fixed: a content filter (herd, search, type, tags, ...) narrowed the view's *anchors* to matches but searched the whole family universe for them, so a shorn or dead descendant whose herd or title matched came in bright, ignoring `status: hairy`. Now focus is the anchors that match: status stays an axis of the filter; family scope (`remaining`/`all`) still decides which descendants come along, dimmed.
 
@@ -44,8 +46,9 @@ Fixed: a content filter (herd, search, type, tags, ...) narrowed the view's *anc
 
 Evidence: new test `a_content_filter_keeps_the_status_scope`; headless runs on the joel farm (Hairy view, filter drawer, herd `fullstory`), before and after attached: 59 rows with three shorn `🐑` rows -> 52 rows, none shorn. The one `💀` left is `fullstory-4b4c`, a dead parent rooting hairy children, dimmed as with no filter.
 
----
-▸ 2026-11-03T21:24:29Z [delta:starred-batch]
+#### 2026-11-03T21:24:29Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

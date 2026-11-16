@@ -10,13 +10,15 @@ tags:
 - docs
 ---
 
----
-▸ 2026-10-26T21:15:14Z [delta:Triage starred yaks and design yaks-33c8]
+#### 2026-10-26T21:15:14Z
+
+*delta:Triage starred yaks and design yaks-33c8*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T21:16:09Z [delta-lead]
+#### 2026-10-26T21:16:09Z
+
+*delta-lead*
 
 Done (delta-lead), at Joel's request in the coordinating thread.
 
@@ -27,7 +29,8 @@ Done (delta-lead), at Joel's request in the coordinating thread.
 
 Evidence: running `cargo install --path .` installed `~/.cargo/bin/yaks`; a grep for `~/go/bin` and "Joel" across `AGENTS.md`, `README.md`, `RELEASING.md` and `.agents/` finds no hits left (the `joelgwebber` GitHub URLs are the real repo and stay).
 
----
-▸ 2026-10-26T21:16:09Z [delta-lead]
+#### 2026-10-26T21:16:09Z
+
+*delta-lead*
 
 moved: shaving -> shorn

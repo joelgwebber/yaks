@@ -26,18 +26,21 @@ Keep the git helpers that farm discovery uses (`host`, `host_checkout`, `canonic
 
 Then close the yaks this obsoletes (`yaks-6beb`, `yaks-9b9f`; check `yaks-2177`), with a note pointing here. Grep docs, skills, README and `--help` for `discover`, `activity` and `shed.title`.
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 Claim (yakherd): done by `sheds-1` after `yaks-da23`, in the same worker.
 
----
-▸ 2026-10-31T16:46:56Z [sheds-1]
+#### 2026-10-31T16:46:56Z
+
+*sheds-1*
 
 Decision: `src/gitrepo.rs` is the small farm-discovery module, pruned to what discovery needs.
 
@@ -46,21 +49,24 @@ Decision: `src/gitrepo.rs` is the small farm-discovery module, pruned to what di
 - The old module's tests were about sheds/pins; replaced by five focused tests (own host, Delta clone via alternates, bare managed host, `worktree_of_branch` from a clone, relative alternates).
 - Rejected: leaving `Host.store`/`own_git_dir` "in case" (dead code, and they only existed for pin resolution).
 
----
-▸ 2026-10-31T16:46:56Z [sheds-1]
+#### 2026-10-31T16:46:56Z
+
+*sheds-1*
 
 Decision: tests `shed_activity.rs` and `shed_title.rs` removed; `tests/sheds.rs` (added in yaks-da23's commit) asserts the farm has no `.activity` directory after writes.
 
 - `inspecting_a_shed_changes_nothing_in_it` (the yaks-9b9f fsmonitor flake) went with the old `sheds.rs` tests, as the brief said.
 - `tests/dash_c.rs`: `init_and_discover_honor_c` is now `init_honors_c` (the `discover` half is gone).
 
----
-▸ 2026-10-31T16:47:35Z [sheds-1]
+#### 2026-10-31T16:47:35Z
+
+*sheds-1*
 
 verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-31T16:47:44Z [sheds-1]
+#### 2026-10-31T16:47:44Z
+
+*sheds-1*
 
 Summary (sheds-1): the git/Delta shed discovery is gone.
 
@@ -70,13 +76,15 @@ Summary (sheds-1): the git/Delta shed discovery is gone.
 - Leftover grep over `docs/ README.md src/ tests/ scripts/` for `discover`, `.activity`, `activity log`, `YAKS_NO_ACTIVITY`, `shed.title`, `refs/delta`, `record_thread`, `--sheds`: only `yaks log`'s own "activity log" wording remains (a different thing).
 - yaks-6beb and yaks-9b9f are marked obsolete in notes for the yakherd to slaughter. yaks-2177 not touched.
 
----
-▸ 2026-10-31T16:47:44Z [sheds-1]
+#### 2026-10-31T16:47:44Z
+
+*sheds-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:50:11Z [delta:Cloud Runners]
+#### 2026-10-31T16:50:11Z
+
+*delta:Cloud Runners*
 
 kind: landed
 commit: b2e4638ab5f8a8637551e01168be509ec833e4a3
@@ -86,8 +94,9 @@ branch: main
 
 landed: b2e4638 yaks-d3ad: remove git/Delta shed discovery: yaks discover, the activity log, yaks.shed.title
 
----
-▸ 2026-10-31T17:24:17Z [yakherd]
+#### 2026-10-31T17:24:17Z
+
+*yakherd*
 
 kind: landed
 commit: ec29bc2a0d8de21836be02838c849ab11bf8079f

@@ -14,13 +14,15 @@ tags:
 
 Overlay part (a)+(b) of yaks-7204, after the Sheds tab (yaks-98f1): on the yak views, a row whose yak another shed has changed (outstanding, not landed) carries a small shed badge, and the yak's detail pane gains a Sheds section listing each such shed's change (the TUI form of `yaks show <id> --sheds`). Annotations only: the copy in this checkout's farm decides where a row is and what it shows; yaks that exist only in a shed (ghost rows) are NOT in scope here (design pending on yaks-7204).
 
----
-▸ 2026-10-13T01:29:43Z [delta-lead]
+#### 2026-10-13T01:29:43Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-13T01:29:44Z [delta-lead]
+#### 2026-10-13T01:29:44Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): owner badge-1 (Sonnet worker). Parallel with inbox-1 (yaks-1ea3) and disco-1 (yaks-93fe).
 
@@ -36,8 +38,9 @@ Out of scope: src/tui/sheds_tab.rs, src/tui/viewmodel.rs, src/tui/handlers.rs (i
 
 Evidence: insta snapshots (fail first) of (i) a tree view with a badged row, one of them yellow for an ask, using `App::new(tasks with ids yaks-8814 and yaks-07fe)` + `app.apply_sheds_snapshot(sheds_tab::fixture::snapshot())`, at 96 and 150 columns; (ii) the detail pane of yaks-8814 with its Sheds section. A test that a row with no copies is byte-identical to before (no badge, no layout shift). Real machine: `yaks tui --headless` on this repo shows badges on the yaks the running workers touch (paste the frame in a note). Full `cargo test --release`. Judge: delta-lead at landing (renders and LOOKS at the frames).
 
----
-▸ 2026-10-13T01:33:35Z [badge-1]
+#### 2026-10-13T01:33:35Z
+
+*badge-1*
 
 Start: Tue Oct 13 01:33:35 UTC 2026
 
@@ -45,8 +48,9 @@ yaks path: /Users/joel/src/yaks/.delta/worktrees/f34qg6ja8z10/yaks/.yaks/yaks-ed
 
 Plan: tests first (tests.rs tail), then render.rs list_item badge, detail.rs sheds section, detail_nav.rs wiring, docs.
 
----
-▸ 2026-10-13T01:35:30Z [badge-1]
+#### 2026-10-13T01:35:30Z
+
+*badge-1*
 
 Failing first (tests appended at the end of src/tui/tests.rs, run before any implementation, `cargo test --release -- shed_badges an_ask_elsewhere a_row_with_no the_detail_pane`):
 
@@ -58,13 +62,15 @@ test tui::tests::the_detail_pane_lists_the_sheds_that_changed_the_yak ... FAILED
 test tui::tests::a_row_with_no_copies_is_byte_identical_to_before ... ok   (guard: passes before and must pass after)
 ```
 
----
-▸ 2026-10-13T01:48:47Z [badge-1]
+#### 2026-10-13T01:48:47Z
+
+*badge-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T01:52:00Z [badge-1]
+#### 2026-10-13T01:52:00Z
+
+*badge-1*
 
 Decision: badge glyph `🛖N` (the Sheds tab's own glyph, N = count, no space; the issue's form), dim, bold yellow when any copy is `needs: human`. Rejected: reusing ⏳ (means "this yak awaits a human" in THIS farm: a different axis); a bare dot (no count, no link to the Sheds tab); coloring the whole row (shifts attention off the title).
 
@@ -92,22 +98,26 @@ Real machine (`printf 'key Tab\nsnapshot\n' | yaks tui --headless --size 150x30`
 ```
 (first frame right after start has no badges: the first scan has not landed yet; frames 1-3 after it do. Yellow not exercised on the real machine: no other shed holds an open ask besides the sheds-tab clone's yaks-7204 `needs: human`, which is on yaks-7204 above and shows 🛖1 from that shed's ask.)
 
----
-▸ 2026-10-13T01:52:08Z [badge-1]
+#### 2026-10-13T01:52:08Z
+
+*badge-1*
 
 Correction to the previous note: a row with a badge loses 4 title columns (separator space + 🛖 at width 2 + one digit), not 3. And on the real machine yaks-7204's badge IS the yellow one in principle (the sheds-tab clone holds `needs: human` on yaks-7204), but headless text frames carry no colour, so yellow is evidenced only by the buffer-fg unit test, not by the pasted frame.
 
----
-▸ 2026-10-13T01:54:06Z [badge-1]
+#### 2026-10-13T01:54:06Z
+
+*badge-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T01:54:13Z [badge-1]
+#### 2026-10-13T01:54:13Z
+
+*badge-1*
 
 Summary: shed overlay on the yak views. Row badge `🛖N` (yellow when a copy is `needs: human`) in `render::list_item` via `shed_badge`; `Sheds:` section in the detail (`detail::sheds_section`, `Kind::Shed`, copies passed from `detail_nav::detail_dlines`); data only from `Snapshot::copies`. 4 new insta/unit tests + 3 snapshots at the end of tests.rs; docs/tui.md and the yaks skill updated. Not touched: sheds_tab.rs, viewmodel.rs, handlers.rs, docs/assets, ghost rows.
 
----
-▸ 2026-10-13T01:54:13Z [badge-1]
+#### 2026-10-13T01:54:13Z
+
+*badge-1*
 
 moved: shaving -> shorn

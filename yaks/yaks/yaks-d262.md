@@ -19,7 +19,8 @@ Show the saved text at once and run the per-change farm commit after that frame 
 
 Do not start until yaks-7058, yaks-bcd4 and yaks-1ebf have landed and a changing save has been re-measured (expected ~200-250 ms). If it still feels slow, this is the next lever; otherwise shear it as not needed.
 
----
-▸ 2026-11-05T05:33:25Z [perf-907a]
+#### 2026-11-05T05:33:25Z
+
+*perf-907a*
 
 Graduated from yaks-907a to yaks-f677 when 907a was shorn: Joel is trying the 330 ms build first; do this only if it still feels slow.

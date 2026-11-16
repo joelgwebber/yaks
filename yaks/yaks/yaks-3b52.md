@@ -25,11 +25,9 @@ The name came from Hearth's `session-review` files, where a server reviews a con
 
 Tests for the chosen name and zone, the `yaks-upkeep` skill's description of the frontmatter, and `docs/`.
 
----
-▸ 2026-11-06T21:37:48Z [schism-feedback]
-kind: ask
-needs: human
----
+#### 2026-11-06T21:37:48Z
+
+*schism-feedback · kind: ask · needs: human*
 
 asked: needs human
 
@@ -38,45 +36,38 @@ Two details of the session note's time field, my lean on each.
 1. **Name.** Rename `reviewed:` to `written:` for notes `yaks session note` writes, and keep reading `reviewed:` for Hearth's imported notes (where a server did review the conversation). Alternative: keep `reviewed:` so every session file reads alike.
 2. **Zone.** Write it with the local offset (`2026-11-06T13:30:00-08:00`), so it agrees with the path and `day:`, which stay local (the day a person thinks the session was). Alternative: UTC everywhere, path included.
 
----
-▸ 2026-11-06T21:47:25Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T21:47:25Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. Let's keep it simple, dropping anything hearth-import related (that was a very short-lived need). Cf yaks-ff4c.
 2. Let's do UTC everywhere -- we have a presentation layer to reflect local timezones.
 
----
-▸ 2026-11-06T21:49:23Z [sched-1]
-kind: request
----
+#### 2026-11-06T21:49:23Z
+
+*sched-1 · kind: request*
 
 requested: needs agent
 
 Let's also go ahead and knock out ff4c while we're doing this, for simplicity and clarity.
 
----
-▸ 2026-11-10T17:49:48Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:49:48Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:50:27Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T17:50:27Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 
 herd-unlock: delegating to worker sesstime-1 (Sonnet): rename the field to written: (old reviewed: read as fallback for existing notes), UTC everywhere including path and day:.
 
----
-▸ 2026-11-10T17:50:29Z [herd-unlock]
+#### 2026-11-10T17:50:29Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock): worker `sesstime-1`, Sonnet 5.5.
 
@@ -95,16 +86,18 @@ Rewriting existing notes in any farm; any other session field.
 
 A test that fails before: a note built at a fixed instant near midnight UTC has a path, `day:` and `written:` that agree; `default_since` reads `written:` and falls back to `reviewed:`. Gate `cargo test --workspace`. Judge: the yakherd at landing.
 
----
-▸ 2026-11-10T17:51:58Z [sesstime-1]
+#### 2026-11-10T17:51:58Z
+
+*sesstime-1*
 
 Start: 2026-11-10T17:51:55Z (`date -u`)
 
 - farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-3b52.md`
 - checkout: `/Users/joel/src/yaks/.delta/worktrees/qe8m9bs7a3w3/yaks`
 
----
-▸ 2026-11-10T17:57:06Z [sesstime-1]
+#### 2026-11-10T17:57:06Z
+
+*sesstime-1*
 
 Decision: `build` loses its `zone` parameter; path, `day:` and `written:` are all formatted from the one `now` (UTC). Rejected: keeping `zone` and passing UTC (a dead parameter), and a local-offset `written:`.
 
@@ -116,35 +109,26 @@ Decision: `docs/cli.md` says "Older notes" call the field `reviewed`, with no ve
 
 Evidence: test `build_names_and_counts` now builds at 23:30:56Z and asserts the path, `day: 2026-11-06` and `written: 2026-11-06T23:30:56Z` agree; `default_since_reads_written_and_falls_back_to_reviewed` covers both fields. A real note written with `target/debug/yaks session note` into a scratch farm shows `day: 2026-11-10`, `written: '2026-11-10T17:56:47Z'`, path `...-2026-11-10-1756-...`. Clippy warning count is 104 before and after.
 
----
-▸ 2026-11-10T18:00:45Z [sesstime-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T18:00:45Z
+
+*sesstime-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T18:00:50Z [sesstime-1]
+#### 2026-11-10T18:00:50Z
+
+*sesstime-1*
 
 Summary: session notes now write `written:` (was `reviewed:`), and the path, `day:` and `written:` all come from one UTC instant; `default_since` reads `written:` else `reviewed:`. Docs: cli.md, yaks-upkeep skill, session note --help. Verify PASS recorded.
 
----
-▸ 2026-11-10T18:00:51Z [sesstime-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR2NZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:00:51Z
+
+*sesstime-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR2NZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T18:01:18Z [herd-unlock]
-kind: landed
-commit: d9c59b543208e9612c49409eb10b9cd7aa9362bc
-source: f56257bbde3f457f459e1f92f40c2b3e95b814e2
-branch: main
----
+#### 2026-11-10T18:01:18Z
+
+*herd-unlock · kind: landed · commit: d9c59b543208e9612c49409eb10b9cd7aa9362bc · source: f56257bbde3f457f459e1f92f40c2b3e95b814e2 · branch: main*
 
 landed: d9c59b54 yaks-3b52: session notes write written: (UTC), path and day in UTC, reviewed: read as fallback

@@ -10,11 +10,11 @@ tags:
 
 # Note format: anchors that render on GitHub
 
-Design for [yaks-6c65](yaks-6c65), part of [yaks-1151](/doks/design/farm-layout-and-links.md). A yak's notes are the journal of the work, and today nothing in the file gives a note an anchor on a host that renders markdown. This dok picks a shape that does, keeps it readable and parseable, and lists what changes in the code.
+Design for [yaks-6c65](/yaks/yaks/yaks-6c65.md), part of [yaks-1151](/doks/design/farm-layout-and-links.md). A yak's notes are the journal of the work, and today nothing in the file gives a note an anchor on a host that renders markdown. This dok picks a shape that does, keeps it readable and parseable, and lists what changes in the code.
 
 ## What is wrong today
 
-A note is `---`, then `▸ <ts> [actor]`, then optional `key: value` lines closed by a second `---`. Rendered by GitHub ([evidence](yaks-6c65/render-evidence.md), `gh api markdown` plus the live page of [yaks-1151](yaks-1151) on the farm branch):
+A note is `---`, then `▸ <ts> [actor]`, then optional `key: value` lines closed by a second `---`. Rendered by GitHub ([evidence](/yaks/yaks/yaks-6c65/render-evidence.md), `gh api markdown` plus the live page of [yaks-1151](/yaks/yaks/yaks-1151.md) on the farm branch):
 
 - A plain note header is an ordinary paragraph: no anchor at all.
 - A note with meta lines is read by markdown as a setext heading (the line above a `---`), swallowing the meta into the heading text. Its anchor is `user-content--2026-11-11t211311z-sched-1kind-movefrom-hairyto-shaving`: it changes with the metadata and nobody could type it. 1,034 of 8,404 notes in the census are like this.

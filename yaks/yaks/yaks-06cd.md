@@ -18,18 +18,15 @@ Two integration tests fail intermittently when the machine is busy, and since `c
 
 Found by the yakherd and workers of yaks-1c89, 2026-11-06.
 
----
-▸ 2026-11-10T22:01:13Z [herd-unlock]
-kind: landed
-commit: 709ec3c5aa6d5dd48f7100ef30fc8b284e19a741
-source: 669788f29fd83c6ffc350c83685bf0fa4852e31a
-branch: main
----
+#### 2026-11-10T22:01:13Z
+
+*herd-unlock · kind: landed · commit: 709ec3c5aa6d5dd48f7100ef30fc8b284e19a741 · source: 669788f29fd83c6ffc350c83685bf0fa4852e31a · branch: main*
 
 landed: 709ec3c5 yaks-717b: unique, cleaned-up temp dirs in init_modes and farmsync tests; wall-clock wait for the interval sync
 
----
-▸ 2026-11-10T22:03:35Z [herd-unlock]
+#### 2026-11-10T22:03:35Z
+
+*herd-unlock*
 
 Closed by herd-unlock-2 from flaky-1's work in yaks-717b (landed `709ec3c5`):
 
@@ -39,22 +36,14 @@ Closed by herd-unlock-2 from flaky-1's work in yaks-717b (landed `709ec3c5`):
 
 Full gate after landing: 34 binaries green, run while nothing else was building.
 
----
-▸ 2026-11-10T22:03:36Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T22:03:36Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T22:03:36Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T22:03:36Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

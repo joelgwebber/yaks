@@ -22,8 +22,9 @@ farm: up to date with origin/yaks · origin/yaks changed 37m ago · fetched just
 
 That tells "nobody wrote" from "nobody synced". Skills say it too (coordinating §11). `FETCH_HEAD` is per worktree, which caught a first version that read the common dir.
 
----
-▸ 2026-11-01T16:23:47Z [yakherd]
+#### 2026-11-01T16:23:47Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -32,8 +33,9 @@ to: shaving
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:23:47Z [yakherd]
+#### 2026-11-01T16:23:47Z
+
+*yakherd*
 
 kind: landed
 commit: 9077f6c16120aec4b9089bce3f7359b620aec2a0
@@ -42,8 +44,9 @@ branch: main
 
 Landed `9077f6c`. Evidence: unit test `json_carries_everyone_and_the_farm_freshness` covers the header, JSON and render; the real memcraft farm prints `farm: up to date with origin/yaks · origin/yaks changed 37m ago · fetched just now`, and its JSON carries `upstream_changed: 2026-11-01T15:44:40Z`. `cargo test --workspace` green. The TUI snapshot of the Sheds tab is unchanged (its fixture has no freshness). The same commit fixes the skills' detached-job advice, which failed on the runner: the herd's `setsid nohup … &` as its own command never created its log, and it then polled the missing file for about 10 minutes. The skills now say to confirm the log appears in the same call.
 
----
-▸ 2026-11-01T16:23:48Z [yakherd]
+#### 2026-11-01T16:23:48Z
+
+*yakherd*
 
 kind: move
 from: shaving

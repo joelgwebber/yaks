@@ -15,8 +15,9 @@ verify: cargo test --workspace
 
 Implements yaks-63c3 (commit half). Every mutating command commits exactly its own paths under the farm lock through a temporary index; `Yaks-Actor` trailer; hand edits committed first and separately; `yaks undo`.
 
----
-▸ 2026-11-01T20:51:43Z [delta:farm-wiki]
+#### 2026-11-01T20:51:43Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -26,8 +27,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T21:17:07Z [delta:farm-wiki]
+#### 2026-11-01T21:17:07Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -62,8 +64,9 @@ Done on the `wiki` branch.
 - Auto-sync on an interval is yaks-f0db.
 - The shared `yaks` farm (this farm) isn't converted until the branch lands, as with schema 7.
 
----
-▸ 2026-11-01T21:19:00Z [delta:farm-wiki]
+#### 2026-11-01T21:19:00Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -71,8 +74,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T21:19:00Z [delta:farm-wiki]
+#### 2026-11-01T21:19:00Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

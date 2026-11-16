@@ -10,13 +10,15 @@ tags:
 - release
 ---
 
----
-▸ 2026-10-27T12:58:55Z [delta-lead]
+#### 2026-10-27T12:58:55Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-27T13:10:39Z [delta-lead]
+#### 2026-10-27T13:10:39Z
+
+*delta-lead*
 
 Released v0.0.24 (delta-lead, at Joel's request: "land everything and cut a new release").
 
@@ -29,7 +31,8 @@ Released v0.0.24 (delta-lead, at Joel's request: "land everything and cut a new 
 
 In this release: ask/answer use the full editor (yaks-ce5e); `yaks request` plus answered/requested in the inbox, TUI `a`/`Q` (yaks-b75b); `yaks wait` (yaks-f313); `--run-on` (yaks-ef3b); `request --kind tidy|summarize` and `bulk --request` (yaks-f853); `pickup --drop-request` (yaks-092f); skills guidance on markdown, evidence and linking yaks (yaks-8aeb, yaks-df02, yaks-248d); local builds via `cargo install` (yaks-be32); plus the image work already on main (yaks-0bf0, yaks-4e9c, yaks-89fc).
 
----
-▸ 2026-10-27T13:10:39Z [delta-lead]
+#### 2026-10-27T13:10:39Z
+
+*delta-lead*
 
 moved: shaving -> shorn

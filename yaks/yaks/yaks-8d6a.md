@@ -16,18 +16,15 @@ tags:
 
 Once you have predefined labels, we can auto-complete them in the UI.
 
----
-▸ 2026-11-10T21:11:51Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:51Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:25Z [herd-unlock]
+#### 2026-11-10T21:12:25Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `tagcomplete-1`, Sonnet 5.5. (Depends on yaks-b2ed, which Joel agreed is covered by yaks-5656's picker.)
 
@@ -43,23 +40,23 @@ Single-line inline popups; tags anywhere but the form.
 
 Tests: `Tab` after `ta` in tags opens the picker seeded `ta`, Enter inserts; `Tab` on an empty tags field still moves to the next field; known tags rank first. A `yaks tui --headless` frame, attached. Gate `cargo test --workspace`.
 
----
-▸ 2026-11-10T21:13:43Z [tagcomplete-1]
+#### 2026-11-10T21:13:43Z
+
+*tagcomplete-1*
 
 Start Tue Nov 10 21:13:43 UTC 2026; checkout /Users/joel/src/yaks/.delta/worktrees/sh9cspt26zn3/yaks
 
 [tagframes](yaks-8d6a/tagframes.txt "Headless: Tab after 'tui, r' in the form's tags field opens the tag picker (known tag tui with description, then rust by use); Enter yields 'tui, rust'")
 
----
-▸ 2026-11-10T21:46:21Z [tagcomplete-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:46:21Z
+
+*tagcomplete-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:46:29Z [tagcomplete-1]
+#### 2026-11-10T21:46:29Z
+
+*tagcomplete-1*
 
 Decision: reuse the one `FuzzyPick`/`InsertRef` picker (new `tags` rows field and `CompleteKind::Tag`) rather than a second picker type or an inline popup.
 
@@ -71,22 +68,14 @@ Decision: the picker reads `schemas::load(root, YAK_TYPE).tags` itself in `App::
 
 Shape: `tag_completion` (editor.rs), `is_tags_row` (create.rs), Tab hook in `handle_create_key`, `tag_choices`/`open_ref_picker`/`finish_insert`/`commit_fuzzy` (handlers.rs), `tag_candidates`/`render_tag_results` (fuzzy.rs), hint on the status line (render.rs). Help: keymap/editor.rs Tab row, docs/tui.md. Tests in src/tui/tests.rs (+ snapshot); headless frame attached. Gate: cargo test --workspace passes, fmt clean, clippy count unchanged (94/98 before and after).
 
----
-▸ 2026-11-10T21:46:29Z [tagcomplete-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVYeZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:46:29Z
+
+*tagcomplete-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVYeZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:46:47Z [herd-unlock]
-kind: landed
-commit: ef5c259ebe7d8e9fce08180827810de1f2c537ba
-source: 9b28281d03d42fb3c98400a48e3e4cede6fa1a6e
-branch: main
----
+#### 2026-11-10T21:46:47Z
+
+*herd-unlock · kind: landed · commit: ef5c259ebe7d8e9fce08180827810de1f2c537ba · source: 9b28281d03d42fb3c98400a48e3e4cede6fa1a6e · branch: main*
 
 landed: ef5c259e yaks-8d6a: complete tags with Tab in the form's tags field

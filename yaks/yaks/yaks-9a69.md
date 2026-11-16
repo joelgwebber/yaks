@@ -13,7 +13,8 @@ tags:
 
 cargo-dist multi-platform builds + GitHub Releases; Biome-style npm installer (platform packages as optionalDependencies); brew tap + shell installer + binstall; flip skill/plugin install stanzas from uvx/PyPI to binary. Decompose later.
 
----
-▸ 2026-10-05T22:35:07Z [Joel Webber]
+#### 2026-10-05T22:35:07Z
+
+*Joel Webber*
 
 moved: hairy -> dead

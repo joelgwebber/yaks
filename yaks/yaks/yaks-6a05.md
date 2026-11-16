@@ -14,18 +14,15 @@ verify: cargo test --workspace
 
 Pretty clear on a TUI in a large-ish ~200x100 cell window, on the yaks-repo's "All" tab (~750 yaks). Every keystroke has a visible latency.
 
----
-▸ 2026-11-10T21:11:50Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:50Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:24Z [herd-unlock]
+#### 2026-11-10T21:12:24Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `perf-1`, Sonnet 5.5.
 
@@ -41,13 +38,15 @@ The on-disk format; the farm loading path (unless it runs per key).
 
 Before/after timings per keystroke on the same fixture, in a note, with the command that measures them (a `#[ignore]` bench test is fine). Target: under 16 ms per keystroke at 800 yaks in a debug-free (`--release`) build, or say what stands in the way. Gate `cargo test --workspace`; no snapshot changes.
 
----
-▸ 2026-11-10T21:13:20Z [perf-1]
+#### 2026-11-10T21:13:20Z
+
+*perf-1*
 
 Start 2026-11-10T21:13:18Z; checkout /Users/joel/src/yaks/.delta/worktrees/73m8tackk228/yaks
 
----
-▸ 2026-11-10T21:38:08Z [perf-1]
+#### 2026-11-10T21:38:08Z
+
+*perf-1*
 
 Measured (release build, 800 synthetic yaks, 200x100, `handle_key` + `render` to a TestBackend):
 
@@ -74,30 +73,20 @@ Decision: left `view_count`, `blocked_ids` and `resolved_ids` uncached. Each is 
 
 Decision: bench lives in `memo.rs` `#[cfg(test)]` next to the cache it exercises, `#[ignore]`d. Rejected: a headless shell script (the test harness gives the handle_key/render split).
 
----
-▸ 2026-11-10T21:45:03Z [perf-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:45:03Z
+
+*perf-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:45:08Z [perf-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVQdJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:45:08Z
+
+*perf-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVQdJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:45:25Z [herd-unlock]
-kind: landed
-commit: e000502520e7002c2656f594a5e03be37714690a
-source: 173c48833ea6f0c8fcadcbc4e09666d620256138
-branch: main
----
+#### 2026-11-10T21:45:25Z
+
+*herd-unlock · kind: landed · commit: e000502520e7002c2656f594a5e03be37714690a · source: 173c48833ea6f0c8fcadcbc4e09666d620256138 · branch: main*
 
 landed: e0005025 yaks-6a05: hoist is_multi_herd out of the per-row list render loop; add keystroke bench

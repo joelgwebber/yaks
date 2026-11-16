@@ -16,23 +16,27 @@ Agent harnesses that can render links in conversation, should be able to link to
 
 Hard part: Links will drift as yaks are shorn.
 
----
-▸ 2026-10-19T04:29:29Z [delta:herd-pass]
+#### 2026-10-19T04:29:29Z
+
+*delta:herd-pass*
 
 Herd pass 2026-10-19: the 'hard part' is gone. Since schema 5 a yak's file is `.yaks/<id>.md` for its whole life (no status directories), and the farm worktree is at a stable absolute path (`yaks path <id>`), so a link written once keeps working. What is left is the guidance itself (fits in the skills rewrite, yaks-b048).
 
----
-▸ 2026-10-26T20:55:58Z [delta-lead]
+#### 2026-10-26T20:55:58Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T20:56:25Z [delta-lead]
+#### 2026-10-26T20:56:25Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): skills prose, done in the coordinating thread together (all three edit .agents/skills/yaks and yaks-working; AGENTS.md says keep skill rewrites in the coordinator). Worker answer-editor-1 (yaks-ce5e, thread ksQQXwyj…, model: profile default, base 2b1f3ba) runs in parallel and touches no skills.
 
----
-▸ 2026-10-26T21:00:47Z [delta-lead]
+#### 2026-10-26T21:00:47Z
+
+*delta-lead*
 
 Done in fb432be (delta-lead), with yaks-8aeb, yaks-df02 and yaks-248d together, since they share the same skill sections.
 
@@ -43,7 +47,8 @@ Done in fb432be (delta-lead), with yaks-8aeb, yaks-df02 and yaks-248d together, 
 
 Evidence: a cold-read by Sonnet scout cold-read-1 (scenarios 1-10 answered correctly from the text); its gaps were fixed, except two that already existed before this change, now filed as a new yak. `cargo test`: 708 passed, 0 failed.
 
----
-▸ 2026-10-26T21:00:47Z [delta-lead]
+#### 2026-10-26T21:00:47Z
+
+*delta-lead*
 
 moved: shaving -> shorn

@@ -54,20 +54,23 @@ That last point gets at a larger principle: We started this project with the ide
 
 The most obvious reason to do so would be performance at scale. But that's a question that can only be answered in light of an understanding of modern filesystem performance characteristics, and perhaps also those of modern editor/IDE indexing systems.
 
----
-▸ 2026-10-18T20:00:00Z [delta-farm]
+#### 2026-10-18T20:00:00Z
+
+*delta-farm*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-18T20:00:00Z [delta-farm]
+#### 2026-10-18T20:00:00Z
+
+*delta-farm*
 
 Claim (delta-farm, yakherd). Owner: `scale-1` (scout: measures, recommends, does not decide or shear). Decision belongs to Joel, before the orphan-farm migration (yaks-73f4).
 
 Question: does a flat `.yaks/` stay fine at O(1000s-10000s) yaks, or does a nested layout earn its keep? Measure on synthetic farms of 1k, 10k, 50k yaks (realistic files: copy the shape of real yak files, a few % with attachment dirs), in /tmp, with the real binary: yaks `list`, `show`, `next`, `search`, the TUI startup (headless, first frame), `yaks sheds`; plain `ls`, `ls -l`, `find`, `grep -r`, shell globbing (`ls .yaks/*.md` arg limits); git `status`, `add -A`, `commit`, `log -- .yaks`; and a web IDE file tree: if openvscode-server/code-server can run headless here (a release tarball unpacked in /tmp is fine; no system install, no sudo), open each farm and time the explorer listing `.yaks/` (headless Chrome is on this machine; see docs/tui.md for the recipe). Compare against a nested layout only if flat shows a real problem. Report numbers in a table, attach the scripts and raw output, and give a recommendation with the threshold where flat stops being fine, if any.
 
----
-▸ 2026-10-18T20:15:07Z [scale-1]
+#### 2026-10-18T20:15:07Z
+
+*scale-1*
 
 Interim (scale-1, measurement in progress). Synthetic farms built on **btrfs**
 (`/var/tmp`, same filesystem as `/home`) — not tmpfs, which would have flattered
@@ -108,8 +111,9 @@ Still to come: plain-tool and git tables, the ARG_MAX finding (already have one
 real failure at ~41k), and the web-IDE tree measurement (openvscode-server
 1.109.5 unpacked in /var/tmp, headless Chrome via Vivaldi 8.2 / Chromium 142).
 
----
-▸ 2026-10-18T20:55:28Z [scale-1]
+#### 2026-10-18T20:55:28Z
+
+*scale-1*
 
 Web IDE measured (scale-1). openvscode-server 1.109.5, unpacked under /var/tmp,
 no sudo and no system install; driven by headless Chromium (Vivaldi 8.2 =
@@ -177,8 +181,9 @@ So the IDE evidence runs the opposite way from the yak's hypothesis: the web IDE
 is indifferent to flat-vs-nested on render (virtualized), and mildly *penalized*
 by nesting on watches.
 
----
-▸ 2026-10-18T21:05:53Z [scale-1]
+#### 2026-10-18T21:05:53Z
+
+*scale-1*
 
 Pipeline hazards + Joel's colocated-nested layout, measured (scale-1).
 
@@ -287,8 +292,9 @@ kernel limit anyway).
 
 ![shot-f50k](yaks-b32e/shot-f50k.png)
 
----
-▸ 2026-10-18T21:07:28Z [scale-1]
+#### 2026-10-18T21:07:28Z
+
+*scale-1*
 
 ## Recommendation (scale-1, scout — Joel decides)
 
@@ -367,12 +373,14 @@ Attachments: `raw-results.md` (full tables + a "Not measured, and why"
 section), `genfarm.py`, `gennest.py`, `watchcount.py`, `bench.py`,
 `githist.py`, `mem.js`, `shot-f50k.png`.
 
----
-▸ 2026-10-18T21:15:00Z [delta-farm]
+#### 2026-10-18T21:15:00Z
+
+*delta-farm*
 
 Decision (Joel, recorded by delta-farm, 2026-10-18): keep the flat `.yaks/` layout, per scale-1's measurements and Joel's own rounds with it (VS Code tree confirmed by hand). The real scaling defect is the quadratic TUI startup (yaks-e61e). Follow-ups: the xargs/argv guidance yak (filed beside this), revisit only past ~25-30k yaks on a real farm. Nothing in the orphan-farm migration (yaks-73f4) changes paths.
 
----
-▸ 2026-10-18T21:15:00Z [delta-farm]
+#### 2026-10-18T21:15:00Z
+
+*delta-farm*
 
 moved: shaving -> shorn

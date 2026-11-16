@@ -14,8 +14,9 @@ tags:
 
 Spike under yaks-1a96 side-quest. Refactor svg_of in src/tui/docshots.rs to cut bloat: (1) <style> class block for palette+modifiers, (2) hoist font-family/size/lengthAdjust/xml:space to root via inheritance, (3) coalesce contiguous same-bg cells into one <rect> per run, (4) one <text> per row with <tspan> only on style change + explicit per-run x (keep column pinning; avoid risky row-level textLength given mid-row emoji). Goal: feel out byte savings + whether the SVG source reads row-by-row for direct LLM parsing. Verify by driving docshots and eyeballing rendered frame + diffing bytes/element counts.
 
----
-▸ 2026-09-09T02:45:15Z [agent]
+#### 2026-09-09T02:45:15Z
+
+*agent*
 
 Prototype done (uncommitted, in working tree). Rewrote svg_of in src/tui/docshots.rs + regenerated docs/assets/*.svg. Verified by rendering baseline vs new via headless Chrome and pixel-diffing with ImageMagick (render noise floor = 0, deterministic).
 
@@ -30,8 +31,9 @@ Alt = Option C (row <text> + per-run <tspan x>, runs split after wide glyphs via
 
 Not landed: needs A-vs-C decision + docs/skills note if the format change ships (docs/tui.md regen guidance unchanged; format is internal). Evidence imgs in target/svgcmp/ (gitignored).
 
----
-▸ 2026-09-09T03:24:20Z [agent]
+#### 2026-09-09T03:24:20Z
+
+*agent*
 
 Switched tree to Option C (row <text> + per-run <tspan x>, wide-glyph split via unicode-width, white-space:pre, no textLength). tui-list -78%, detail -66%, drawer -67%, inbox -85%; columns hold; ~4% cosmetic intra-run drift (fine for a TUI per Joel). Suite green.
 
@@ -47,17 +49,20 @@ Recommendation: ship C now (lean+parseable+robust, no new deps). Font-pinned flo
 
 ![flow-fontpinned](yaks-dce6/flow-fontpinned.svg)
 
----
-▸ 2026-09-09T03:52:23Z [agent]
+#### 2026-09-09T03:52:23Z
+
+*agent*
 
 Posterity: structural example of 'font-pinned flow' SVG (Q3 endgame we decided NOT to pursue). Won't render without the (unbuilt) metric-pinned font; kept to show the structure — pure-flow body with zero textLength/x, one @font-face doing all the load-bearing work.
 
----
-▸ 2026-09-09T04:12:43Z [agent]
+#### 2026-09-09T04:12:43Z
+
+*agent*
 
 Reparented under umbrella yaks-89b9 as the RENDERER child. Scope extends from prototype -> landing: promote the Option C buffer->SVG generator out of src/tui/docshots.rs into TOQUE as a public render_to_svg (or SvgEncoder), parameterized by the color palette (currently hardcoded Tomorrow-Night in docshots.rs); rewire yaks docshots to be a thin caller. The C impl + regenerated docs/assets/*.svg currently sit UNCOMMITTED in the working tree from the spike — land them via this promotion. Keep the wide-glyph split (unicode-width) + white-space:pre + coalesced rects + class block. Shear once it's in toque and committed.
 
----
-▸ 2026-09-09T04:54:54Z [agent]
+#### 2026-09-09T04:54:54Z
+
+*agent*
 
 Shorn. Promoted the Option C renderer into toque as public render_to_svg + buffer_to_svg (new crates/toque/src/svg.rs); the Tomorrow-Night palette + geometry moved with it. src/tui/docshots.rs is now a thin caller (toque::render_to_svg). Output byte-identical to the in-tree spike modulo one redundant root xml:space dropped (-21B/file; white-space:pre does the work). Added unicode-width dep to toque. Rendered tui-list via headless Chrome post-move — columns hold. Suite green.

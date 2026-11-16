@@ -41,8 +41,9 @@ One "Families" section in the `yaks` skill (the invariant, graduating a child, w
 - `shorn --force`: the escape hatch is graduating the child (`yaks reparent`), which keeps the farm true. Add one only if a real need appears (Joel's lean on yaks-62f2).
 - A doctor error for "shaving under hairy": see yaks-cfa6.
 
----
-▸ 2026-11-01T16:43:28Z [yakherd]
+#### 2026-11-01T16:43:28Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -52,8 +53,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:43:28Z [yakherd]
+#### 2026-11-01T16:43:28Z
+
+*yakherd*
 
 kind: ask
 needs: human
@@ -69,8 +71,9 @@ Two behavior changes in this arc need your call. Everything else (yaks-35a4, the
 
 Not doing, from the runner's list: `shorn --family` (shears unfinished work without evidence) and `shorn --force` (graduating the child with `yaks reparent` is the escape hatch; your lean on yaks-62f2 was `--force` only if a real need appears).
 
----
-▸ 2026-11-01T17:16:17Z [Joel Webber]
+#### 2026-11-01T17:16:17Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -79,8 +82,9 @@ needs: agent
 1. That makes sense to me. I don't think it's necessary to slaughter all the children in this case.
 2. That also makes sense; it's a similarly weird case to say a child is shaving, but its parent hasn't started yet.
 
----
-▸ 2026-11-01T17:16:53Z [yakherd]
+#### 2026-11-01T17:16:53Z
+
+*yakherd*
 
 kind: pickup
 ---
@@ -89,8 +93,9 @@ picked up
 
 Decision: both leans taken (Joel, answer above). slaughter blocks only on hairy/shaving children and --family leaves shorn descendants shorn (yaks-27c1); shave takes hairy ancestors along and the skills drop 'and its parent if hairy' (yaks-cfa6). Rejected: today's slaughter-kills-the-subtree, and a doctor error for shaving-under-hairy. Order: yaks-27c1, yaks-35a4, yaks-cfa6, then yaks-93c5 (skills), then cut 0.0.28.
 
----
-▸ 2026-11-01T17:31:48Z [yakherd]
+#### 2026-11-01T17:31:48Z
+
+*yakherd*
 
 Arc done: a finished yak never has open descendants, and the commands, the TUI, doctor and the skills agree.
 
@@ -102,8 +107,9 @@ Arc done: a finished yak never has open descendants, and the commands, the TUI, 
 
 Evidence is on each child; the gate (`cargo test --workspace --locked`, CI-like env) was green after each commit.
 
----
-▸ 2026-11-01T17:31:48Z [yakherd]
+#### 2026-11-01T17:31:48Z
+
+*yakherd*
 
 kind: move
 from: shaving

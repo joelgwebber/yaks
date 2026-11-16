@@ -12,7 +12,7 @@ tags:
 - markdown
 ---
 
-Implement the note format decided in [yaks-6c65](yaks-6c65) ([/doks/design/note-format.md](/doks/design/note-format.md), Joel's decision recorded there). Does not migrate any farm; [yaks-acc0](yaks-acc0) uses the converter this yak ships.
+Implement the note format decided in [yaks-6c65](/yaks/yaks/yaks-6c65.md) ([/doks/design/note-format.md](/doks/design/note-format.md), Joel's decision recorded there). Does not migrate any farm; [yaks-acc0](/yaks/yaks/yaks-acc0.md) uses the converter this yak ships.
 
 ## The new shape
 
@@ -45,23 +45,21 @@ Migrating any farm, `store::SCHEMA` bump, link rewriting, the resolver, docs bey
 
 Round-trip tests (old to parse to new to parse to the same `NoteEntry`s, over the real notes in this farm: write a test that runs the converter over a sample of 200 real yak bodies copied into `tests/fixtures` or generated, then parses both and compares); merge-driver tests for both shapes; a test that a schema-8 farm still writes the old shape and a schema-9 scratch farm the new one; a `gh api -X POST markdown -f mode=gfm -f text=@file` render of one converted real yak, attached, showing headings with the expected ids.
 
----
-▸ 2026-11-14T17:53:12Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T17:53:12Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T17:53:16Z [linkplan-lead]
+#### 2026-11-14T17:53:16Z
+
+*linkplan-lead*
 
 Claim: worker `notefmt-1` (Sonnet tier, per AGENTS.md; the format is fully specified in the yak and the design dok, so this is implementation, with my review as the cost). Owns: `store.rs` note functions (`parse_notes`, `note_starts`, `append_note_meta`, `append_entry`, `note_head`, `meta_block`, `parse_meta`), a new `convert_notes`, `links.rs` note-anchor functions only, `mergedriver.rs` note merge, `tui/content.rs`, `sheds.rs`, `recur.rs`, `markdown_lint.rs`. Not `migrate.rs`: yaks-acc0 registers the converter. Other workers in flight: `keys-1` (`keymap.rs`, `docs/tui.md`), `check-1` (`check.rs`); `yaks-c3d0` follows and works in `handlers.rs`, `follow.rs`, `source.rs`, `detail_nav.rs`'s `follow_link`: if you must touch `detail_nav.rs`, keep to note-anchor lines. Judge: the coordinator re-runs the evidence and the round trip over this farm's real yaks.
 
----
-▸ 2026-11-14T22:37:53Z [notefmt-1]
+#### 2026-11-14T22:37:53Z
+
+*notefmt-1*
 
 Start of work (after an offline gap): the checkout is clean, nothing written yet, HEAD contains `local/main` (e4d0ff5a, v0.0.36).
 
@@ -71,10 +69,9 @@ Start of work (after an offline gap): the checkout is clean, nothing written yet
 
 Read so far: `store.rs` note functions, `tui/content.rs`, `mergedriver.rs` note merge, `links.rs` anchors. Plan: reader accepts both shapes; writers take a `new_shape: bool` threaded from the farm schema; `convert_notes` pure.
 
----
-▸ 2026-11-14T23:12:07Z [notefmt-1]
-kind: checkpoint
----
+#### 2026-11-14T23:12:07Z
+
+*notefmt-1 · kind: checkpoint*
 
 Checkpoint, 23:1x. Builds clean (`cargo build`), tests not run yet.
 
@@ -86,10 +83,9 @@ Done in the working tree:
 
 Left: anchors in `links.rs` (rebase first, main moved), merge driver `append_entry_in`, sheds/recur/tick/markdown_lint, tests (round trip over 200 real yaks, merge driver both shapes, schema 8 vs 9 farm), docs and skill, GitHub render attachment, verify.
 
----
-▸ 2026-11-14T23:16:23Z [notefmt-1]
-kind: checkpoint
----
+#### 2026-11-14T23:16:23Z
+
+*notefmt-1 · kind: checkpoint*
 
 Checkpoint, ~23:50. Reader, writers, converter, anchors and the merge-driver shape are in and the existing 1164 unit tests pass.
 
@@ -97,8 +93,9 @@ Checkpoint, ~23:50. Reader, writers, converter, anchors and the merge-driver sha
 - Round trip: `store::note_shape_tests::real_yak_bodies_convert_to_the_same_notes` reads yak files from the farm (read only, `YAKS_NOTES_SAMPLE=<dir>` overrides, `YAKS_NOTES_LIMIT` raises the 200): over this farm's first 200 yaks, 185 converted, 766 notes, identical `NoteEntry` lists, idempotent. With `YAKS_NOTES_LIMIT=5000`: 761 yaks, 3307 notes, all identical.
 - Left: merge-driver tests in the new shape, `tui/content.rs` round-trip tests, sheds/recur/lint checks, docs, GitHub render, verify.
 
----
-▸ 2026-11-14T23:27:56Z [notefmt-1]
+#### 2026-11-14T23:27:56Z
+
+*notefmt-1*
 
 Decision: the writer is gated on the farm's `schema` marker, read where the farm root is known.
 
@@ -106,8 +103,9 @@ Decision: the writer is gated on the farm's `schema` marker, read where the farm
 - A body never mixes shapes: `append_note_meta_in` uses the shape of the notes the body already has, and falls back to the farm's only for a body with no notes. So a half-converted body, or a farm whose marker changed, stays consistent.
 - `store::SCHEMA` is still 8. The one-arg `append_note`/`append_note_meta`/`append_entry` stay as the old-shape helpers (the existing tests and fixtures use them).
 
----
-▸ 2026-11-14T23:27:56Z [notefmt-1]
+#### 2026-11-14T23:27:56Z
+
+*notefmt-1*
 
 Decision: how a body is read when it holds both shapes, and how the converter refuses.
 
@@ -116,8 +114,9 @@ Decision: how a body is read when it holds both shapes, and how the converter re
 - A note with no actor and no metadata whose text opens with an italic line (`*emphasis*`) is written with a `*-*` line so the text is not read as the metadata line; `-` alone as an actor is quoted. Same for an actor that reads as `key:`.
 - The anchor follows the body's shape: slug (`2026-11-04t221303z`, `-1`) for a new-shape body, the timestamp for an old one, so a schema-8 yaks keeps printing links an older yaks can follow. `find_note`/`is_note_anchor` accept both everywhere.
 
----
-▸ 2026-11-14T23:27:57Z [notefmt-1]
+#### 2026-11-14T23:27:57Z
+
+*notefmt-1*
 
 Evidence so far (before `verify`).
 
@@ -127,16 +126,15 @@ Evidence so far (before `verify`).
 - GitHub render: `converted.md` (yaks-6c65, 6 notes) and `rendered.html` are attached. `gh api markdown -f mode=gfm` returns `<h4 dir="auto">2026-11-14T11:22:51Z</h4>` and `<em>` lines, six `<h4>` and no `id=`: the API returns a fragment, and GitHub adds `user-content-` ids when it renders the page itself (the design dok's own evidence shows the same fragment form). So the `<h4 id="user-content-2026-11-04t221303z">` ids are NOT shown by this check; they remain assumed from GitHub's slug rule until a converted file is viewed on a pushed branch.
 - The on-disk shape changes only at schema 9: `store::SCHEMA` is untouched and nothing in this farm changes until the migration yak.
 
----
-▸ 2026-11-14T23:30:20Z [notefmt-1]
-kind: verify
-result: pass
----
+#### 2026-11-14T23:30:20Z
+
+*notefmt-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-14T23:30:29Z [notefmt-1]
+#### 2026-11-14T23:30:29Z
+
+*notefmt-1*
 
 Summary. Notes can be read and written in the new shape (`#### <ts>` heading, italic `*actor · key: value*` line, no `---`); nothing on disk changes until the migration yak bumps `store::SCHEMA` (still 8).
 
@@ -145,28 +143,21 @@ Summary. Notes can be read and written in the new shape (`#### <ts>` heading, it
 - Docs: `docs/cli.md`, `docs/README.md`, the `yaks` skill's Metadata paragraph, the tidy-request text.
 - Gate: `cargo test -p yaks` all green (1187 unit tests plus integration), `cargo fmt --check` clean; `yaks verify` PASS. The GitHub render shows `<h4>` headings but the markdown API gives no `id=` (see the evidence note).
 
----
-▸ 2026-11-14T23:30:30Z [notefmt-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKnNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T23:30:30Z
+
+*notefmt-1 · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGKnNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-14T23:31:03Z [linkplan-lead]
-kind: landed
-commit: 7585597eb78ba8f0b77214e793e968f0beb3da48
-source: 2ab64a7ceddf62a6dda9d4a655b7459c35d8afce
-branch: main
----
+#### 2026-11-14T23:31:03Z
+
+*linkplan-lead · kind: landed · commit: 7585597eb78ba8f0b77214e793e968f0beb3da48 · source: 2ab64a7ceddf62a6dda9d4a655b7459c35d8afce · branch: main*
 
 landed: 7585597e yaks-9f00: new note format (#### heading, italic actor/meta line): reader, schema-gated writer, convert_notes, slug anchors
 
----
-▸ 2026-11-14T23:35:40Z [linkplan-lead]
+#### 2026-11-14T23:35:40Z
+
+*linkplan-lead*
 
 Reviewed and landed (`7585597e`). Gate 1215 passed, `cargo fmt --check` clean. Full round trip over four farms is in the note on yaks-acc0 (762, 113, 145 and 682 yaks, all identical); it found 50 hand-headed yaks in the joel farm that the converter rightly leaves alone, which the worker's test did not allow for (fixed in a follow-up commit).
 

@@ -10,8 +10,9 @@ updated: '2026-10-31T15:30:43Z'
 
 ![ugly](yaks-48e9/ugly.png)
 
----
-▸ 2026-10-31T14:30:20Z [delta:ksQQZYjOB1HNS6uSBKT_aZjoz5LOADi4D5IBxBCA]
+#### 2026-10-31T14:30:20Z
+
+*delta:ksQQZYjOB1HNS6uSBKT_aZjoz5LOADi4D5IBxBCA*
 
 ## Analysis: highlight colours across light and dark terminals
 
@@ -43,15 +44,17 @@ C, with fallbacks, behind one module (e.g. `tui/surface.rs`) so the 12 sites cal
 - `DarkGray` (bright black) is used as the "quiet" colour all over, and it is *the background colour* in Solarized Dark. That is a separate legibility bug on one theme family, not part of this yak.
 - Docs touch: the `palette.rs` header ("no backgrounds, 16 ANSI only") should state the new rule, `docs/tui.md` should mention `YAKS_THEME`, and the `docshots` light-terminal scene (VS Code Light+) should gain a list-selection frame as evidence. It currently shows only markdown.
 
----
-▸ 2026-10-31T15:17:43Z [delta:Plan highlight colors for light and dark]
+#### 2026-10-31T15:17:43Z
+
+*delta:Plan highlight colors for light and dark*
 
 moved: hairy -> shaving
 
 ![tui-surfaces](yaks-48e9/tui-surfaces.png)
 
----
-▸ 2026-10-31T15:26:28Z [delta:Plan highlight colors for light and dark]
+#### 2026-10-31T15:26:28Z
+
+*delta:Plan highlight colors for light and dark*
 
 Implemented option C: highlight bands derived from the terminal's own colours.
 
@@ -74,12 +77,14 @@ The OSC 11 query itself, in a real terminal: the shots simulate the terminal via
 - `DarkGray` as the "quiet" foreground is still invisible on Solarized Dark; separate yak.
 - `Black`-on-`Yellow` prompt bar kept: it is explicit on both of its colours, so it is legible on any theme.
 
----
-▸ 2026-10-31T15:30:43Z [delta:Plan highlight colors for light and dark]
+#### 2026-10-31T15:30:43Z
+
+*delta:Plan highlight colors for light and dark*
 
 Landed on main as 2d8fbf9 (rebased over yaks-a99f and yaks-e532; same single pre-existing sheds test failure).
 
----
-▸ 2026-10-31T15:30:43Z [delta:Plan highlight colors for light and dark]
+#### 2026-10-31T15:30:43Z
+
+*delta:Plan highlight colors for light and dark*
 
 moved: shaving -> shorn

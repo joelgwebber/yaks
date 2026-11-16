@@ -13,18 +13,21 @@ In header fields like created/updated; but especially comment timestamps, which 
 
 Bonus points for rendering in the local timezone.
 
----
-▸ 2026-10-17T04:26:52Z [delta-lead]
+#### 2026-10-17T04:26:52Z
+
+*delta-lead*
 
 Scope agreed 2026-10-17 (yaks-e9de): relative shorthand for nearby times ("5m ago", "3h ago", "yesterday"), an absolute local-time date beyond about a week, with the timezone shown where absolute; used for comment headers (yaks-93cd) and the Created/Updated fields. "Now" must be injectable (an `App` clock, a fixed instant in tests) so insta snapshots and docshots stay deterministic. Today `humanize_date` (src/tui/detail.rs) formats UTC with no zone label.
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **dates-1**.
 
@@ -34,15 +37,17 @@ Evidence: unit tests over the table of rules with a fixed now/offset; headless f
 
 Do NOT regenerate docs/assets docshots (several workers would collide on the SVGs; the coordinator regenerates them after landing). Re-accept any insta snapshot your change moves (`INSTA_UPDATE=always cargo test`, or `cargo insta accept` if installed) and read every changed .snap diff before committing. `cargo fmt` reformats files nobody touched (src/actor.rs, src/tui/docshots.rs, src/tui/tests.rs): run `cargo fmt -- <your files>` and `git checkout` those three if they changed. Docs/help parity per AGENTS.md (docs/tui.md, help_content in src/tui/render.rs) where behaviour a user sees changes.
 
----
-▸ 2026-10-17T04:32:53Z [dates-1]
+#### 2026-10-17T04:32:53Z
+
+*dates-1*
 
 Start Sat Oct 17 04:32:53 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktrees/9y0cpwz8ykh1/yaks/.yaks/yaks-ef82.md
 
 [frame](yaks-ef82/frame.txt)
 
----
-▸ 2026-10-17T04:37:33Z [dates-1]
+#### 2026-10-17T04:37:33Z
+
+*dates-1*
 
 Decision: formatter is `tui::when::{Clock, format_in}` (new src/tui/when.rs), not beside humanize_date, so comment headers (yaks-93cd) can reuse `app.clock.format(iso)`. `humanize_date` removed (its one caller moved).
 
@@ -60,12 +65,14 @@ Docs: docs/tui.md detail-pane paragraph. No new key, so help_content unchanged; 
 
 Summary: Created/Updated in the detail pane now render relative/local with labelled zone through a pure injectable formatter.
 
----
-▸ 2026-10-17T04:37:42Z [dates-1]
+#### 2026-10-17T04:37:42Z
+
+*dates-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T04:38:43Z [dates-1]
+#### 2026-10-17T04:38:43Z
+
+*dates-1*
 
 moved: shaving -> shorn

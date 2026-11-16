@@ -10,13 +10,15 @@ tags:
 - release
 ---
 
----
-▸ 2026-10-19T03:20:31Z [delta:farm-bootstrap]
+#### 2026-10-19T03:20:31Z
+
+*delta:farm-bootstrap*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-19T03:20:50Z [delta:farm-bootstrap]
+#### 2026-10-19T03:20:50Z
+
+*delta:farm-bootstrap*
 
 Version 0.0.21 (Cargo.toml, Cargo.lock, npm/yaks/package.json). Headline since v0.0.20:
 
@@ -26,7 +28,8 @@ Version 0.0.21 (Cargo.toml, Cargo.lock, npm/yaks/package.json). Headline since v
 
 Gate: `cargo test --release` green except tests/attachment_sheds.rs (fails identically on the pre-change baseline on macOS; not caused by this release), `node npm/yaks/test-mapping.mjs` ok.
 
----
-▸ 2026-10-19T03:20:50Z [delta:farm-bootstrap]
+#### 2026-10-19T03:20:50Z
+
+*delta:farm-bootstrap*
 
 moved: shaving -> shorn

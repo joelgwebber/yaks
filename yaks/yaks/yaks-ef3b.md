@@ -12,13 +12,15 @@ tags:
 - markdown
 ---
 
----
-▸ 2026-10-26T23:07:33Z [delta-lead]
+#### 2026-10-26T23:07:33Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T23:07:33Z [delta-lead]
+#### 2026-10-26T23:07:33Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd). Owner: `runon-1`. Plan: the latest note on yaks-db07.
 
@@ -39,20 +41,23 @@ Claim (delta-lead, yakherd). Owner: `runon-1`. Plan: the latest note on yaks-db0
 
 **Gate:** `cargo test -p yaks`. **Judge:** delta-lead at landing.
 
----
-▸ 2026-10-26T23:08:05Z [runon-1]
+#### 2026-10-26T23:08:05Z
+
+*runon-1*
 
 Start (runon-1): `date -u` = Mon Oct 26 23:08:00 UTC 2026.
 
 `yaks path yaks-ef3b`: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-ef3b.md`
 
----
-▸ 2026-10-26T23:13:18Z [runon-1]
+#### 2026-10-26T23:13:18Z
+
+*runon-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-26T23:14:54Z [runon-1]
+#### 2026-10-26T23:14:54Z
+
+*runon-1*
 
 Decision: the detector lives in a new `src/markdown_lint.rs` (`has_run_on(body)`), and the pulldown-cmark options moved there as `markdown_lint::options()`, which `tui::mdrender::render` now calls. Rejected: putting it in `tui::content`/`tui::mdrender` (the filter is CLI-side and `filter.rs` should not depend on the TUI), and copying the five option flags (two sources of truth for "what joins").
 
@@ -62,8 +67,9 @@ Decision: any `SoftBreak` event counts, without tracking whether it is inside a 
 
 Decision: `run_on` is CLI-only. The TUI drawer and saved views (`spec_from_json`) set `run_on: false` explicitly; no chip, no persistence, per the claim's out-of-scope. It does count in `content_active()` and `FilterFlags::any_set()` (so `bulk --run-on` alone is a valid selector).
 
----
-▸ 2026-10-26T23:14:54Z [runon-1]
+#### 2026-10-26T23:14:54Z
+
+*runon-1*
 
 Evidence (runon-1).
 
@@ -94,19 +100,22 @@ Live farm, own build, read-only (`./target/debug/yaks`):
 
 `list --help` shows: "Keep only yaks whose description or any note has run-on lines: adjacent lines that markdown joins into one paragraph (a soft line break). Candidates for a tidy".
 
----
-▸ 2026-10-26T23:15:03Z [runon-1]
+#### 2026-10-26T23:15:03Z
+
+*runon-1*
 
 Correction to the evidence note: in `yaks-2c16` the run-on is the two prose lines "…and so forth." / "We'll need to think…". A bullet list right under a paragraph line is not a soft break (a list may interrupt a paragraph), so that part is not what flags it.
 
 Summary (runon-1): new shared filter flag `--run-on`. `markdown_lint::has_run_on(body)` splits the body into description + notes (`store::description`, `store::parse_notes`) and flags any pulldown-cmark `SoftBreak`, parsed with `markdown_lint::options()`, now the single options source the TUI renderer also uses. `FilterSpec.run_on` is matched last in `FilterSpec::matches`; `FilterFlags.run_on` + `build_spec` give it to every filter-taking command. Docs: `--help`, `docs/cli.md` "Filter flags (shared)", README bulk selector list. Evidence: 5 tests, failing under both a `false` and a `true` stub; gate 871/0, verify PASS; 124 live candidates.
 
----
-▸ 2026-10-26T23:15:03Z [runon-1]
+#### 2026-10-26T23:15:03Z
+
+*runon-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-26T23:19:10Z [delta-lead]
+#### 2026-10-26T23:19:10Z
+
+*delta-lead*
 
 Landed (delta-lead, yakherd) and pushed in ab5e667. Gate on the combined tree: 873 passed, 0 failed. Reproduced on a throwaway farm with my own build: list --run-on found the run-on yaks, bulk --run-on --request tidy dry-ran (skip marked), --commit queued one and skipped the yak awaiting a human, the tidy instruction is in the note, a bare request exits 2. Live farm: 124 yaks match --run-on.

@@ -14,8 +14,7 @@ The README just tells you to clone the yaks repo and manually copy the skills. T
 
 Feel free to research the most up-to-date norms before committing to particular patterns and tools.
 
----
-▸ 2026-08-29T22:32:50Z
+#### 2026-08-29T22:32:50Z
 
 SHORN. Two install paths, per the yak:
 1) Built-in `yaks skills install [--dir <PATH>] [--force]` — the yak+yak-tracker SKILL.md are embedded in the binary (include_str!, src/skills.rs) and written to ~/.agents/skills by default, or --dir for another agent (e.g. ~/.claude/skills); skips existing unless --force. Handled BEFORE Herd::open so it runs with no herd (installing the skill usually precedes any .yaks). Fits the self-contained-binary model: no clone needed.

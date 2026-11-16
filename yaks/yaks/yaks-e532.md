@@ -15,13 +15,15 @@ Drop all the optionality in `yaks skills install` -- everyone gets all the tasks
 
 Let's also drop the scaffolding used to support install optionality -- we won't want to go back to that now that we're simplifying the deployment modes dramatically.
 
----
-▸ 2026-10-31T14:39:24Z [delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA]
+#### 2026-10-31T14:39:24Z
+
+*delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T14:42:24Z [delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA]
+#### 2026-10-31T14:42:24Z
+
+*delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA*
 
 Claimed. Plan (yaks-a99f's commit `3bb5937` is the base; it removed the farm modes, so the tree I started from was stale):
 
@@ -29,8 +31,9 @@ Claimed. Plan (yaks-a99f's commit `3bb5937` is the base; it removed the farm mod
 - `init` keeps one opt-out for scratch repos and tests: `--no-skills`.
 - Sweep leftovers of the old mode structure: `brief::Mode`, "private-mode" wording, the coordination companion-router test, "opt-in" in skill descriptions, docs and help.
 
----
-▸ 2026-10-31T14:54:57Z [delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA]
+#### 2026-10-31T14:54:57Z
+
+*delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA*
 
 Done, uncommitted in this worktree on top of `3bb5937` (yaks-a99f).
 
@@ -48,13 +51,15 @@ Done, uncommitted in this worktree on top of `3bb5937` (yaks-a99f).
 
 Not done: a cold-read scout of the changed skill text, and `cargo install` (waits for landing).
 
----
-▸ 2026-10-31T14:54:57Z [delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA]
+#### 2026-10-31T14:54:57Z
+
+*delta:ksQQhJ4mOC_KTlKDZQwbRNBUD5LOADjEEpIBxBCA*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T15:05:04Z [delta:Clean up skills install and mode remnant]
+#### 2026-10-31T15:05:04Z
+
+*delta:Clean up skills install and mode remnant*
 
 Landed on `main` as `c2b640f`, on top of `3bb5937` (yaks-a99f), via `git push local main:main`.
 
@@ -62,7 +67,8 @@ Landed on `main` as `c2b640f`, on top of `3bb5937` (yaks-a99f), via `git push lo
 - `yaks preflight --push-main`: ok.
 - Verified in the user's checkout: `main` is at `c2b640f` and `git status --short` is empty.
 
----
-▸ 2026-10-31T15:07:21Z [delta:Clean up skills install and mode remnant]
+#### 2026-10-31T15:07:21Z
+
+*delta:Clean up skills install and mode remnant*
 
 verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast` -> PASS (exit 0)

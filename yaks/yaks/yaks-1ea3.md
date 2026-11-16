@@ -14,13 +14,15 @@ tags:
 
 Overlay part (d) + the arrival flash of yaks-7204: the Inbox view (and its tab count) also lists a yak of this farm whose copy in another shed is awaiting a human (the TUI form of `yaks inbox --sheds`); `a` on such a row answers it in that shed (`yaks answer <id>@<shed>`, as the Sheds tab's `a` does); and when a scan brings an ask that was not in the previous snapshot, a notification names it. Yaks that exist only in a shed are not rows here (design pending on yaks-7204); the flash and the Sheds tab still show them.
 
----
-▸ 2026-10-13T01:29:43Z [delta-lead]
+#### 2026-10-13T01:29:43Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-13T01:29:44Z [delta-lead]
+#### 2026-10-13T01:29:44Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): owner inbox-1 (Sonnet worker). Parallel with badge-1 (yaks-ed6d) and disco-1 (yaks-93fe).
 
@@ -35,15 +37,17 @@ Out of scope: src/tui/render.rs beyond that help line, src/tui/detail.rs, src/tu
 
 Evidence (fail first): unit tests that (i) the Inbox rows and count include a home yak whose shed copy asks and exclude a shed-only one; (ii) `a` on it opens the AnswerInShed prompt naming the shed, and on a home-blocked yak still opens the plain answer; (iii) the flash fires for a new ask, not on the first snapshot, not again for the same ask, again for a re-ask (new timestamp); an insta snapshot of the Inbox with such a row. Real machine: `yaks tui --headless` on this repo with a scratch `git worktree` shed you create in your own scratch dir (ask there, check the Inbox row and the flash, answer it from the Inbox, check the shed's file; remove the worktree after). Full `cargo test --release`. Judge: delta-lead at landing.
 
----
-▸ 2026-10-13T01:31:25Z [inbox-1]
+#### 2026-10-13T01:31:25Z
+
+*inbox-1*
 
 Start: Tue Oct 13 01:31:22 UTC 2026
 
 yaks path: /Users/joel/src/yaks/.delta/worktrees/hers5ay2699w/yaks/.yaks/yaks-1ea3.md
 
----
-▸ 2026-10-13T01:34:51Z [inbox-1]
+#### 2026-10-13T01:34:51Z
+
+*inbox-1*
 
 Tests written first, seen failing before any implementation (cargo test --release sheds_tab):
 
@@ -56,8 +60,9 @@ test tui::sheds_tab::tests::inbox_frame_with_a_shed_ask_row ... FAILED  (new sna
 test result: FAILED. 16 passed; 5 failed
 ```
 
----
-▸ 2026-10-13T01:40:03Z [inbox-1]
+#### 2026-10-13T01:40:03Z
+
+*inbox-1*
 
 Real machine (own binary, `yaks tui --headless --size 150x30`, scratch `git worktree add --detach $DELTA_SCRATCH_DIR/wt HEAD`; discovery names that shed `main` today, yaks-93fe):
 - `YAKS_ACTOR=inbox-scratch yaks ask yaks-0012 --note "which way, scratch?"` in the scratch shed.
@@ -66,8 +71,9 @@ Real machine (own binary, `yaks tui --headless --size 150x30`, scratch `git work
 - Flash: with the TUI running (first snapshot taken), `yaks ask yaks-00c4` in the scratch shed; next scan frame header showed `⏳ new ask in main: yaks-00c4 Affordance for auto-creating a yak from an upstream issue`, and it stayed (no flash at startup, because the earlier frames carried none).
 - Worktree removed (`git worktree list` shows only the clone).
 
----
-▸ 2026-10-13T01:44:17Z [inbox-1]
+#### 2026-10-13T01:44:17Z
+
+*inbox-1*
 
 Decision: the Inbox rule lives in one new predicate `App::flat_matches` (viewmodel.rs) used by both `flat_rows` and `view_count`: `spec.matches`, or, when the spec is `needs_only`, a yak whose id is in `Snapshot::asked_ids()` (ids of `open_asks()`) and that matches the spec with `needs_only` off (so search/type/etc. still apply). Rejected: adding a field to `FilterSpec` (on-disk saved views, filter.rs is outside scope) and duplicating the check in rows and count.
 
@@ -83,17 +89,20 @@ Decision: with several new asks the one named is the first in `open_asks()` (att
 
 Decision: `fixture::snapshot` untouched; tests derive variants by mutating a copy.
 
----
-▸ 2026-10-13T01:47:55Z [inbox-1]
+#### 2026-10-13T01:47:55Z
+
+*inbox-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T01:48:05Z [inbox-1]
+#### 2026-10-13T01:48:05Z
+
+*inbox-1*
 
 Summary: Inbox rows and tab count include a home yak whose shed copy asks (`App::flat_matches`); `a` answers it in the first asking shed via the shared `open_answer_in_shed_prompt`; `apply_sheds_snapshot` flashes `⏳ new ask in <shed>: <id> <title>` (+N more) for asks not in the previous good scan, keyed by shed path + id + ask-note ts. Docs: docs/tui.md (Inbox paragraph, `a` row), README TUI paragraph, yaks skill TUI line, `a` help_content line. Gate: full `cargo test --release` ok (563 passed + integration suites), `yaks verify` PASS. New insta snapshot inbox_shed_ask_row read by eye (row yaks-8814 listed under the home-blocked yaks-07fe). Not run: docshots generator (coordinator). Caveat: test `a_outside_the_inbox_is_as_before` is weak (Hairy's selection is whatever the tree holds); the unit tests (ii) are the two a_on_* tests.
 
----
-▸ 2026-10-13T01:48:05Z [inbox-1]
+#### 2026-10-13T01:48:05Z
+
+*inbox-1*
 
 moved: shaving -> shorn

@@ -21,18 +21,15 @@ A farm worktree belongs to one host git dir (`store::farm_home` hashes it; disco
 - Discovery: a host with no registered farm worktree adopts the one at its farm home when that worktree is on the farm branch and its repository has the same origin, instead of bootstrapping a second.
 - Existing duplicates: a recipe to merge them (move one to the shared home, remove the other), and do it for schism.
 
----
-▸ 2026-11-06T22:00:55Z [schism-feedback]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:00:55Z
+
+*schism-feedback · kind: move · from: hairy · to: shaving · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T22:09:25Z [schism-feedback]
+#### 2026-11-06T22:09:25Z
+
+*schism-feedback*
 
 Built on branch `shared-farm-home` (fc891687), not landed.
 
@@ -47,8 +44,9 @@ Built on branch `shared-farm-home` (fc891687), not landed.
 
 Still to do once installed: merge Joel's two schism worktrees (`schism-38838c3f`, `repository-c0e58d55`) per the recipe. Doing it before the new binary is installed would make an old binary re-bootstrap `repository-…`.
 
----
-▸ 2026-11-06T22:23:34Z [schism-feedback]
+#### 2026-11-06T22:23:34Z
+
+*schism-feedback*
 
 Landed on `main` as e52342db (rebased onto c5eba6a6), with yaks-8a92's 34ded4b5 on top; pushed, and installed with `cargo install --path .`.
 
@@ -60,12 +58,8 @@ Merged Joel's two schism farm worktrees, which were clean and both at b6f8cc3 = 
 
 The `yaks tui` running in `~/src/rs/schism` (pid 84648) still has the removed directory open and needs a restart.
 
----
-▸ 2026-11-06T22:23:36Z [schism-feedback]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:23:36Z
+
+*schism-feedback · kind: move · from: shaving · to: shorn · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

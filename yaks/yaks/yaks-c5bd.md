@@ -20,28 +20,23 @@ Needs: a link form for one note, resolved by `yaks peek` (prints that note), `ya
 
 The form is settled on the design yak for session notes. Notes are append-only but not immutable: `pickup --drop-request` removes one, so an index shifts; the note's timestamp (plus actor, if two can share a second) does not.
 
----
-▸ 2026-11-06T04:57:01Z [herd-upkeep]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:57:01Z
+
+*herd-upkeep · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T04:57:07Z [herd-upkeep]
-kind: verify
-result: pass
----
+#### 2026-11-06T04:57:07Z
+
+*herd-upkeep · kind: verify · result: pass*
 
 verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PASS (exit 0)
 
 [note-links](yaks-c5bd/note-links.txt)
 
----
-▸ 2026-11-06T04:58:06Z [herd-upkeep]
+#### 2026-11-06T04:58:06Z
+
+*herd-upkeep*
 
 Done on branch `upkeep` (505d2058): a link can name one note of a yak by its timestamp.
 
@@ -52,20 +47,14 @@ Done on branch `upkeep` (505d2058): a link can name one note of a yak by its tim
 
 Evidence: `yaks verify` PASS (unit and CLI tests), and a run on this farm: [note-links](yaks-c5bd/note-links.txt).
 
----
-▸ 2026-11-06T04:58:08Z [herd-upkeep]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:58:08Z
+
+*herd-upkeep · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-06T21:55:33Z [herd-upkeep]
-kind: landed
-commit: d78b25a7
----
+#### 2026-11-06T21:55:33Z
+
+*herd-upkeep · kind: landed · commit: d78b25a7*
 
 Landed on `main` as d78b25a7 (fast-forward of 505d2058, 40dea8f0, d78b25a7). Gate: full `cargo test` on that commit, 1169 passed, 0 failed; `yaks preflight --push-main` ok.

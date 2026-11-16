@@ -34,28 +34,33 @@ D. Document the limit and the workaround: run `yaks -C <any clone> sheds`, which
 
 Check first: whether Delta can adopt ~/src/j15r as the project folder (then it becomes the host, pins appear there, and nothing here is needed): that is a Delta setting, not ours.
 
----
-▸ 2026-10-10T18:55:33Z [delta-lead]
+#### 2026-10-10T18:55:33Z
+
+*delta-lead*
 
 Decision (Joel, 2026-10-10): promote to a top-level, low-priority yak ("make this better in Delta"), out from under yaks-7eea. Today it may be unfixable from yaks alone: nothing in git links a plain primary checkout to Delta's managed bare host, and the Delta CLI has no thread-to-path map. What is workable now: `yaks -C <any clone> sheds` (option D), or naming the host once (option A, `yaks.host`), neither built. Joel is first finding out why ~/src/j15r came up managed at all (the thread was created on one machine, in the Delta UI, so a linked host was expected); if that is a Delta setup issue, this yak shrinks to documentation or disappears. Do not investigate further until he reports. A Delta-side request ("the folder is the host", or a way to ask Delta for a thread's checkout paths) belongs here.
 
----
-▸ 2026-10-31T15:56:25Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:25Z
+
+*delta:Cloud Runners*
 
 Adopted into `yaks-039b` under `yaks-d3ad` (2026-10-31): the git/Delta shed discovery this concerns is being removed. Slaughter as obsolete when `yaks-d3ad` lands.
 
----
-▸ 2026-10-31T16:47:43Z [sheds-1]
+#### 2026-10-31T16:47:43Z
+
+*sheds-1*
 
 Obsolete (sheds-1): yaks-d3ad removed git/Delta shed discovery (`yaks discover`, the pin walk), so `yaks sheds` no longer finds checkouts at all; it reads actors from the farm. Nothing is left to fix here. For the yakherd to slaughter.
 
----
-▸ 2026-10-31T16:52:21Z [yakherd]
+#### 2026-10-31T16:52:21Z
+
+*yakherd*
 
 Obsolete: the code this concerns was removed in `b2e4638` (`yaks-d3ad`). Slaughtered by the yakherd.
 
----
-▸ 2026-10-31T16:52:21Z [yakherd]
+#### 2026-10-31T16:52:21Z
+
+*yakherd*
 
 kind: move
 from: hairy

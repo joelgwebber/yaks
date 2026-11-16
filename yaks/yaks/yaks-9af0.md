@@ -18,8 +18,9 @@ verify: cargo test --workspace
 
 Implements yaks-aae6 on yaks-1f34. Reserved names `wiki`, `sources`, `schemas`; `wiki/**.md` and `<herd>/wiki/**.md` are pages; `yaks page list|show|new|set|query` with `--json`; doctor checks page frontmatter. Docs, help and skills in the same change.
 
----
-▸ 2026-11-01T20:26:23Z [delta:farm-wiki]
+#### 2026-11-01T20:26:23Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -29,8 +30,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T20:34:04Z [delta:farm-wiki]
+#### 2026-11-01T20:34:04Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -55,8 +57,9 @@ Done on the `wiki` branch.
 
 Not here: schema checks for typed kinds (yaks-8e75), links and refs over pages (yaks-101d), the TUI (yaks-ebb2).
 
----
-▸ 2026-11-01T20:35:11Z [delta:farm-wiki]
+#### 2026-11-01T20:35:11Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -64,8 +67,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T20:35:12Z [delta:farm-wiki]
+#### 2026-11-01T20:35:12Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

@@ -19,18 +19,15 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)). Also the chea
 
 Done when: tests incl. a dead and a shorn match; `--help`, `docs/cli.md`, README, and the `yaks` and `yaks-tracker` skills updated.
 
----
-▸ 2026-11-04T22:44:22Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T22:44:22Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T22:51:08Z [sched-1]
+#### 2026-11-04T22:51:08Z
+
+*sched-1*
 
 Done on branch `scheduling`.
 
@@ -41,12 +38,8 @@ Done on branch `scheduling`.
 
 Decisions: `--key` conflicts with `--source` (the key is the source) and an empty key is refused; a dead or shorn match is never revived, since the watcher contract says the caller decides. The TUI create form and saved views never carry a key or source filter.
 
----
-▸ 2026-11-04T22:51:08Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T22:51:08Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

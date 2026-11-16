@@ -23,13 +23,15 @@ Seen 2026-10-13 by delta-lead while checking the Sheds tab (yaks-98f1) on the re
 
 so two rows are named `main`, and the worktree is measured from origin/main (crediting it with everything the clone did) instead of from its own fork point. The real primary (`/Users/joel/src/yaks`) is listed correctly too. Probably `checkout_paths` / `Found::primary` marks a worktree found through the CURRENT clone's `git worktree list` as primary. Expected: primary only for the host checkout; a worktree of a clone is a plain shed (named by its actor or branch, fork-point baseline). Rare in practice (workers do not make worktrees inside Delta clones), so P3. Fix after yaks-07fe lands, since it restructures discovery.
 
----
-▸ 2026-10-13T01:29:43Z [delta-lead]
+#### 2026-10-13T01:29:43Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-13T01:29:44Z [delta-lead]
+#### 2026-10-13T01:29:44Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): owner disco-1 (Sonnet worker). Parallel with badge-1 and inbox-1 (TUI only, no overlap with src/sheds.rs).
 
@@ -41,8 +43,9 @@ Out of scope: src/tui/ (two TUI workers), `outstanding_ids`/landed, performance.
 
 Evidence (fail first): a test with exactly that layout: the worktree is listed, not primary, named by its actor/branch/dir (not `main`), baseline `fork` (or `merge-base`), and exactly one shed is primary; existing discovery tests unchanged. Real machine: from this repo's own clone, `git worktree add --detach <your scratch dir>/wt HEAD`, then `yaks sheds` shows it as a plain shed and `main` once (paste both before/after); remove the worktree after. Output for every other shed byte-identical before/after (`yaks sheds`, `--json`). Full `cargo test --release`. Judge: delta-lead at landing.
 
----
-▸ 2026-10-13T01:31:25Z [disco-1]
+#### 2026-10-13T01:31:25Z
+
+*disco-1*
 
 disco-1 start: 2026-10-13T01:31:21Z UTC (date -u).
 
@@ -50,8 +53,9 @@ yaks path yaks-93fe: /Users/joel/src/yaks/.delta/worktrees/2fdsqr81jxvy/yaks/.ya
 
 Before binary kept at target/yaks-before.
 
----
-▸ 2026-10-13T01:33:15Z [disco-1]
+#### 2026-10-13T01:33:15Z
+
+*disco-1*
 
 Test written first: `sheds::tests::a_git_worktree_of_a_delta_clone_is_a_plain_shed_not_the_primary` (host checkout t, Delta clone c1 with its own commit + new yak, `git worktree add --detach wt` inside c1; asserts from c1, t and wt: paths [t, c1, wt], exactly one primary == t, wt not primary, name "wt" not "main", baseline Fork/MergeBase).
 
@@ -67,8 +71,9 @@ i.e. two sheds are primary (the host checkout AND the worktree).
 
 Cause: `gather` marks `primary |= i == 0` for the first CHECKOUT-ish entry of every `git worktree list` it reads; in a Delta clone entry 0 is the clone's separate git dir (no `.git`, dropped by `worktree_entries`'s verdict), so entry 1, the plain worktree, got index 0 after the filter and was marked primary.
 
----
-▸ 2026-10-13T01:37:06Z [disco-1]
+#### 2026-10-13T01:37:06Z
+
+*disco-1*
 
 Decision: the rule for "primary" is "entry 0 of a `git worktree list`, and only when entry 0 is itself a checkout" (git always lists the main working tree first). `gather` now passes the raw entries (path + verdict) to `add_worktrees` and uses the entry's index in the UNFILTERED list. In a Delta clone entry 0 is the clone's separate git dir (no `.git`, verdict Err), so the list has no primary and a plain worktree there stays a plain shed; the host checkout stays the primary via the host's own list. Rejected: (a) "primary only for the host checkout" (breaks a plain repo with no Delta, where the repo's main working tree is primary and `host_checkout` is the same thing but via a different path; more code, two rules); (b) "primary = the entry whose `.git` is a directory" (a separate-git-dir or bare-ish checkout would lose it; guesses from layout instead of what git says).
 
@@ -101,24 +106,28 @@ farm: no changes of its own
 
 With no extra worktree, back to back: `yaks sheds` and `yaks sheds --json` byte-identical before/after (cmp; two runs, no FARM ACTIVE time moved between them), `yaks discover` still runs.
 
----
-▸ 2026-10-13T01:39:39Z [disco-1]
+#### 2026-10-13T01:39:39Z
+
+*disco-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T01:53:35Z [disco-1]
+#### 2026-10-13T01:53:35Z
+
+*disco-1*
 
 Flake seen once, unrelated: in one full `cargo test --release` run `tests/sheds_layouts.rs::a_flat_shed_forked_before_the_migration_falls_back_to_the_next_base_not_to_nothing` failed (`vs` was "checkout", expected "merge-base"). It passes on the stashed baseline (my src/sheds.rs change stashed), and in 3 consecutive full runs and 3 consecutive runs of that suite after, plus the verify run. That layout is a plain repo + `git worktree add -b` shed, where the unfiltered entry index equals the old filtered one, so the change cannot alter it; I could not reproduce it. Likely a timing flake (same-second commits / reflog) in that test; reporting, not fixing (out of scope).
 
 Summary: `gather` (src/sheds.rs) now decides `primary` from the raw `git worktree list` index (entry 0, only if it is a checkout), so a plain worktree inside a Delta clone is a plain shed (named by dir/branch, fork baseline), the host checkout stays the only primary. New test `a_git_worktree_of_a_delta_clone_is_a_plain_shed_not_the_primary`; removed dead `worktree_paths`/`entries_paths`; sharpened `Found::primary` doc comment.
 
----
-▸ 2026-10-13T01:55:23Z [disco-1]
+#### 2026-10-13T01:55:23Z
+
+*disco-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T01:55:27Z [disco-1]
+#### 2026-10-13T01:55:27Z
+
+*disco-1*
 
 moved: shaving -> shorn

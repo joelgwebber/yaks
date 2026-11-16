@@ -29,18 +29,21 @@ Also check `pooling-refine-merge` (g4p5j2nkta4r, now gone): its oldest entry was
 
 Evidence: tests for a clone that starts on main and checks out a branch, the round trip, and `checkout -b` from own work; docs (`sheds` text in docs/cli.md, README, skill, `Sheds` help) describe the new rule. Real machine: from surveyor, rzzejj28kv0t (if still around) or a fresh clone that checked out kinds-discovery reads only its own changes.
 
----
-▸ 2026-10-16T20:31:43Z [delta]
+#### 2026-10-16T20:31:43Z
+
+*delta*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-16T20:36:16Z [delta]
+#### 2026-10-16T20:36:16Z
+
+*delta*
 
 Decision: the fork point is the target of the LATEST `checkout: moving from X to <current branch>` entry in the HEAD reflog. It is skipped when that target already holds commits the shed made earlier: any HEAD-moving entry after the oldest that isn't a `checkout:` or `reset:` (Delta writes its commits with an empty message, so a `commit:` prefix can't be relied on). That covers `checkout -b` off its own work and round trips back to a branch it committed on. Otherwise it falls back to the oldest entry, as before. Ancestor-of-HEAD validation is unchanged. Rejected: the branch reflog (`logs/refs/heads/<b>`). A Delta clone's branch reflog starts at its first commit, not at the switch (rzzejj28kv0t: first entry `8ef0612 -> e7f6045`), so it would need the same guard anyway and adds a second file format. Parsing is pure (`fork_candidates`) and unit-tested.
 
----
-▸ 2026-10-16T20:36:16Z [delta]
+#### 2026-10-16T20:36:16Z
+
+*delta*
 
 Evidence. New tests:
 - `fork_candidates_follow_a_switch_onto_the_current_branch` (pure): surveyor-shaped reflog, another branch or detached HEAD, a round trip, empty-message commits, a null oldest entry.
@@ -57,7 +60,8 @@ after:  who: delta · shaving: survey-3237, survey-9b8a, survey-a0ce · active
 ```
 survey-209f (main's claim) is gone from its row. The remainder is its own 19 commits (6 touching .yaks) plus uncommitted farm edits. Docs updated in docs/cli.md, README.md, the yaks skill, the `Sheds` help, and the module docs.
 
----
-▸ 2026-10-16T20:36:16Z [delta]
+#### 2026-10-16T20:36:16Z
+
+*delta*
 
 moved: shaving -> shorn

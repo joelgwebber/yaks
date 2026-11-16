@@ -17,11 +17,9 @@ On regrow, if the yak says who acts next, set `needs:` to it (the same field `as
 
 **Blocked on an ask** (below): how the yak says who. Don't start until it is answered.
 
----
-▸ 2026-11-04T22:31:55Z [source-fix]
-kind: ask
-needs: human
----
+#### 2026-11-04T22:31:55Z
+
+*source-fix · kind: ask · needs: human*
 
 asked: needs human
 
@@ -33,35 +31,29 @@ asked: needs human
 
 Lean: 1, one field `wake: agent|human`; absent means just hairy, as today. It is the only way a first round knows, and the smallest explicit thing.
 
----
-▸ 2026-11-04T22:34:49Z [Joel Webber]
-kind: answer
-needs: agent
----
+#### 2026-11-04T22:34:49Z
+
+*Joel Webber · kind: answer · needs: agent*
 
 Ah, I get it. That works for me. Just wanted to be sure I'm following the logic.
 
----
-▸ 2026-11-04T22:36:18Z [sched-1]
-kind: pickup
----
+#### 2026-11-04T22:36:18Z
+
+*sched-1 · kind: pickup*
 
 picked up
 
 Decision (Joel, 2026-11-04): option 1. A recurring yak carries `wake: agent|human`; on regrow it sets `needs:` to that value (the same field `ask`/`request` use). Absent means the yak just goes hairy, as today. Rejected: a tag that carries behavior, and inferring the target from the last ask/request note.
 
----
-▸ 2026-11-04T22:51:16Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T22:51:16Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T23:00:22Z [sched-1]
+#### 2026-11-04T23:00:22Z
+
+*sched-1*
 
 Done on branch `scheduling`.
 
@@ -73,12 +65,8 @@ Done on branch `scheduling`.
 
 Decision (Joel's, recorded on the ask): a field `wake:`, not a tag or the last note. Decision: `needs: human` is written as an `ask` note, not a `request` note, because `request` refuses a yak awaiting a human and `doctor` reads the marker.
 
----
-▸ 2026-11-04T23:00:22Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:00:22Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

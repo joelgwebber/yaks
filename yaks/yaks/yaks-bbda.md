@@ -15,18 +15,21 @@ tags:
 
 Phase 4 of yaks-8b7a (after phase 3's release and after Joel's farms are migrated: ~/src/yaks, ~/src/j15r, and any private/pointer farms). Remove the transition: `yaks migrate`, the dual-layout read in src/store.rs, the legacy deleted-plus-added classification in src/changes.rs, the both-layouts doctor/preflight check, and every transitional line in docs and skills. Keep: a schema-3 farm refuses to open with a message naming the last release that can migrate it; `yaks sheds` shows a schema-3 shed's farm as "old layout (pre-0.0.16 clone)", never as an empty farm. Release 0.0.17.
 
----
-▸ 2026-10-12T21:22:59Z [delta-lead]
+#### 2026-10-12T21:22:59Z
+
+*delta-lead*
 
 Joel (2026-10-12): as part of phase 4, re-check every skill and doc for wording the flat layout made stale (status directories, artifacts/<id>/, moves relocating a file, staging globs), beyond the transitional lines this phase removes: grep .agents/skills, docs/, README.md, AGENTS.md and src/ --help text. Also refresh docs/assets/tui-detail-pinned.svg (stale since before the flat work: docshots re-render it differently from b25a5b9 too; one 'cargo test -p yaks docshots -- --ignored' and commit).
 
----
-▸ 2026-10-12T22:29:49Z [delta-lead]
+#### 2026-10-12T22:29:49Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-12T22:29:49Z [delta-lead]
+#### 2026-10-12T22:29:49Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: bye-1 (code); the coordinator does the prose sweep in parallel. Joel (2026-10-12): every farm is migrated, so proceed. Base: 0.0.16 (released). Spec = the description plus this note.
 
@@ -49,15 +52,17 @@ You own src/, tests/, docs/cli.md, README.md. The coordinator owns .agents/skill
 
 Evidence: the two permanent behaviors above fail first; `grep -rnE "legacy|migrat|artifacts/|old layout|both.layouts|duplicate.status|yaks-bbda" src tests docs/cli.md README.md` shows only the refusal message and its tests (paste it); full gate `cargo test --release` green. Judge: coordinator.
 
----
-▸ 2026-10-12T22:30:25Z [bye-1]
+#### 2026-10-12T22:30:25Z
+
+*bye-1*
 
 Start: Mon Oct 12 22:30:19 UTC 2026 (bye-1)
 
 yaks path: /Users/joel/src/yaks/.delta/worktrees/h4n200yc9791/yaks/.yaks/yaks-bbda.md
 
----
-▸ 2026-10-12T22:45:51Z [bye-1]
+#### 2026-10-12T22:45:51Z
+
+*bye-1*
 
 Failing first (before any removal), `cargo test --release --test cli --test sheds_layouts`:
 - tests/cli.rs `a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it` FAILED
@@ -65,8 +70,9 @@ Failing first (before any removal), `cargo test --release --test cli --test shed
 
 Plan: one `store::old_layout(root)` predicate; `Farm::open` + merge source + answer@shed target refuse with `OpenError::OldLayout`/bail; `sheds::load_farm` errors on it so every shed read lands in ShedFarm::Unreadable; base_farm keeps flat files only (old base commit -> None -> existing fallback).
 
----
-▸ 2026-10-12T22:57:10Z [bye-1]
+#### 2026-10-12T22:57:10Z
+
+*bye-1*
 
 Decision: one predicate and one message. `store::old_layout(root)` (schema marker < 4, or any `hairy/ shaving/ shorn/ dead/` dir holding a `.md`; an empty status dir does not count) plus `store::old_layout_refusal` / `OLD_LAYOUT_FIX`. Every refusal (open, merge source, sheds) builds on them. Rejected: separate checks per call site; keeping `schema_warning` (removed with the field).
 
@@ -90,13 +96,15 @@ Decision: the schema-3 refusal is documented once, in the `init` row of docs/cli
 
 Decision: tests/fixtures/farm (schema 3, status dirs) converted to the flat layout with the 0.0.16 `yaks migrate` on a temp copy; golden snapshots unchanged (no snapshot edits). status/commit unit fixtures converted to flat files with `status:` edits; their old-layout-move tests removed with the code they covered.
 
----
-▸ 2026-10-12T22:58:09Z [bye-1]
+#### 2026-10-12T22:58:09Z
+
+*bye-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-12T22:58:28Z [bye-1]
+#### 2026-10-12T22:58:28Z
+
+*bye-1*
 
 Summary (bye-1): removed the migration and the dual-layout read; added the permanent schema-3 refusal.
 - Removed: `yaks migrate` (+ `Farm::migrate`, plan/outcome, link rewrite, `tracked_by_git`), `store::legacy`, `lock_for_migration`, `Status::dir` (now `as_str`), `schema_warning`; changes: `legacy_pair`, `Kind::Migrated`, `Migration`; status/commit migration line, message and `migrated` JSON key; preflight migration scope + `duplicate-status`/`both-layouts`; doctor's `DuplicateStatus`/`BothLayouts`; sheds: `old_layout` field, `is_old_layout`, `old_tree_task`, `flat_attachment_links`, `farm.layout`/`layout` JSON keys, `(old layout)` markers; `artifacts/<id>` branches in attachment_owner/path_owner/yak_id_of/merge.
@@ -106,7 +114,8 @@ Summary (bye-1): removed the migration and the dual-layout read; added the perma
 - Docs: docs/cli.md and README.md updated (migrate rows, layout/old-layout/both-layouts/duplicate-status/migration sentences removed; refusal documented in the `init` row). Not touched (coordinator): .agents/skills/yaks/SKILL.md (lines 188, 209), AGENTS.md (12-13), .agents/skills/README.md:42 still mention `yaks migrate`/old layout; docs/tui.md and docs/README.md had no hit.
 - Not done: docs/assets (coordinator), release 0.0.17 (no version bump: Cargo.toml is forbidden).
 
----
-▸ 2026-10-12T22:58:28Z [bye-1]
+#### 2026-10-12T22:58:28Z
+
+*bye-1*
 
 moved: shaving -> shorn

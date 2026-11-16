@@ -12,13 +12,15 @@ tags:
 - delta
 ---
 
----
-▸ 2026-10-09T22:35:48Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T22:35:48Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-09T22:35:48Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T22:35:48Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Claim (coordinator). Owner: title-1. Decided by Joel on yaks-a3d2 (2026-10-09): yes to thread titles as shed names, "slugged closer to normal git worktree names".
 
@@ -35,23 +37,27 @@ Out of scope: --shed (another yak, after this lands); compare_farms (another wor
 
 Evidence (tests that FAIL first): slug unit tests incl. the two examples and the collision suffix; a delta_clone fixture (see the sheds tests helpers) where running the binary in the clone with DELTA_THREAD_TITLE set records the title and `yaks sheds` from the primary names the clone by its slug; the same with `-C <clone>` from the primary records nothing; a plain git worktree records nothing. Judge: coordinator.
 
----
-▸ 2026-10-09T22:38:36Z [title-1]
+#### 2026-10-09T22:38:36Z
+
+*title-1*
 
 Started: Fri Oct  9 22:38:33 UTC 2026. yaks path: /Users/joel/src/yaks/.delta/worktrees/606y05kk15w7/yaks/.yaks/shaving/yaks-886a.md
 
----
-▸ 2026-10-09T22:46:00Z [title-1]
+#### 2026-10-09T22:46:00Z
+
+*title-1*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-10-09T22:47:15Z [title-1]
+#### 2026-10-09T22:47:15Z
+
+*title-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-09T22:48:34Z [title-1]
+#### 2026-10-09T22:48:34Z
+
+*title-1*
 
 Decision: guard "Delta clone" = `host(cwd).via_alternates` AND `git rev-parse --git-common-dir` == own git dir. Rejected: alternates alone (a git worktree *of* a clone would pass but shares the clone's config, so it would stamp the clone with a title that is not the clone's thread); rejected checking `core.worktree`.
 
@@ -85,7 +91,8 @@ Gate: `cargo test --release` all suites ok (499 unit + integration); `yaks verif
 
 Surprise: in this clone `git config --get yaks.shed.title` = "title-1: shed names from Delta thread titles" (recorded by my own binary, as expected).
 
----
-▸ 2026-10-09T22:48:34Z [title-1]
+#### 2026-10-09T22:48:34Z
+
+*title-1*
 
 moved: shaving -> shorn

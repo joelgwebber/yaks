@@ -21,18 +21,15 @@ Opt-in `--text-only` on a single file: save just `extracted.md`, and record `fil
 
 Skills own the "when": `yaks-research` says when to use it, `gdoc-sources` always does.
 
----
-▸ 2026-11-06T15:53:08Z [source-refresh]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T15:53:08Z
+
+*source-refresh · kind: move · from: hairy · to: shaving · thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T15:53:09Z [source-refresh]
+#### 2026-11-06T15:53:09Z
+
+*source-refresh*
 
 Plan (test first, in [sources.rs](code:src/sources.rs)):
 
@@ -41,8 +38,9 @@ Plan (test first, in [sources.rs](code:src/sources.rs)):
 - Refresh needs no new logic: it already clears everything but `source.md`; the test proves it.
 - Same change: `--help`, `docs/cli.md`, the `yaks` and `yaks-research` skills; then `gdoc_source.py` passes it (joel-5cee).
 
----
-▸ 2026-11-06T16:03:26Z [source-refresh]
+#### 2026-11-06T16:03:26Z
+
+*source-refresh*
 
 Done and tested.
 
@@ -52,12 +50,8 @@ Done and tested.
 
 Evidence: four new unit tests (text-only saves one file, the refusals, text-only refresh, collapsing an existing two-file source), a scripted run of the built binary, and the full `cargo test` green (988 unit tests plus integration suites). The four saved Google Docs collapsed to `extracted.md` + `source.md` on refresh.
 
----
-▸ 2026-11-06T16:03:27Z [source-refresh]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T16:03:27Z
+
+*source-refresh · kind: move · from: shaving · to: shorn · thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

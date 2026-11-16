@@ -17,8 +17,9 @@ verify: cargo test --workspace
 
 A bundled skill (or a section of `yaks`) giving research yaks formal guidance: save sources, cite them, promote attachments, when a finding becomes a page, what stays in `docs/` on `main`. Port what applies from Hearth's `hearth-knowledge` skill.
 
----
-▸ 2026-11-01T22:27:16Z [delta:farm-wiki]
+#### 2026-11-01T22:27:16Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -28,8 +29,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T22:30:33Z [delta:farm-wiki]
+#### 2026-11-01T22:30:33Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -64,8 +66,9 @@ Not fixed: range queries ("renews next month") need comparisons in `page query -
 
 `yaks check` is referenced but is being built by check-1 (yaks-c0ac) in this batch; this yak shears once that lands.
 
----
-▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+#### 2026-11-01T22:51:30Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -73,8 +76,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T22:51:30Z [delta:farm-wiki]
+#### 2026-11-01T22:51:30Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

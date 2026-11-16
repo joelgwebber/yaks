@@ -31,8 +31,9 @@ Report from the memcraft cloud-runner yakherd (2026-11-01, about 8 workers on 0.
 
 Whether names carry a harness prefix (`delta:herd`, `delta:door-2`) by convention, or only derived names do (asked on this yak). This also decides how `yaks-8003` (a stable thread id in stamps) fits.
 
----
-▸ 2026-11-01T15:37:47Z [yakherd]
+#### 2026-11-01T15:37:47Z
+
+*yakherd*
 
 kind: ask
 needs: human
@@ -47,8 +48,9 @@ Should agent actor names carry a harness prefix by convention?
 
 Either way: the persistent per-checkout actor, the title-prefix fallback, and the skills telling agents not to rely on `export`.
 
----
-▸ 2026-11-01T15:54:38Z [Joel Webber]
+#### 2026-11-01T15:54:38Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -56,8 +58,9 @@ needs: agent
 
 Good catch on the stable thread id question fits into this. I'm not entirely certain I follow the fallback mechanism, but as long as we have something that works fairly consistently, I'm good with your lean. The main thing I care about is ensuring we don't get inscrutable overlap (eg, "herd") or otherwise ambiguous names. And that agents can use them to follow post facto behavior when trying to piece together past changes. Nice side-benefit -- the "sheds" UI gets more constrained, coherent swimlanes (apart from humans, who *should* get long-running yak-lists).
 
----
-▸ 2026-11-01T15:59:34Z [yakherd]
+#### 2026-11-01T15:59:34Z
+
+*yakherd*
 
 kind: pickup
 ---
@@ -71,8 +74,9 @@ Taking Joel's answer: my lean (prefix only derived names), plus his two requirem
 
 Plan: a persistent per-checkout name (`yaks whoami --set`, stored as `git config yaks.actor`), the title-prefix fallback with a warning, `thread:` metadata on state moves when the harness exposes a thread id, `yaks brief --as` warning on a reused name, and skills that ask for a specific, unique name.
 
----
-▸ 2026-11-01T15:59:34Z [yakherd]
+#### 2026-11-01T15:59:34Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -81,8 +85,9 @@ to: shaving
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:08:18Z [yakherd]
+#### 2026-11-01T16:08:18Z
+
+*yakherd*
 
 Landed in `906379f` (not released yet).
 
@@ -108,8 +113,9 @@ Landed in `906379f` (not released yet).
 - **Tests:** new unit tests (`checkout_config_sits_between_env_and_the_harness`, `a_title_that_starts_with_a_worker_name_gives_just_the_name`); `tests/attribution.rs` asserts `thread:` on both moves.
 - **Gate:** `cargo test --workspace` green here, and green with the Delta env unset and no git identity (CI-like), apart from an unrelated pre-existing flake in `tests/init_modes.rs` (fixed temp path), filed separately.
 
----
-▸ 2026-11-01T16:08:19Z [yakherd]
+#### 2026-11-01T16:08:19Z
+
+*yakherd*
 
 kind: landed
 commit: 906379f2e3d24efa1b2ad9d83db9e7c6ec6fcd9e
@@ -118,8 +124,9 @@ branch: main
 
 landed: 906379f
 
----
-▸ 2026-11-01T16:08:19Z [yakherd]
+#### 2026-11-01T16:08:19Z
+
+*yakherd*
 
 kind: move
 from: shaving

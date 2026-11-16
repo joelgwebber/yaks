@@ -14,13 +14,15 @@ tags:
 
 Joel, 2026-10-13: the Sheds tab's detail mirrors `yaks changes` and lists every yak the shed touched since it forked; a coordinator's long-lived shed that is `landed (12 yaks)` still shows twelve bright-looking blocks. Lead with what is outstanding and fold the landed ones behind one line, as `yaks sheds` does.
 
----
-▸ 2026-10-13T19:46:42Z [delta-lead]
+#### 2026-10-13T19:46:42Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-13T19:46:42Z [delta-lead]
+#### 2026-10-13T19:46:42Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): owner fold-1 (Sonnet worker). Parallel with changes-1 (the CLI half, src/sheds.rs render + src/main.rs).
 
@@ -36,8 +38,9 @@ Out of scope: src/sheds.rs and src/main.rs (changes-1), the yak views and their 
 
 Evidence (fail first): tests that (i) outstanding blocks come first and one `▸ N landed` line follows; (ii) Enter on it expands and collapses; (iii) j/k reach the fold line and the landed yaks when expanded; (iv) a shed without landed yaks is byte-identical to before (insta); (v) selection survives a rescan as in 3. Insta snapshots of the collapsed and expanded detail (use the fixture; add landed yaks to a VARIANT in your tests, do not change `fixture::snapshot`). Real machine: `yaks tui --headless` from your checkout, the Sheds tab, the coordinator's shed `sheds-tui-thin-sheds-tab` (all landed) collapsed and expanded, pasted. Full `cargo test --release`. Judge: delta-lead at landing (renders and LOOKS at the frames).
 
----
-▸ 2026-10-13T19:48:26Z [fold-1]
+#### 2026-10-13T19:48:26Z
+
+*fold-1*
 
 Start: Tue Oct 13 19:47:53 UTC 2026 (worker fold-1)
 
@@ -45,8 +48,9 @@ yaks path yaks-c1f8: /Users/joel/src/yaks/.delta/worktrees/p76ng8mfcj6a/yaks/.ya
 
 Plan: `ShedsTab.line` becomes an index into the detail's *stops*: outstanding yaks, then one fold stop (if any landed), then the landed yaks when `landed_open`. Tests first (frames of a perf-1 variant with landed yaks), seen failing, then the implementation.
 
----
-▸ 2026-10-13T19:50:40Z [fold-1]
+#### 2026-10-13T19:50:40Z
+
+*fold-1*
 
 Failing first (the cursor model was in place, render still the old one): `cargo test --release sheds_tab` -> 24 passed, 4 failed: outstanding_yaks_lead_and_one_line_folds_the_landed_ones, enter_on_the_fold_line_expands_and_collapses, a_shed_with_nothing_landed_has_no_fold_line, landed_fold_frames (new snapshots). Old frame of perf-1 with two landed yaks:
 ```
@@ -57,8 +61,9 @@ Failing first (the cursor model was in place, render still the old one): `cargo 
 ```
 (landed yaks first by id, no fold line). The j/k and rescan tests pass at this stage only because they exercise the cursor model I had already written; the render tests are the ones that fail.
 
----
-▸ 2026-10-13T20:00:52Z [fold-1]
+#### 2026-10-13T20:00:52Z
+
+*fold-1*
 
 Real machine (my own release binary, `yaks tui --headless --size 150x30` from my checkout; keys: `[` to the Sheds tab, `j j j` to sheds-tui-thin-sheds-tab (14 landed yaks), `l`, `j` to the fold line, then `Enter`). Detail pane only (left list trimmed); frame 1 collapsed (cursor on the fold line, `shed_yak=-`), frame 2 after Enter, expanded, first lines:
 
@@ -126,8 +131,9 @@ shed=sheds-tui-thin-sheds-tab · shed_yak=-
 h:list  j/k:yak  J/K:shed  Enter:open yak  a:answer  y:copy id  r:rescan  ?:help
 ```
 
----
-▸ 2026-10-13T20:01:09Z [fold-1]
+#### 2026-10-13T20:01:09Z
+
+*fold-1*
 
 Decision: the fold line joins the cursor model as a *stop*, not a separate cursor. `ShedsTab.line` is now an index into `detail_stops` (`Vec<Option<&YakChange>>`: outstanding yaks, then one `None` = the fold line when any yak landed, then the landed yaks when open). `selected_shed_yak` returns `None` on the fold line, so `a`, `y` (falls back to the shed path, as outside the detail) and Enter-open need no special case, and `j/k/g/G/d/u` clamp over the stops unchanged. Rejected: a second `fold_selected: bool` beside `line` (two cursors, every move/clamp/render path has to reconcile them) and making the fold a synthetic `YakChange` (would leak a fake yak into `a`/`y`/Enter).
 
@@ -145,12 +151,14 @@ Surprise: `cargo test --release` failed once, `status::tests::status_agrees_with
 
 Summary: Sheds tab detail leads with outstanding yaks, folds landed ones behind one dim `▸ N landed` stop (Enter expands to `▾`, again collapses), via `sheds::split_landed`. Files: src/tui/sheds_tab.rs (model, render, 6 new tests + 3 insta snapshots: folded, expanded, all-landed), src/tui/render.rs (help_content), docs/tui.md (key table + Sheds tab section). docs/assets not regenerated (coordinator at landing; `tui-sheds-detail.svg` is unchanged in content since the fixture's perf/asker sheds have nothing landed).
 
----
-▸ 2026-10-13T20:04:57Z [fold-1]
+#### 2026-10-13T20:04:57Z
+
+*fold-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T20:05:05Z [fold-1]
+#### 2026-10-13T20:05:05Z
+
+*fold-1*
 
 moved: shaving -> shorn

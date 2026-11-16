@@ -14,8 +14,9 @@ tags:
 - cli
 ---
 
----
-▸ 2026-10-21T20:58:21Z [delta:herd-dirs]
+#### 2026-10-21T20:58:21Z
+
+*delta:herd-dirs*
 
 Claim (delta:herd-dirs, yakherd, building it myself: it ties the three landed pieces together).
 
@@ -30,13 +31,15 @@ Claim (delta:herd-dirs, yakherd, building it myself: it ties the three landed pi
 
 **Evidence:** tests with a bare origin and two clones: first publish creates `origin/yaks` with upstream set; concurrent edits on the same yak converge from both sides with no hand git; a non-yak conflict (config.yaml) aborts cleanly leaving the branch as it was; private refuses push; `--no-push`/`--no-pull`/`--no-commit`; a race (remote moved between pull and push) retries. Real run on this repo's farm (Joel's go-ahead for the push to origin is the open question below: I will run it with `--no-push` until he says so).
 
----
-▸ 2026-10-21T20:58:21Z [delta:herd-dirs]
+#### 2026-10-21T20:58:21Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T21:11:20Z [delta:herd-dirs]
+#### 2026-10-21T21:11:20Z
+
+*delta:herd-dirs*
 
 Built and landed by the yakherd: cabc284 (sync) + 3bc2282 (driver registered as plain `yaks` when that is this binary on PATH; a pinned absolute path breaks every later merge once the binary moves).
 
@@ -47,7 +50,8 @@ Evidence:
 
 Found and fixed on the way: a fresh orphan farm branch (nothing committed) read as a private farm, so the first `yaks commit`/`sync` refused (changes::read now checks store::farm_branch).
 
----
-▸ 2026-10-21T21:11:20Z [delta:herd-dirs]
+#### 2026-10-21T21:11:20Z
+
+*delta:herd-dirs*
 
 moved: shaving -> shorn

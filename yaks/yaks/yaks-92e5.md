@@ -15,13 +15,15 @@ tags:
 
 Second half of the yaks-a893 design: with body editing in place, `E` on a header row opens the form with title/type/priority/labels/source/herd only. Remove the per-comment `ContentBlock`s in edit mode, `render_content_stack`'s accordion, `EditTarget::Content` routing to the form, and yaks-c6f4's problem with them. Create (`c`/`C`) keeps its single description block. Depends on the in-place editing yak landing first.
 
----
-▸ 2026-10-17T17:52:40Z [delta-lead]
+#### 2026-10-17T17:52:40Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T17:52:40Z [delta-lead]
+#### 2026-10-17T17:52:40Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **formtrim-1**. In-place editing (yaks-597d) has landed (41394a2): `E` on a body row in the detail pane edits that block in place (`Overlay::BlockEdit`, src/tui/blockedit.rs). Now trim the form.
 
@@ -36,8 +38,9 @@ Out of scope: blockedit.rs, mdrender.rs, the edtui fork. When done, also slaught
 
 Evidence: tests above; a headless frame of the trimmed edit form; docshot PNG looked at. Judge: coordinator at landing.
 
----
-▸ 2026-10-17T17:53:06Z [formtrim-1]
+#### 2026-10-17T17:53:06Z
+
+*formtrim-1*
 
 formtrim-1 start: Sat Oct 17 05:52:55 PM UTC 2026
 
@@ -49,13 +52,15 @@ yaks path yaks-92e5: /home/joel/src/yaks/.delta/worktrees/3x0jskjgcx0g/yaks/.yak
 
 ![tui-md-syntax-edit](yaks-92e5/tui-md-syntax-edit.png)
 
----
-▸ 2026-10-17T17:59:46Z [formtrim-1]
+#### 2026-10-17T17:59:46Z
+
+*formtrim-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T17:59:57Z [formtrim-1]
+#### 2026-10-17T17:59:57Z
+
+*formtrim-1*
 
 Decision: `CreateForm.blocks: Vec<ContentBlock>` became `description: Option<RefCell<EditorState>>` (Some on create, None on edit).
 
@@ -74,7 +79,8 @@ Evidence: headless `key E` frame attached (frame-edit-form.txt: `Edit yak-ccfc`,
 
 Gates: `cargo test --workspace` and `cargo test --release` both exit 0, no warnings.
 
----
-▸ 2026-10-17T17:59:57Z [formtrim-1]
+#### 2026-10-17T17:59:57Z
+
+*formtrim-1*
 
 moved: shaving -> shorn

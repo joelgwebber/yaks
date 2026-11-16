@@ -12,13 +12,15 @@ tags:
 - delta
 ---
 
----
-▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:44:58Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:44:58Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Claim (coordinator). Owner: ans-1.
 
@@ -37,18 +39,21 @@ Out of scope: `ask` across sheds; `--shed` flags; sheds.rs internals (do not edi
 
 Evidence: tests that FAIL before (tests/answer_shed.rs, real binary, git worktree shed): an ask made in the shed is answered from the main checkout via `<id>@<shed>`; the shed's file now has needs: agent and the attributed reply, `git -C <shed> status` shows it modified and uncommitted, the main farm's copy is untouched, and `inbox --sheds` from main now shows it answered (needs agent). Refusals: unknown shed, yak absent in the shed, shared farm. Judge: coordinator, at landing.
 
----
-▸ 2026-10-09T20:46:29Z [ans-1]
+#### 2026-10-09T20:46:29Z
+
+*ans-1*
 
 Start: Fri Oct  9 20:46:25 UTC 2026. path: /Users/joel/src/yaks/.delta/worktrees/h4skc0fpebk8/yaks/.yaks/shaving/yaks-f347.md
 
----
-▸ 2026-10-09T20:52:07Z [ans-1]
+#### 2026-10-09T20:52:07Z
+
+*ans-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-09T20:52:41Z [ans-1]
+#### 2026-10-09T20:52:41Z
+
+*ans-1*
 
 Decision: the cross-shed write is one `Farm::answer_in_shed(&self, shed, id, ...)` method (src/farm.rs). The shed `Farm` is a temporary built inside it and never returned, so no other mutation can reach a shed. Rejected: a public `Farm::open_at(root)` or a separate `ShedFarm` type, since either hands callers a full-power handle or adds a second type for one method; the narrowness is enforced in the library as Joel decided.
 
@@ -62,7 +67,8 @@ Evidence: tests/answer_shed.rs (7 tests, real binary, git worktree shed with the
 
 Docs: docs/cli.md answer row, README.md ask/answer row, .agents/skills/yaks/SKILL.md (ask/answer paragraph + table row), clap `///` help on Command::Answer and the `id` arg. Left alone: rustfmt touched src/actor.rs, src/tui/docshots.rs, src/tui/tests.rs; I reverted those.
 
----
-▸ 2026-10-09T20:52:42Z [ans-1]
+#### 2026-10-09T20:52:42Z
+
+*ans-1*
 
 moved: shaving -> shorn

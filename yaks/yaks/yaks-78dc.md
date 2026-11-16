@@ -14,8 +14,7 @@ I *think* the rules go something like this (but please double-check before divin
 - Never show a child yak without its parent chain, regardless of the parents' states.
 - If a parent is shaving, and you're viewing shaving yaks, then show only its
 
----
-▸ 2026-08-12T15:41:50Z
+#### 2026-08-12T15:41:50Z
 
 Also consider that there may not be one "right" answer to how much detail to show for related parent/child yaks in a different state.
 
@@ -27,8 +26,7 @@ Or at times it's only important to see the parent chain, and children remaining 
 
 IOW, it's probably a view state affordance question.
 
----
-▸ 2026-08-28T03:55:07Z
+#### 2026-08-28T03:55:07Z
 
 Design settled (see thread). Herd-scope: a per-view, persistent lever for how much of an anchor family a tree view shows.
 
@@ -61,7 +59,6 @@ Dropped the per-view-type magic seeds in favor of one global + explicit per-view
 
 Filed separately: Dead dead-end bug; filtered-descendant asymmetry folded into this design.
 
----
-▸ 2026-08-28T04:16:06Z
+#### 2026-08-28T04:16:06Z
 
 Implemented. HerdScope enum (lone/remaining/all, plus auto=inherit) in view.rs; per-view overrides persisted in the UI-state cache (cache::UiState, keyed by view.key; auto = absent entry). tree::build unified: members = seeds + ancestors (always, walkable through Dead) + herd-scoped descendants. remaining keeps open work (hairy/shaving) plus completed connectors, dropping fully-shorn subtrees; applies in both the filtered and unfiltered paths. h in list focus cycles auto -> lone -> remaining -> all with a notification; right-aligned herd: indicator on the tab row (yields when the tab strip is too wide; ~ marks auto/inherit); h:herd advertised in the footer. Global default = remaining. Tests in tree.rs + cache.rs; bin + cli snapshots regenerated (shorn leaf drops from the default Hairy view; footer gains h:herd). Fixes yaks-3331 as a side effect. Deferred: yaks-fe00 (Dead dead-end).

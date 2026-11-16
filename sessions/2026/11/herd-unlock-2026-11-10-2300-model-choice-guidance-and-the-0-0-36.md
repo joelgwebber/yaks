@@ -14,7 +14,7 @@ good: 1
 
 ## Summary
 
-Joel asked for yaks-2788 (farming out to cheaper models in the skills), then to land, push and cut a release. `yaks-coordinating` gained "Choosing a model" (in section 5): tiers not ids, delegable yaks to the mid tier, design and landings kept, review as the cost, models recorded in the batch note; `AGENTS.md` keeps only the standing instruction ([the shear note](yaks-2788)). A Haiku scout cold-read it and found three gaps, fixed before the commit. Then 0.0.36: version bump, full gate with `--locked` green, `main` pushed to `local` and `origin` (`e4d0ff5a`), tag `v0.0.36`, release workflow green, all six npm packages published, the farm synced.
+Joel asked for yaks-2788 (farming out to cheaper models in the skills), then to land, push and cut a release. `yaks-coordinating` gained "Choosing a model" (in section 5): tiers not ids, delegable yaks to the mid tier, design and landings kept, review as the cost, models recorded in the batch note; `AGENTS.md` keeps only the standing instruction ([the shear note](/yaks/yaks/yaks-2788.md)). A Haiku scout cold-read it and found three gaps, fixed before the commit. Then 0.0.36: version bump, full gate with `--locked` green, `main` pushed to `local` and `origin` (`e4d0ff5a`), tag `v0.0.36`, release workflow green, all six npm packages published, the farm synced.
 
 ## Turns
 
@@ -23,7 +23,7 @@ Joel asked for yaks-2788 (farming out to cheaper models in the skills), then to 
 ## Saved
 
 - yaks-2788: Skills: farming out yaks to cheaper models (when, which model, what the coordinator keeps) (hairy -> shorn)
-  - [Done (herd-unlock-2) in `7bc25139`: `yaks-coordinating` gains "Choosing a mod...](yaks-2788#2026-11-10T22:44:32Z)
+  - [Done (herd-unlock-2) in `7bc25139`: `yaks-coordinating` gains "Choosing a mod...](/yaks/yaks/yaks-2788.md#2026-11-10t224432z)
 
 ## Lessons
 

@@ -19,13 +19,15 @@ Goal: a fifth rule, `edited` (the yak exists in both, same status and notes, but
 
 Decide in the work: whether `updated:` alone counts (it should not).
 
----
-▸ 2026-10-10T18:56:18Z [delta-lead]
+#### 2026-10-10T18:56:18Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-10T18:56:19Z [delta-lead]
+#### 2026-10-10T18:56:19Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: edit-1. Spec = the description above plus:
 
@@ -39,13 +41,15 @@ Out of scope: src/sheds.rs baseline code (`fork_point`, `nearer_baseline`, `Base
 
 Evidence (tests FAIL first): a shed that only rewrote a yak's description shows it `edited` in `changes` and counts it in `farm:`; a title-only edit; an `updated:`-only change is NOT shown; notes-only/move-only changes are not also `edited`; text and JSON. Real machine: from a clone with a rewritten yak, `yaks changes <shed>` lists it. Judge: coordinator.
 
----
-▸ 2026-10-10T18:57:42Z [delta-lead]
+#### 2026-10-10T18:57:42Z
+
+*delta-lead*
 
 Coordinator: owner is now edit-2 (edit-1 died before doing anything; nothing to review or copy).
 
----
-▸ 2026-10-10T18:59:33Z [edit-2]
+#### 2026-10-10T18:59:33Z
+
+*edit-2*
 
 Start: Sat Oct 10 18:59:33 UTC 2026
 
@@ -53,8 +57,9 @@ path: /Users/joel/src/yaks/.delta/worktrees/q2anm14m6tny/yaks/.yaks/shaving/yaks
 
 Plan: shared predicate store::edited(old,new) (fields incl created/extra, description before first note, old notes must be a prefix of new); status::describe and yak_changes both call it.
 
----
-▸ 2026-10-10T19:04:53Z [edit-2]
+#### 2026-10-10T19:04:53Z
+
+*edit-2*
 
 Failing first: with store::edited stubbed to `false`, `cargo test --release sheds::` gave 4 failures, e.g. changes_reports_an_edited_yak:
 
@@ -66,8 +71,9 @@ Failing first: with store::edited stubbed to `false`, `cargo test --release shed
 
 (also changes_edited_is_reported_with_a_move_and_notes, status_and_changes_agree_on_edited, changes_edited_ignores_stamps_notes_moves_and_needs). Restored predicate: all pass. (Two of the four initially also failed for test bugs: a temp-dir tag containing "edited" and comparing list emptiness instead of the flag; fixed.)
 
----
-▸ 2026-10-10T19:04:53Z [edit-2]
+#### 2026-10-10T19:04:53Z
+
+*edit-2*
 
 Decision: ONE predicate. `store::edited(&Task, &Task)` (+ `store::description`, and `parse_task` made pub) is called by `yak_changes` (shed vs baseline) and by `status::describe` (file at HEAD vs now, parsed to Tasks). Rejected: two predicates plus an agreement test (the claim's fallback), since status could be moved onto Tasks cleanly. status_and_changes_agree_on_edited still feeds both the same pairs.
 
@@ -79,13 +85,15 @@ Decision: an edit alongside a move or notes is ALSO reported edited (`[hairy -> 
 
 Decision: the old status `describe` compared raw text (strip_prefix of old); the new one compares parsed fields, so a whitespace-only or key-reordering rewrite of the frontmatter no longer reads edited, and a body whose description is unchanged but whose note text was altered in place is not an edit (notes are append-only by contract). A file that does not parse still reads edited.
 
----
-▸ 2026-10-10T19:06:58Z [edit-2]
+#### 2026-10-10T19:06:58Z
+
+*edit-2*
 
 verify: `cargo test --release` -> PASS (exit 0)
 
----
-▸ 2026-10-10T19:06:58Z [edit-2]
+#### 2026-10-10T19:06:58Z
+
+*edit-2*
 
 Real machine (./target/release/yaks, temp git repo + `git worktree add` shed; aaaa description rewritten, bbbb title changed, cccc only `updated:` bumped):
 
@@ -97,7 +105,8 @@ Real machine (./target/release/yaks, temp git repo + `git worktree add` shed; aa
 
 Summary: store::{description, edited} shared predicate; status::describe now parses both sides and calls it; sheds YakChange.edited, FarmDelta.edited, yak_changes/compare_farms, text+JSON renders; 5 new tests in src/sheds.rs beside the yak_changes tests; docs/cli.md, README.md, .agents/skills/yaks/SKILL.md, main.rs clap help updated (grep for 'needs:` newly set' / 'needs:` set' finds no remaining four-rule list). Full `cargo test --release` ok (505 unit + integration suites).
 
----
-▸ 2026-10-10T19:06:58Z [edit-2]
+#### 2026-10-10T19:06:58Z
+
+*edit-2*
 
 moved: shaving -> shorn

@@ -22,18 +22,21 @@ Implements the decision on `yaks-bdf9`, using the note metadata core from `7f78a
 2. **`yaks commits <id>` reads recorded shas first:** list every note with a `commit:` key (kind, sha, branch if any, subject resolved through `git log -1` in the code repo when the commit is present), then the message-grep fallback. Run the grep in the code repository (the checkout yaks was started from), never in the farm worktree; that is the `yaks-7a11` bug. The yak file's own history on the farm branch is labelled as farm history.
 3. **Docs and help:** `docs/cli.md` (`land`, `commits`) and `--help`. Not `.agents/skills/`.
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:17:16Z [yakherd]
+#### 2026-10-31T16:17:16Z
+
+*yakherd*
 
 Claim (yakherd): done by `commits-1` after `yaks-7a11`. Evidence: a land test that checks the `kind: landed` note (commit, source); `commits` lists recorded shas first.
 
----
-▸ 2026-10-31T16:45:27Z [commits-1]
+#### 2026-10-31T16:45:27Z
+
+*commits-1*
 
 Progress (commits-1): implementation and tests written; gate next.
 
@@ -53,13 +56,15 @@ Decision: `--dry-run` prints `dry run: would record a kind: landed note on <id> 
 
 Decision: the `branch:` metadata is HEAD's branch (omitted when detached). It is optional in the design and costs nothing; `commits` shows it as `on <branch>`.
 
----
-▸ 2026-10-31T16:47:06Z [commits-1]
+#### 2026-10-31T16:47:06Z
+
+*commits-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-31T16:47:07Z [commits-1]
+#### 2026-10-31T16:47:07Z
+
+*commits-1*
 
 Summary (commits-1): `yaks land` records what it landed; `yaks commits` reads it first.
 
@@ -70,13 +75,15 @@ Summary (commits-1): `yaks land` records what it landed; `yaks commits` reads it
 - Real output: a demo repo `land` then `commits` printed `landed 33413da on main  t-09e7: the work  (2026-10-31T16:38:37Z [demo])`.
 - Gate: `cargo test --workspace` (fsmonitor env) green; `yaks verify` PASS.
 
----
-▸ 2026-10-31T16:47:07Z [commits-1]
+#### 2026-10-31T16:47:07Z
+
+*commits-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: 7e4a0147b919a5f23e743cfbee7c77f087aefdb3
@@ -85,8 +92,9 @@ branch: main
 
 landed: 7e4a014 yaks-735a: yaks land records landed shas on the yak; yaks commits reads them first (--yak, --json) (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:18Z [yakherd]
+#### 2026-10-31T17:24:18Z
+
+*yakherd*
 
 kind: landed
 commit: b5abcb7acdbf03265dd0bea50bd91fcfcd460281

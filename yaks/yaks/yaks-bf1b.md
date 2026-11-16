@@ -12,31 +12,30 @@ tags:
 
 Reuse the tag completion overlay from the detail editor.
 
----
-▸ 2026-11-14T11:32:22Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T11:32:22Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T11:32:24Z [linkplan-lead]
+#### 2026-11-14T11:32:24Z
 
-Claim: worker `tags-1` (Sonnet tier), owning this yak and yaks-1a16 together (both touch `finish_insert`, `tag_completion`, `open_ref_picker` and `docs/tui.md`). Sketch is in the triage note ([yaks-20dd](yaks-20dd#2026-11-11T22:08:04Z)). Owns: `tui/handlers.rs` (`editor_key` for the `L` editor, the filter drawer's tags row, `finish_insert`), `tui/editor.rs` (`tag_completion`), the hint in `tui/render.rs`, `docs/tui.md`. Out of scope: any key binding change (yaks-8874 is awaiting a decision), `keymap.rs`, link code. Evidence: unit tests plus a toque frame of the picker open over the filter drawer, attached.
+*linkplan-lead*
 
----
-▸ 2026-11-14T11:32:53Z [tags-1]
+Claim: worker `tags-1` (Sonnet tier), owning this yak and yaks-1a16 together (both touch `finish_insert`, `tag_completion`, `open_ref_picker` and `docs/tui.md`). Sketch is in the triage note ([yaks-20dd](/yaks/yaks/yaks-20dd.md#2026-11-11t220804z)). Owns: `tui/handlers.rs` (`editor_key` for the `L` editor, the filter drawer's tags row, `finish_insert`), `tui/editor.rs` (`tag_completion`), the hint in `tui/render.rs`, `docs/tui.md`. Out of scope: any key binding change (yaks-8874 is awaiting a decision), `keymap.rs`, link code. Evidence: unit tests plus a toque frame of the picker open over the filter drawer, attached.
+
+#### 2026-11-14T11:32:53Z
+
+*tags-1*
 
 Start: Sat Nov 14 11:32:49 UTC 2026
 Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bf1b.md
 Checkout: /Users/joel/src/yaks/.delta/worktrees/zkbr0g3vc11c/yaks
 Also owns yaks-1a16 (same code).
 
----
-▸ 2026-11-14T13:17:18Z [tags-1]
+#### 2026-11-14T13:17:18Z
+
+*tags-1*
 
 Milestone: code + docs done, tests passing (tag filter). Remaining: render toque frames, full gate, notes, commit.
 
@@ -53,16 +52,15 @@ Milestone: code + docs done, tests passing (tag filter). Remaining: render toque
 
 ![l-picker](yaks-bf1b/l-picker.png "Tab in the L editor: the tag picker open over it, seeded with 'ru'")
 
----
-▸ 2026-11-14T13:21:01Z [tags-1]
-kind: verify
-result: pass
----
+#### 2026-11-14T13:21:01Z
+
+*tags-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-14T13:25:25Z [tags-1]
+#### 2026-11-14T13:25:25Z
+
+*tags-1*
 
 Decision: a pick always ends with the cursor past a separator. `insert_tag` adds `, ` after the tag, or steps over a comma/space that already follows. Rejected: adding only a space (the field would then hold `a b`, which splits fine but reads inconsistently with the `, ` the form writes) and a trailing comma without a space.
 
@@ -76,22 +74,14 @@ Summary: tag completion now works in the `L` editor and the filter drawer's tags
 
 Evidence: unit tests `tab_after_a_picked_tag_moves_to_the_next_field`, `picking_a_tag_before_a_separator_steps_over_it_instead_of_adding_one`, `tab_in_the_l_editor_completes_a_tag_and_a_pick_moves_past_it`, `tab_in_the_drawer_tags_row_completes_and_the_pick_reruns_the_filter`, `tab_on_a_complete_drawer_tags_row_still_moves_to_the_next_row`; the existing partial-tag and replace tests updated for the trailing `, `. Frames attached (drawer and `L`, hint and picker). Gate: `cargo test -p yaks` green, `cargo fmt --check` clean, `yaks verify` PASS.
 
----
-▸ 2026-11-14T13:25:26Z [tags-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEdQZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T13:25:26Z
+
+*tags-1 · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEdQZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-14T13:25:55Z [linkplan-lead]
-kind: landed
-commit: dc8aaa9262eabb88682bb15854bbf0cc9ea55171
-source: c4a04a95d6384105c8474fcc15405135fa8fa146
-branch: main
----
+#### 2026-11-14T13:25:55Z
+
+*linkplan-lead · kind: landed · commit: dc8aaa9262eabb88682bb15854bbf0cc9ea55171 · source: c4a04a95d6384105c8474fcc15405135fa8fa146 · branch: main*
 
 landed: dc8aaa92 yaks-bf1b, yaks-1a16: tag completion in the L editor and the filter drawer; a pick leaves the cursor past a separator so Tab moves on

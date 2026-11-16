@@ -17,39 +17,33 @@ Found on Hearth's first live turn on a farm (2026-11-07, hearth-1ed0 in the Hear
 
 Proposal: `create --set key=value` (repeatable) and `--unset` refused, with exactly `update --set`'s rules (built-in fields refused, lists and maps parse the same, round-trip as written), written in the same commit as the create. `--key` find-or-create leaves an existing yak's fields alone. Update `docs/cli.md`, the `--help` text and the `yaks` skill's command table.
 
----
-▸ 2026-11-08T00:37:21Z [herd-reshape]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOADWrTJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T00:37:21Z
+
+*herd-reshape · kind: move · from: hairy · to: shaving · thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOADWrTJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-08T00:37:22Z [herd-reshape]
+#### 2026-11-08T00:37:22Z
+
+*herd-reshape*
 
 Claim (herd-reshape): worker set-1, from yaks main e8bc2c4f.
 
----
-▸ 2026-11-08T00:42:53Z [set-1]
-kind: verify
-result: fail
----
+#### 2026-11-08T00:42:53Z
+
+*set-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-08T00:49:06Z [set-1]
-kind: verify
-result: pass
----
+#### 2026-11-08T00:49:06Z
+
+*set-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-08T00:49:18Z [set-1]
+#### 2026-11-08T00:49:18Z
+
+*set-1*
 
 Start 2026-11-08T00:37:42Z. Farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-60fe.md. Checkout /Users/joel/src/yaks/.delta/worktrees/shtfs2rdmezg/yaks.
 
@@ -82,31 +76,26 @@ Docs parity: docs/cli.md (create row and Details), clap help on the flag, .agent
 
 Gate: `cargo test -p yaks --no-fail-fast` green; `yaks verify yaks-60fe` PASS. Note: tests/init_modes.rs `farm_works_from_a_git_worktree_and_a_shared_clone...` failed intermittently in some runs ("share2-web-wt already exists" under the shared temp dir), also with my change stashed: not mine.
 
----
-▸ 2026-11-08T00:49:18Z [set-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOAEyQopIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T00:49:18Z
+
+*set-1 · kind: move · from: shaving · to: shorn · thread: ksQQBgNNWOHrR9mtaBzuvtn_eJLOAEyQopIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-08T01:03:05Z [herd-reshape]
+#### 2026-11-08T01:03:05Z
+
+*herd-reshape*
 
 Landed on yaks main as a5461648 (herd-reshape); gate re-run by the coordinator: cargo test -p yaks --no-fail-fast, 1204 passed on the clean run (one earlier run hit the known flaky init_modes test). Reproduced on a scratch farm: create --set person=joel writes the field in the create's one commit; --set title=y exits 1. Installed with cargo install --path . from the yaks worktree.
 
----
-▸ 2026-11-08T01:32:32Z [herd-reshape]
+#### 2026-11-08T01:32:32Z
+
+*herd-reshape*
 
 Rebased onto yaks main cddd0bc (which gained the farm time zone, yaks-ac6a) as dc70dcbb in the coordinator's yaks clone: one conflict in the create arm of src/main.rs (due_every_fields gained a zone argument), resolved by keeping both. Gate on dc70dcbb: cargo test -p yaks --no-fail-fast, 1285 passed, 0 failed. Not yet on Joel's yaks main: pushing there waits for Joel. ~/.cargo/bin/yaks is currently a build of cddd0bc without create --set; Hearth's dev instance points yaks_bin at the clone's target/release/yaks meanwhile.
 
----
-▸ 2026-11-08T01:45:26Z [herd-reshape]
-kind: landed
-commit: dc70dcbbcfe75bb80d00970d13daa8d0da5ae449
-branch: main
----
+#### 2026-11-08T01:45:26Z
+
+*herd-reshape · kind: landed · commit: dc70dcbbcfe75bb80d00970d13daa8d0da5ae449 · branch: main*
 
 Landed on Joel's yaks main as dc70dcbb (git push local HEAD:main, approved by Joel 2026-11-08), on top of cddd0bc. Installed with cargo install --path . from the coordinator's yaks clone.

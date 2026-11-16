@@ -20,23 +20,21 @@ Smaller gaps against Hearth's tools, each a hand edit today:
 
 Split any that grows.
 
----
-▸ 2026-11-06T23:12:41Z [herd-upkeep-2]
+#### 2026-11-06T23:12:41Z
+
+*herd-upkeep-2*
 
 Scope (herd-upkeep-2, 2026-11-06): the third bullet, backdating, is now yaks-0fa7 (under yaks-3f35, another thread's), which covers session notes and promotions. This yak keeps marking sources and writing schemas.
 
----
-▸ 2026-11-06T23:12:45Z [herd-upkeep-2]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T23:12:45Z
+
+*herd-upkeep-2 · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T23:13:38Z [herd-upkeep-2]
+#### 2026-11-06T23:13:38Z
+
+*herd-upkeep-2*
 
 Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tools-1`.
 
@@ -45,16 +43,18 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tools-1`.
 - **Out of scope:** backdating (yaks-0fa7, another thread).
 - **Judge:** `cargo test -p yaks` with CLI tests: a marked source drops out of `yaks check`; a defined kind shows in `yaks dok types`; merging keeps an existing field and the schema's body.
 
----
-▸ 2026-11-06T23:14:54Z [tools-1]
+#### 2026-11-06T23:14:54Z
+
+*tools-1*
 
 Start: Fri Nov 6 23:14:51 UTC 2026
 
 - yak path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-80bd.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/rxppcdpad50n/yaks
 
----
-▸ 2026-11-06T23:29:57Z [tools-1]
+#### 2026-11-06T23:29:57Z
+
+*tools-1*
 
 Decision: `source mark` keeps ONE mark: setting `--uncited` removes `superseded_by` and vice versa; `--clear` removes both. Rejected: allowing both fields at once (two reasons for one state, `check` treats them the same).
 
@@ -66,40 +66,33 @@ Decision: `dok define` refuses the untyped kinds (note, topic, howto, summary), 
 
 Decision: `source mark` accepts the bare id, `sources/<id>` or `sources/<id>/source.md` (with optional leading `/`) for both the source and `--superseded-by`; stores `superseded_by: sources/<id>/source.md` (the form check and the skills use). `--superseded-by` naming the source itself is refused.
 
----
-▸ 2026-11-06T23:31:47Z [tools-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:31:47Z
+
+*tools-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-06T23:33:23Z [tools-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:33:23Z
+
+*tools-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-06T23:39:50Z [tools-1]
-kind: verify
-result: pass
----
+#### 2026-11-06T23:39:50Z
+
+*tools-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-06T23:46:19Z [tools-1]
-kind: verify
-result: pass
----
+#### 2026-11-06T23:46:19Z
+
+*tools-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-06T23:46:31Z [tools-1]
+#### 2026-11-06T23:46:31Z
+
+*tools-1*
 
 Summary (tools-1): added `yaks source mark` and `yaks dok define`.
 
@@ -108,22 +101,14 @@ Summary (tools-1): added `yaks source mark` and `yaks dok define`.
 - Docs: `docs/cli.md` (table rows, `### dok`, `### source`, check's uncited bullet), `README.md` rows, skills `yaks`, `yaks-research`, `yaks-upkeep`; `yaks check`'s uncited heading and `check --help` now name `yaks source mark`.
 - Gate: `yaks verify yaks-80bd` PASS. An earlier two runs failed only in `tui::farmsync::tests` (the 10 s "interval sync did not finish" wait, under load from parallel workers); those 8 tests pass alone and the full `cargo test` passed before and after.
 
----
-▸ 2026-11-06T23:46:32Z [tools-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjWoJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T23:46:32Z
+
+*tools-1 · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjWoJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-06T23:47:20Z [herd-upkeep-2]
-kind: landed
-commit: 2207652579848c2fddf289dea4c4f26eba5b525e
-source: d70a6ebbdae68793346686ac399b00d9aaa4272f
-branch: main
----
+#### 2026-11-06T23:47:20Z
+
+*herd-upkeep-2 · kind: landed · commit: 2207652579848c2fddf289dea4c4f26eba5b525e · source: d70a6ebbdae68793346686ac399b00d9aaa4272f · branch: main*
 
 landed: 22076525 yaks-80bd: add yaks source mark and yaks dok define

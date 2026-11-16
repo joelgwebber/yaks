@@ -23,15 +23,17 @@ Scope: src/sheds.rs (a function beside compare_farms/yak_changes, the render of 
 
 Evidence (tests FAIL first): a worktree shed whose yak change was cherry-picked/squashed into main with a different commit shows `landed`; one with an extra note main lacks does not; mixed case. Real-machine check by the coordinator: title-1's shed (606y05kk15w7) reads landed. Judge: coordinator.
 
----
-▸ 2026-10-10T15:44:45Z [delta-lead]
+#### 2026-10-10T15:44:45Z
+
+*delta-lead*
 
 Second real-machine case (2026-10-10, ~/src/j15r clones 47g751xth9ea and nh3dwrb2as8f, viewed from clone bcasg4bjrcxp): both are at 07fa8a4, +0 -7, and each holds seven uncommitted yak files that are Delta-applied copies of work the primary has since committed. `yaks sheds` says `farm: 5 new, 2 moved` for each; but j15r-7384, 9e6d, 9ea3, a24d, ab39 are `shorn` here with notes (the shed's copies are `shaving`/`hairy` with none), and j15r-7de1, ad91 are identical here. Nothing in those sheds is outstanding.
 
 The `landed` rule above (same status, every note the shed has) does not catch it, because OUR copy is further along, not equal. Same family, other direction: a shed copy that is an earlier state of ours (same id, our status later in hairy -> shaving -> shorn, our notes a superset of its) should also read as already in this checkout. Decide whether `landed` covers "superseded by ours" or it is a separate word (see the shed state vocabulary yak: `stale`). Add this case to the tests: a shed whose yak is `shaving` with no notes while ours is `shorn` with notes.
 
----
-▸ 2026-10-11T20:14:12Z [delta-lead]
+#### 2026-10-11T20:14:12Z
+
+*delta-lead*
 
 Resolving the open question left by the note above (2026-10-10 superseded case), and bringing this up to date with the viewer-independence decision made since (yaks-ee0a, decision 5, yaks-e9bb/yaks-ad6d landed after this was written).
 
@@ -41,13 +43,15 @@ Resolving the open question left by the note above (2026-10-10 superseded case),
 
 **Scope addition:** the primary's OWN row never reports `landed` (comparing it against itself is vacuous); skip the computation there.
 
----
-▸ 2026-10-11T20:14:12Z [delta-lead]
+#### 2026-10-11T20:14:12Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-11T20:14:46Z [delta-lead]
+#### 2026-10-11T20:14:46Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: land-1. Spec = the full description and notes above (read them in order; the two 2026-10-11 Decisions bind the mechanism, below is how to wire them into the existing code).
 
@@ -82,40 +86,47 @@ Out of scope: `yaks-9277` (the shed state vocabulary — a separate, not-yet-des
 
 Judge: coordinator (re-runs the gate, reviews the diff, checks the real-machine evidence).
 
----
-▸ 2026-10-11T20:16:05Z [land-1]
+#### 2026-10-11T20:16:05Z
+
+*land-1*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-11T20:16:05Z [land-1]
+#### 2026-10-11T20:16:05Z
+
+*land-1*
 
 Brief said already shaving but farm had it in hairy/; shaving it now before starting work.
 
----
-▸ 2026-10-11T20:19:07Z [land-1]
+#### 2026-10-11T20:19:07Z
+
+*land-1*
 
 asked: needs human
 
 Blocked: my shed's copy of yaks-ed5e lacks the two 2026-10-11 Decision notes and the final Claim (coordinator) note the brief says define `landed` precisely and supersede earlier wording. Checked local/main (fetched) and origin/main: neither has them either — the claim commit (b721f72, "yaks-ed5e: claim (land-1)") only staged the deletion of .yaks/hairy/yaks-ed5e.md, same bug as yaks-ad6d's claim commit 5070350, but no follow-up commit re-adding the shaving file with full note history exists yet for yaks-ed5e. I shaved it myself locally (it was hairy in my shed) and messaged the parent thread asking for either the literal note text or a pushed commit with .yaks/shaving/yaks-ed5e.md. Not starting the code/docs scope until I have the real spec.
 
----
-▸ 2026-10-11T20:24:47Z [land-1]
+#### 2026-10-11T20:24:47Z
+
+*land-1*
 
 Blocker resolved: fetched+merged local/main (fast-forward 8f393ab -> aeef450), which carries the full note history (both 2026-10-11 Decision notes + Claim note) the coordinator had fixed upstream. Resuming work per the Claim note's Mechanism section. needs:human left as-is since this wasn't a formal yaks answer, just upstream sync; proceeding with the coordinator's direct go-ahead.
 
----
-▸ 2026-10-11T20:34:16Z [land-1]
+#### 2026-10-11T20:34:16Z
+
+*land-1*
 
 Implemented the mechanism in src/sheds.rs: FarmDelta.landed + touched(), YakChange.landed, reference_tasks()/landed_ids() helpers, discover() computes the reference once (primary's live farm, else origin/main via origin_base+base_farm) and threads it through inspect(); changes()/shed_yak_changes() thread &[Shed] (farm.rs::shed_changes + main.rs call site updated) to find the primary without a second discovery walk. render() farm: line: 'landed (N yak)' when ALL touched are landed, '(K landed)' + pruned itemized lines when mixed, untouched when none. render_changes appends ', landed'. JSON: farm.landed (array), changes landed:bool. All 60 pre-existing sheds:: tests still pass unchanged (additive). Writing the new landed-specific tests next.
 
----
-▸ 2026-10-11T20:44:07Z [land-1]
+#### 2026-10-11T20:44:07Z
+
+*land-1*
 
 Evidence (tests FAIL first): wrote 8 new tests + 1 pure unit test for outstanding_ids. Before implementing outstanding_ids' direction-aware refinement, 3 of the 8 tests failed on first run (a_shed_with_an_extra_note_..., a_shed_with_some_yaks_landed_and_some_outstanding_..., a_shed_whose_copy_is_superseded_...) - two were my own test-fixture bugs (temp-dir path accidentally containing the literal substring "landed"/"yaks-bbbb" that my own assertions matched against; fixed by tightening the assertions to exact indented lines), and the superseded test's real bug was in my FIRST implementation attempt: a naive "is this id in yak_changes(reference, theirs)'s output" check misfires on a BACKWARD status move (shed behind reference, e.g. shed=shaving no notes vs reference=shorn with notes) because yak_changes' `moved` field is a plain inequality with no direction, while `notes` already handles backward correctly via `.skip(known)` on a shorter list. Fixed by adding outstanding_ids() with a status_rank() direction check: only a FORWARD move (or added/notes/needs/edited) counts as genuinely outstanding; a backward-only move does not. All 8 tests + the pure outstanding_ids_is_direction_aware test now pass; full `cargo test --bin yaks sheds::` = 68 passed (60 pre-existing unchanged + 8 new), 0 failed.
 
----
-▸ 2026-10-11T20:44:19Z [land-1]
+#### 2026-10-11T20:44:19Z
+
+*land-1*
 
 Decision: render/JSON shapes, finalizing the Claim note's open choices.
 - Text `farm:` line: unchanged when `landed` is empty. ALL touched landed: replace the whole summary with `farm: landed (N yak)` (singular "yak" for N=1, "yaks" otherwise) and print NO itemized lines (nothing is outstanding). MIXED: keep the existing summary counts (full totals since fork, unchanged), append ` (K landed)`, and prune every itemized line (`+ id`, `id from -> to`, `id +N notes`, `id needs: v`, `id edited`) down to ids NOT in `landed` - so the itemized block always shows exactly what's still actionable.
@@ -123,8 +134,9 @@ Decision: render/JSON shapes, finalizing the Claim note's open choices.
 - JSON `sheds --json` `farm.landed`: array of ids (consistent sibling to `added`/`moved.id`/`notes.id`/`needs.id`/`edited` - all arrays of ids). This was explicitly my call per the spec; chose consistency with the existing four over a bool/count, since a caller can derive "all landed" via `landed.length === touched.length` the same way the render layer does (FarmDelta::touched()).
 - JSON `changes --json`: `"landed": bool` per yak, as the Claim note's Mechanism point 5 specified directly (not my call).
 
----
-▸ 2026-10-11T20:44:31Z [land-1]
+#### 2026-10-11T20:44:31Z
+
+*land-1*
 
 Decision: outstanding_ids() is direction-aware (not a plain yak_changes(reference, theirs) membership check), and reference_tasks() takes Option<&Path> instead of the Claim note's suggested Option<&Shed>.
 - Direction: a plain "is this id anywhere in yak_changes(reference, theirs)'s output" test (what the Claim note's "landed when yak_changes(reference, shed_tasks) does NOT include it" literally reads as) breaks the SECOND Decision's own superseded case: yak_changes' `moved` field is a direction-blind inequality (reference.status != theirs.status), so a shed that is BEHIND the reference (e.g. shed=shaving/no-notes, reference=shorn/with-notes) still produces a `moved` entry and would wrongly read as outstanding. `notes` already handles the backward direction for free (`.skip(known)` on a shorter list is empty, not an error); `moved` does not, because status is a simple ordered progression and skip-style truncation does not apply to a single scalar comparison. Fix: outstanding_ids() reuses yak_changes(reference, theirs) but only counts a `moved` entry as outstanding when theirs' status ranks AHEAD of reference's (hairy<shaving<shorn<dead, via EVERY's order) - added/notes/needs/edited are unchanged (already direction-correct or direction-irrelevant). Recorded in code as status_rank()/outstanding_ids() doc comments; the superseded test (a_shed_whose_copy_is_superseded_by_the_reference_reads_landed) is the regression guard.
@@ -132,18 +144,21 @@ Decision: outstanding_ids() is direction-aware (not a plain yak_changes(referenc
 
 [sheds-landed-before-after](yaks-ed5e/sheds-landed-before-after.txt)
 
----
-▸ 2026-10-11T20:47:53Z [land-1]
+#### 2026-10-11T20:47:53Z
+
+*land-1*
 
 Real-machine fixture reproducing the 2026-10-10 superseded-direction case: a shed claims a yak (shaving, no notes) while the primary independently finishes and shears it (shorn, 3 notes). Before: shed row showed 'farm: 1 moved' + itemized 'demo-aaaa hairy -> shaving' (outstanding). After: 'farm: landed (1 yak)', JSON farm.landed=["demo-aaaa"]. Binaries built from this checkout (before = git stash of src/sheds.rs+farm.rs+main.rs back to aeef450, after = current working tree).
 
----
-▸ 2026-10-11T20:50:17Z [land-1]
+#### 2026-10-11T20:50:17Z
+
+*land-1*
 
 verify: `cargo test --release` -> PASS (exit 0)
 
----
-▸ 2026-10-11T20:51:44Z [land-1]
+#### 2026-10-11T20:51:44Z
+
+*land-1*
 
 Done. src/sheds.rs: FarmDelta.landed (+touched()), YakChange.landed, reference_tasks()/outstanding_ids()/status_rank()/landed_ids() helpers; discover() computes the reference once and threads it through inspect(); changes()/shed_yak_changes() thread &[Shed] (farm.rs::shed_changes + main.rs call site). render(): "farm: landed (N yak)" when ALL touched landed (no itemized lines), "(K landed)" + pruned itemized lines when mixed, unchanged when none. render_changes appends ", landed". JSON: sheds farm.landed (array of ids), changes landed:bool. Docs/help updated in the same change: docs/cli.md (sheds + changes rows), README.md, .agents/skills/yaks/SKILL.md (sheds + changes rows), src/main.rs clap /// help for Sheds/Changes + its --json doc comment.
 
@@ -151,13 +166,15 @@ Evidence: 8 new sheds:: tests + 1 pure outstanding_ids test (squash/cherry-pick 
 
 Out of scope, not touched: show --sheds/inbox --sheds, the TUI, any write, parent/child display, yaks-9277 (stale vocabulary).
 
----
-▸ 2026-10-11T20:51:45Z [land-1]
+#### 2026-10-11T20:51:45Z
+
+*land-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-12T16:04:57Z [delta-lead]
+#### 2026-10-12T16:04:57Z
+
+*delta-lead*
 
 picked up
 

@@ -18,18 +18,15 @@ Proposal: `YAKS_THREAD=<id>` wins over the Delta variable wherever yaks reads a 
 
 Small; one test per place it is read.
 
----
-▸ 2026-11-07T17:04:43Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:43Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:05:35Z [herd-stars]
+#### 2026-11-07T17:05:35Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-thread`.
 
@@ -41,16 +38,18 @@ Claim (yakherd herd-stars): worker `stars-thread`.
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-07T17:06:29Z [stars-thread]
+#### 2026-11-07T17:06:29Z
+
+*stars-thread*
 
 Start: Sat Nov  7 17:06:26 UTC 2026
 
 - yaks path yaks-f4ea: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f4ea.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/sf3w4x0cnprb/yaks
 
----
-▸ 2026-11-07T17:09:10Z [stars-thread]
+#### 2026-11-07T17:09:10Z
+
+*stars-thread*
 
 Red before green (src/actor.rs reverted via stash, new tests run): all three failed.
 
@@ -80,41 +79,32 @@ Decision: the per-place tests are integration tests that spawn the binary with `
 
 Decision: left `harness_actor` (`delta:<DELTA_CURRENT_THREAD_ID>` actor fallback) and `harness_from_env` (`--harness` default) alone: actor names and `--harness` are out of scope, so YAKS_THREAD does not derive an actor or a harness.
 
----
-▸ 2026-11-07T17:09:59Z [stars-thread]
-kind: verify
-result: fail
----
+#### 2026-11-07T17:09:59Z
+
+*stars-thread · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-07T17:14:53Z [stars-thread]
-kind: verify
-result: pass
----
+#### 2026-11-07T17:14:53Z
+
+*stars-thread · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-07T17:23:43Z [stars-thread]
+#### 2026-11-07T17:23:43Z
+
+*stars-thread*
 
 Summary: `actor::harness_thread()` (the one reader behind move `thread:`, `session note`'s `thread:` and `whoami`) now reads `YAKS_THREAD`, then `DELTA_CURRENT_THREAD_ID`; blank counts as unset. Docs: `docs/cli.md` (session note frontmatter, whoami, Attribution), the `whoami` clap help, and the yaks-coordinating skill line. Tests: 3 integration tests (move, whoami, session note; each failed before the change) plus a unit test for the precedence. `yaks verify` PASS. One test assertion of mine was wrong at first (the `delta:t-123` actor stamp contains the id); fixed to assert on `thread: t-123`.
 
----
-▸ 2026-11-07T17:23:44Z [stars-thread]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpr_pIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:23:44Z
+
+*stars-thread · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpr_pIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T17:33:01Z [herd-stars]
-kind: landed
-commit: b7cebb1b4da01ef2c13afb4d5d1e504b552bd911
----
+#### 2026-11-07T17:33:01Z
+
+*herd-stars · kind: landed · commit: b7cebb1b4da01ef2c13afb4d5d1e504b552bd911*
 
 Landed by herd-stars as `b7cebb1b` (worker `797b367a`), by cherry-pick: a conflict in `tests/sessions.rs` with yaks-db66's new test, resolved by keeping both tests. Gate `cargo test --workspace` green on the merged tree.

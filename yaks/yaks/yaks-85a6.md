@@ -13,21 +13,18 @@ tags:
 
 We get doks and sources, but not sessions, which we've recently begun adding to the mix.
 
----
-▸ 2026-11-06T21:37:39Z [schism-feedback]
+#### 2026-11-06T21:37:39Z
+
+*schism-feedback*
 
 Context from yaks-3f35: the schism farm's doks cite session notes 62 times as `[session](/sessions/....md)` (the `yaks-upkeep` skill's review example, copied literally), which is the stray `(session)` Joel saw in `doks/howto/dev-workflow.md`. They are session back-links that lead nowhere until the TUI can open sessions.
 
 - Opening `/sessions/...` links from a dok or yak belongs here, with the sessions list.
 - The citation's wording is yaks-5f70.
 
----
-▸ 2026-11-06T22:55:18Z [schism-feedback]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:55:18Z
+
+*schism-feedback · kind: move · from: hairy · to: shaving · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
@@ -35,8 +32,9 @@ moved: hairy -> shaving
 
 [session-frame](yaks-85a6/session-frame.txt)
 
----
-▸ 2026-11-06T23:09:20Z [schism-feedback]
+#### 2026-11-06T23:09:20Z
+
+*schism-feedback*
 
 Built on branch `sessions-in-doks` (not landed yet).
 
@@ -51,17 +49,14 @@ Built on branch `sessions-in-doks` (not landed yet).
 - Tests: `a_session_note_is_listed_and_opens_like_a_dok`, plus the Doks tests and both insta frames updated for the new row; full `cargo test` green.
 - Headless release build on Joel's schism farm: 42 rows (23 doks, 19 session notes); `Load a GLB table model` opens with its frontmatter, Summary and screenshot ([frame](yaks-85a6/session-frame.txt)); Tab and Enter on the first `(session)` link in `doks/howto/dev-workflow.md` open `sessions/2025/08/...-dev-workflow-tooling-and-bevy-0-16-1.md`.
 
----
-▸ 2026-11-07T15:48:13Z [schism-feedback]
+#### 2026-11-07T15:48:13Z
+
+*schism-feedback*
 
 Landed on `main` as e8bc2c4f (rebased onto 38fc4358, full `cargo test` green after the rebase), pushed, and installed with `cargo install --path .`. A running `yaks tui` needs a restart to show sessions.
 
----
-▸ 2026-11-07T15:48:13Z [schism-feedback]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T15:48:13Z
+
+*schism-feedback · kind: move · from: shaving · to: shorn · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

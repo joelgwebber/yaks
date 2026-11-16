@@ -15,8 +15,9 @@ verify: 'cd /Users/joel/src/yaks/.delta/worktrees/g5vagmccz0gg/yaks && cargo tes
 
 Implements yaks-9cc1's proposal as Joel decided it; read that yak's proposal and decision notes.
 
----
-▸ 2026-11-02T00:36:10Z [delta:farm-wiki]
+#### 2026-11-02T00:36:10Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -26,8 +27,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-02T00:36:11Z [delta:farm-wiki]
+#### 2026-11-02T00:36:11Z
+
+*delta:farm-wiki*
 
 Claim (yakherd delta:farm-wiki): worker `due-1`, on branch `wiki` at f4c86b8.
 
@@ -69,13 +71,15 @@ Claim (yakherd delta:farm-wiki): worker `due-1`, on branch `wiki` at f4c86b8.
 
 **Judge.** The coordinator, at landing.
 
----
-▸ 2026-11-02T00:36:58Z [due-1]
+#### 2026-11-02T00:36:58Z
+
+*due-1*
 
 Started Mon Nov  2 00:36:57 UTC 2026 by due-1. Yak file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-2fc5.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/g5vagmccz0gg/yaks (branch wiki, f4c86b8).
 
----
-▸ 2026-11-02T01:13:23Z [due-1]
+#### 2026-11-02T01:13:23Z
+
+*due-1*
 
 Progress ($(date -u) approx). Done so far: src/recur.rs (parser moved from check.rs; When/Every/plan/due_rows/due_mark + unit tests), Farm::regrow_due, --due/--every on create/update, list --due [--before], regrow-due command, due in list/next/show/json, doctor known extras. Next: scratch-farm run, tests/recur.rs, TUI (list row, detail header, tick), docs.
 
@@ -83,8 +87,9 @@ Decision: the schedule anchors on `due:` once a yak has been regrown (due = last
 Decision: a date-only `due:` is overdue once its day has passed (end of day UTC); a datetime the moment it passes. Date-only due stays date-only after a regrow.
 Decision: a recurring yak under a shorn parent reopens the parent first (child: note like shave lifts); under a dead parent it is held and reported, not revived.
 
----
-▸ 2026-11-02T01:25:38Z [due-1]
+#### 2026-11-02T01:25:38Z
+
+*due-1*
 
 kind: verify
 result: pass
@@ -92,8 +97,9 @@ result: pass
 
 verify: `cd /Users/joel/src/yaks/.delta/worktrees/g5vagmccz0gg/yaks && cargo test --workspace > /tmp/due1-verify.txt 2>&1; rc=$?; grep "test result" /tmp/due1-verify.txt | awk "{p+=\$4; f+=\$6} END {print \"passed\", p, \"failed\", f}"; echo "error/FAILED lines: $(grep -c "FAILED\|^error" /tmp/due1-verify.txt)"; exit $rc` -> PASS (exit 0)
 
----
-▸ 2026-11-02T01:25:52Z [due-1]
+#### 2026-11-02T01:25:52Z
+
+*due-1*
 
 Summary. Due dates and recurring yaks are in. Gate: `cargo test --workspace` 1015 passed, 0 failed, 0 error/FAILED lines (recorded by `yaks verify`).
 
@@ -124,8 +130,9 @@ Decision: `list --due` composes with the shared filters; `--before` is exclusive
 
 Not done / noted: not run in a live TUI session (covered by in-process tests and the snapshot, no docshots scene added). The first design-note wording "regrown + every" is replaced by the due-anchored rule above (see the earlier Decision).
 
----
-▸ 2026-11-02T01:25:52Z [due-1]
+#### 2026-11-02T01:25:52Z
+
+*due-1*
 
 kind: move
 from: shaving
@@ -135,8 +142,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD38RZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-02T01:26:21Z [delta:farm-wiki]
+#### 2026-11-02T01:26:21Z
+
+*delta:farm-wiki*
 
 kind: landed
 commit: 7560285d96f72fc9bf16f20ae079228798dd79f7
@@ -146,7 +154,8 @@ branch: wiki
 
 landed: 7560285 yaks-2fc5: due dates and recurring yaks (due:/every:, list --due, overdue, regrow-due, TUI tick)
 
----
-▸ 2026-11-02T01:29:27Z [delta:farm-wiki]
+#### 2026-11-02T01:29:27Z
+
+*delta:farm-wiki*
 
 Landed as 7560285 (yakherd). Gate: 1015 passed. I reproduced it on a scratch farm: a weekly yak due 15 days ago listed as overdue; once shorn, `regrow-due --dry-run` then `regrow-due` regrew it for 2026-11-01 (1 skipped, next due 2026-11-08); a second run did nothing; there was one commit per move.

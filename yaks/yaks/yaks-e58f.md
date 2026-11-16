@@ -22,45 +22,34 @@ The mechanical half of Hearth's local `session-review` job (`hearth-d740`): find
 
 The judgement (what is worth keeping, which dok it goes in) is the upkeep skill's job.
 
----
-▸ 2026-11-06T04:57:02Z [herd-upkeep]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:57:02Z
+
+*herd-upkeep · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T04:57:17Z [herd-upkeep]
-kind: verify
-result: pass
----
+#### 2026-11-06T04:57:17Z
+
+*herd-upkeep · kind: verify · result: pass*
 
 verify: `cargo test --test sessions` -> PASS (exit 0)
 
----
-▸ 2026-11-06T04:58:07Z [herd-upkeep]
+#### 2026-11-06T04:58:07Z
+
+*herd-upkeep*
 
 Done on branch `upkeep` (505d2058): `yaks session list --unreviewed` (agents' own notes, `source: session-note`, without `promoted:`, oldest first) and `yaks session promote <path>...` (stamps `promoted: <today>` in one commit, checks every path first, reports one already stamped). Same rule as Hearth's local session-review job, so imported Hearth notes behave the same.
 
 Evidence: `yaks verify` PASS (the CLI test lists, promotes, re-lists and refuses a dok path).
 
----
-▸ 2026-11-06T04:58:08Z [herd-upkeep]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:58:08Z
+
+*herd-upkeep · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-06T21:55:34Z [herd-upkeep]
-kind: landed
-commit: d78b25a7
----
+#### 2026-11-06T21:55:34Z
+
+*herd-upkeep · kind: landed · commit: d78b25a7*
 
 Landed on `main` as d78b25a7 (fast-forward of 505d2058, 40dea8f0, d78b25a7). Gate: full `cargo test` on that commit, 1169 passed, 0 failed; `yaks preflight --push-main` ok.

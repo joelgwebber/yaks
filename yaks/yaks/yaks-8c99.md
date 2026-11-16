@@ -12,13 +12,15 @@ tags:
 - docs
 ---
 
----
-▸ 2026-10-22T00:37:59Z [delta:herd-dirs]
+#### 2026-10-22T00:37:59Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T00:37:59Z [delta:herd-dirs]
+#### 2026-10-22T00:37:59Z
+
+*delta:herd-dirs*
 
 Claim (yakherd delta:herd-dirs). Owner: `help-1` (Sonnet worker).
 
@@ -32,34 +34,39 @@ Claim (yakherd delta:herd-dirs). Owner: `help-1` (Sonnet worker).
 
 **Judge.** The yakherd, at landing.
 
----
-▸ 2026-10-22T00:38:32Z [help-1]
+#### 2026-10-22T00:38:32Z
+
+*help-1*
 
 Start: Thu Oct 22 00:38:32 UTC 2026. farm path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-8c99.md
 
 [yaks-help-before](yaks-8c99/yaks-help-before.txt)
 
----
-▸ 2026-10-22T00:46:23Z [help-1]
+#### 2026-10-22T00:46:23Z
+
+*help-1*
 
 yaks --help BEFORE (target/release/yaks built from the unmodified tree)
 
 [yaks-help-after](yaks-8c99/yaks-help-after.txt)
 
----
-▸ 2026-10-22T00:46:23Z [help-1]
+#### 2026-10-22T00:46:23Z
+
+*help-1*
 
 yaks --help AFTER
 
 [yaks-h-after](yaks-8c99/yaks-h-after.txt)
 
----
-▸ 2026-10-22T00:46:23Z [help-1]
+#### 2026-10-22T00:46:23Z
+
+*help-1*
 
 yaks -h AFTER (short option help: -C and --shed one line each)
 
----
-▸ 2026-10-22T00:49:46Z [help-1]
+#### 2026-10-22T00:49:46Z
+
+*help-1*
 
 Decision: reworded the first paragraph of each long doc comment into a one-sentence summary (<= ~80 chars) and rewrote the old first sentence of the detail so it does not repeat the summary (e.g. "Copies the file under ..."); no fact dropped. Rejected: `#[command(about = ..)]` attributes (duplicates the doc comment, two sources of truth).
 
@@ -73,17 +80,20 @@ Evidence: attached yaks-help-before.txt, yaks-help-after.txt (`--help`) and yaks
 
 Docs parity grep: `grep -rn "Print help|see a summary|see more with" src tests docs README.md .agents` -> no hit that describes the old text.
 
----
-▸ 2026-10-22T00:53:00Z [help-1]
+#### 2026-10-22T00:53:00Z
+
+*help-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-22T00:53:04Z [help-1]
+#### 2026-10-22T00:53:04Z
+
+*help-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+#### 2026-10-22T00:59:43Z
+
+*delta:herd-dirs*
 
 Landed as 3b1e175 (squash of 110d658). Yakherd re-ran: longest yaks --help command line 95 chars over 50 lines; yaks sheds --help keeps its 22-line detail; full gate 20 suites green.

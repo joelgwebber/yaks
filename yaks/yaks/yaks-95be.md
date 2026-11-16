@@ -19,25 +19,29 @@ Out of scope: migrate, doctor/preflight, git reporting, sheds, docs (phase 2 and
 
 Evidence: round-trip tests for the flat layout; a v3 fixture still loads read-only; a write on a v3 farm refuses with the D4 message; full gate green.
 
----
-▸ 2026-10-12T20:00:38Z [delta-lead]
+#### 2026-10-12T20:00:38Z
+
+*delta-lead*
 
 Amended by D10 and the transitional D4 (see yaks-8b7a): also add the one artifact-path helper everyone calls (`store::artifact_dir(root, id)` = `<root>/<id>/`, plus a predicate for 'is this repo path an attachment') so phase-2 workers convert their call sites to it; the dual read is transitional and must stay isolated (one function) so phase 4 can delete it.
 
----
-▸ 2026-10-12T20:00:47Z [delta-lead]
+#### 2026-10-12T20:00:47Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
 [phase1-real-machine](yaks-95be/phase1-real-machine.txt)
 
----
-▸ 2026-10-12T20:18:41Z [delta-lead]
+#### 2026-10-12T20:18:41Z
+
+*delta-lead*
 
 Real machine: the new binary on this repo's schema-3 farm (reads with a warning, a write refuses and writes nothing) and on a fresh flat farm (init, create, shave, note, shear: one file, status edited in place, moved: entries intact, doctor clean).
 
----
-▸ 2026-10-12T20:18:42Z [delta-lead]
+#### 2026-10-12T20:18:42Z
+
+*delta-lead*
 
 Done (phase 1). What landed:
 - `src/store.rs`: `task_path`, `artifact_dir`, `attachment_owner`, `path_owner`; `load` reads `<root>/*.md` (status from `status:`, missing = hairy) plus, via `legacy::load`, the old status dirs (flat wins on a clash); `parse_task` reads `status:` (invalid keeps the fallback, never duplicated into `extra`); the writer puts `status:` after `title:`; `save` writes the one flat path; `move_task` edits in place and keeps the `moved:` entry; `find_task_file`/`load_task_by_id`/`all_ids` flat first, then legacy; `init` creates no status dirs; `SCHEMA` = 4.
@@ -52,12 +56,14 @@ Decision: the refusal lives in `store::lock` rather than `write::save`: every mu
 
 Decision: a committed farm is always a `.yaks/` directory, so repo paths are made farm-relative by the last `.yaks` component (`preflight::yak_id_of`). Rejected: threading a `git rev-parse --show-prefix` through `classify`/`generate_message` (signature churn in yaks-9f91's files for no extra correctness).
 
----
-▸ 2026-10-12T20:19:35Z [delta-lead]
+#### 2026-10-12T20:19:35Z
+
+*delta-lead*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-12T20:19:35Z [delta-lead]
+#### 2026-10-12T20:19:35Z
+
+*delta-lead*
 
 moved: shaving -> shorn

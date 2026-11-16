@@ -15,8 +15,9 @@ tags:
 
 Phase 6, the pane half, of [the design](/doks/design/tui-model.md#4-search) (yaks-1bbd): `/` in the pane sets one search register (replacing `detail_find` and the viewer's find), highlighted in every text subject, kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; `n`/`N` in a list re-apply it as the query.
 
----
-▸ 2026-11-03T05:08:29Z [herd-tui]
+#### 2026-11-03T05:08:29Z
+
+*herd-tui*
 
 Claim draft (yakherd herd-tui), to start after phase 4b (yaks-9dec) lands: worker `find-1`.
 
@@ -30,8 +31,9 @@ Claim draft (yakherd herd-tui), to start after phase 4b (yaks-9dec) lands: worke
 - The detail footer shows `match 2/5 "q"` while the register is set.
 - `Overlay::DetailFind` and the viewer's own `find_box` become one find box (`SearchBox`) that edits the register.
 
----
-▸ 2026-11-03T05:14:49Z [herd-tui]
+#### 2026-11-03T05:14:49Z
+
+*herd-tui*
 
 kind: move
 from: hairy
@@ -41,13 +43,15 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T05:14:49Z [herd-tui]
+#### 2026-11-03T05:14:49Z
+
+*herd-tui*
 
 herd-tui: the draft above is the claim. Worker `find-1` (Sonnet 5.5), base main `e9e3c6c2` (4b landed: `App.detail: LineNav`). Out of scope: history stacks (phase 5), keys other than `/`, `n`, `N`, Esc. Evidence: the gate; tests for each bullet (register kept across `J`/`K` and `o`/`i`; `n` past the last match moves to the next matching row; viewer `n` wraps; list `n` with no query re-applies the register; footer shows `match i/n`); docs/tui.md and the `?` lines; a headless frame of the footer. Judge: herd-tui at landing.
 
----
-▸ 2026-11-03T05:23:47Z [find-1]
+#### 2026-11-03T05:23:47Z
+
+*find-1*
 
 Start 2026-11-03T05:23:42Z. Checkout /home/user/yaks-9, base main e9e3c6c2, farm file /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c215.md.
 
@@ -55,13 +59,15 @@ Progress: implemented the register (App.register, Overlay::Find replacing Detail
 
 [find-register-frames](yaks-c215/find-register-frames.txt)
 
----
-▸ 2026-11-03T05:24:48Z [find-1]
+#### 2026-11-03T05:24:48Z
+
+*find-1*
 
 Headless frames (target/debug/yaks tui --headless --size 110x16 on a scratch farm: l, /cache, Enter, n, n, n). Frame 4: footer 'match 1/3 "cache"' after /cache Enter; 5 and 6: n steps to 2/3, 3/3; frame 7: the third n moves past the last match to the next matching yak (yak-8270), 'match 1/2'.
 
----
-▸ 2026-11-03T05:25:48Z [find-1]
+#### 2026-11-03T05:25:48Z
+
+*find-1*
 
 Decision: `LineNav.matched` is `Option<usize>` (None until `n`/`/` lands on a match), not a bare index. Rejected: `usize` starting at 0, because a yak opened with the register already set would show match 1 as current and the first `n` would skip it; "from none, `n` = first match, `N` = last" is the vim behaviour.
 Decision: one find box is `Overlay::Find(SearchBox)`, used for both the yak detail and the open page (it picks the subject by `attach()`). Rejected: keeping the viewer's own `find_box` field next to an overlay; the two copies of the key routing were the duplication.
@@ -72,8 +78,9 @@ Decision: `n`/`N` also put the line cursor on the match row (find_step sets `lin
 Decision: list `n`/`N` are `bind(List, ...)` for every row kind; on a Wiki page row `N` stays WikiNew (a kind binding beats the any-kind one), so only `n` re-applies there. With an empty register: notification `nothing to find: / sets the search`. With a query set: nothing, as drafted.
 Decision: the footer is the status bar: `match i/n "q"` is prefixed to the usual hint/link text (`match 0/n` before a match is current; `0/0` with none) in the yak detail and the viewer. Rejected: a new pane row, which would change the viewport arithmetic of both panes.
 
----
-▸ 2026-11-03T05:26:14Z [find-1]
+#### 2026-11-03T05:26:14Z
+
+*find-1*
 
 kind: verify
 result: pass
@@ -81,15 +88,17 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T05:26:23Z [find-1]
+#### 2026-11-03T05:26:23Z
+
+*find-1*
 
 Done: one search register (`App.register`) for the yak detail and the text viewer; `LineNav.find` gone (it keeps `matched: Option<usize>`); `Overlay::DetailFind` + the viewer's `find_box` are `Overlay::Find`; J/K, link-follow, o/i keep the register; detail `n`/`N` hop to the next/previous matching yak; viewer `n` wraps; list `n`/`N` with no query apply the register; status bar shows `match i/n "q"`.
 Evidence: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` green (909 lib tests, all integration suites ok); `yaks verify yaks-c215` PASS; headless frames attached (find-register-frames.txt). New tests in src/tui/tests.rs (register_* / n_past_the_last... / viewers_n_wraps / detail_footer / list n) and linenav::find_matches_cycle. Docs: docs/tui.md (detail pane, viewer, Search & filter, new "The search register" paragraph), `?` lines in keymap.rs (one snapshot updated: help_overlay_shows_the_farm_keys).
 Docs-parity grep: `grep -rn "detail_find|DetailFind|find_box|doc_find|open_detail_find|detail\.find|nav\.find\b" src docs .agents README.md` shows only test names; the skills and README do not describe the pane find keys.
 
----
-▸ 2026-11-03T05:26:23Z [find-1]
+#### 2026-11-03T05:26:23Z
+
+*find-1*
 
 kind: move
 from: shaving
@@ -99,8 +108,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECO6JIBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T05:26:50Z [herd-tui]
+#### 2026-11-03T05:26:50Z
+
+*herd-tui*
 
 kind: landed
 commit: acabcb7f75cb56a02fdbb014451c788977cac6d1
@@ -110,7 +120,8 @@ branch: main
 
 landed: acabcb7f yaks-c215: one search register for every text subject (pane / sets App.register; n/N hop between matching yaks; list n/N re-apply it)
 
----
-▸ 2026-11-03T05:30:02Z [herd-tui]
+#### 2026-11-03T05:30:02Z
+
+*herd-tui*
 
 Landed by herd-tui as `acabcb7f` (worker `57d4dfa8`). Gate ok. Headless on my build: in a yak detail `/cache` then `n` walks match 1/3 → 3/3, and the next `n` moves to the next matching yak at 1/3.

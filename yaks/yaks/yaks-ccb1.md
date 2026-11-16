@@ -46,8 +46,9 @@ One link grammar for yaks and pages, covering farm documents, the code repo, com
 - `../blob/<sha>/` for pinned farm paths: it can't say which history the sha is in.
 - A query string (`?rev=`): no renderer does anything useful with it, and it breaks as a file path.
 
----
-▸ 2026-11-01T18:53:39Z [delta:farm-wiki]
+#### 2026-11-01T18:53:39Z
+
+*delta:farm-wiki*
 
 kind: ask
 needs: human
@@ -59,8 +60,9 @@ asked: needs human
 2. **Heading anchors** use GitHub's slug rule. Lean: yes.
 3. **`yaks peek` with no anchor** prints frontmatter plus the first paragraph (a page) or the description (a yak). Lean: yes.
 
----
-▸ 2026-11-01T19:59:06Z [Joel Webber]
+#### 2026-11-01T19:59:06Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -70,8 +72,9 @@ needs: agent
 2. Yup, that's pretty common parlance, I think.
 3. Sounds like as good a starting point as any. We can easily tweak this later if needed.
 
----
-▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+#### 2026-11-01T20:09:15Z
+
+*delta:farm-wiki*
 
 kind: pickup
 ---
@@ -84,8 +87,9 @@ Decision (Joel, 2026-11-01):
 2. GitHub heading slugs.
 3. Peek with no anchor prints frontmatter plus the first paragraph (page) or the description (yak).
 
----
-▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+#### 2026-11-01T20:09:15Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy

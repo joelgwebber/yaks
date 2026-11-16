@@ -14,13 +14,11 @@ tags:
 
 From [the agent-memory research](/doks/research/agent-memory-dreaming.md) (yaks-e4f5), sections 2, 4, 5, 8 and 9: changes to the `yaks-upkeep` reflection procedure and how doks are indexed. It edits a skill, so the proposals are one ask for Joel before anything is written.
 
-Related and not duplicated: [yaks-323b](yaks-323b) (`session list --since`) and the accepted design in [/doks/design/session-reflection.md](/doks/design/session-reflection.md).
+Related and not duplicated: [yaks-323b](/yaks/yaks/yaks-323b.md) (`session list --since`) and the accepted design in [/doks/design/session-reflection.md](/doks/design/session-reflection.md).
 
----
-▸ 2026-11-08T16:24:17Z [memory-1]
-kind: ask
-needs: human
----
+#### 2026-11-08T16:24:17Z
+
+*memory-1 · kind: ask · needs: human*
 
 asked: needs human
 
@@ -35,11 +33,9 @@ Six points from [the research](/doks/research/agent-memory-dreaming.md), each wi
 
 Separately, the loop isn't running: no recurring review, reflection or tidy yak exists and there is no `lessons.md`. Lean: run the first reflection round by hand over the three notes, then create the three recurring yaks. Say if you want that as its own yak.
 
----
-▸ 2026-11-10T17:44:06Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-10T17:44:06Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. SGTM. We can always see how it goes and iterate from there.
 2. SGTM. Seems like an important part of the process.
@@ -50,27 +46,23 @@ needs: agent
 
 Oh yeah, please do set that up. I never actually did the initialization step in this farm.
 
----
-▸ 2026-11-10T17:50:28Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T17:50:28Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 
 herd-unlock: doing this myself (skill prose stays with the coordinator): the six points into yaks-upkeep, the first reflection round by hand, the three recurring yaks. Point 4: yes, the yak is a task for the mechanism that stops the recurrence.
 
----
-▸ 2026-11-10T17:53:15Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:53:15Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:59:59Z [herd-unlock]
+#### 2026-11-10T17:59:59Z
+
+*herd-unlock*
 
 Done (herd-unlock), points 1–5 in `yaks-upkeep`, commit on `main` (see `yaks commits yaks-2b40`); point 6 is the child yaks-2755 (worker `dokdesc-1`, running).
 
@@ -85,19 +77,15 @@ Done (herd-unlock), points 1–5 in `yaks-upkeep`, commit on `main` (see `yaks c
 
 ## Loop started
 
-- First round by hand: [yaks-20ff](yaks-20ff) (shorn, recurs weekly), wrote [/doks/lessons.md](/doks/lessons.md) (27 lines).
+- First round by hand: [yaks-20ff](/yaks/yaks/yaks-20ff.md) (shorn, recurs weekly), wrote [/doks/lessons.md](/doks/lessons.md) (27 lines).
 - Point 4's first instance: yaks-b89d (shorn): `main` formatted once, the `cargo fmt` caveat gone from `AGENTS.md` and the land skill.
 - Recurring: yaks-dad8 (review, due tomorrow), yaks-20ff (reflect), yaks-0686 (tidy), weekly, `--wake agent`.
 - Filed: yaks-760d (`land` after a resolved cherry-pick), yaks-2788 (cheaper-model guidance in `yaks-coordinating`), yaks-20fe (cross-farm feedback, asked).
 
 `cargo test skills` passes (37).
 
----
-▸ 2026-11-10T18:02:45Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:02:45Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

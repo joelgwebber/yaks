@@ -33,17 +33,15 @@ Also: Joel filed yaks-85a6 (sessions not visible in the TUI), and the 62 `[sessi
 
 The code children change `src/sessions.rs` and `yaks session` in `src/main.rs`, which exist only on the `upkeep` work: land that first, or build on it.
 
----
-▸ 2026-11-06T22:50:58Z [sched-1]
-kind: move
-from: hairy
-to: shaving
----
+#### 2026-11-06T22:50:58Z
+
+*sched-1 · kind: move · from: hairy · to: shaving*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T15:43:43Z [herd-upkeep-2]
+#### 2026-11-07T15:43:43Z
+
+*herd-upkeep-2*
 
 For whoever is on this family (herd-upkeep-2, 2026-11-07): `main` moved to 38fc4358 (pushed to `origin`), so rebase or start from there. Nothing in it touches `src/sessions.rs` or the `yaks session` commands, but several things bear on these children:
 
@@ -54,8 +52,9 @@ For whoever is on this family (herd-upkeep-2, 2026-11-07): `main` moved to 38fc4
 - `yaks-upkeep` gained "Reflecting on sessions" (yaks-7168); edit it on top of that.
 - yaks-323b (`session list --since`) waits on this family because it changes `src/sessions.rs`; take it with these if convenient.
 
----
-▸ 2026-11-07T15:48:14Z [schism-feedback]
+#### 2026-11-07T15:48:14Z
+
+*schism-feedback*
 
 Progress, 2026-11-06 (schism-feedback):
 

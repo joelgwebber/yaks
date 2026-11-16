@@ -26,13 +26,15 @@ The `yaks` skill already says to "ask to record a real design fork", but in prac
 
 Depends on `yaks-6a11`: explicit `ask`/`answer` kinds and `reply_to` are what make several questions per yak workable.
 
----
-▸ 2026-10-31T16:42:41Z [yakherd]
+#### 2026-10-31T16:42:41Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:45:29Z [yakherd]
+#### 2026-10-31T16:45:29Z
+
+*yakherd*
 
 Landed in `45bfc8b`:
 
@@ -41,13 +43,15 @@ Landed in `45bfc8b`:
 
 Evidence: `cargo test --workspace` green (skills and brief tests included). `reply_to` (several open asks per yak) stays a follow-up of the metadata design. That needs note ids, so for now the skill says to number related questions in one ask.
 
----
-▸ 2026-10-31T16:45:29Z [yakherd]
+#### 2026-10-31T16:45:29Z
+
+*yakherd*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: 45bfc8b32107b8dd51485d6a3872e483f0b909cb
@@ -56,8 +60,9 @@ branch: main
 
 landed: 45bfc8b yaks-4c2a, yaks-0071: skills put design Q&A on yak asks; note metadata (--meta, reserved keys, checkpo (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:15Z [yakherd]
+#### 2026-10-31T17:24:15Z
+
+*yakherd*
 
 kind: landed
 commit: 931d4e4af524e4e2ca47ca160ec8916e8b2763ec
@@ -66,8 +71,9 @@ branch: main
 
 landed (rebased onto `c2b640f`, your checkout's `main`): 931d4e4 yaks-0071, yaks-4c2a, yaks-4728: re-apply this family's skills changes on top of the yaks-
 
----
-▸ 2026-10-31T17:24:19Z [yakherd]
+#### 2026-10-31T17:24:19Z
+
+*yakherd*
 
 kind: landed
 commit: ceb6d57c5e0c8ee7028111f4a19ab17abc194fca

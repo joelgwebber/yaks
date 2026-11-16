@@ -9,11 +9,8 @@ updated: '2026-11-06T02:40:39Z'
 due: 2026-11-02
 ---
 
----
-▸ 2026-11-06T02:40:39Z [sched-1]
-kind: move
-from: hairy
-to: dead
----
+#### 2026-11-06T02:40:39Z
+
+*sched-1 · kind: move · from: hairy · to: dead*
 
 moved: hairy -> dead

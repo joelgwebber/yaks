@@ -32,28 +32,27 @@ Unit tests for every template and for remote-URL parsing (`git@host:o/r.git`, `s
 
 Docs in the same change: `docs/cli.md`, the clap help, the `yaks` skill's Links section, `yaks.host` in the config docs.
 
----
-▸ 2026-11-14T11:21:30Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T11:21:30Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T11:21:30Z [linkplan-lead]
+#### 2026-11-14T11:21:30Z
+
+*linkplan-lead*
 
 Claim: worker `locate-1` (Sonnet tier, per AGENTS.md's standing delegation; the scope is one outcome with tests that fail first). Owner of the new `src/locate.rs`, `src/hosting.rs`, the `yaks url` command in `src/main.rs` (its own subcommand region only), `gitrepo.rs` (the remote rule), `links.rs` (`exists`, the `sources/<id>` resolution) and `src/tui/follow.rs` (the viewer's `sources/<id>` case). Out of scope: layout, stored link forms, the TUI menu, `store.rs`. Judge: the coordinator re-runs the evidence on its own build; the worker shears nothing.
 
----
-▸ 2026-11-14T11:22:00Z [locate-1]
+#### 2026-11-14T11:22:00Z
+
+*locate-1*
 
 Start Sat Nov 14 11:22:00 UTC 2026. yaks path yaks-f505: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f505.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/tqdpn9meejzv/yaks
 
----
-▸ 2026-11-14T11:44:53Z [locate-1]
+#### 2026-11-14T11:44:53Z
+
+*locate-1*
 
 Milestone: hosting.rs (Forge/Repo/templates + tests), locate.rs (Space, Place, farm_file alias, pinned_file moved from tui/source.rs), gitrepo::remote_of (sync::remote_of is a thin caller), `yaks url` subcommand, links::exists/peek and follow.rs use the `sources/<id>` alias. Builds. Next: unit + integration tests, docs.
 
@@ -65,16 +64,15 @@ Decision: without `--pin` a link names the branch (stable); `--pin` names HEAD w
 
 [yaks-f505-url-evidence](yaks-f505/yaks-f505-url-evidence.txt "yaks url against this farm: a yak, an attachment, a dok, a pinned code: path")
 
----
-▸ 2026-11-14T11:57:13Z [locate-1]
-kind: verify
-result: pass
----
+#### 2026-11-14T11:57:13Z
+
+*locate-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-14T11:57:20Z [locate-1]
+#### 2026-11-14T11:57:20Z
+
+*locate-1*
 
 Shear summary.
 
@@ -87,22 +85,14 @@ Shear summary.
 
 Evidence: `cargo test -p yaks` PASS (verify note above), `cargo fmt --check` clean, `tests/url.rs` (url flow, refusals, peek `/sources/<id>`, doctor flags `/sources/nope` and `/doks/sessions/...`), attached url output. Scratch-farm doctor run: `doks/t.md:L3: (/sources/nope) no such file in the farm`. Local-only: nothing pushed, nothing under `.yaks/` staged.
 
----
-▸ 2026-11-14T11:57:21Z [locate-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEKLZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T11:57:21Z
+
+*locate-1 · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEKLZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-14T11:57:55Z [linkplan-lead]
-kind: landed
-commit: 298b91ac7f0774fbc3a248c0f044d8fc96c81eee
-source: b20c4a925485e6dc3141ef941f94560108e85d97
-branch: main
----
+#### 2026-11-14T11:57:55Z
+
+*linkplan-lead · kind: landed · commit: 298b91ac7f0774fbc3a248c0f044d8fc96c81eee · source: b20c4a925485e6dc3141ef941f94560108e85d97 · branch: main*
 
 landed: 298b91ac yaks-f505: locate.rs and hosting.rs, yaks url, /sources/<id> resolves in peek, doctor and the viewer

@@ -12,18 +12,15 @@ tags:
 
 Copy in a yak does the right thing (copying the yak id) by default, if no line is selected with [v]isual row selection. But docs always copy the current line, never the actual doc path, which would be both more consistent, and sometimes what we actually want.
 
----
-▸ 2026-11-07T17:04:43Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:43Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:38:39Z [herd-stars]
+#### 2026-11-07T17:38:39Z
+
+*herd-stars*
 
 Done by herd-stars in `3e43d41e`: `y` in the text viewer with nothing selected copies the document's path, as `y` in a yak's pane copies its id; `v` then `y` still copies lines.
 
@@ -31,12 +28,8 @@ Done by herd-stars in `3e43d41e`: `y` in the text viewer with nothing selected c
 - Evidence: unit test `y_without_a_selection_copies_the_documents_path`; full gate green. Not driven headlessly, since that would write the real clipboard.
 - Help line (`?`) and `docs/tui.md` (the Doks table and the `A`/`O` row) updated.
 
----
-▸ 2026-11-07T17:38:41Z [herd-stars]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:38:41Z
+
+*herd-stars · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

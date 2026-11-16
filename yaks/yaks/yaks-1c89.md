@@ -31,8 +31,9 @@ As yaks-44b3 decided: what can be decided from the files alone is a command; jud
 
 Stays in Hearth: `core/` memory injection, protected paths and trust, fetching (web, Drive, mail), the clock, transcripts, the morning summary.
 
----
-▸ 2026-11-06T04:28:55Z [herd-upkeep]
+#### 2026-11-06T04:28:55Z
+
+*herd-upkeep*
 
 Filed the family (herd-upkeep, 2026-11-05):
 
@@ -46,19 +47,15 @@ Filed the family (herd-upkeep, 2026-11-05):
 
 Order: design, then note links and the command, then review, then the skill. The tool gaps are independent.
 
----
-▸ 2026-11-06T04:57:01Z [herd-upkeep]
-kind: move
-from: hairy
-to: shaving
-child: yaks-c5bd
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:57:01Z
+
+*herd-upkeep · kind: move · from: hairy · to: shaving · child: yaks-c5bd · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T05:10:09Z [herd-upkeep]
+#### 2026-11-06T05:10:09Z
+
+*herd-upkeep*
 
 Built the session-notes path on branch `upkeep` of the yaks repo (505d2058, 40dea8f0, d78b25a7), not yet landed on `main`:
 
@@ -69,8 +66,9 @@ Built the session-notes path on branch `upkeep` of the yaks repo (505d2058, 40de
 
 Still open here: the agent-layer tools (yaks-fcdc) and the reflection design (yaks-7168). Next step is Joel trying the review and housekeeping procedures on real examples.
 
----
-▸ 2026-11-06T21:55:36Z [herd-upkeep]
+#### 2026-11-06T21:55:36Z
+
+*herd-upkeep*
 
 Landed on `main` as d78b25a7 (Joel, 2026-11-06): note links, `yaks session`, and the `yaks-upkeep` skill. Installed from the main checkout with `cargo install --path .`.
 
@@ -78,8 +76,9 @@ The flaky `tests/init_modes.rs` test (`farm_works_from_a_git_worktree_and_a_shar
 
 Still open in this family: yaks-fcdc (agent-layer tools), yaks-7168 (reflection), yaks-b6a7, yaks-2e00, yaks-525b.
 
----
-▸ 2026-11-06T23:15:35Z [herd-upkeep-2]
+#### 2026-11-06T23:15:35Z
+
+*herd-upkeep-2*
 
 Fan-out, 2026-11-06 (yakherd `herd-upkeep-2`), all from `main` at 671320f9 (which removes import-hearth, yaks-ff4c), profile default model:
 
@@ -91,8 +90,9 @@ Fan-out, 2026-11-06 (yakherd `herd-upkeep-2`), all from `main` at 671320f9 (whic
 
 I take yaks-7168 (reflection design). yaks-3f35 is another thread's; its children own `src/sessions.rs`.
 
----
-▸ 2026-11-07T00:00:18Z [herd-upkeep-2]
+#### 2026-11-07T00:00:18Z
+
+*herd-upkeep-2*
 
 Landed on `main` at 30653149 and installed (`cargo install --path .` from the main checkout; `yaks skills install --user --force`):
 
@@ -107,8 +107,9 @@ Gate on 30653149: full `cargo test`, 1179 passed, 0 failed. Under load from runn
 
 Still running: `doks-1` (yaks-252c), `query-2` (yaks-39f9, yaks-6cdd).
 
----
-▸ 2026-11-07T00:04:36Z [herd-upkeep-2]
+#### 2026-11-07T00:04:36Z
+
+*herd-upkeep-2*
 
 Second batch landed on `main` at 38fc4358 and installed:
 
@@ -123,8 +124,9 @@ Left in this family: yaks-3f35 (another thread) and yaks-323b (`session list --s
 
 Worker friction, for the session note: `cargo test` stops at the first failing binary, so the load-sensitive `init_modes` and `sync` tests make `yaks verify` fail intermittently (`--no-fail-fast` helps); `cargo fmt -- <files>` still rewrites `src/actor.rs` and `tests/commits.rs`; claim notes named a worker (`query-1`) the brief then renamed.
 
----
-▸ 2026-11-07T15:43:44Z [herd-upkeep-2]
+#### 2026-11-07T15:43:44Z
+
+*herd-upkeep-2*
 
 Pushed to `origin/main` at 38fc4358 (Joel, 2026-11-07); farm synced. Release notes, since 0.0.33:
 
@@ -136,8 +138,9 @@ Pushed to `origin/main` at 38fc4358 (Joel, 2026-11-07); farm synced. Release not
 
 Known: yaks-06cd (load-sensitive tests). No CI runs on push; the release workflow runs on the tag.
 
----
-▸ 2026-11-10T19:10:46Z [herd-unlock]
+#### 2026-11-10T19:10:46Z
+
+*herd-unlock*
 
 Batch by herd-unlock, 2026-11-10 (Joel: "PTAL at the answered and starred yaks"). Workers, all `claude-sonnet-5-5`, base `1a3388a8` except dokdesc-1 (`53576880`):
 
@@ -153,8 +156,9 @@ Coordinator's own: yaks-b89d `53576880`, yaks-2b40 `a411adb8` + `5b6e4c34`, yaks
 
 Re-checked at landing: full `cargo test --workspace` green on `686d328a` (32 binaries, main 1114 passed); `cargo fmt --check` clean; own-build checks of the session note under `TZ=Pacific/Kiritimati` (path, `day:`, `written:` all UTC), `yaks check` on the real farm (6 doks flagged without a description), and the drafts flow headless (`E`, type, `Esc Esc`, `k` writes `drafts/edit-<id>.json`; reopening shows the `draft (saved just now) · Ctrl-R original` badge). Installed with `cargo install --path .`.
 
----
-▸ 2026-11-10T22:03:47Z [herd-unlock]
+#### 2026-11-10T22:03:47Z
+
+*herd-unlock*
 
 Batch 2 by herd-unlock-2, 2026-11-10 (Joel's second starred set plus three gate/landing fixes). All workers `claude-sonnet-5-5`, base `686d328a`:
 

@@ -18,8 +18,9 @@ verify: cargo test --workspace
 
 Implements yaks-63c3 (merge half) on yaks-1f34: per-field merge rules, `git merge-file` for bodies leaving markers in place, `merge_conflicts:` for pages, `yaks conflicts` and a doctor check.
 
----
-▸ 2026-11-01T21:40:37Z [delta:farm-wiki]
+#### 2026-11-01T21:40:37Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -29,8 +30,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T21:56:47Z [delta:farm-wiki]
+#### 2026-11-01T21:56:47Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -71,8 +73,9 @@ The plan is Z.
 
 Tests: `tests/merge_driver.rs` gains a page case through a real `git merge`, and 21 unit tests are in `mergedriver::tests`. `cargo test --workspace`: 920 passed.
 
----
-▸ 2026-11-01T21:58:59Z [delta:farm-wiki]
+#### 2026-11-01T21:58:59Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -80,8 +83,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T21:58:59Z [delta:farm-wiki]
+#### 2026-11-01T21:58:59Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

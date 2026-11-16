@@ -18,8 +18,9 @@ Hearth's note (`hearth-session-notes`) has four sections: Summary, Turns (one ve
 
 In a farm, much of a session's work is already recorded in yak notes and shear notes. The design here: a session note points at those rather than repeating them.
 
----
-▸ 2026-11-06T04:28:54Z [herd-upkeep]
+#### 2026-11-06T04:28:54Z
+
+*herd-upkeep*
 
 Decision (Joel, 2026-11-05, in the assessment thread): a session note references what yak notes already record instead of restating it.
 
@@ -29,11 +30,9 @@ Decision (Joel, 2026-11-05, in the assessment thread): a session note references
 
 Rejected: Hearth's four sections restated in full (duplicates yak notes); shrinking a note to verdicts, lessons and bare yak ids (loses the narrative and the discussion).
 
----
-▸ 2026-11-06T04:28:54Z [herd-upkeep]
-kind: ask
-needs: human
----
+#### 2026-11-06T04:28:54Z
+
+*herd-upkeep · kind: ask · needs: human*
 
 asked: needs human
 
@@ -44,28 +43,26 @@ Four details to settle before yaks-c5bd and yaks-17f5 are built; my lean on each
 3. **Path.** Lean: `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, Hearth's frontmatter fields (person, host, harness, day, saved time, verdict counts).
 4. **Back-links.** Lean: no note on each yak a session touched (noise); `yaks refs <id> --incoming` finds the session notes that cite it.
 
----
-▸ 2026-11-06T04:31:03Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T04:31:03Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. I was thinking the same thing. They really shouldn't end up conflicting.
 2. SGTM
 3. Also SGTM.
 4. Also, also SGTM.
 
----
-▸ 2026-11-06T04:38:03Z [herd-upkeep]
-kind: pickup
----
+#### 2026-11-06T04:38:03Z
+
+*herd-upkeep · kind: pickup*
 
 picked up
 
 herd-upkeep: recording the answers and building on them (yaks-c5bd, yaks-17f5).
 
----
-▸ 2026-11-06T04:56:54Z [herd-upkeep]
+#### 2026-11-06T04:56:54Z
+
+*herd-upkeep*
 
 Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refinement to 1.
 
@@ -74,12 +71,8 @@ Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refinem
 - **Path:** `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`, `type: session-review`, `source: session-note`.
 - **Back-links:** none written; the session notes citing a yak are found with `yaks find <id> --kind sessions`.
 
----
-▸ 2026-11-06T04:56:55Z [herd-upkeep]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T04:56:55Z
+
+*herd-upkeep · kind: move · from: hairy · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

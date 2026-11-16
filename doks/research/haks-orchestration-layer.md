@@ -11,7 +11,7 @@ sources:
 
 # Haks: an orchestration layer over yaks
 
-Read on 2026-11-03 by Joel and `delta:haks-review`, from `subtextdev/haks` at `8fbe3ec` (Go plus a React board, about 15k lines, 38 commits, all in one day), the repo's `yaks` farm branch at `e3a9145`, a design sketch passed on by Clint Ayres, and [a summary of the Indent thread that built it](/sources/2026-11-03-81364278/source.md). See [Provenance](#provenance) for how those fit together. The repo is private and early, so this page stays at design level: no code is copied, and neither the repo nor the sketch is saved as a source. Tracked in yaks-96d8.
+Read on 2026-11-03 by Joel and `delta:haks-review`, from `subtextdev/haks` at `8fbe3ec` (Go plus a React board, about 15k lines, 38 commits, all in one day), the repo's `yaks` farm branch at `e3a9145`, a design sketch passed on by Clint Ayres, and [a summary of the Indent thread that built it](/sources/2026-11-03-81364278-summary-of-clints-haks-implementation-thread/source.md). See [Provenance](#provenance) for how those fit together. The repo is private and early, so this page stays at design level: no code is copied, and neither the repo nor the sketch is saved as a source. Tracked in yaks-96d8.
 
 ## What it is
 
@@ -57,7 +57,7 @@ The first four are the "Asks for Joel" in the repo's design doc, which the threa
 
 ## Provenance
 
-Haks was built in one day, 2026-11-03, almost entirely by agents under Clint's product direction. The Indent thread (37 turns, 12:03 to 19:20 UTC, Clint sent every message) is the only place the sequence of decisions survives. The summary is a model's reading of the transcript, saved as [a source](/sources/2026-11-03-81364278/source.md); it did not read tool calls or subagent internals.
+Haks was built in one day, 2026-11-03, almost entirely by agents under Clint's product direction. The Indent thread (37 turns, 12:03 to 19:20 UTC, Clint sent every message) is the only place the sequence of decisions survives. The summary is a model's reading of the transcript, saved as [a source](/sources/2026-11-03-81364278-summary-of-clints-haks-implementation-thread/source.md); it did not read tool calls or subagent internals.
 
 ### How the design grew
 

@@ -38,8 +38,9 @@ The CLI gave the agent no other way. `yaks attach` takes one file and always app
 4. `yaks attach <id> <file>... --no-link`: store files without linking them in the body, several at once (one commit), so a bundle is its document plus its parts.
 5. Docs, `--help`, the `yaks` skill, and the surveyor's `AGENTS.md` / `arbiter` skill say which to use. A decision on tidying the existing seventeen surveyor yaks is a separate ask.
 
----
-▸ 2026-11-03T23:08:12Z [indent-links]
+#### 2026-11-03T23:08:12Z
+
+*indent-links*
 
 kind: move
 from: hairy
@@ -51,8 +52,9 @@ moved: hairy -> shaving
 
 [survey-1633-evidence-frame](yaks-be20/survey-1633-evidence-frame.txt)
 
----
-▸ 2026-11-03T23:22:53Z [indent-links]
+#### 2026-11-03T23:22:53Z
+
+*indent-links*
 
 Fixed in the working tree (not committed or landed: awaiting a go-ahead).
 
@@ -78,8 +80,9 @@ Fixed in the working tree (not committed or landed: awaiting a go-ahead).
 - The seventeen existing surveyor yaks with an evidence bundle keep their per-image links in the body. They render now (the document's links work) but are noisy; tidying them is a separate decision.
 - `yaks find` and `yaks refs` do not read attachments (unchanged; `doctor` is the one place that needed to).
 
----
-▸ 2026-11-03T23:47:29Z [indent-links]
+#### 2026-11-03T23:47:29Z
+
+*indent-links*
 
 Landed as `522ff21` on `main`, pushed to `origin` and `local`. Docs and skill text keep to yaks vocabulary (no surveyor or other repo references), per Joel.
 
@@ -87,8 +90,9 @@ Installed with `cargo install --path .` into `~/.cargo/bin`; a running `yaks tui
 
 Joel is tidying the surveyor farm and its guidance himself, so `yaks-9173` is his.
 
----
-▸ 2026-11-03T23:47:30Z [indent-links]
+#### 2026-11-03T23:47:30Z
+
+*indent-links*
 
 kind: move
 from: shaving

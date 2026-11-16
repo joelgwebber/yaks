@@ -12,13 +12,15 @@ tags:
 
 With CommonMark soft breaks (yaks-e9de), bodies written one-item-per-line (`Decision: …` / `Evidence: …` runs, pasted output) render as run-on paragraphs. A survey of this farm on 2026-10-17 found ~440 such adjacent plain lines vs ~90 genuinely hard-wrapped prose lines. Later: a `yaks` command or skill recipe that has a model rewrite a body into lists / blank-line paragraphs / fenced blocks, shown as a diff for approval. Not now.
 
----
-▸ 2026-10-17T19:55:43Z [delta-lead]
+#### 2026-10-17T19:55:43Z
+
+*delta-lead*
 
 Moved out of the yaks-e9de arc (Joel: leave out of this release); stays hairy for later.
 
----
-▸ 2026-10-26T20:59:03Z [delta-lead]
+#### 2026-10-26T20:59:03Z
+
+*delta-lead*
 
 ## Design pass (delta-lead, 2026-10-26)
 
@@ -50,32 +52,37 @@ Ship B, and later let a configured command run the request (`request_runner: "cl
 
 B. It reuses the existing ask/answer/pickup loop instead of adding a second integration, keeps yaks offline, and serves yaks-00c4's "tidy after import" too. Open questions for Joel: a new verb `request`, or `answer` without a prior ask? And is a canned-request list (`tidy`, `summarize`) worth it over a free-text note?
 
----
-▸ 2026-10-26T20:59:03Z [delta-lead]
+#### 2026-10-26T20:59:03Z
+
+*delta-lead*
 
 asked: needs human
 
 Design fork, written up in the note above: should yaks call models itself (A, e.g. LiteLLM), hand chores to the user's agent through the existing needs: agent inbox (B), or B now plus an optional configured runner later (C)? Lean: B, with a new 'request' verb and canned 'tidy'/'summarize' requests; doctor flags candidate bodies deterministically. Need your call on A/B/C and on 'request' vs reusing 'answer'.
 
----
-▸ 2026-10-26T21:46:24Z [Joel Webber]
+#### 2026-10-26T21:46:24Z
+
+*Joel Webber*
 
 Strongly agree on (B). I really like the idea of using the inbox as a general queue of "stuff that needs attention in some way", either from the user or agent. Then we can leverage the same affordances to ensure they get taken care of by whoever's responsible (eg, as described in yaks-f313).
 
----
-▸ 2026-10-26T21:51:27Z [delta-lead]
+#### 2026-10-26T21:51:27Z
+
+*delta-lead*
 
 picked up
 
 Going with B (inbox-centric). Design for the build and how it meshes with yaks-f313 follows in the next note.
 
----
-▸ 2026-10-26T21:51:27Z [delta-lead]
+#### 2026-10-26T21:51:27Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T21:51:27Z [delta-lead]
+#### 2026-10-26T21:51:27Z
+
+*delta-lead*
 
 ## Design: the inbox as the one queue of work waiting on someone (delta-lead, 2026-10-26)
 
@@ -114,13 +121,15 @@ Canned requests (`--tidy`, `--summarize`), a `doctor` lint for run-on bodies, `b
 - `wait-1` (yaks-f313): `yaks wait`, CLI docs and help.
 - delta-lead: the skills prose (how an agent treats a request, when to `wait`) and the landing.
 
----
-▸ 2026-10-26T21:52:24Z [delta-lead]
+#### 2026-10-26T21:52:24Z
+
+*delta-lead*
 
 Fan-out (delta-lead): request-1 on yaks-b75b (thread ksQQXwyj…y-WpIB…), wait-1 on yaks-f313 (thread ksQQXwyj…y-g5IB…), both on the profile default model, base 4069286. Skills prose stays with delta-lead, after both land. Follow-ups in yaks-db07.
 
----
-▸ 2026-10-26T22:06:21Z [delta-lead]
+#### 2026-10-26T22:06:21Z
+
+*delta-lead*
 
 Done (delta-lead): the inbox is now the queue of work waiting on someone. Pushed to the human's checkout as `696348e`.
 
@@ -133,7 +142,8 @@ Done (delta-lead): the inbox is now the queue of work waiting on someone. Pushed
 - Gate: 866 passed, 0 failed. Installed with `cargo install --path .`.
 - Follow-ups: yaks-db07 (canned tidy/summarize, a run-on lint, `bulk --request`, auto-tidy on import with yaks-00c4).
 
----
-▸ 2026-10-26T22:06:22Z [delta-lead]
+#### 2026-10-26T22:06:22Z
+
+*delta-lead*
 
 moved: shaving -> shorn

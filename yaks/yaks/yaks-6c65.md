@@ -28,26 +28,21 @@ Today a note is `---`, then `▸ <ts> [actor]`, then optional `key: value` meta 
 
 A short design dok (`doks/design/note-format.md`) with two or three candidate shapes rendered on GitHub with `gh api markdown` (attach the output), a recommendation, the parser and merge-driver impact, and a `yaks ask` on this yak for Joel. Do not implement.
 
----
-▸ 2026-11-14T11:22:51Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T11:22:51Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T11:22:52Z [linkplan-lead]
+#### 2026-11-14T11:22:52Z
+
+*linkplan-lead*
 
 Design pass done: [/doks/design/note-format.md](/doks/design/note-format.md), with the GitHub renders attached as [render evidence](yaks-6c65/render-evidence.md). Recommendation is candidate B: `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator. Asking Joel below; the parser, merge-driver and TUI impact are in the dok.
 
----
-▸ 2026-11-14T11:22:53Z [linkplan-lead]
-kind: ask
-needs: human
----
+#### 2026-11-14T11:22:53Z
+
+*linkplan-lead · kind: ask · needs: human*
 
 asked: needs human
 
@@ -70,32 +65,25 @@ The anchor is the timestamp (`#2026-11-04t221303z`, `-1`, `-2` for the same seco
 
 Answer "yes" to take all four, or say what to change. The schema-9 migration yak converts every yak's notes in one pass, so this has to settle before it starts.
 
----
-▸ 2026-11-14T17:34:51Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-14T17:34:51Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. I'm good with that, as long as it renders reasonably in GH and friends.
 2. I assume's good. It might get a little weird when notes contain higher headings, but I don't see any obvious alternative.
 3. I'm good with that separator -- | / - would risk misparsing.
 4. That's fine.
 
----
-▸ 2026-11-14T17:51:01Z [linkplan-lead]
-kind: pickup
----
+#### 2026-11-14T17:51:01Z
+
+*linkplan-lead · kind: pickup*
 
 picked up
 
 Decision (Joel, 2026-11-14): note format B as in [/doks/design/note-format.md](/doks/design/note-format.md): `#### <timestamp>` heading, an italic `*actor · key: value*` line, no `---` separator; separator ` · ` (a pipe or slash would risk misparsing); `####`; Azure DevOps slugs accepted. Joel's caveat: notes that contain their own higher headings read oddly in the outline; no better option found. Implemented under a new yak, shorn here as the design.
 
----
-▸ 2026-11-14T17:51:14Z [linkplan-lead]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T17:51:14Z
+
+*linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

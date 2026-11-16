@@ -42,8 +42,9 @@ Evidence (fail first):
 - dry-run changes nothing
 - doctor flags a hand-made both-layouts farm
 
----
-▸ 2026-10-12T20:00:39Z [delta-lead]
+#### 2026-10-12T20:00:39Z
+
+*delta-lead*
 
 Amended by D10 (see yaks-8b7a): migrate also moves `.yaks/artifacts/<id>/` to `.yaks/<id>/` and rewrites every `](<id>/` link in every body to `](<id>/`, then removes the emptied `artifacts/`.
 
@@ -56,13 +57,15 @@ This worker also owns converting the artifact code paths to phase 1's helper:
 
 The migrate command is transitional (phase 4 deletes it): keep it in one place.
 
----
-▸ 2026-10-12T20:20:37Z [delta-lead]
+#### 2026-10-12T20:20:37Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-12T20:20:38Z [delta-lead]
+#### 2026-10-12T20:20:38Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: mig-1. Spec: the description, the amendment note on this yak, and yaks-8b7a's plan (D5, D8, D10) and amendments.
 
@@ -118,20 +121,23 @@ Judge: coordinator.
 - Finish staging is the old layout's: `git add -A -- .yaks/shaving/<id>.md .yaks/shorn/<id>.md` plus `.yaks/artifacts/<id>` if you attached something, and NEVER name a path that does not exist (git then stages nothing at all). Check `git status --short` is empty after your commit.
 - File ownership is strict (three workers run at once): touch only the files your claim names. If you must touch another, `yaks ask` instead.
 
----
-▸ 2026-10-12T20:23:54Z [mig-2]
+#### 2026-10-12T20:23:54Z
+
+*mig-2*
 
 mig-2 started (replaces mig-1). date -u: Mon Oct 12 20:23:48 UTC 2026
 
 yaks path yaks-86f4: `/Users/joel/src/yaks/.delta/worktrees/n5p2egqfm27v/yaks/.yaks/shaving/yaks-86f4.md`
 
----
-▸ 2026-10-12T20:51:40Z [mig-2]
+#### 2026-10-12T20:51:40Z
+
+*mig-2*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-12T20:52:47Z [mig-2]
+#### 2026-10-12T20:52:47Z
+
+*mig-2*
 
 Decision: `Farm::migrate` and its helpers (`rewrite_artifact_links`, `MigratePlan`, `MigrateOutcome`, `tracked_by_git`) live in one marked section of `src/farm.rs` ("yaks migrate (transitional: yaks-bbda deletes this section)"). Rejected: a new `src/migrate.rs` (not in my file scope; the claim names `farm.rs`).
 
@@ -205,7 +211,8 @@ Gate: `cargo test --release`: 16 suites, 662 passed, 0 failed, 4 ignored (the sa
 
 Not touched/known: `src/brief.rs`, `commit.rs`, `status.rs`, `changes.rs`, `sheds.rs` still carry `artifacts/` strings (other owners / coordinator).
 
----
-▸ 2026-10-12T20:52:47Z [mig-2]
+#### 2026-10-12T20:52:47Z
+
+*mig-2*
 
 moved: shaving -> shorn

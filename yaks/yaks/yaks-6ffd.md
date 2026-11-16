@@ -35,28 +35,27 @@ The code half of dropping the `.yaks/` root (yaks-1151 decision 1). The audit wi
 
 Tests for both layouts through `Farm::at` / `discover_with`, with a fixture of each; the existing `.yaks` tests keep passing. A scratch repo whose farm branch has the farm at its root: `yaks create`, `shave`, `sync --no-push`, `status` and the land guard, with the autocommit visible in `git log`.
 
----
-▸ 2026-11-14T11:21:19Z [linkplan-lead]
+#### 2026-11-14T11:21:19Z
 
-Part of the plan with [yaks-f505](yaks-f505) (resolver, independent) and [yaks-acc0](yaks-acc0) (the migration that uses this). Shave the resolver and this in parallel only if the scopes stay disjoint: this owns `store.rs`, `init.rs`, `status.rs`, `sync.rs`, `weight.rs`, `preflight.rs`, `land.rs`, the TUI state files; the resolver owns the new `locate.rs`, `hosting.rs`, `links.rs` and `follow.rs`. `farm_git`'s `top == root` change lands first and the resolver rebases onto it.
+*linkplan-lead*
 
----
-▸ 2026-11-14T11:32:23Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+Part of the plan with [yaks-f505](/yaks/yaks/yaks-f505.md) (resolver, independent) and [yaks-acc0](/yaks/yaks/yaks-acc0.md) (the migration that uses this). Shave the resolver and this in parallel only if the scopes stay disjoint: this owns `store.rs`, `init.rs`, `status.rs`, `sync.rs`, `weight.rs`, `preflight.rs`, `land.rs`, the TUI state files; the resolver owns the new `locate.rs`, `hosting.rs`, `links.rs` and `follow.rs`. `farm_git`'s `top == root` change lands first and the resolver rebases onto it.
+
+#### 2026-11-14T11:32:23Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T11:32:23Z [linkplan-lead]
+#### 2026-11-14T11:32:23Z
+
+*linkplan-lead*
 
 Claim: worker `layout-1` (Sonnet tier, standing delegation). Owns, by symbol: `store::farm_git` / `FarmGit` and the `root.parent()` users in `status.rs`, `sync.rs`, `weight.rs`, `sheds.rs`, `farm.rs`, `tui/farmsync.rs`; `preflight::yak_id_of`; `weight::kind_of`; the land guard in `land.rs`; `store::init` and `init.rs`; `store::migration_refusal`; the TUI per-user state paths (`views_store.rs`, `cache.rs`, `drafts.rs`); and in `links.rs` only `read_at` and `code_base`. Out of scope: `.gitattributes` and LFS rules, moving files, link rewriting, any stored form. Another worker (`locate-1`, yaks-f505) owns `locate.rs`, `hosting.rs`, `gitrepo.rs`, `links::exists` and `tui/follow.rs`: do not edit those. Judge: the coordinator re-runs the evidence on its own build.
 
----
-▸ 2026-11-14T11:32:52Z [layout-1]
+#### 2026-11-14T11:32:52Z
+
+*layout-1*
 
 Start: layout-1. date -u: Sat Nov 14 11:32:45 UTC 2026.
 
@@ -65,8 +64,9 @@ Start: layout-1. date -u: Sat Nov 14 11:32:45 UTC 2026.
 
 Read the brief, the claim note and the audit (W1-W3, W9). Starting with store::farm_git / FarmGit.
 
----
-▸ 2026-11-14T12:03:01Z [layout-1]
+#### 2026-11-14T12:03:01Z
+
+*layout-1*
 
 Milestone: core compiles clean (`cargo build`, no warnings). Not yet tested.
 
@@ -83,46 +83,51 @@ Next: TUI per-user state copy, then tests for both layouts, then the scratch-rep
 
 [layout1-evidence](yaks-6ffd/layout1-evidence.txt "Scratch repo, farm at the branch root: create/shave/note/shorn autocommits, status, commit, sync --no-push, weight, land guard exit 7")
 
----
-▸ 2026-11-14T12:17:54Z [layout-1]
+#### 2026-11-14T12:17:54Z
+
+*layout-1*
 
 Decision: layouts are told apart in one place, `store::farm_root_in(worktree)`: a `config.yaml` at the worktree top means the root layout and wins over a `.yaks/` beside it (the migration's stub `.yaks/schema`); else a `.yaks/` directory means the old layout; else a bare top-level `schema`. Rejected: probing `schema` first (the stub would then make a migrated farm read as old) and looking at `git ls-tree` (slower, needs a commit).
 
----
-▸ 2026-11-14T12:17:55Z [layout-1]
+#### 2026-11-14T12:17:55Z
+
+*layout-1*
 
 Decision: path-only classifiers (`preflight::yak_id_of`, `changes::farm_rel`, `commit::generate_message`, `weight::kind_of`, the land guard) share `store::farm_relative(repo_path)`: strip through the last `.yaks` component, else the path as is. Rejected: threading `FarmGit.prefix` into every signature (they see only a path, from git output that may be older than the farm's current layout, for example a pre-move commit). `FarmGit.prefix`/`repo_path` is used where a farm is at hand (`weight::enable_lfs`).
 
----
-▸ 2026-11-14T12:17:56Z [layout-1]
+#### 2026-11-14T12:17:56Z
+
+*layout-1*
 
 Decision: land guard rule. A worker commit is refused (exit 7) when it touches a path that `path_owner` says is a yak file or attachment (at the top or under `.yaks/`) AND HEAD tracks no farm. HEAD tracks a farm when any tracked path is under `.yaks/` or is a yak file, or it has both `config.yaml` and `schema` at the root. Rejected: refusing on the path alone (a repo that legitimately keeps a farm or yak fixtures would never land), and only checking `.yaks/` (what could never fire after the move). Known residual: a code repo with a tracked `*/yaks/*.md` of its own is not guarded.
 
----
-▸ 2026-11-14T12:17:56Z [layout-1]
+#### 2026-11-14T12:17:56Z
+
+*layout-1*
 
 Decision: `sync` dirty check is `git status --porcelain -- . ':(exclude).agents'` from the top. The old `-- .yaks .gitattributes` matched nothing in the root layout (the farm then read clean and a rebase was attempted on a dirty tree). `.` alone broke two sync tests: `yaks init` run from inside the farm worktree installs untracked `.agents/skills`, which are no part of the farm; excluded. Rejected: listing farm top-level names (a new herd dir would be missed).
 
----
-▸ 2026-11-14T12:17:57Z [layout-1]
+#### 2026-11-14T12:17:57Z
+
+*layout-1*
 
 Decision: TUI per-user state. At `App::with_farm`, before anything loads, `views_store::adopt_legacy_state` copies the old key's files (`~/.config/yaks/<slug(<root>/.yaks)>/**` = views, working set, drafts, and the cache file `~/.cache/yaks/<slug>.json`) to the new key. Conflict rule: a file that already exists under the new key is kept, never overwritten; old files are never deleted (an older yaks keeps reading them). Run on every start but a no-op once the new files exist. Not run for a root that is itself `.yaks/` (key unchanged). Rejected: moving (breaks an older binary alongside) and keying by worktree (still changes the key once).
 
----
-▸ 2026-11-14T12:17:57Z [layout-1]
+#### 2026-11-14T12:17:57Z
+
+*layout-1*
 
 Decision: `yaks init` is unchanged for a fresh farm (`.yaks/`), but on an existing branch `init.rs` now takes the root from `farm_root_in` and `branch_holds_farm` accepts `config.yaml`/`schema`/`.yaks` at the branch tip, so init no longer calls a root-layout branch "not a farm". `store::init` decides `AlreadyExists` by `config.yaml`/`schema`, or an existing `.yaks/` directory, not `root.exists()`.
 
----
-▸ 2026-11-14T12:33:07Z [layout-1]
-kind: verify
-result: pass
----
+#### 2026-11-14T12:33:07Z
+
+*layout-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-14T12:33:16Z [layout-1]
+#### 2026-11-14T12:33:16Z
+
+*layout-1*
 
 Summary: yaks now understands a farm branch whose root IS the farm root and still reads `.yaks/`; migrates nothing, `yaks init` still writes `.yaks/`.
 
@@ -142,22 +147,14 @@ Evidence:
 
 Not done / for others: `.gitattributes` and LFS rules still say `.yaks/**` (migration yak); `yaks session touched` and `check` staleness across the move; the `.yaks` text in brief and other docs; known residual in the land guard (a code repo that legitimately tracks `*/yaks/*.md`).
 
----
-▸ 2026-11-14T12:33:17Z [layout-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEcKpIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T12:33:17Z
+
+*layout-1 · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGEcKpIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-14T12:39:21Z [linkplan-lead]
-kind: landed
-commit: 3c258a539df6cc53d34a89b237e44b26b04708e8
-source: afa422941afd90e255369ec67bf42c8dde32f8ee
-branch: main
----
+#### 2026-11-14T12:39:21Z
+
+*linkplan-lead · kind: landed · commit: 3c258a539df6cc53d34a89b237e44b26b04708e8 · source: afa422941afd90e255369ec67bf42c8dde32f8ee · branch: main*
 
 landed: 3c258a53 yaks-6ffd: understand a farm branch whose root is the farm root (FarmGit.prefix, layout detection, path classifiers, land guard, sync dirty check, TUI state copy, read_at fallback)

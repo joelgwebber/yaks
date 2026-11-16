@@ -13,18 +13,15 @@ tags:
 
 Just like on yak list & details. At present, `y` just copies the current line of a dok. It should require that the line be selected first (like yaks) in order to copy it.
 
----
-▸ 2026-11-10T17:49:47Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:49:47Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:50:30Z [herd-unlock]
+#### 2026-11-10T17:50:30Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock): worker `dokcopy-1`, Sonnet 5.5.
 
@@ -40,19 +37,18 @@ The Doks tab row `y` (already copies the path), other contexts.
 
 A test: viewer open, no selection, `y` puts the path on the (test) clipboard; with a `v` selection it copies the selection. Gate `cargo test --workspace`. Judge: the yakherd.
 
----
-▸ 2026-11-10T17:51:32Z [dokcopy-1]
+#### 2026-11-10T17:51:32Z
+
+*dokcopy-1*
 
 Start: 2026-11-10T17:51:29Z
 
 - yaks path yaks-affb: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-affb.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/am99yre814ns/yaks
 
----
-▸ 2026-11-10T17:55:22Z [dokcopy-1]
-kind: ask
-needs: human
----
+#### 2026-11-10T17:55:22Z
+
+*dokcopy-1 · kind: ask · needs: human*
 
 asked: needs human
 
@@ -72,32 +68,27 @@ Questions:
 
 My recommendation: 1, adding the key-level test and a clarified help line only.
 
----
-▸ 2026-11-10T18:36:28Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-10T18:36:28Z
+
+*sched-1 · kind: answer · needs: agent*
 
 Whoops, forgot to rebuild. Working fine.
 
----
-▸ 2026-11-10T18:36:37Z [sched-1]
+#### 2026-11-10T18:36:37Z
+
+*sched-1*
 
 Already done.
 
----
-▸ 2026-11-10T18:36:37Z [sched-1]
-kind: move
-from: shaving
-to: shorn
----
+#### 2026-11-10T18:36:37Z
+
+*sched-1 · kind: move · from: shaving · to: shorn*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T18:44:24Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T18:44:24Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 

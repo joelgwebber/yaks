@@ -30,26 +30,30 @@ git log --oneline --grep=yaks-e5fb main
 
 Docs: `docs/cli.md` and the `--help` text describe it as "commits naming its id and those that touched its file".
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:17:16Z [yakherd]
+#### 2026-10-31T16:17:16Z
+
+*yakherd*
 
 Claim (yakherd). Owner: worker `commits-1`, then `yaks-735a` in the same worker. Owns `Farm::commits` and `render_commits`, `src/land.rs`, and the `Commits`/`Land` commands in `src/main.rs`. Evidence: a test with a branch farm plus a code repo where the code commit names the id; real-farm `yaks commits yaks-e5fb` shows `e99754d`. Judge: yakherd.
 
----
-▸ 2026-10-31T16:18:59Z [commits-1]
+#### 2026-10-31T16:18:59Z
+
+*commits-1*
 
 Start (commits-1).
 
 - `date -u`: Sat Oct 31 16:18:58 UTC 2026
 - `yaks path yaks-7a11`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-7a11.md
 
----
-▸ 2026-10-31T16:30:47Z [commits-1]
+#### 2026-10-31T16:30:47Z
+
+*commits-1*
 
 Progress (commits-1): fix and test written, gate running next.
 
@@ -63,13 +67,15 @@ Decision: the farm branch is excluded from the message grep and its commits are 
 
 Decision: `--grep` uses `--fixed-strings` so ids with regex characters match literally. Not `-i`: ids are lowercase.
 
----
-▸ 2026-10-31T16:34:42Z [commits-1]
+#### 2026-10-31T16:34:42Z
+
+*commits-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-31T16:34:48Z [commits-1]
+#### 2026-10-31T16:34:48Z
+
+*commits-1*
 
 Summary (commits-1): `yaks commits` now greps the code repository, not the farm worktree.
 
@@ -80,13 +86,15 @@ Summary (commits-1): `yaks commits` now greps the code repository, not the farm 
 - Real farm: `./target/debug/yaks commits yaks-e5fb` from this checkout lists `e99754d yaks-e5fb, yaks-3bcd: yaks land <sha> (port of land.sh) ...` and `c6d77e5` (an old farm commit on `main`), then "Farm history" with `f115c18 ... 412010e ...`.
 - Gate: `cargo test --workspace` all green (761 unit + integration); `yaks verify` PASS.
 
----
-▸ 2026-10-31T16:34:49Z [commits-1]
+#### 2026-10-31T16:34:49Z
+
+*commits-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: c4bde339f2ad7cda9531ca9d8c1d3cee8a13655b
@@ -95,8 +103,9 @@ branch: main
 
 landed: c4bde33 yaks-7a11: yaks commits greps the code repository (all branches), labels farm history (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:18Z [yakherd]
+#### 2026-10-31T17:24:18Z
+
+*yakherd*
 
 kind: landed
 commit: ffe8a66146a81c4bbc01133788d3f15ba540b4b0

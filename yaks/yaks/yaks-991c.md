@@ -18,17 +18,20 @@ If instead we ensure the skills are crystal clear about going through the CLI fo
 
 Done well, this should also make it much easier for agents to coordinate implicitly across sheds, without having to be made explicitly aware of one another -- eg, if a worker in another shed discovers something interesting and notes it on yak-aaaa (even if it's not been formally assigned that yak), then its notes would become instantly visible to the worker that actually _is_ shaving that yak.
 
----
-▸ 2026-10-16T20:09:48Z [Joel Webber]
+#### 2026-10-16T20:09:48Z
+
+*Joel Webber*
 
 This also relates to yaks-5cea. Hopefully we can unify the CLI/TUI/lib implementations in such a way that these things Just Work.
 
----
-▸ 2026-10-19T04:26:21Z [delta:herd-pass]
+#### 2026-10-19T04:26:21Z
+
+*delta:herd-pass*
 
 Obviated by one farm per machine (yaks-6a34, yaks-73f4): every shed reads and writes the same farm worktree, so there are no per-shed copies to look up, merge, steer or lose; LFS-tracked attachments no longer travel through code merges (the orphan farm branch has no .gitattributes). Slaughtered in the 2026-10-19 herd pass; revive if it recurs under the new model.
 
----
-▸ 2026-10-19T04:26:22Z [delta:herd-pass]
+#### 2026-10-19T04:26:22Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

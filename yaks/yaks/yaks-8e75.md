@@ -17,13 +17,15 @@ verify: cargo test --workspace
 
 Implements yaks-8384: `schemas/<type>.md` (Hearth's format: `fields: {name: {type, description, default}}`), warnings from `page set`/`doctor`, defaults on `page new`, and `schemas/yak.md` extending the yak's built-in fields.
 
----
-▸ 2026-11-01T20:09:16Z [delta:farm-wiki]
+#### 2026-11-01T20:09:16Z
+
+*delta:farm-wiki*
 
 Joel (yaks-8384): `schemas/yak.md` should also carry known tags with descriptions, covering yaks-640a and yaks-f04d (explicit label definitions in config).
 
----
-▸ 2026-11-01T21:29:02Z [delta:farm-wiki]
+#### 2026-11-01T21:29:02Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -33,8 +35,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T21:34:45Z [delta:farm-wiki]
+#### 2026-11-01T21:34:45Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -61,8 +64,9 @@ Done on the `wiki` branch.
 - `page new wiki/home/dishwasher.md --type appliance --set purchased=spring` wrote `warranty: none` from the default and warned about the missing `name` and the non-date `purchased`. The `due: soon` yak field was flagged by doctor against `schemas/yak.md`.
 - `tests/schemas.rs` (through the binary) and `schemas::tests`. `cargo test --workspace`: 910 passed.
 
----
-▸ 2026-11-01T21:36:47Z [delta:farm-wiki]
+#### 2026-11-01T21:36:47Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -70,8 +74,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T21:36:47Z [delta:farm-wiki]
+#### 2026-11-01T21:36:47Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

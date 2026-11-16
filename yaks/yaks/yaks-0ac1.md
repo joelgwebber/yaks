@@ -23,8 +23,9 @@ I don't want to go _crazy_ with configurable key bindings, but I'm pretty sure o
 - Invest in whatever refactoring throughout the TUI codebase makes all of this cleaner.
   It'll get nasty if we're not careful and try to bolt it in thoughtlessly.
 
----
-▸ 2026-11-03T02:19:23Z [tui-design]
+#### 2026-11-03T02:19:23Z
+
+*tui-design*
 
 Partly folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c: §5 "Keys".
 
@@ -33,13 +34,15 @@ Partly folded into the unified TUI design, [wiki/design/tui-model.md](/doks/desi
 
 Configurability, leader keys and which-key are still open here.
 
----
-▸ 2026-11-03T06:11:22Z [herd-tui]
+#### 2026-11-03T06:11:22Z
+
+*herd-tui*
 
 The command table (phase 2, `642be42e`) and the key pass (phase 7, `c98d7e3c`: one meaning per key for h/v/N/r/q, a `?` keys popup, user `keys:` overrides by command name) landed under yaks-947a. Configurability depth, leader keys and a real which-key move to the holistic rethink, yaks-7c6e.
 
----
-▸ 2026-11-03T06:11:22Z [herd-tui]
+#### 2026-11-03T06:11:22Z
+
+*herd-tui*
 
 kind: move
 from: hairy

@@ -20,13 +20,15 @@ On the renderer core.
 - Alerts: `> [!NOTE]` / TIP / IMPORTANT / WARNING / CAUTION render as a quote with a colored bar and a title row (palette).
 - Footnotes: references render as superscript-ish `[1]` links that jump to the definition; definitions collect at the end of their content block (description or comment) under a dim rule.
 
----
-▸ 2026-10-17T05:17:20Z [delta-lead]
+#### 2026-10-17T05:17:20Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T05:17:20Z [delta-lead]
+#### 2026-10-17T05:17:20Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **links-2** (with yaks-3b8d). Task lists (☐/☑) and alerts (coloured bar + `▲ WARNING` title) already render via the core (yaks-649d). Remaining: footnotes.
 
@@ -35,8 +37,9 @@ Claim (yakherd delta-lead, 2026-10-17): owner **links-2** (with yaks-3b8d). Task
 
 Evidence: failing-first tests (reference numbering, definition moved to the end, follow jumps to it); a headless frame. Judge: coordinator at landing.
 
----
-▸ 2026-10-17T05:21:50Z [links-2]
+#### 2026-10-17T05:21:50Z
+
+*links-2*
 
 Start (links-2): Sat Oct 17 05:21:50 AM UTC 2026
 
@@ -45,8 +48,9 @@ Start (links-2): Sat Oct 17 05:21:50 AM UTC 2026
 
 [frame-links](yaks-1bbb/frame-links.txt)
 
----
-▸ 2026-10-17T05:33:01Z [links-2]
+#### 2026-10-17T05:33:01Z
+
+*links-2*
 
 Decision: footnote numbering is by first reference (then unreferenced definitions in source order), computed in a pre-pass over the events; the label the author wrote (`[^note]`) is never shown. Rejected: showing the author's label (not numeric, can't be "superscript-ish `[n]`").
 
@@ -62,19 +66,22 @@ Done:
 - Docs: docs/tui.md (rendered markdown paragraph), `?` help line for Enter, yaks skill "What the TUI renders" line (footnote jumps moved from "does not" to "renders").
 - Frame attached: frame-links.txt (headless 90x34; the last frames of the Tab sequence). Footnote jump frame shows `→ [1] (o to go back)` after Enter on the first Tab stop.
 
----
-▸ 2026-10-17T05:33:04Z [links-2]
+#### 2026-10-17T05:33:04Z
+
+*links-2*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 [frame-footnote-jump](yaks-1bbb/frame-footnote-jump.txt)
 
----
-▸ 2026-10-17T05:33:15Z [links-2]
+#### 2026-10-17T05:33:15Z
+
+*links-2*
 
 Correction: frame-links.txt (attached above) holds the Tab-through-links frames, not the footnote jump. frame-footnote-jump.txt is the footnote frame set: `Enter`, `Tab` onto the reference row, `Enter` -> notification `→ [1] (o to go back)`. The cursor-to-definition move is asserted by `following_a_footnote_reference_jumps_to_its_definition_and_o_returns`.
 
----
-▸ 2026-10-17T05:33:15Z [links-2]
+#### 2026-10-17T05:33:15Z
+
+*links-2*
 
 moved: shaving -> shorn

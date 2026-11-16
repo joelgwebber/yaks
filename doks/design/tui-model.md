@@ -9,7 +9,7 @@ tags:
 
 # TUI design: one model for views, panes, history, search and keys
 
-Status: agreed with Joel, 2026-11-02. Tracked by [yaks-9c3c](yaks-9c3c).
+Status: agreed with Joel, 2026-11-02. Tracked by [yaks-9c3c](/yaks/yaks/yaks-9c3c.md).
 
 This design replaces five separate plans with one model. Each plan below solved
 its own problem with its own mechanism; together they would leave the TUI with
@@ -17,8 +17,8 @@ more special cases, not fewer.
 
 | Yak | Problem | Earlier design (reference) |
 |---|---|---|
-| yaks-158d | `o`/`i` lose the list you came from; history is detail-only | [158d-design.md](yaks-158d/158d-design.md) |
-| yaks-953f, yaks-1bbd | the `/` search and its header fall out of sync; detail find is separate | [search-design.md](yaks-953f/search-design.md) |
+| yaks-158d | `o`/`i` lose the list you came from; history is detail-only | [158d-design.md](/yaks/yaks/yaks-158d/158d-design.md) |
+| yaks-953f, yaks-1bbd | the `/` search and its header fall out of sync; detail find is separate | [search-design.md](/yaks/yaks/yaks-953f/search-design.md) |
 | yaks-c7ba | no global search in the TUI | none |
 | yaks-f1e6 | the Sheds tab is an outlier: wasted space, its own keys, loses context | none |
 | yaks-0ac1 | the key bindings are a context-dependent mishmash | none |

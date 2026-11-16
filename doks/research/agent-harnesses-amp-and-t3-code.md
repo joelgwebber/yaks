@@ -26,7 +26,7 @@ The two products sit at different layers. **T3 Code** is a thin control surface 
 
 ## T3 Code
 
-A landing page, so a vendor's own account of itself ([source](/sources/2026-11-05-404a8e9d/source.md)).
+A landing page, so a vendor's own account of itself ([source](/sources/2026-11-05-404a8e9d-t3-code-t3codes-landing-page/source.md)).
 
 - **What it is:** "the open-source control plane for coding agents". It runs Claude Code, Codex, Antigravity, OpenCode, Cursor and Grok from one surface, with the user's own subscriptions. It does not resell tokens.
 - **Git is the unit:** every agent thread writes to its own branch; one button opens a PR with a generated title, body and changelog; inline diff review before pushing; draft, stacked and amended PRs.
@@ -38,7 +38,7 @@ What it says about the field: a harness can be a UI and a git workflow over othe
 
 ## Amp
 
-Also a vendor's page ([source](/sources/2026-11-05-a5b10867/source.md)), but it carries a 26-minute transcript of Thorsten Ball using it for a day, which is the most concrete evidence here.
+Also a vendor's page ([source](/sources/2026-11-05-a5b10867-amp-ampcodecom-landing-page-with-the-a-day-in/source.md)), but it carries a 26-minute transcript of Thorsten Ball using it for a day, which is the most concrete evidence here.
 
 - **Orbs:** a fresh remote machine for every thread, with the code, plugins and tools. They keep working after the laptop closes, so "no worktrees to juggle, no port conflicts". Self-hosted orb providers and macOS machines for iOS builds are announced.
 - **Portals:** the dev server of an orb opened in the viewer, with comments on the page itself sent to the agent.
@@ -51,7 +51,7 @@ Also a vendor's page ([source](/sources/2026-11-05-a5b10867/source.md)), but it 
 
 ## "How I work with Agents" (Thorsten Ball)
 
-An X article, 25 October 2026, "as of October 2026" ([source](/sources/2026-11-05-1fecf49b/source.md)). He works at Amp and says so in the video, and the article refers to "Amp" for threads, so read it as the view from inside one product.
+An X article, 25 October 2026, "as of October 2026" ([source](/sources/2026-11-05-1fecf49b-thorsten-ball-how-i-work-with-agents-x-article/source.md)). He works at Amp and says so in the video, and the article refers to "Amp" for threads, so read it as the view from inside one product.
 
 Points that bear on yaks, in his words, condensed:
 
@@ -67,7 +67,7 @@ Points that bear on yaks, in his words, condensed:
 
 ## The Proton manifesto
 
-A leaked internal document, posted as three screenshots by Joseph Cox on 29 October 2026 ([tweet](/sources/2026-11-05-40f53e77/source.md); pages [1](/sources/2026-11-05-8323537b/source.md), [2](/sources/2026-11-05-0272f64e/source.md), [3](/sources/2026-11-05-c1c81752/source.md), my transcriptions beside each image). Cox says he obtained it; 404 Media's piece calls it the CTO's, and it is signed "-Bart".
+A leaked internal document, posted as three screenshots by Joseph Cox on 29 October 2026 ([tweet](/sources/2026-11-05-40f53e77-joseph-cox-tweet-proton-ctos-ai-manifesto/source.md); pages [1](/sources/2026-11-05-8323537b-proton-engineering-manifesto-page-1-of-3/source.md), [2](/sources/2026-11-05-0272f64e-proton-engineering-manifesto-page-2-of-3/source.md), [3](/sources/2026-11-05-c1c81752-proton-engineering-manifesto-page-3-of-3/source.md), my transcriptions beside each image). Cox says he obtained it; 404 Media's piece calls it the CTO's, and it is signed "-Bart".
 
 What it argues:
 
@@ -76,7 +76,7 @@ What it argues:
 - **Phase 1 is speeding up tasks inside existing workflows; phase 2 is rethinking the workflows,** since removing one bottleneck exposes the next (CI capacity, design, approvals, review). It predicts that "most human code review will end".
 - The third obstacle is a **collective-action problem**: one engineer can use an LLM alone, but retooling CI for a company needs organization and money.
 
-Read it as one company's mandate, not evidence about productivity. [404 Media's article](/sources/2026-11-05-c2c88d91/source.md), which is truncated by a paywall in what I saved, reports from nine employees a culture of fear around AI adoption, a CEO telling a security engineer that asking for a few days of pentesting was "loser thinking", and a plan to re-interview staff about AI use. The company's spokesperson did not dispute the reporting. I did not read the rest.
+Read it as one company's mandate, not evidence about productivity. [404 Media's article](/sources/2026-11-05-c2c88d91-404-media-manifestos-fear-and-loser-thinking/source.md), which is truncated by a paywall in what I saved, reports from nine employees a culture of fear around AI adoption, a CEO telling a security engineer that asking for a few days of pentesting was "loser thinking", and a plan to re-interview staff about AI use. The company's spokesperson did not dispute the reporting. I did not read the rest.
 
 ## What lines up with yaks
 

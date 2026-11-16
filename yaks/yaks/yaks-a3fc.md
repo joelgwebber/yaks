@@ -41,8 +41,9 @@ Goal (Joel, 2026-10-31): from one machine, the TUI/CLI can show "this shed's com
 - Where it lives: frontmatter (`branch:`, beside the PRs field of `yaks-d695`) for current state, notes for checkpoint events?
 - Delta: worker commits live in clones. Does pushing from a Delta worker clone work cleanly? The memcraft coordinator had to push from a separate full clone because of a stale shallow marker.
 
----
-▸ 2026-10-31T15:56:38Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:38Z
+
+*delta:Cloud Runners*
 
 Decision (Joel, 2026-10-31): workers push their branches to `origin`.
 
@@ -53,23 +54,27 @@ Decision (Joel, 2026-10-31): workers push their branches to `origin`.
 
 Rejected: a separate remote for work in progress; one branch per yak.
 
----
-▸ 2026-10-31T16:54:08Z [yakherd]
+#### 2026-10-31T16:54:08Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T17:12:33Z [yakherd]
+#### 2026-10-31T17:12:33Z
+
+*yakherd*
 
 Correction to the naming in the decision above: not `yaks/<actor>/<topic>`. A branch under `yaks/` cannot exist beside the farm branch `yaks` (found in the `yaks-4728` end-to-end check). Examples now use `work/<actor>`, and `update` warns.
 
----
-▸ 2026-10-31T17:12:33Z [yakherd]
+#### 2026-10-31T17:12:33Z
+
+*yakherd*
 
 Done: `yaks-4728` (commits --fetch, checkpoint branch on sheds rows) on top of `yaks-735a` (landed records) and the checkpoint convention in the skills. Still to learn from the cloud-runner trial (`yaks-7d57`): whether workers follow push, note, sync by hand, or need a `yaks checkpoint` helper.
 
----
-▸ 2026-10-31T17:12:33Z [yakherd]
+#### 2026-10-31T17:12:33Z
+
+*yakherd*
 
 kind: move
 from: shaving

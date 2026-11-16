@@ -39,13 +39,15 @@ The farm branch (yaks-73f4 under the umbrella yaks-6a34) replaced the committed 
 
 yaks-6a34 (one farm per machine, umbrella), yaks-73f4 (farm is a branch; the deferred pointer `branch:` key), yaks-b048 + `f615cfb` (skills dropped the in-tree farm), yaks-7bfd (stale-copy redirect), yaks-bd7e (migrate --to-branch), yaks-87a3 (this repo's migration), yaks-814a (init --mode), yaks-b1e9 (init --mode branch), yaks-43dc (pointer/private rule wording).
 
----
-▸ 2026-10-27T22:33:58Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T22:33:58Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-27T22:33:58Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T22:33:58Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 Decision (Joel, 2026-10-27), on the three open points:
 
@@ -53,8 +55,9 @@ Decision (Joel, 2026-10-27), on the three open points:
 - `git config yaks.farm <path>` names any checkout of the other repo. Yaks resolves that repo's farm branch from it and bootstraps the worktree as usual. A remote URL can come later if someone needs it.
 - `yaks init --farm <repo> [--herd <h>]` sets `yaks.farm` and `yaks.herd` and installs the skills.
 
----
-▸ 2026-10-27T23:14:10Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T23:14:10Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 Code pass 1 (discovery, init, brief, preflight, tests) builds and the full suite is green (735 unit + 15 integration files).
 
@@ -68,8 +71,9 @@ Next: mop up the team/private wording left in `status`/`commit`/`changes`/`migra
 
 [farm-sharing-e2e](yaks-a99f/farm-sharing-e2e.txt)
 
----
-▸ 2026-10-27T23:23:34Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T23:23:34Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 Done in `3bb5937` (committed in this thread's worktree, not landed): 39 files, +1337 / −3135.
 
@@ -87,17 +91,20 @@ Evidence:
 
 Not done: a cold-read scout of the skills (AGENTS.md suggests one, but delegation is ask-only here), and `cargo install`, which waits until it lands.
 
----
-▸ 2026-10-27T23:23:35Z [delta:Check for `.yaks` file repo redirect sup]
+#### 2026-10-27T23:23:35Z
+
+*delta:Check for `.yaks` file repo redirect sup*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T15:05:04Z [delta:Clean up skills install and mode remnant]
+#### 2026-10-31T15:05:04Z
+
+*delta:Clean up skills install and mode remnant*
 
 Landed on `main` as `3bb5937`, together with yaks-e532's `c2b640f`. The checkout's `main` had not yet received it when it was shorn.
 
----
-▸ 2026-10-31T15:09:03Z [delta:Clean up skills install and mode remnant]
+#### 2026-10-31T15:09:03Z
+
+*delta:Clean up skills install and mode remnant*
 
 verify: `GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false cargo test --no-fail-fast` -> PASS (exit 0)

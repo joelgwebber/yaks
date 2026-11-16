@@ -13,7 +13,8 @@ tags:
 
 De-risk by staging. Phase 0: files authoritative (today). Phase 1: add an op-log in refs that MIRRORS file mutations (dual-write); files still authoritative; validate compile == files. Phase 2: flip: refs authoritative, files become the derived cache; reuse all read code; write path goes through ops. Phase 3: team sync (refspecs) + working-copy editing. Each phase is shippable and reversible, and proves the engine against existing file behavior before we trust it.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

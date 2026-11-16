@@ -13,7 +13,8 @@ tags:
 
 The git log --follow over a yak FILE join dies (no authoritative file; the cache file history is meaningless). Replacements: (a) an op that records the completing commit SHA (explicit, author-attributed link); (b) a bridge/convention mapping yak to commit; (c) keep the yaks commits --grep join by putting yak ids in code commit messages (still works). Net: provenance moves from the yak file moved with the code to an op/commit references the other. Attribution improves (every op has a signed author intrinsically); the code-link needs an explicit mechanism.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

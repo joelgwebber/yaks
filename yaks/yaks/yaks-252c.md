@@ -16,18 +16,15 @@ Hearth's `wiki_read` returns a hash and `wiki_edit` refuses an edit whose `base_
 
 Lean: `dok show` reports the file's hash, and `dok set` (and any whole-body write) takes `--if-hash <h>`, refusing with a message naming the current hash when it differs. Consider an exact-text replace (`--old/--new`, must match once) so agents never rewrite a whole body.
 
----
-▸ 2026-11-06T23:12:44Z [herd-upkeep-2]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T23:12:44Z
+
+*herd-upkeep-2 · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T23:13:37Z [herd-upkeep-2]
+#### 2026-11-06T23:13:37Z
+
+*herd-upkeep-2*
 
 Claim (yakherd herd-upkeep-2, 2026-11-06): worker `doks-1`.
 
@@ -36,64 +33,54 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `doks-1`.
 - **Out of scope:** yak bodies (`update --description` already has its own base check), table rows (yaks-6cdd), query (yaks-39f9).
 - **Judge:** `cargo test -p yaks`, plus a CLI test in `tests/doks.rs` showing a stale `--if-hash` refused and an `--old/--new` edit chained by the printed hash. The yakherd re-runs it at landing.
 
----
-▸ 2026-11-06T23:14:41Z [doks-1]
+#### 2026-11-06T23:14:41Z
+
+*doks-1*
 
 Start: 2026-11-06T23:14:38Z
 
 - yaks path yaks-252c: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-252c.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/sr37a33ha7db/yaks
 
----
-▸ 2026-11-06T23:27:34Z [doks-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:27:34Z
+
+*doks-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-06T23:39:08Z [doks-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:39:08Z
+
+*doks-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-06T23:50:34Z [doks-1]
-kind: verify
-result: pass
----
+#### 2026-11-06T23:50:34Z
+
+*doks-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-06T23:53:00Z [doks-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:53:00Z
+
+*doks-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-06T23:53:49Z [doks-1]
-kind: verify
-result: fail
----
+#### 2026-11-06T23:53:49Z
+
+*doks-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
 
----
-▸ 2026-11-07T00:00:14Z [doks-1]
-kind: verify
-result: pass
----
+#### 2026-11-07T00:00:14Z
+
+*doks-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-07T00:00:23Z [doks-1]
+#### 2026-11-07T00:00:23Z
+
+*doks-1*
 
 Decision: `dok show` prints the hash on stderr (`hash: <h>`) in text mode, and as a `hash` field in `--json`. Rejected: a header line on stdout (breaks `dok show | ...` consumers that expect the file text).
 
@@ -109,12 +96,8 @@ Summary: `doks::text_hash`/`load_hashed`, `Farm::dok_hashed`, `Farm::dok_set` (+
 
 Evidence: `cargo test` all green except the known `init_modes` farm_works_from_a_git_worktree... flake (fails here intermittently, passes on rerun; also passed on baseline once). One `yaks verify` failed in the `--bin yaks` unit tests under load and did not reproduce in 4 reruns; the latest `yaks verify` is PASS.
 
----
-▸ 2026-11-07T00:00:24Z [doks-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjUD5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T00:00:24Z
+
+*doks-1 · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjUD5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

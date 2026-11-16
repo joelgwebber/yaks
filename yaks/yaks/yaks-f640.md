@@ -16,7 +16,6 @@ tags:
 
 Once the fancy-regex edtui change lands (and yaks points at it), flip md-syntax on by default (or fold into default features) so shipped binaries get markdown coloring. Verify the release matrix still builds with 0 C deps.
 
----
-▸ 2026-08-25T03:26:31Z
+#### 2026-08-25T03:26:31Z
 
 Obviated by yaks-2956 (md-syntax feature is being removed, not enabled by default).

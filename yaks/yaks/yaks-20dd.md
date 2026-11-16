@@ -13,8 +13,9 @@ tags:
 
 Part of yaks-1151. The starred yaks yaks-bf1b, yaks-1a16, yaks-b2ed, yaks-df01, yaks-8874, yaks-640a: which are independent and ready for a worker, which overlap the link work (yak-id completion inserts links), which are already done or superseded.
 
----
-▸ 2026-11-11T22:08:04Z [triage-1]
+#### 2026-11-11T22:08:04Z
+
+*triage-1*
 
 Triage (triage-1), against main e4d0ff5a.
 
@@ -78,12 +79,8 @@ Triage (triage-1), against main e4d0ff5a.
 - c3d0 and bede share follow.rs/links.rs with the 1151 layout work. Yak/dok link completion (`dok_link_tail` editor.rs:285, `/doks/` only) has to follow any change to link forms. Tag completion doesn't touch links.
 - Parallel today: (1a16+bf1b), df01, e853, plus 6cf2/5f70 once answered.
 
----
-▸ 2026-11-11T22:39:29Z [triage-1]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-11T22:39:29Z
+
+*triage-1 · kind: move · from: hairy · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

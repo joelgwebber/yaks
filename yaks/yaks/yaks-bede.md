@@ -29,8 +29,9 @@ Likely because the filesystem layout is:
 
 I can't recall whether we decided to embed docs, et al optionally inside a herd, or just globally.
 
----
-▸ 2026-11-11T22:39:29Z [triage-1]
+#### 2026-11-11T22:39:29Z
+
+*triage-1*
 
 Traced under yaks-1151 ([plan](/doks/design/farm-layout-and-links.md#5-sessions-and-sources-the-doksessions-bug-yaks-bede)): the premise is wrong, sessions and sources are siblings of `doks/`, so `/sessions/...` already works and `/doks/sessions/...` is a wrong path. The real bugs:
 
@@ -39,17 +40,14 @@ Traced under yaks-1151 ([plan](/doks/design/farm-layout-and-links.md#5-sessions-
 
 Fix those two (small, independent of the layout work) and correct the one link here.
 
----
-▸ 2026-11-14T12:01:04Z [linkplan-lead]
+#### 2026-11-14T12:01:04Z
 
-The two real bugs are fixed by [yaks-f505](yaks-f505) (landed `298b91ac`): `/sources/<id>` opens that source's `source.md` in `yaks peek`, `doctor` and the TUI viewer, and `doctor` now reports a broken extensionless `/sources/...` or `/doks/sessions/...` link (it reported the session link only, before). I re-ran `yaks doctor` here: it listed both wrong links in this yak's description, which I then corrected to the real paths. `doctor` is clean now. Layout questions stay with [yaks-1151](yaks-1151).
+*linkplan-lead*
 
----
-▸ 2026-11-14T12:01:05Z [linkplan-lead]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+The two real bugs are fixed by [yaks-f505](/yaks/yaks/yaks-f505.md) (landed `298b91ac`): `/sources/<id>` opens that source's `source.md` in `yaks peek`, `doctor` and the TUI viewer, and `doctor` now reports a broken extensionless `/sources/...` or `/doks/sessions/...` link (it reported the session link only, before). I re-ran `yaks doctor` here: it listed both wrong links in this yak's description, which I then corrected to the real paths. `doctor` is clean now. Layout questions stay with [yaks-1151](/yaks/yaks/yaks-1151.md).
+
+#### 2026-11-14T12:01:05Z
+
+*linkplan-lead · kind: move · from: hairy · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

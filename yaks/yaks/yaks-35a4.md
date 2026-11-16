@@ -26,8 +26,9 @@ Found shearing yaks-62f2; widened under yaks-9b41. Every move that makes a yak h
 
 Decided: refuse rather than warn or auto-reopen the parent. A warning is how the state got here; auto-reopening changes someone else's yak silently.
 
----
-▸ 2026-11-01T17:22:27Z [yakherd]
+#### 2026-11-01T17:22:27Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -37,8 +38,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T17:28:01Z [yakherd]
+#### 2026-11-01T17:28:01Z
+
+*yakherd*
 
 kind: landed
 sha: 95fa1e2
@@ -53,8 +55,9 @@ Done in the commit above (local main).
 
 Evidence: `cargo test --workspace --locked` green (CI-like env). New `nothing_opens_under_a_finished_parent` (create under shorn/dead, reparent refused/allowed, regrow+shave refused, no-op allowed, batch_order parents first) and TUI `refused_shear_leaves_no_comment_and_regrow_takes_parents_first`, which fails with the pre-check removed (my first version passed regardless because the TUI rows were stale; it reloads now). Real CLI: `create late --parent <shorn>` and `regrow <child>` refused with the message (exit 1); `regrow <child> <parent>` regrew both, parent first; doctor clean.
 
----
-▸ 2026-11-01T17:28:01Z [yakherd]
+#### 2026-11-01T17:28:01Z
+
+*yakherd*
 
 kind: move
 from: shaving

@@ -28,8 +28,9 @@ Built and released in v0.0.14, so this yak no longer needs a CLI answer:
 
 The original options A to F and the refinements are in the notes below (they keep the word "lane" in places: read it as "shed").
 
----
-▸ 2026-10-07T03:47:37Z [delta-lead]
+#### 2026-10-07T03:47:37Z
+
+*delta-lead*
 
 Refinement (coordinator delta-lead, 2026-10-06, after Joel's two questions and the investigation in yaks-df61 O63).
 
@@ -44,8 +45,9 @@ Delta CLI: no thread-to-path lookup exists (`thread status` and `thread data` ca
 
 Still open: `--shed` as a visit (read plus answer/ask) or full access; and whether to try, on a fresh unused thread, Delta's "existing local checkout" / "existing Git worktree" modes through the UI (untested, and per the app the choice cannot change once an agent has used the thread).
 
----
-▸ 2026-10-09T03:14:28Z [delta-lead]
+#### 2026-10-09T03:14:28Z
+
+*delta-lead*
 
 Joel's model of discovery (2026-10-06), checked by the coordinator; adopted as the starting point for the core.
 
@@ -57,8 +59,9 @@ Refinements: (i) the root scan belongs in discovery ALWAYS, not only in case (b)
 
 Brief: discovery = git worktree list + sibling scan + Delta root scan, filtered to one repo (origin URL); a selector (`-C <path>` / `--shed <name>`) sets the viewer. brf-1 (the first, stalled brief worker) reported stopped; nothing of it to land (its draft was finished as yaks-2c22).
 
----
-▸ 2026-10-09T20:12:18Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:12:18Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Decision (Joel, 2026-10-09): no "magical" discovery from outside a checkout. Sheds are found from inside any sibling using git data only (host via alternates, refs/delta pins, each pin's git dir core.worktree, and the host checkout's git worktrees). Built and wired into `yaks sheds` as yaks-c635; `yaks discover` shows the chain.
 
@@ -66,13 +69,15 @@ Dropped from this design, and not to be revived without new evidence: (a) scanni
 
 Still open here: NAMES (the thread title rather than the opaque dir id; `who:` labels are the current proxy) and the `-C <path>` / `--shed <name>` selector over the sheds a checkout can see, plus whether `--shed` is a visit (read plus answer/ask) or full access. These are the CLI and UI affordances that come next.
 
----
-▸ 2026-10-10T13:40:07Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-10T13:40:07Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Parked (Joel, 2026-10-10): showing which thread spawned which in sheds (the shared prefix of yaks.shed.thread ids, e.g. ksQQI7UGw66zRMm9tnfRIaYEapLOAA... across a yakherd and its workers, and 'delta thread list --subagents --json' lists exactly that thread's subagents) is deferred until Delta adds CLI affordances for thread hierarchy. Not built; the undocumented id format is the reason.
 
----
-▸ 2026-10-10T18:55:34Z [delta-lead]
+#### 2026-10-10T18:55:34Z
+
+*delta-lead*
 
 Two items of the original brainstorm were still open here; both belong to the TUI design, so they move to yaks-7204 (copied there as a note, not lost):
 - a shed picker inside the TUI that re-roots it, with a banner naming the shed;
@@ -80,7 +85,8 @@ Two items of the original brainstorm were still open here; both belong to the TU
 
 Everything else is built: discovery (yaks-c635), names (yaks-886a), `-C` (yaks-4e39) and `--shed` (yaks-440d, full access). The managed-repo discovery gap moved out as yaks-6beb. Shorn as done-and-subsumed (Joel, 2026-10-10).
 
----
-▸ 2026-10-10T18:55:34Z [delta-lead]
+#### 2026-10-10T18:55:34Z
+
+*delta-lead*
 
 moved: hairy -> shorn

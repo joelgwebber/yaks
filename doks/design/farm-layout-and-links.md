@@ -10,7 +10,7 @@ tags:
 
 # Farm layout and links: making the farm browsable on GitHub
 
-Design for [yaks-1151](yaks-1151). Findings come from four read-only scouts: host behaviour ([yaks-7d13](yaks-7d13)), a code audit ([yaks-9714](yaks-9714)), a census of the farms on one machine ([yaks-0a4d](yaks-0a4d)) and a triage of the neighbouring yaks ([yaks-20dd](yaks-20dd)). Every number below is from those notes; the attached reports have the evidence.
+Design for [yaks-1151](/yaks/yaks/yaks-1151.md). Findings come from four read-only scouts: host behaviour ([yaks-7d13](/yaks/yaks/yaks-7d13.md)), a code audit ([yaks-9714](/yaks/yaks/yaks-9714.md)), a census of the farms on one machine ([yaks-0a4d](/yaks/yaks/yaks-0a4d.md)) and a triage of the neighbouring yaks ([yaks-20dd](/yaks/yaks/yaks-20dd.md)). Every number below is from those notes; the attached reports have the evidence.
 
 ## The finding in one paragraph
 
@@ -30,11 +30,11 @@ Dropping the `.yaks/` root fixes most of it, and costs no link rewrites: every f
 | `/doks/sessions/...`, `/doks/sources/...` | 404 | 404 | wrong path, see below |
 | `#L12-L40` on a rendered `.md` | no effect | no effect | needs `?plain=1`; ignore |
 
-Evidence: [linkhost-evidence](yaks-7d13/linkhost-evidence.md) (`gh api markdown` with `context=joelgwebber/yaks`, live pages, and GitLab and Gitea renderer source). Bitbucket and Azure DevOps are documentation only.
+Evidence: [linkhost-evidence](/yaks/yaks/yaks-7d13/linkhost-evidence.md) (`gh api markdown` with `context=joelgwebber/yaks`, live pages, and GitLab and Gitea renderer source). Bitbucket and Azure DevOps are documentation only.
 
 ## Decisions to make
 
-Each has a lean; the asks are on [yaks-1151](yaks-1151).
+Each has a lean; the asks are on [yaks-1151](/yaks/yaks/yaks-1151.md).
 
 ### 1. Drop the `.yaks/` root
 
@@ -55,7 +55,7 @@ A static README is not a derived index, so it does not break "any index is deriv
 Lean: **`/<herd>/yaks/<id>.md`** (and `/<herd>/yaks/<id>/<file>` for an attachment from outside the yak), canonical on disk. A yak's herd is its id prefix, so the path is derivable. yaks keeps *accepting* a bare id on input and in the CLI, and the commands that write note and description text (`update --note`, `create`, the TUI editors, `attach`) rewrite a bare-id link to the canonical form as they save. The reader on GitHub gets a working link; the writer, human or agent, still types `[x](yaks-1a2b)`.
 
 - Rejected: leaving bare ids. It is the friendliest to write and is the form 453 links use, but it is the reason the farm would stay half-dead on GitHub.
-- Rejected: document-relative `../../yaks/yaks/yaks-1a2b.md`. It rewrites 1,109 links, breaks whenever a file moves, and reverses the no-`../` decision in [yaks-ccb1](yaks-ccb1), which the host research says to keep: GitHub lets `../` climb out of the repository into the URL, GitLab and Gitea stop at the root, and Bitbucket is buggy.
+- Rejected: document-relative `../../yaks/yaks/yaks-1a2b.md`. It rewrites 1,109 links, breaks whenever a file moves, and reverses the no-`../` decision in [yaks-ccb1](/yaks/yaks/yaks-ccb1.md), which the host research says to keep: GitHub lets `../` climb out of the repository into the URL, GitLab and Gitea stop at the root, and Bitbucket is buggy.
 - Cost to accept: the stored text now encodes the layout. A future layout change is another migration. That is how schemas 4 to 8 already worked, and `yaks mv` already rewrites links.
 
 ### 3. Note anchors
@@ -72,7 +72,7 @@ Lean: a **pinned** `code:path@sha#L12` is written as the host URL (`https://gith
 
 ### 5. Sessions and sources: the `/doks/sessions/...` bug (yaks-bede)
 
-Lean: **no alias**. Sessions and sources are siblings of `doks/` at the farm root, which is the layout the census found everywhere and the one a root-absolute link needs. [yaks-bede](yaks-bede)'s links are simply wrong paths (three links in two farms). Two real fixes:
+Lean: **no alias**. Sessions and sources are siblings of `doks/` at the farm root, which is the layout the census found everywhere and the one a root-absolute link needs. [yaks-bede](/yaks/yaks/yaks-bede.md)'s links are simply wrong paths (three links in two farms). Two real fixes:
 
 - `links::exists` skips paths without a file extension, so `yaks doctor` never reports a broken `/sources/<id>` link; it should, and offer the nearest real path.
 - `/sources/<id>` names a directory; the TUI viewer and `yaks peek` should open its `source.md`. On GitHub the same link opens the folder listing, which is a fine target.
@@ -88,10 +88,10 @@ Lean: do not shard. GitHub cuts a directory listing at 1,000 entries ("4,185 ent
 The audit found three copies of the follow/open dispatch in the TUI (`detail_nav.rs`, two sites in `handlers.rs`) and no single place that maps a link to a place. The proposal:
 
 - `links.rs` stays the pure grammar (parse, `Link`, anchors).
-- New `locate.rs`: a `Space` (farm root, the farm worktree's top and path prefix, the code checkout). `resolve(Link) -> Place` is the one place for aliases, legacy `.yaks/` forms and the fallback for pinned links into pre-migration history. From a `Place`: a local path (a pinned file gets a read-only temp copy), displayable content (what `yaks peek` and the viewer of [yaks-c3d0](yaks-c3d0) show), and a web URL.
+- New `locate.rs`: a `Space` (farm root, the farm worktree's top and path prefix, the code checkout). `resolve(Link) -> Place` is the one place for aliases, legacy `.yaks/` forms and the fallback for pinned links into pre-migration history. From a `Place`: a local path (a pinned file gets a read-only temp copy), displayable content (what `yaks peek` and the viewer of [yaks-c3d0](/yaks/yaks/yaks-c3d0.md) show), and a web URL.
 - New `hosting.rs`: a `Forge` (GitHub, GitLab, Gitea/Forgejo), detected from the remote with `store::normalize_remote_url`, and the URL templates below. The "which remote" rule moves from `sync::remote_of` into `gitrepo.rs`. A custom domain declares its kind with `git config yaks.host`. When `yaks.farm` shares another repo's farm, farm links use that repo's remote and code links use the code repo's.
 - CLI: `yaks url <link|id|path>` prints the host URL (`--pin` for the commit form).
-- TUI: one `follow(Place)`, and for [yaks-c3d0](yaks-c3d0) an `O` menu over any yak, dok, session, source or code link: `e` editor, `o` system open, `p` absolute path, `r` farm or repo path, `g` host link. Keys follow the case-tier rules, none of these write a yak. For a pinned `code:` file, "absolute path" means the working-tree path when the file is unchanged since the pin, else the read-only temp copy (the rule opening already uses).
+- TUI: one `follow(Place)`, and for [yaks-c3d0](/yaks/yaks/yaks-c3d0.md) an `O` menu over any yak, dok, session, source or code link: `e` editor, `o` system open, `p` absolute path, `r` farm or repo path, `g` host link. Keys follow the case-tier rules, none of these write a yak. For a pinned `code:` file, "absolute path" means the working-tree path when the file is unchanged since the pin, else the read-only temp copy (the rule opening already uses).
 
 ### URL templates
 
@@ -129,7 +129,7 @@ F  docs, bundled skills and clap help                               M   last
 
 A and B deliver the "open in GitHub" and read-only view without touching the layout, and are useful on their own. C to F are one release, one schema bump.
 
-The audit's size and file scopes are in [the audit](yaks-9714/audit.md); the touch-point inventory (`farm_git`'s `root.parent()`, `preflight::yak_id_of`, `weight::kind_of`, the land guard, the `-- .yaks` pathspec in `sync.rs`, the `.yaks/**` rules in `.gitattributes`) is the checklist for C to E.
+The audit's size and file scopes are in [the audit](/yaks/yaks/yaks-9714/audit.md); the touch-point inventory (`farm_git`'s `root.parent()`, `preflight::yak_id_of`, `weight::kind_of`, the land guard, the `-- .yaks` pathspec in `sync.rs`, the `.yaks/**` rules in `.gitattributes`) is the checklist for C to E.
 
 ## Open questions
 

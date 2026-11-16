@@ -14,8 +14,9 @@ tags:
 
 Part of yaks-1151. Count the link forms actually present in the farms on this machine, find anomalies (like the `/doks/sessions/...` links in yaks-bede), and size a rewrite.
 
----
-▸ 2026-11-11T22:07:11Z [triage-1]
+#### 2026-11-11T22:07:11Z
+
+*triage-1*
 
 Census done (read-only). Full per-farm report: [report.md](yaks-0a4d/report.md); script: [linkcensus.py](yaks-0a4d/linkcensus.py).
 
@@ -66,12 +67,8 @@ Census done (read-only). Full per-farm report: [report.md](yaks-0a4d/report.md);
 
 Caveats: links were extracted with a regex approximation of CommonMark (fences and code spans stripped), not pulldown-cmark. "GitHub resolves" is computed from the file tree, not checked against live GitHub. I did not check how the blob view renders frontmatter.
 
----
-▸ 2026-11-11T22:39:28Z [triage-1]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-11T22:39:28Z
+
+*triage-1 · kind: move · from: hairy · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

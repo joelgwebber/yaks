@@ -15,18 +15,15 @@ wake: agent
 
 Reflect on the sessions since the last round (the yaks-upkeep skill, "Reflecting on sessions"): check last round's fixes, keep /doks/lessons.md within its budget, file friction as yaks, at most one instruction-file proposal as an ask, shear with the account.
 
----
-▸ 2026-11-10T17:57:27Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:57:27Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:57:28Z [herd-unlock]
+#### 2026-11-10T17:57:28Z
+
+*herd-unlock*
 
 Round 1, run by hand by herd-unlock for yaks-2b40, 2026-11-10.
 
@@ -57,12 +54,8 @@ Left in their notes (one session each): disk before fan-out; never sync unasked 
 
 None as an ask this round; yaks-2788 (cheaper-model delegation in `yaks-coordinating`) came from Joel directly.
 
----
-▸ 2026-11-10T17:57:29Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:57:29Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

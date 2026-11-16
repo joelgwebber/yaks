@@ -12,8 +12,9 @@ tags:
 - agent
 ---
 
----
-▸ 2026-11-03T14:21:59Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:21:59Z
+
+*delta:skills-upgrade-audit*
 
 kind: move
 from: hairy
@@ -23,8 +24,9 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T14:30:06Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:30:06Z
+
+*delta:skills-upgrade-audit*
 
 Landed in 7ed9402.
 
@@ -42,8 +44,9 @@ error: this farm uses schema v8, newer than this yaks (0.0.30) supports (v7). Up
 
 Not done: a cold read of the skills by a cheap model.
 
----
-▸ 2026-11-03T14:30:08Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:30:08Z
+
+*delta:skills-upgrade-audit*
 
 kind: move
 from: shaving

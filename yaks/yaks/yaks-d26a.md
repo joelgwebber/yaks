@@ -14,8 +14,9 @@ tags:
 
 Layer 4.
 
----
-▸ 2026-11-01T22:22:23Z [delta:farm-wiki]
+#### 2026-11-01T22:22:23Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -26,13 +27,15 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T23:51:14Z [delta:farm-wiki]
+#### 2026-11-01T23:51:14Z
+
+*delta:farm-wiki*
 
 Workflow layer complete on `wiki`: `yaks check` (yaks-c0ac), the `yaks-research` skill (yaks-577f), `yaks import-hearth` plus the joel rehearsal (yaks-5550), and `yaks find` (yaks-bdcb). The real joel migration waits for `wiki` to land (Joel's call).
 
----
-▸ 2026-11-01T23:51:14Z [delta:farm-wiki]
+#### 2026-11-01T23:51:14Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

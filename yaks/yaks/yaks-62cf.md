@@ -15,7 +15,8 @@ Maybe a little too much, but I do find myself wanting to add things like:
 
 as comments. But then the heading and the comment turn into a lot of visual noise. So what if you could just add an optional title to the comment, that's automatically hoisted up into the ---hr---?
 
----
-▸ 2026-10-17T19:55:43Z [delta-lead]
+#### 2026-10-17T19:55:43Z
+
+*delta-lead*
 
 Moved out of the yaks-e9de arc (Joel: leave out of this release); stays hairy for later.

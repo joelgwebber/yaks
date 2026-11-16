@@ -10,8 +10,9 @@ tags:
 - doks
 ---
 
----
-▸ 2026-11-04T00:04:43Z [Joel Webber]
+#### 2026-11-04T00:04:43Z
+
+*Joel Webber*
 
 Example: In another repo, I imported a confluence doc, which the agent decided to fetch as HTML, then convert to markdown. The resulting sources came out like this:
 ```python
@@ -28,8 +29,9 @@ I'm not quite sure what in the tools and skills possessed the agent to do this, 
 
 Let's look carefully at the tool/skill structures likely to have led to this behavior, and try to nudge them in the right direction. Consider the totality, rather than just trying to slap a "don't do this one weird thing" band-aid on it.
 
----
-▸ 2026-11-04T17:23:10Z [source-fix]
+#### 2026-11-04T17:23:10Z
+
+*source-fix*
 
 ## Diagnosis (source-fix, from the two sources in `joel`: `sources/2026-11-03-bea6d0de` and `sources/2026-11-03-14a63718`)
 
@@ -57,8 +59,9 @@ Children:
 
 Decision: a markdown original keeps its `extracted.md` (Joel agreed); a non-text original (HTML, PDF) gets one only when the saver supplies the text with `--text`.
 
----
-▸ 2026-11-04T17:23:26Z [source-fix]
+#### 2026-11-04T17:23:26Z
+
+*source-fix*
 
 kind: move
 from: hairy
@@ -69,13 +72,15 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T17:29:24Z [source-fix]
+#### 2026-11-04T17:29:24Z
+
+*source-fix*
 
 All three children shorn; code and skill changes are on `yaks-dedc-sources` in the yaks checkout (two commits), awaiting Joel's go to land. After landing: `cargo install --path .` (per AGENTS.md), then yaks-cc40 can proceed. Existing sources in `joel` that say "Snapshot of the local file /tmp/..." (about 30) are left as written: sources are write-once.
 
----
-▸ 2026-11-04T17:29:25Z [source-fix]
+#### 2026-11-04T17:29:25Z
+
+*source-fix*
 
 kind: move
 from: shaving

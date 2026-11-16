@@ -14,20 +14,23 @@ tags:
 
 When opening an attachment from the TUI, for a yak that exists on a different shed (or if only the _attachment_ exists on said shed), it fails. Because it always attempts to open attachments from the cwd.
 
----
-▸ 2026-10-17T13:26:59Z [Joel Webber]
+#### 2026-10-17T13:26:59Z
+
+*Joel Webber*
 
 Let's ensure that there's an equivalent CLI affordance so we make this easy for agents as well.
 
 Related: yaks-991c
 
----
-▸ 2026-10-17T13:34:45Z [delta-attach]
+#### 2026-10-17T13:34:45Z
+
+*delta-attach*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T13:36:27Z [delta-attach]
+#### 2026-10-17T13:36:27Z
+
+*delta-attach*
 
 Plan (delta-attach, 2026-10-17).
 
@@ -49,8 +52,9 @@ Out of scope: copying attachments between sheds; showing other sheds' attachment
 
 [cross-shed-attachments](yaks-31e2/cross-shed-attachments.txt)
 
----
-▸ 2026-10-17T13:42:49Z [delta-attach]
+#### 2026-10-17T13:42:49Z
+
+*delta-attach*
 
 Done (delta-attach).
 
@@ -67,12 +71,14 @@ Evidence:
 
 Answering open questions across sheds was already covered by `yaks answer <id>@<shed>`, `inbox --sheds` and the TUI's `a`; nothing changed there. yaks-991c (route every agent interaction through the CLI so it sees the whole farm) is the larger follow-up this touches.
 
----
-▸ 2026-10-17T13:43:14Z [delta-attach]
+#### 2026-10-17T13:43:14Z
+
+*delta-attach*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T13:43:14Z [delta-attach]
+#### 2026-10-17T13:43:14Z
+
+*delta-attach*
 
 moved: shaving -> shorn

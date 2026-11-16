@@ -13,8 +13,9 @@ tags:
 - tui
 ---
 
----
-▸ 2026-11-03T12:20:42Z [Joel Webber]
+#### 2026-11-03T12:20:42Z
+
+*Joel Webber*
 
 Quoth yaks-6919:
 
@@ -24,8 +25,9 @@ Quoth yaks-6919:
 > - **B:** add a leader key now (`Space`, which collapse uses today, or `,`) with the rarer commands behind it, and the popup after a pause on the leader. That is the holistic rethink's call (yaks-7c6e), so I'd rather not start it here.
 > - **C:** skip which-key in phase 7 and leave it to yaks-7c6e.
 
----
-▸ 2026-11-03T20:43:15Z [Joel Webber]
+#### 2026-11-03T20:43:15Z
+
+*Joel Webber*
 
 It looks like we went ahead and did the `?` affordance, which I think is a fine place to start.
 
@@ -42,8 +44,9 @@ I have a bunch of other ill-formed thoughts I'd like to address before committin
 
 Probably lots more cases I'm not thinking of. Please explore the idea of organizing principles for the keyboard controls as a whole, so we can get a bit more consistency. We should probably think about yaks-000b in this context as well.
 
----
-▸ 2026-11-03T22:06:10Z [delta:starred-batch]
+#### 2026-11-03T22:06:10Z
+
+*delta:starred-batch*
 
 Design pass (delta:starred-batch): [TUI keys: organizing principles](/doks/design/tui-keys.md) states six rules, measures today's table against them, and proposes the changes. Built so far, as uncontroversial bug fixes from your list:
 
@@ -52,8 +55,9 @@ Design pass (delta:starred-batch): [TUI keys: organizing principles](/doks/desig
 
 The rest waits on the ask below.
 
----
-▸ 2026-11-03T22:06:11Z [delta:starred-batch]
+#### 2026-11-03T22:06:11Z
+
+*delta:starred-batch*
 
 kind: ask
 needs: human
@@ -70,11 +74,9 @@ Questions from [the keys page](/doks/design/tui-keys.md), with my lean on each:
 5. **Rebinding.** Lean: keep the existing `keys:` overrides by command name and go no further (no editor rebinding; the family choice covers that).
 6. **Emacs parity in the editor.** edtui has 164 vim bindings and 46 emacs ones. Lean: a separate yak to audit and fill the emacs set (or the "standard" set, if 2 renames it); not part of this pass.
 
----
-▸ 2026-11-06T04:50:23Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T04:50:23Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. Let's drop both h/l for consistency. Enter/escape are perfectly good, and fit comfortably in either vim/emacs modes.
 2. Yes to all that. Agreed on `keys: vim|standard`; gives us more options in the future if we need them.
@@ -83,22 +85,23 @@ needs: agent
 5. Agreed; let's keep it simple to start. And maybe indefinitely.
 6. Also agreed -- we want parity where appropriate, but that will require a careful evaluation, but we can file it for next steps. We should also add basic guidance on key-mappings in AGENTS.md or similar.
 
----
-▸ 2026-11-06T22:46:52Z [sched-1]
+#### 2026-11-06T22:46:52Z
+
+*sched-1*
 
 One other idea: It would be really helpful to have something like {/} allow you to change tabs while in a detail. This arguably congruent with J/K.
 
----
-▸ 2026-11-07T17:04:27Z [herd-stars]
-kind: pickup
----
+#### 2026-11-07T17:04:27Z
+
+*herd-stars · kind: pickup*
 
 picked up
 
 herd-stars: implementing the six answered points plus the {/} tab idea, after the starred TUI batch lands (they all touch the keymap).
 
----
-▸ 2026-11-07T17:40:32Z [herd-stars]
+#### 2026-11-07T17:40:32Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-keys`, to start once the starred TUI batch (yaks-a004, yaks-255d, yaks-000b, yaks-e5f9) has landed, since every one of them adds bindings. Spec from Joel's answers (2026-11-06) and [the keys page](/doks/design/tui-keys.md):
 
@@ -137,18 +140,15 @@ Lowercase looks and moves; Shift changes an existing yak; Ctrl is the app and fa
 
 **Evidence.** The rule tests (fail first where a binding breaks them), a test per numbered item, the gate, headless frames of the grouped popup in the list and in an editor (`F1`), attached. **Judge:** herd-stars at landing; Joel for the feel.
 
----
-▸ 2026-11-07T17:46:47Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:46:47Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:51:18Z [stars-keys]
+#### 2026-11-07T17:51:18Z
+
+*stars-keys*
 
 Started by worker `stars-keys`.
 
@@ -159,8 +159,9 @@ Started by worker `stars-keys`.
 
 Read the claim note, Joel's answers and the design dok. Plan: one `Family` (vim|standard) in the `Keymap`, replacing the `App.editor_vim` field (it becomes a method over the keymap so there is a single source of truth); `h`/`l` leave only `←`/`→`-style scrolling and `tree.left`/`tree.right`; case-rule and family tests over `BINDINGS`; grouped `?` popup with run-on-press; `F1` popup over editors from a hand table; `{`/`}` views everywhere; docs.
 
----
-▸ 2026-11-07T18:03:46Z [stars-keys]
+#### 2026-11-07T18:03:46Z
+
+*stars-keys*
 
 Progress (17:47 start, now about 19:00 wall clock): items 1, 2, 4 (the popup and run-on-press), 5 and the rules are in; the existing tests are migrated and the suite is green apart from snapshot acceptance, now done. Still to write: the rule tests, a test per item, the F1/editor popup tests, docs.
 
@@ -178,16 +179,15 @@ Friction: the machine's data volume was at 100% (137 MiB free) when I first buil
 
 [brace-in-pane](yaks-7c6e/brace-in-pane.txt "} with the pane open: the pane stays open, on the new view's (Shaving) first row")
 
----
-▸ 2026-11-07T18:15:10Z [stars-keys]
-kind: verify
-result: pass
----
+#### 2026-11-07T18:15:10Z
+
+*stars-keys · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T18:16:29Z [stars-keys]
+#### 2026-11-07T18:16:29Z
+
+*stars-keys*
 
 Decision: a Ctrl chord no longer falls through to the plain key it carries (`Key::matches`). Before, `Ctrl-N` in the viewer matched `n` (find next) and `Ctrl-P` in the pane matched `p` (peek), so "Ctrl-N is off in standard mode" could not be true. A plain binding now ignores Shift (an upper-case letter) and AltGr (Ctrl+Alt), but not a lone Ctrl. Rejected: leaving the quirk and special-casing the two keys. The old test that pinned the quirk (`Ctrl-N` in the viewer is `find.next`) now says `None`.
 
@@ -213,8 +213,9 @@ Decision: the bottom-hint snapshot changes, all explained by items 1 and 2. List
 
 Decision: docs/assets SVGs are not regenerated. `cargo test -p yaks docshots -- --ignored` rewrites 30 files, mostly drift that was already there (the checked-in frames still show the pre-Doks tab strip and an older SVG opacity style); I reverted all of it rather than commit unrelated drift. Only the scene source changed: `tui-sheds-detail` pressed `l` to open the shed, which is `Enter` now. The hint text inside the committed SVGs (`l:detail`, `h:list`) is therefore still the old one until someone regenerates them in one commit.
 
----
-▸ 2026-11-07T18:16:44Z [stars-keys]
+#### 2026-11-07T18:16:44Z
+
+*stars-keys*
 
 Summary (stars-keys). Items 1-6 of the claim are in; one gate run, `cargo test --workspace`, is green (1074 tests in the yaks bin, the integration tests, the doc tests).
 
@@ -231,46 +232,33 @@ Frames attached (text, from the headless draw): the grouped popup on the list in
 
 Follow-ups, not done: regenerate docs/assets in one commit; the emacs/standard editor parity audit is yaks-4736; `Ctrl-F`/`Ctrl-↓` may need a fallback on terminals that eat them; the single-key prompts (`Pick`, `Confirm`) have no `F1`.
 
----
-▸ 2026-11-07T18:18:38Z [stars-keys]
-kind: verify
-result: pass
----
+#### 2026-11-07T18:18:38Z
+
+*stars-keys · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T18:18:45Z [stars-keys]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEuDHJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T18:18:45Z
+
+*stars-keys · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEuDHJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T18:19:19Z [herd-stars]
-kind: landed
-commit: 61cda0583363e8aa9a2b5373bcbf077f59a2f657
-source: 4fc439e51d5ce31f9b67e1b35faa00f5b0cebf07
-branch: main
----
+#### 2026-11-07T18:19:19Z
+
+*herd-stars · kind: landed · commit: 61cda0583363e8aa9a2b5373bcbf077f59a2f657 · source: 4fc439e51d5ce31f9b67e1b35faa00f5b0cebf07 · branch: main*
 
 landed: 61cda058 yaks-7c6e: one key family, h/l never leave the pane, grouped ? popup and F1 editor keys, { } change views
 
----
-▸ 2026-11-07T18:19:21Z [herd-stars]
-kind: landed
-commit: a29187b1de3d733b778ddc7f9fcc55df29b01458
-source: 05a49af7657736cea498bb66f337061e4de36835
-branch: main
----
+#### 2026-11-07T18:19:21Z
+
+*herd-stars · kind: landed · commit: a29187b1de3d733b778ddc7f9fcc55df29b01458 · source: 05a49af7657736cea498bb66f337061e4de36835 · branch: main*
 
 landed: a29187b1 yaks-7c6e: docs: key families and rules, the grouped ? popup and F1, AGENTS.md key bindings, README vim_mode line
 
----
-▸ 2026-11-07T18:24:44Z [herd-stars]
+#### 2026-11-07T18:24:44Z
+
+*herd-stars*
 
 herd-stars: landed `61cda058` (code, worker `4fc439e5`) and `a29187b1` (docs, worker `05a49af7`), both clean squashes. Gate `cargo test --workspace` green on the merged tree (run with `CARGO_PROFILE_DEV_DEBUG=0`: the disk is nearly full).
 

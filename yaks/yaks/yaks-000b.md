@@ -15,8 +15,9 @@ A few scrolling odds and ends:
 - Vertical scrolling in list views moves the cursor, rather than the scrollable area. I think this would be better if it worked like the detail view.
 - It would be nice if detail fields could be click-selected in edit mode.
 
----
-▸ 2026-11-03T21:59:28Z [delta:starred-batch]
+#### 2026-11-03T21:59:28Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -26,8 +27,9 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T22:04:36Z [delta:starred-batch]
+#### 2026-11-03T22:04:36Z
+
+*delta:starred-batch*
 
 Two of three done in dab80e4:
 
@@ -36,8 +38,9 @@ Two of three done in dab80e4:
 
 Evidence: tests `wheel_scrolls_the_list_and_drags_the_cursor`, `horizontal_wheel_scrolls_the_block_under_the_pointer`; `?` Mouse section and `docs/tui.md` updated. Not tried with a real trackpad.
 
----
-▸ 2026-11-03T22:04:36Z [delta:starred-batch]
+#### 2026-11-03T22:04:36Z
+
+*delta:starred-batch*
 
 kind: ask
 needs: human
@@ -52,13 +55,15 @@ One left: "detail fields click-selected in edit mode". Which edit mode do you me
 
 Or both? I'd start with 1.
 
----
-▸ 2026-11-03T22:05:10Z [delta:starred-batch]
+#### 2026-11-03T22:05:10Z
+
+*delta:starred-batch*
 
 For option 2 of my ask: the edtui fork already has `events/mouse.rs` (`MouseEventHandler`, click-to-position and drag-select), so a click in the in-place editor may only need forwarding the event with the editor's rect. Smaller than I guessed.
 
----
-▸ 2026-11-03T22:28:12Z [Joel Webber]
+#### 2026-11-03T22:28:12Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -66,17 +71,17 @@ needs: agent
 
 Oh, I totally missed the edtui case, but both of those would be useful. Feel free to add whatever you need to, to our edtui fork.
 
----
-▸ 2026-11-07T17:04:27Z [herd-stars]
-kind: pickup
----
+#### 2026-11-07T17:04:27Z
+
+*herd-stars · kind: pickup*
 
 picked up
 
 herd-stars: both edit modes (form row click-focus, and click-to-position in the in-place editor) go to a worker.
 
----
-▸ 2026-11-07T17:05:33Z [herd-stars]
+#### 2026-11-07T17:05:33Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-form`, after yaks-255d, in the same checkout, as a second commit.
 
@@ -93,19 +98,18 @@ Claim (yakherd herd-stars): worker `stars-form`, after yaks-255d, in the same ch
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-07T17:07:50Z [stars-form]
+#### 2026-11-07T17:07:50Z
+
+*stars-form*
 
 Start: Sat Nov  7 17:07:49 UTC 2026
 
 - farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-000b.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/e3chjzn4e2pq/yaks
 
----
-▸ 2026-11-07T17:32:29Z [stars-form]
-kind: ask
-needs: human
----
+#### 2026-11-07T17:32:29Z
+
+*stars-form · kind: ask · needs: human*
 
 asked: needs human
 
@@ -122,8 +126,9 @@ Status: the form part (row focus, chip select, forwarding into a focused field) 
 
 [frame-000b-form-chip-click](yaks-000b/frame-000b-form-chip-click.txt "Edit form after clicking the bug chip, p1 and the wakes label: focus is on the wakes row (the frame is plain text, chip selection is asserted in a_click_on_a_chip_selects_it)")
 
----
-▸ 2026-11-07T17:38:50Z [stars-form]
+#### 2026-11-07T17:38:50Z
+
+*stars-form*
 
 Status: implemented in the working tree, NOT committed, NOT shorn: it cannot compile in this checkout until the question above is answered (`Cargo.toml` must enable edtui's `mouse-support` feature; I may not edit it).
 
@@ -144,31 +149,27 @@ Decision: chip rects come from `render_chip_row` itself (it now returns them), s
 
 Docs parity: `docs/tui.md` Mouse paragraph (the "ignored while an overlay is open" sentence is replaced: form and in-place editor take clicks, other overlays still ignore the mouse); two new rows ("Click form", "Click editor") in the `?` Mouse section (`EXTRAS`, `src/tui/keymap.rs`). No other file said the mouse is ignored under overlays.
 
----
-▸ 2026-11-07T17:38:59Z [herd-stars]
-kind: answer
-needs: agent
----
+#### 2026-11-07T17:38:59Z
+
+*herd-stars · kind: answer · needs: agent*
 
 Yakherd herd-stars: yes, enable it: `features = ["arboard", "mouse-support"]` on the edtui line of the root `Cargo.toml` (an empty feature of a dependency we already have, so `Cargo.lock` should not change; if it does, say so). Commit it with yaks-000b. Run the real gate in your checkout.
 
----
-▸ 2026-11-07T17:39:08Z [stars-form]
-kind: pickup
----
+#### 2026-11-07T17:39:08Z
+
+*stars-form · kind: pickup*
 
 picked up
 
----
-▸ 2026-11-07T17:41:53Z [stars-form]
-kind: verify
-result: pass
----
+#### 2026-11-07T17:41:53Z
+
+*stars-form · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T17:42:01Z [stars-form]
+#### 2026-11-07T17:42:01Z
+
+*stars-form*
 
 Cargo: enabled `mouse-support` on the edtui line in `Cargo.toml` as the yakherd answered; `Cargo.lock` did not change (`git status` shows only `Cargo.toml` among the Cargo files).
 
@@ -176,22 +177,14 @@ The real gate now passes in the checkout (`yaks verify yaks-000b`: PASS, above);
 
 Summary: in the create/edit form a left click focuses a row (as Tab does), a click on a chip selects it, and a click in an already-focused text row or the description puts the text cursor there; in the in-place block editor a click puts the text cursor at that spot and a drag selects, both by forwarding to edtui's `MouseEventHandler` with the position translated into the editor's scratch buffer. The wheel and every other overlay are unchanged.
 
----
-▸ 2026-11-07T17:42:01Z [stars-form]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:42:01Z
+
+*stars-form · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T17:43:50Z [herd-stars]
-kind: landed
-commit: f0dafed7ca3644ad4c0601f0bfb7bb618c047453
-source: 5c377fe6c64b0f125bb576ac116acc6b9764355a
-branch: main
----
+#### 2026-11-07T17:43:50Z
+
+*herd-stars · kind: landed · commit: f0dafed7ca3644ad4c0601f0bfb7bb618c047453 · source: 5c377fe6c64b0f125bb576ac116acc6b9764355a · branch: main*
 
 landed: f0dafed7 yaks-000b: click focuses form rows and chips, and places the cursor in the form and in-place editors

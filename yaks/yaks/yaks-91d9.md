@@ -16,8 +16,9 @@ Inline images render perfectly well in yak details, but not in documents. See th
 ---
 ![inline-images](yaks-91d9/inline-images.png)
 
----
-▸ 2026-11-03T21:17:24Z [delta:starred-batch]
+#### 2026-11-03T21:17:24Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -29,8 +30,9 @@ moved: hairy -> shaving
 
 [doc-inline-image-frame](yaks-91d9/doc-inline-image-frame.txt)
 
----
-▸ 2026-11-03T21:21:25Z [delta:starred-batch]
+#### 2026-11-03T21:21:25Z
+
+*delta:starred-batch*
 
 Fixed: the document viewer now lays out markdown through the same function as the detail pane, so a lone image is drawn in place there too.
 
@@ -39,8 +41,9 @@ Fixed: the document viewer now lays out markdown through the same function as th
 
 Evidence: new test `a_page_in_the_viewer_draws_attachment_and_farm_root_images_in_place` (rows reserved and pixels drawn, for `<id>/shot.png` and `/sources/.../shot.png`); a headless frame of the real `wiki/topics/scribe-capture-and-mining.md` in the joel farm, with the image drawn under `🖼 Capture in progress` (attached).
 
----
-▸ 2026-11-03T21:21:27Z [delta:starred-batch]
+#### 2026-11-03T21:21:27Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

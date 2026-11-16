@@ -24,13 +24,15 @@ Evidence: tests with temp git repos and a temp HOME: a stale project-local skill
 
 Out of scope: auto-writing anything project-local (explicitly rejected), the user-level sync, init.
 
----
-▸ 2026-10-05T22:39:49Z [delta-lead]
+#### 2026-10-05T22:39:49Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-05T22:39:49Z [delta-lead]
+#### 2026-10-05T22:39:49Z
+
+*delta-lead*
 
 Claim (coordinator delta-lead). Owner: worker ntf-1.
 
@@ -40,8 +42,9 @@ Judge: coordinator re-runs the gate and a temp-repo run.
 
 Forbidden: writing into any working tree, auto-updating project-local skills, coordination skills prose.
 
----
-▸ 2026-10-05T22:44:56Z [ntf-1]
+#### 2026-10-05T22:44:56Z
+
+*ntf-1*
 
 Worker ntf-1 started.
 
@@ -49,8 +52,9 @@ Worker ntf-1 started.
 - `date -u`: Mon Oct  5 22:40:07 UTC 2026
 - Own binary: `cargo build --release` -> `./target/release/yaks`.
 
----
-▸ 2026-10-05T22:48:46Z [ntf-1]
+#### 2026-10-05T22:48:46Z
+
+*ntf-1*
 
 Decision: where "announced" is remembered, and what the notice does.
 
@@ -64,8 +68,9 @@ Decision: where "announced" is remembered, and what the notice does.
 - **doctor** now also runs the project-local check from the cwd's git top-level (it previously only looked at `~/.agents/skills` for edited skills). No exit-code effect.
 - `install` after the notice: verified by test that a cleanly stale project-local skill upgrades with no `--force` (unit `rerunning_install_after_the_notice_makes_it_current_and_quiet`, integration `a_stale_install_is_announced_once_then_install_fixes_it`).
 
----
-▸ 2026-10-05T22:49:12Z [ntf-1]
+#### 2026-10-05T22:49:12Z
+
+*ntf-1*
 
 Shorn summary (ntf-1).
 
@@ -75,7 +80,8 @@ Shorn summary (ntf-1).
 - Real run in a temp repo + temp HOME: one `note:` line on the first command, nothing on the second / from a subdirectory / with --json; `git status --porcelain` and SKILL.md mtime unchanged; `skills install` upgraded the stale skill; the next command quiet.
 - Surprise: the digest constant in skills.rs is `0x1000_0000_01b3` (12 hex digits), not the standard FNV-64 prime `0x100000001b3`; harmless (internal), left as is; tests copy the actual constant.
 
----
-▸ 2026-10-05T22:49:12Z [ntf-1]
+#### 2026-10-05T22:49:12Z
+
+*ntf-1*
 
 moved: shaving -> shorn

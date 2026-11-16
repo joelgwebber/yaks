@@ -14,7 +14,7 @@ good: 3
 
 ## Summary
 
-Joel asked where yaks stands on taking over Hearth's knowledge management. The assessment found storage, search, sources and checks covered, but nothing for session notes, session review or the housekeeping procedure. That became the family yaks-1c89, with the session-note design settled on [yaks-bca6](yaks-bca6#2026-11-06T04:56:54Z). This session then built the path to a usable skill on branch `upkeep`: note links ([yaks-c5bd](yaks-c5bd#2026-11-06T04:58:06Z)), `yaks session` ([yaks-17f5](yaks-17f5#2026-11-06T04:58:06Z), [yaks-e58f](yaks-e58f#2026-11-06T04:58:07Z)) and the `yaks-upkeep` skill ([yaks-3fa5](yaks-3fa5#2026-11-06T04:58:07Z)). It ended with a build installed for Joel to try, not yet landed on `main`.
+Joel asked where yaks stands on taking over Hearth's knowledge management. The assessment found storage, search, sources and checks covered, but nothing for session notes, session review or the housekeeping procedure. That became the family yaks-1c89, with the session-note design settled on [yaks-bca6](/yaks/yaks/yaks-bca6.md#2026-11-06t045654z). This session then built the path to a usable skill on branch `upkeep`: note links ([yaks-c5bd](/yaks/yaks/yaks-c5bd.md#2026-11-06t045806z)), `yaks session` ([yaks-17f5](/yaks/yaks/yaks-17f5.md#2026-11-06t045806z), [yaks-e58f](/yaks/yaks/yaks-e58f.md#2026-11-06t045807z)) and the `yaks-upkeep` skill ([yaks-3fa5](/yaks/yaks/yaks-3fa5.md#2026-11-06t045807z)). It ended with a build installed for Joel to try, not yet landed on `main`.
 
 ## Turns
 
@@ -29,35 +29,35 @@ Joel's refinement of the design: a session note cites the yak notes that hold th
 ## Saved
 
 - yaks-17f5: Command: write a session note into sessions/ (created, hairy -> shorn)
-  - [verify: `cargo test --test sessions && cargo test --bin yaks sessions` -> PAS...](yaks-17f5#2026-11-06T04:57:12Z)
-  - [Done on branch `upkeep` (505d2058): `yaks session note|touched|list|promote`...](yaks-17f5#2026-11-06T04:58:06Z)
+  - [verify: `cargo test --test sessions && cargo test --bin yaks sessions` -> PAS...](/yaks/yaks/yaks-17f5.md#2026-11-06t045712z)
+  - [Done on branch `upkeep` (505d2058): `yaks session note|touched|list|promote`...](/yaks/yaks/yaks-17f5.md#2026-11-06t045806z)
 - yaks-1c89: Upkeep: session notes, session review and housekeeping (Hearth's knowledge procedures in yaks) (created, hairy -> shaving)
-  - [Filed the family (herd-upkeep, 2026-11-05):](yaks-1c89#2026-11-06T04:28:55Z)
+  - [Filed the family (herd-upkeep, 2026-11-05):](/yaks/yaks/yaks-1c89.md#2026-11-06t042855z)
 - yaks-252c: Hash-checked dok edits (no silent overwrite from a stale read) (created)
 - yaks-2e00: refs --incoming on a yak: include doks and session notes (created)
 - yaks-39f9: dok query: contains, compare, not-equal and missing (created)
 - yaks-3fa5: Skill: yaks-upkeep (session notes, session review, housekeeping) (created, hairy -> shorn)
-  - [verify: `cargo test --bin yaks skills && cargo test --test init_modes` -> PAS...](yaks-3fa5#2026-11-06T04:57:21Z)
-  - [Done on branch `upkeep` (505d2058): the yaks-upkeep skill, bundled.](yaks-3fa5#2026-11-06T04:58:07Z)
+  - [verify: `cargo test --bin yaks skills && cargo test --test init_modes` -> PAS...](/yaks/yaks/yaks-3fa5.md#2026-11-06t045721z)
+  - [Done on branch `upkeep` (505d2058): the yaks-upkeep skill, bundled.](/yaks/yaks/yaks-3fa5.md#2026-11-06t045807z)
 - yaks-525b: Attribute an agent's hand edits committed with yaks commit (created)
 - yaks-6cdd: Write and delete table dok rows by key (created)
 - yaks-7168: Design: weekly reflection, what moves to yaks (created)
 - yaks-80bd: Small tool gaps: mark sources, write schemas, backdate imports (created)
 - yaks-b6a7: TUI: following a note link lands on its note (created)
 - yaks-bca6: Design: session notes in a farm (narrative plus references to yak notes) (created, hairy -> shorn)
-  - [Decision (Joel, 2026-11-05, in the assessment thread): a session note referen...](yaks-bca6#2026-11-06T04:28:54Z)
-  - [ask: Four details to settle before yaks-c5bd and yaks-17f5 are built; my lean on e...](yaks-bca6#2026-11-06T04:28:54Z-1)
-  - [pickup: herd-upkeep: recording the answers and building on them (yaks-c5bd, yaks-17f5).](yaks-bca6#2026-11-06T04:38:03Z)
-  - [Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refi...](yaks-bca6#2026-11-06T04:56:54Z)
+  - [Decision (Joel, 2026-11-05, in the assessment thread): a session note referen...](/yaks/yaks/yaks-bca6.md#2026-11-06t042854z)
+  - [ask: Four details to settle before yaks-c5bd and yaks-17f5 are built; my lean on e...](/yaks/yaks/yaks-bca6.md#2026-11-06t042854z-1)
+  - [pickup: herd-upkeep: recording the answers and building on them (yaks-c5bd, yaks-17f5).](/yaks/yaks/yaks-bca6.md#2026-11-06t043803z)
+  - [Decision (Joel, 2026-11-06, answering the ask): all four leans, with one refi...](/yaks/yaks/yaks-bca6.md#2026-11-06t045654z)
 - yaks-c5bd: Links to one note of a yak (created, hairy -> shorn)
-  - [verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PAS...](yaks-c5bd#2026-11-06T04:57:07Z)
-  - [Done on branch `upkeep` (505d2058): a link can name one note of a yak by its...](yaks-c5bd#2026-11-06T04:58:06Z)
+  - [verify: `cargo test --test links && cargo test --bin yaks a_note_link` -> PAS...](/yaks/yaks/yaks-c5bd.md#2026-11-06t045707z)
+  - [Done on branch `upkeep` (505d2058): a link can name one note of a yak by its...](/yaks/yaks/yaks-c5bd.md#2026-11-06t045806z)
 - yaks-e58f: Session review mechanics: list unreviewed session notes, stamp promoted: (created, hairy -> shorn)
-  - [verify: `cargo test --test sessions` -> PASS (exit 0)](yaks-e58f#2026-11-06T04:57:17Z)
-  - [Done on branch `upkeep` (505d2058): `yaks session list --unreviewed` (agents'...](yaks-e58f#2026-11-06T04:58:07Z)
+  - [verify: `cargo test --test sessions` -> PASS (exit 0)](/yaks/yaks/yaks-e58f.md#2026-11-06t045717z)
+  - [Done on branch `upkeep` (505d2058): `yaks session list --unreviewed` (agents'...](/yaks/yaks/yaks-e58f.md#2026-11-06t045807z)
 - yaks-fcdc: Tools an agent layer needs on top of a farm (created)
 - yaks-ff4c: Remove import-hearth
-  - [Joel, 2026-11-05: go ahead. Hearth never built a real data repo beyond tests,...](yaks-ff4c#2026-11-06T04:28:55Z)
+  - [Joel, 2026-11-05: go ahead. Hearth never built a real data repo beyond tests,...](/yaks/yaks/yaks-ff4c.md#2026-11-06t042855z)
 
 ## Lessons
 

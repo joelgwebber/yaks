@@ -17,8 +17,9 @@ And they often spend an unreasonable amount of time trying to figure out why the
 
 Instead, it should simply serve as signal that the user is also doing something at the same time. This may or may not be useful signal as to the user's focus, but it shouldn't be a surprise.
 
----
-▸ 2026-10-05T22:43:55Z [delta-lead]
+#### 2026-10-05T22:43:55Z
+
+*delta-lead*
 
 Already in the skills; shearing as done (coordinator delta-lead, 2026-10-05).
 
@@ -29,7 +30,8 @@ Where the guidance lives today:
 
 The mechanics that make the advice cheap to follow also exist now: `yaks commit` commits the farm without touching code, and `land.sh` names exactly which working-tree changes a landing does not explain instead of leaving the agent to investigate.
 
----
-▸ 2026-10-05T22:43:55Z [delta-lead]
+#### 2026-10-05T22:43:55Z
+
+*delta-lead*
 
 moved: hairy -> shorn

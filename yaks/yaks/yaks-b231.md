@@ -12,13 +12,8 @@ tags:
 
 Will keep a running list of keyboard tweaks in this family.
 
----
-▸ 2026-11-14T17:53:13Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-child: yaks-8874
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T17:53:13Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · child: yaks-8874 · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving

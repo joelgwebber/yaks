@@ -11,13 +11,15 @@ tags:
 - docs
 ---
 
----
-▸ 2026-10-22T00:37:59Z [delta:herd-dirs]
+#### 2026-10-22T00:37:59Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T00:37:59Z [delta:herd-dirs]
+#### 2026-10-22T00:37:59Z
+
+*delta:herd-dirs*
 
 Claim (yakherd delta:herd-dirs). Owner: `clidoc-1` (Sonnet worker).
 
@@ -31,15 +33,17 @@ Claim (yakherd delta:herd-dirs). Owner: `clidoc-1` (Sonnet worker).
 
 **Judge.** The yakherd, at landing.
 
----
-▸ 2026-10-22T00:38:34Z [clidoc-1]
+#### 2026-10-22T00:38:34Z
+
+*clidoc-1*
 
 Start: Thu Oct 22 00:38:29 UTC 2026
 
 Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f800.md
 
----
-▸ 2026-10-22T00:42:20Z [clidoc-1]
+#### 2026-10-22T00:42:20Z
+
+*clidoc-1*
 
 Decision: sheds/changes/etc. details moved verbatim into new `### <command>` sections placed right after each table (split into paragraphs at sentence boundaries, no wording changed); the table row is a ≤40-word summary + `[Details](#cmd)` link. Rejected: leaving the long text in the row; rewriting/condensing the detail (out of scope: facts must not change).
 
@@ -59,22 +63,26 @@ Evidence:
 
 Suspected errors (not fixed): none found; `sheds` text still mentions "(formerly lane)", and the `commit` section says "(rule 4 above)" which still points at the farm-as-branch rule in "Which farm a command uses".
 
----
-▸ 2026-10-22T00:47:07Z [clidoc-1]
+#### 2026-10-22T00:47:07Z
+
+*clidoc-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-22T00:47:20Z [clidoc-1]
+#### 2026-10-22T00:47:20Z
+
+*clidoc-1*
 
 Summary: docs/cli.md command tables trimmed. Every row is now ≤38 words with a `[Details](#cmd)` link; the removed prose moved verbatim into `### <command>` sections after each table (new: show, path, next, sheds, changes, discover, refs, create, update, merge, merge-driver, bulk, verify, attach, rename-attachment, attachment, ask, answer, pickup, inbox, migrate, private, skills, doctor, preflight, brief, status, sync, commit, land; init reuses its existing section). Longest row 1945 → 38 words. Gate `yaks verify yaks-f800` PASS (808 passed). Only token lost vs. original: `works;` → `works.` (a `;` became a `.` where the init/private paragraph was joined).
 
----
-▸ 2026-10-22T00:47:20Z [clidoc-1]
+#### 2026-10-22T00:47:20Z
+
+*clidoc-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+#### 2026-10-22T00:59:43Z
+
+*delta:herd-dirs*
 
 Landed as 0739dcd (squash of efb20a7). Yakherd re-checked: longest docs/cli.md table row 41 words; every in-file anchor resolves; full gate green.

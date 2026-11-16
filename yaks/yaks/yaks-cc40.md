@@ -62,13 +62,15 @@ Run it on a **copy** of this farm first (`YAKS_DIR=<copy> yaks migrate --dry-run
 - The migrated copy of this farm: `yaks doctor --strict`, `yaks check`, and `yaks peek` of a pinned link before and after.
 - Update docs and in-app help in the same change (AGENTS.md rule), and `yaks scan-ids` clean on anything user-facing.
 
----
-▸ 2026-11-04T17:23:25Z [source-fix]
+#### 2026-11-04T17:23:25Z
+
+*source-fix*
 
 Ordering (source-fix, with yaks-dedc): land yaks-dedc's tool and skill yaks before this one. They touch only `src/sources.rs`, the `source` help, `docs/cli.md`'s source section and the `yaks-research` skill, and this rename will sweep whatever they write (new help and skill prose say "pages"/"wiki" where they must). Doing it the other way round would make the dedc diff conflict with a ~78-file mechanical change.
 
----
-▸ 2026-11-04T20:04:07Z [source-fix]
+#### 2026-11-04T20:04:07Z
+
+*source-fix*
 
 Landed on `main` (5cf7686, released as v0.0.32); both real farms migrated.
 
@@ -100,12 +102,8 @@ Rehearsing the migration on copies under `/private/tmp` wrote two stray commits 
 - Told Clint: haks writes `doks/digest/<date>.md` now and must call `yaks dok new` (Joel is telling him).
 - `yaks sync` has not been run on either farm; the farm commits are local, apart from the two stray ones and their reverts.
 
----
-▸ 2026-11-04T20:04:07Z [source-fix]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T20:04:07Z
+
+*source-fix · kind: move · from: hairy · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

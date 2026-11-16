@@ -16,18 +16,15 @@ Reproduced on a clean tree (no yaks-bcd4 change): run it twice; the first passes
 
 Fix: give the siblings the pid like `temp()` does and remove them at the end, or put them under the test's own temp dir.
 
----
-▸ 2026-11-10T21:11:50Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:50Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:25Z [herd-unlock]
+#### 2026-11-10T21:12:25Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `flaky-1`, Sonnet 5.5. Covers yaks-06cd's three cases too (record what you find there; the yakherd closes it).
 
@@ -40,21 +37,21 @@ Claim (yakherd herd-unlock-2): worker `flaky-1`, Sonnet 5.5. Covers yaks-06cd's 
 
 `cargo test --test init_modes` twice in a row passes; the whole gate run three times in a row passes while another `cargo build --release` runs in parallel (say so in the note). Gate `cargo test --workspace`. Test files only, plus test helpers.
 
----
-▸ 2026-11-10T21:13:53Z [flaky-1]
+#### 2026-11-10T21:13:53Z
+
+*flaky-1*
 
 Start Tue Nov 10 21:13:53 UTC 2026 ; checkout /Users/joel/src/yaks/.delta/worktrees/axjw1h424can/yaks
 
----
-▸ 2026-11-10T22:00:22Z [flaky-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T22:00:22Z
+
+*flaky-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T22:00:44Z [flaky-1]
+#### 2026-11-10T22:00:44Z
+
+*flaky-1*
 
 Decision: `init_modes` worktree test uses the file's own `temp()` for the `-wt` and `-clone` dirs (pid-suffixed, cleared first) plus an explicit cleanup at the end.
 
@@ -62,15 +59,17 @@ Decision: `init_modes` worktree test uses the file's own `temp()` for the `-wt` 
 - Rejected: nesting them inside `web`'s dir (a worktree inside its own repo's tree dirties `git status`).
 - git accepts an existing empty directory for `worktree add` and `clone`, so `temp()` works as the target.
 
----
-▸ 2026-11-10T22:00:44Z [flaky-1]
+#### 2026-11-10T22:00:44Z
+
+*flaky-1*
 
 Decision: `tui::farmsync::tests` siblings (origin, other clone) are derived from `temp_farm`'s own pid+counter dir name, via a `sibling()` helper, and a `cleanup()` removes them. `published_farm` lost its `tmp` argument.
 
 - Rejected: keeping per-test fixed strings (`yaks-f0db-pull-origin.git`): those are shared by every `cargo test` on the machine.
 
----
-▸ 2026-11-10T22:00:45Z [flaky-1]
+#### 2026-11-10T22:00:45Z
+
+*flaky-1*
 
 Decision: `settle_auto_sync` waits on a 120 s wall-clock deadline instead of 400 polls of 25 ms.
 
@@ -78,16 +77,18 @@ Decision: `settle_auto_sync` waits on a 120 s wall-clock deadline instead of 400
 - Rejected: only raising the iteration count (still a guess); a mutex over all tests (hides the cause and slows the suite).
 - No non-test code needed, so no `yaks ask`.
 
----
-▸ 2026-11-10T22:00:45Z [flaky-1]
+#### 2026-11-10T22:00:45Z
+
+*flaky-1*
 
 Decision: `tests/sync.rs` `origin_and_a` now sets `XDG_DATA_HOME` (and removes `YAKS_DIR`) on the `yaks init` it runs, like `Machine::yaks_out` does.
 
 - Before, that one call wrote a farm home under the real `~/.local/share/yaks/farms` (not the temp root), which is a leak outside the test's temp root.
 - It is not a proven cause of the load failure. Stated honestly under the sync case below.
 
----
-▸ 2026-11-10T22:00:46Z [flaky-1]
+#### 2026-11-10T22:00:46Z
+
+*flaky-1*
 
 ## Findings (also yaks-06cd's three cases)
 
@@ -124,22 +125,14 @@ Machine: 14 cores, load average 18–35 throughout (6 other workers building and
 - `cargo fmt --check`: clean.
 - `cargo clippy --all-targets`: 104 warning lines before and after my change (same count; nothing added).
 
----
-▸ 2026-11-10T22:00:46Z [flaky-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVcp5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T22:00:46Z
+
+*flaky-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVcp5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T22:01:13Z [herd-unlock]
-kind: landed
-commit: 709ec3c5aa6d5dd48f7100ef30fc8b284e19a741
-source: 669788f29fd83c6ffc350c83685bf0fa4852e31a
-branch: main
----
+#### 2026-11-10T22:01:13Z
+
+*herd-unlock · kind: landed · commit: 709ec3c5aa6d5dd48f7100ef30fc8b284e19a741 · source: 669788f29fd83c6ffc350c83685bf0fa4852e31a · branch: main*
 
 landed: 709ec3c5 yaks-717b: unique, cleaned-up temp dirs in init_modes and farmsync tests; wall-clock wait for the interval sync

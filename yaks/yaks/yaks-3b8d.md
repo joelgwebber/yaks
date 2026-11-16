@@ -22,32 +22,37 @@ On the renderer core.
 - Yak ids and `[[wikilinks]]` keep linking (today's `refs` scan, applied to rendered text spans).
 - Attachments: today `yaks attach` writes `![stem](<id>/<file>)` for every file (53 `.txt`, 18 `.md`, 7 `.svg`, 5 `.png` in this farm). Proposal (pending Joel): images keep `![]()`; non-images become plain links `[stem](<id>/<file>)`, which is what GitHub/Delta expect; `rename-attachment` rewrites both forms; a one-time fixup rewrites existing non-image `![]` links. Images render as `🖼 stem` (followable, opens externally), other attachments as `📎 stem`.
 
----
-▸ 2026-10-17T04:26:35Z [delta-lead]
+#### 2026-10-17T04:26:35Z
+
+*delta-lead*
 
 asked: needs human
 
 Attachment links: OK to (a) keep `![stem](<id>/<file>)` for images only, (b) write non-images as plain links `[stem](<id>/<file>)`, (c) have `rename-attachment` handle both forms, and (d) run a one-time fixup that rewrites existing non-image `![]` links (about 80 in this farm, mostly `.txt`/`.md`/`.svg`)? SVG counts as an image here.
 
----
-▸ 2026-10-17T04:35:54Z [Joel Webber]
+#### 2026-10-17T04:35:54Z
+
+*Joel Webber*
 
 Yup, completely agreed. This won't be the only fixup we'll need for the next release, so let's leverage the schema migration infrastructure (or extend it as needed) to handle these updates cleanly.
 
----
-▸ 2026-10-17T04:36:55Z [delta-lead]
+#### 2026-10-17T04:36:55Z
+
+*delta-lead*
 
 picked up
 
 Picked up by the yakherd: the attach/link format part moves to the schema-5 migration yaks-a870; this yak keeps the rendering part (collapsed links, 🖼/📎 attachments).
 
----
-▸ 2026-10-17T05:17:20Z [delta-lead]
+#### 2026-10-17T05:17:20Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T05:17:20Z [delta-lead]
+#### 2026-10-17T05:17:20Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **links-2**, together with yaks-1bbb (both are about link targets in the read pane). The renderer core already collapses `[text](url)` to its text (Tab/Enter follow it), and yaks-a870 rewrote attachment links (images `![]`, everything else `[]`). Remaining scope:
 
@@ -56,8 +61,9 @@ Claim (yakherd delta-lead, 2026-10-17): owner **links-2**, together with yaks-1b
 
 Evidence: tests on the Target and prefix; headless frame with an attachment, an image and a URL link, plus the status bar line when the cursor is on the link. Judge: coordinator at landing.
 
----
-▸ 2026-10-17T05:21:50Z [links-2]
+#### 2026-10-17T05:21:50Z
+
+*links-2*
 
 Start (links-2): Sat Oct 17 05:21:50 AM UTC 2026
 
@@ -66,8 +72,9 @@ Start (links-2): Sat Oct 17 05:21:50 AM UTC 2026
 
 [frame-links](yaks-3b8d/frame-links.txt)
 
----
-▸ 2026-10-17T05:33:01Z [links-2]
+#### 2026-10-17T05:33:01Z
+
+*links-2*
 
 Decision: an attachment link is recognised as `<id>/<file>` where `<id>` is a known yak id in the farm (`is_attachment` in mdrender.rs). A relative link to anything else (`other/f.txt`) stays a plain `Target::Artifact` with no 📎. Rejected: any relative path (would mark `docs/x.md`); checking the file exists (render must not touch disk).
 
@@ -82,12 +89,14 @@ Done:
 - Tests: `attachment_links_get_a_paperclip_and_images_keep_the_picture` (text, targets for 📎 file, 🖼 image, URL, non-attachment relative path) and the wrap test both FAILED with the prefix disabled and pass with it; `status_bar_shows_the_destination_of_the_link_under_the_cursor` in tests.rs.
 - Frame attached: frame-links.txt (headless 90x34, scratch farm with a real `yaks attach` of a .txt and a .svg): status bar shows `→ https://example.com/some/long/path`, `→ yak-b573/build-log.txt`, `→ yak-b573/shot.svg`; rows render `📎 build-log` and `🖼 shot`.
 
----
-▸ 2026-10-17T05:33:07Z [links-2]
+#### 2026-10-17T05:33:07Z
+
+*links-2*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T05:33:15Z [links-2]
+#### 2026-10-17T05:33:15Z
+
+*links-2*
 
 moved: shaving -> shorn

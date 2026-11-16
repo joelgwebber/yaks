@@ -21,7 +21,8 @@ Related: it would be really helpful to have some way to configure simple agent i
 
 This is especially important in the private use-case, where you don't want to put agent instructions in CLAUDE/AGENTS.md, and you've .gitignore'd the whole .yaks directory.
 
----
-▸ 2026-10-19T04:29:30Z [delta:herd-pass]
+#### 2026-10-19T04:29:30Z
+
+*delta:herd-pass*
 
 Herd pass 2026-10-19: newly relevant. Repos that adopted yaks each carry hand-written yaks boilerplate in AGENTS.md (canon, hearth, j15r), now stale (they say `.yaks/` is committed and the shorn move rides with the code). With the farm on its own branch, the farm itself is the natural home for that per-repo guidance (e.g. a `.yaks/AGENTS.md` the yaks skill tells agents to read, or a config key), so it travels with the farm, stays out of main, and works for private farms too. Pairs with yaks-b048.

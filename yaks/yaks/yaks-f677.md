@@ -19,8 +19,9 @@ Joel starred 13 yaks on 2026-11-03 to address together. This yak groups them; ea
 - Editor: yaks-907a
 - Design first: yaks-7c6e (key bindings), yaks-000b (mouse)
 
----
-▸ 2026-11-03T21:13:55Z [delta:starred-batch]
+#### 2026-11-03T21:13:55Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -31,8 +32,9 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T22:10:12Z [delta:starred-batch]
+#### 2026-11-03T22:10:12Z
+
+*delta:starred-batch*
 
 Progress (delta:starred-batch), on local `main`, not pushed:
 
@@ -43,16 +45,14 @@ Progress (delta:starred-batch), on local `main`, not pushed:
 
 Commits: 7e67170, d3aa34a, c83fdab, f9ea808, 2ba1622, dab80e4, on top of upstream `c98d7e3` (rebased; the earlier yaks-ec00 work is 2075608). Gate: 1098 tests pass. Installed with `cargo install --path .`.
 
----
-▸ 2026-11-06T22:49:16Z [sched-1]
+#### 2026-11-06T22:49:16Z
+
+*sched-1*
 
 Mostly done; hoisted a few stragglers out to the root.
 
----
-▸ 2026-11-06T22:49:17Z [sched-1]
-kind: move
-from: shaving
-to: shorn
----
+#### 2026-11-06T22:49:17Z
+
+*sched-1 · kind: move · from: shaving · to: shorn*
 
 moved: shaving -> shorn

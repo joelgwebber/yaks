@@ -14,13 +14,15 @@ tags:
 
 The skills rewrite (yaks-b048) folds `yaks-coordinating-team`, `-private`, `-worktrees` and `-delta` into `yaks-coordinating`. Dropping them from the binary is not enough: anyone who ran `yaks skills install --with coordination` keeps the old copies, which then teach the retired per-shed model forever (nothing upgrades a skill the binary no longer knows).
 
----
-▸ 2026-10-21T23:00:07Z [delta:herd-dirs]
+#### 2026-10-21T23:00:07Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T23:00:07Z [delta:herd-dirs]
+#### 2026-10-21T23:00:07Z
+
+*delta:herd-dirs*
 
 Claim (yakherd delta:herd-dirs). Owner: `retire-1` (Sonnet worker).
 
@@ -40,18 +42,21 @@ Claim (yakherd delta:herd-dirs). Owner: `retire-1` (Sonnet worker).
 
 **Judge.** The yakherd, at landing.
 
----
-▸ 2026-10-21T23:00:35Z [retire-1]
+#### 2026-10-21T23:00:35Z
+
+*retire-1*
 
 Start: Wed Oct 21 23:00:32 UTC 2026; yaks path yaks-4c93 = /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-4c93.md
 
----
-▸ 2026-10-21T23:03:00Z [retire-1]
+#### 2026-10-21T23:03:00Z
+
+*retire-1*
 
 verify: `cargo test -p yaks skills` -> PASS (exit 0)
 
----
-▸ 2026-10-21T23:06:41Z [retire-1]
+#### 2026-10-21T23:06:41Z
+
+*retire-1*
 
 Decision: retired state is two `SkillState` variants, `Retired { from }` (stamped + digest matches: `install` removes it) and `RetiredKept { stamped }` (edited or unstamped: kept). Rejected: one variant plus a flag, and reusing `Modified`/`Unmanaged` (they `needs_force`, which would make `--force` rewrite a skill the binary no longer has content for). Both show the word `retired`.
 
@@ -75,17 +80,20 @@ Real binary (./target/release/yaks, tmp dir, old copies planted by installing wi
 - `skills status`: 4 `current`, `retired yaks-coordinating-team  (retired; installed by 0.0.21; ...)`, `-private  (retired, and edited since install - remove it by hand)`, `-worktrees`, `-delta`; footer `3 stale or retired; run ... --with coordination`.
 - `skills install --with coordination`: `removed yaks-coordinating-team (retired, now part of yaks-coordinating) -> ...` x3, and `kept yaks-coordinating-private [retired]: ...  it was edited since it was installed; yaks retired it (now part of yaks-coordinating), remove it by hand`. Afterwards only the edited directory remained and `status` listed it as `retired`.
 
----
-▸ 2026-10-21T23:06:45Z [retire-1]
+#### 2026-10-21T23:06:45Z
+
+*retire-1*
 
 verify: `cargo test -p yaks skills` -> PASS (exit 0)
 
----
-▸ 2026-10-21T23:06:45Z [retire-1]
+#### 2026-10-21T23:06:45Z
+
+*retire-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-21T23:11:04Z [delta:herd-dirs]
+#### 2026-10-21T23:11:04Z
+
+*delta:herd-dirs*
 
 Landed as 00fbc8c (yaks land, squash of 16edef2). Yakherd re-ran the full gate: 20 suites green (unit 808 passed). Reproduced: 0.0.21 coordination install in a temp dir, one companion edited; new binary removed the three untouched, kept the edited one with 'remove it by hand'.

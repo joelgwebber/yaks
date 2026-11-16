@@ -37,18 +37,15 @@ yaks-4f4d: until the subset covers the emoji and box-drawing corners our frames 
 
 An agent can go from a docshot or attachment to a PNG its file tools can open with one yaks command, and `docs/tui.md`'s recipe section, the `yaks` skill's evidence guidance and the pointer in `AGENTS.md` ("Verifying changes") say so.
 
----
-▸ 2026-11-08T00:49:17Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T00:49:17Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-08T00:52:11Z [herd-stars]
+#### 2026-11-08T00:52:11Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker after yaks-4f4d lands in toque. Open points decided by the yakherd (reversible; Joel can overrule):
 
@@ -57,8 +54,9 @@ Claim (yakherd herd-stars): worker after yaks-4f4d lands in toque. Open points d
 
 ![peek-render](yaks-8fd1/peek-render.png "yaks render docs/assets/tui-yak-peek.svg: 2x, embedded fonts, no browser")
 
----
-▸ 2026-11-08T01:25:06Z [herd-stars]
+#### 2026-11-08T01:25:06Z
+
+*herd-stars*
 
 Done by herd-stars in `cddd0bcd`: `yaks render <svg> [-o <png>] [--scale N]` ([src/render.rs](code:src/render.rs@cddd0bcd)), on toque `4fdb374` (yaks-4f4d's fonts).
 
@@ -67,12 +65,8 @@ Done by herd-stars in `cddd0bcd`: `yaks render <svg> [-o <png>] [--scale N]` ([s
 - Docs: `docs/cli.md`, `docs/tui.md` (the rasterizing section and the svg fonts paragraph), the `yaks` skill's TUI evidence line, `AGENTS.md` "Verifying changes".
 - Evidence: unit tests for resolution and scale (IHDR 80×40 at 2x); `yaks render yaks-e5f9/zoom-3-zoomed-panned.svg` from the repo resolves the attachment; the attached PNG of `tui-yak-peek.svg`, looked at. Full gate `cargo test --workspace` green.
 
----
-▸ 2026-11-08T01:25:07Z [herd-stars]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T01:25:07Z
+
+*herd-stars · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

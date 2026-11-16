@@ -39,18 +39,21 @@ The layout yak, the resolver yak and the note-format design. Do not start before
 
 A rehearsal on this farm: `yaks doctor` clean before and after; the census's "resolves on GitHub" share before and after (script: `linkcensus.py` on yaks-0a4d); one real file checked on GitHub's rendering of a rehearsal branch pushed to a place the human names.
 
----
-▸ 2026-11-14T11:21:18Z [linkplan-lead]
+#### 2026-11-14T11:21:18Z
 
-Dependencies: layout [yaks-6ffd](yaks-6ffd), resolver [yaks-f505](yaks-f505), note format [yaks-6c65](yaks-6c65). Docs follow in [yaks-df4e](yaks-df4e).
+*linkplan-lead*
 
----
-▸ 2026-11-14T22:38:06Z [linkplan-lead]
+Dependencies: layout [yaks-6ffd](/yaks/yaks/yaks-6ffd.md), resolver [yaks-f505](/yaks/yaks/yaks-f505.md), note format [yaks-6c65](/yaks/yaks/yaks-6c65.md). Docs follow in [yaks-df4e](/yaks/yaks/yaks-df4e.md).
 
-New dependency: [yaks-7729](yaks-7729) (source directory slugs, decided on [yaks-49c5](yaks-49c5)). The migration also renames each `sources/<date>-<sha8>/` to the slugged name with `git mv` and rewrites links and `sources:` entries to it, using `sources::plan_slugs` and the link-rewrite function that yak ships. Source files are snapshots: link text inside a source's own `extracted.md` is never rewritten.
+#### 2026-11-14T22:38:06Z
 
----
-▸ 2026-11-14T23:35:38Z [linkplan-lead]
+*linkplan-lead*
+
+New dependency: [yaks-7729](/yaks/yaks/yaks-7729.md) (source directory slugs, decided on [yaks-49c5](/yaks/yaks/yaks-49c5.md)). The migration also renames each `sources/<date>-<sha8>/` to the slugged name with `git mv` and rewrites links and `sources:` entries to it, using `sources::plan_slugs` and the link-rewrite function that yak ships. Source files are snapshots: link text inside a source's own `extracted.md` is never rewritten.
+
+#### 2026-11-14T23:35:38Z
+
+*linkplan-lead*
 
 Coordinator check after landing `7585597e`: I ran the worker's real-yak round trip over EVERY yak of four farms on this machine (`YAKS_NOTES_SAMPLE=<farm> YAKS_NOTES_LIMIT=100000`), not the first 200.
 
@@ -72,18 +75,15 @@ Every parse was identical before and after conversion, the conversion was idempo
 
 Lean: leave them, and list them in the migration report so nobody is surprised.
 
----
-▸ 2026-11-15T05:01:02Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-15T05:01:02Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-15T05:13:33Z [linkplan-lead]
+#### 2026-11-15T05:13:33Z
+
+*linkplan-lead*
 
 Design for the build, from reading `migrate.rs`, `store::lock`, `autocommit`, `commit.rs`, `mergedriver::ensure_registered` and `weight::enable_lfs` (no code yet).
 
@@ -112,8 +112,9 @@ Design for the build, from reading `migrate.rs`, `store::lock`, `autocommit`, `c
 
 Per rehearsal clone: `yaks doctor` clean before and after; the census share of links resolving on GitHub before and after (`linkcensus.py`); `git log --follow` over a sample of moved yaks and `git show -M --stat` for the rename detection; the stub marker refusing an older binary (the installed 0.0.36 build is the "older" one once SCHEMA is 9); one real file viewed on GitHub's rendering, which needs a branch pushed somewhere Joel names (not done without his say-so).
 
----
-▸ 2026-11-15T05:17:45Z [linkplan-lead]
+#### 2026-11-15T05:17:45Z
+
+*linkplan-lead*
 
 Finding before any code (checked in a scratch farm with my own build): **yaks does not read its own canonical yak link.** With `[t](/wid/yaks/wid-74a1.md)` in a yak body, `yaks refs wid-74a1 --incoming` shows no reference (the bare `wid-74a1` form is found), `yaks doctor` reports `![x](/wid/yaks/wid-74a1/shot.png)` as a broken link, and a slug note anchor on that path is not resolved. `links::parse` turns a path starting with `/` into a plain farm file and only recognises a bare id as a yak. If the migration rewrote 453 links to the canonical form first, every farm would lose its backrefs and `doctor` would flag them.
 
@@ -126,8 +127,9 @@ Also settled while reading the code, for the record:
 - **Attachment links:** an own-yak `<id>/<file>` link in a yak body already resolves on GitHub (the file sits beside the directory) and is left alone; the same link inside an attachment becomes the bare sibling name, and one from a dok or another yak becomes `/<herd>/yaks/<id>/<file>`.
 - **Unpinned `code:`** stays as it is; a pinned `code:` and a legacy `../blob/<sha>/...` become the host URL when the code repo is a recognised host; a legacy unpinned `../src/x` becomes `code:src/x`. If a farm has such links and no recognised host or no code checkout, the migration refuses and says why, rather than guess.
 
----
-▸ 2026-11-15T05:26:14Z [linkplan-lead]
+#### 2026-11-15T05:26:14Z
+
+*linkplan-lead*
 
 Progress, `8fcd2b0d`: yaks now reads its own canonical yak link. `/<herd>/yaks/<id>.md[#note]` is a yak and `/<herd>/yaks/<id>/<file>` is its attachment, only when the id is a real yak whose herd is the directory's (a lookalike path stays a plain farm file). Checked end to end in a scratch farm: `refs --incoming` finds the backref, `doctor` accepts a real attachment at that path, `peek` reads a note by timestamp and by slug. 1226 tests pass. This had to come first, or the rewrite below would have made every backref vanish.
 
@@ -140,15 +142,17 @@ Build order for the rest (`migrate.rs` stays the home; each step is a pure funct
 
 Bumping `SCHEMA` is the last change I make, after everything else is tested, because it makes the build I install refuse every schema-8 farm on this machine until it is migrated.
 
----
-▸ 2026-11-15T05:31:38Z [linkplan-lead]
+#### 2026-11-15T05:31:38Z
+
+*linkplan-lead*
 
 Decision (scope change, coordinator, within what Joel allowed on yaks-6cf2): **the migration does not rewrite `code:` links.** Pinned `code:` to a host URL needs yaks to parse its own host's URLs back into code links, which it cannot: `links::parse` is pure and does not know the remote, so a rewritten link would open in the browser instead of the new viewer, and `yaks check` would stop seeing it. Rewriting first would regress what just landed. Filed as its own yak under yaks-1151 (unify the resolution, then rewrite); until then `code:` and the legacy `../` forms stay as written, plain text on GitHub exactly as today. Everything else in the migration is unaffected: yak links, attachment links, `/doks/sessions|sources/` paths, sources, notes, layout.
 
 This is a reduction of decision 4, so Joel: say so on yaks-1151 if you would rather have the URLs now and the parse-back in the same change; I would not, it makes the migration depend on a resolver change it does not otherwise need.
 
----
-▸ 2026-11-15T06:12:47Z [linkplan-lead]
+#### 2026-11-15T06:12:47Z
+
+*linkplan-lead*
 
 Hand rehearsal of the layout move, on a `git clone --no-hardlinks` of this farm's branch in `/tmp` (2,246 commits, 87 MB `.git`, 1,292 files under `.yaks/`). No code involved: `git mv .yaks/* .` and `git mv .yaks/.gitignore .gitignore`, one commit. What git did:
 
@@ -166,15 +170,17 @@ So the late-writer rule is: after the migration, a writer on an older yaks is re
 
 Consequence for the code: the layout stage can be a plain `git mv` of the tracked paths plus the untracked ones, in one commit; no rename-limit configuration, no history rewrite.
 
----
-▸ 2026-11-15T06:19:30Z [linkplan-lead]
+#### 2026-11-15T06:19:30Z
+
+*linkplan-lead*
 
 Interaction found while reading the code, before it bites: `mergedriver::ensure_registered` and `weight::lfs_rules` write the `.yaks/**` rules unconditionally, and `ensure_registered` runs on every `yaks sync` (and on `yaks undo`). After the layout move, a plain `yaks sync` would append `.yaks/**/*.md merge=yaks` back beside the moved `**/*.md merge=yaks`, and `yaks lfs` would write the old LFS rules again (it checks `have.contains(rule)`, which the moved rules would no longer satisfy). The migration would be undone one sync later, silently.
 
 So both become layout-aware: the rule prefix is `.yaks/` when the farm sits under `.yaks/` (`FarmGit::prefix`) and empty at the branch root, taken from the same source as every other path conversion. `ensure_registered` also treats a rule in either form as present, so a farm mid-migration is not given a second one. Tests for both layouts, for each.
 
----
-▸ 2026-11-15T06:23:54Z [linkplan-lead]
+#### 2026-11-15T06:23:54Z
+
+*linkplan-lead*
 
 Progress, committed locally and not landed (it only changes behaviour once `SCHEMA` is 9, which I have not touched):
 
@@ -190,8 +196,9 @@ Shape of `run` after this, so review can check the code against it:
 3. **Apply under the farm lock**: content writes, source renames, then for a farm branch the `git mv`, `.gitattributes`, `.gitignore`, README, stub `.yaks/schema`, the `schema` marker last, and ONE commit with the `Yaks-Actor` trailer, made by `migrate` with `git commit --only` the way `yaks commit` does. Not the per-change autocommit: its snapshot is keyed to a root that moves under it.
 4. **Report** with per-form counts, left-alone bodies, unresolvable links, source renames, and the commit.
 
----
-▸ 2026-11-15T06:31:42Z [linkplan-lead]
+#### 2026-11-15T06:31:42Z
+
+*linkplan-lead*
 
 Found by the first end-to-end test of the git stage (a scratch farm branch at schema 8): **running the migration on a schema-8 farm rewrites yak files through the older fixups too, and the new refusal then sees them as uncommitted.** `comment_header_blank_line` (schema 5) wants a blank line between a note header and its first line; a note with metadata (`▸ <ts> [actor]` then `kind: move`) has none by design, and the fixup inserts one, which breaks the meta block. The real farm has 363 such headers. On a farm already at schema 8, schemas 5, 7 and 8's fixups are pure noise (they are what brought it to 8) and in this one case wrong.
 
@@ -199,8 +206,9 @@ So the older steps run only for a farm older than the schema they belong to: eac
 
 Also from the same test: the refusal for uncommitted changes must run **before** any write, not after the content stage, or the migration itself makes the farm dirty and then refuses. Moved up.
 
----
-▸ 2026-11-15T07:05:38Z [linkplan-lead]
+#### 2026-11-15T07:05:38Z
+
+*linkplan-lead*
 
 Decision (coordinator), a change to the yak's "one commit": **the migration is two commits, a pure move and then the content rewrite.** Found by the first end-to-end test of the git stage. With one commit that both moves and rewrites each file, git pairs renames by similarity (50% by default), so a small file with many link edits shows as delete plus add, and a yak with many notes drops toward the threshold (the test's yaks came out `R051` and `R072`). On a real farm every note header changes shape, so many yaks would lose `git log --follow` across the migration. The hand rehearsal on this farm's clone showed the opposite for a pure move: all 1,292 files `R100`, whatever the rename limit.
 
@@ -214,8 +222,9 @@ An interrupted run is safe at each boundary: after commit 1 the farm is at the r
 
 Also found: `Farm::migrate` takes `store::lock`, whose guard autocommits whatever changed when it drops. A migration that makes its own commits must take `lock_uncommitted` (the doc on it names `yaks sync` and `yaks commit` for exactly this); otherwise the autocommit could add a stray third commit, keyed to a root that no longer exists.
 
----
-▸ 2026-11-15T07:59:30Z [linkplan-lead]
+#### 2026-11-15T07:59:30Z
+
+*linkplan-lead*
 
 Rehearsed on clones of five farms (in /tmp/lead/reh, each with a local bare remote; the real farms are untouched). Dry run and real run print the same numbers.
 
@@ -233,17 +242,14 @@ Gap found and fixed: a yak committed at the old path by a writer who had not syn
 Left as written: 50 `sightmap-*`/`fullstory-*` yaks in the joel farm whose note headers are hand-written, not timestamps.
 Gate: 1451 tests, fmt clean.
 
----
-▸ 2026-11-15T08:24:27Z [linkplan-lead]
+#### 2026-11-15T08:24:27Z
+
+*linkplan-lead*
 
 link probe
 
----
-▸ 2026-11-15T08:45:36Z [linkplan-lead]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-15T08:45:36Z
+
+*linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

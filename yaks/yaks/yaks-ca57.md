@@ -13,18 +13,15 @@ tags:
 
 Just like we do when typing `[prefix]-<tab>` in a detail edit.
 
----
-▸ 2026-11-10T17:49:47Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:49:47Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:50:31Z [herd-unlock]
+#### 2026-11-10T17:50:31Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock): worker `doklink-1`, Sonnet 5.5.
 
@@ -40,8 +37,9 @@ Heading anchors (`#...`), relative links, sources.
 
 Tests: Tab after `/doks/des` opens the picker seeded `des` and inserting replaces the token; `yaks-` completion unchanged. A toque text frame of the picker open over an editor, attached. Gate `cargo test --workspace`. Judge: the yakherd.
 
----
-▸ 2026-11-10T17:51:42Z [doklink-1]
+#### 2026-11-10T17:51:42Z
+
+*doklink-1*
 
 Start: Tue Nov 10 17:51:39 UTC 2026
 
@@ -50,41 +48,45 @@ Start: Tue Nov 10 17:51:39 UTC 2026
 
 [yaks__tui__tests__dok_picker_over_editor](yaks-ca57/yaks__tui__tests__dok_picker_over_editor.snap "Dok-link picker open over the comment editor after Tab on /doks/des (insta snapshot, 72x14)")
 
----
-▸ 2026-11-10T17:57:21Z [doklink-1]
+#### 2026-11-10T17:57:21Z
+
+*doklink-1*
 
 Decision: reuse FuzzyPick (new optional `doks` field, `dok_candidates` ranking) and FuzzyAction::InsertRef rather than adding a FuzzyAction::InsertDok variant or a new overlay: the commit/return-to-editor path is identical, so one `finish_insert` serves both. Rejected: a second picker type.
 
----
-▸ 2026-11-10T17:57:22Z [doklink-1]
+#### 2026-11-10T17:57:22Z
+
+*doklink-1*
 
 Decision: completion_context now returns a `Completion { len, seed, kind: Yak|Dok }` instead of a tuple; a dok link is tested first (its last segment may look like a yak ref), yak behaviour is unchanged.
 
----
-▸ 2026-11-10T17:57:22Z [doklink-1]
+#### 2026-11-10T17:57:22Z
+
+*doklink-1*
 
 Decision: the dok token is its own scan (`path_before_cursor`: alnum, - _ . /) rather than widening `is_ref_char`, which other code uses for yak refs. The trigger is only `/doks/` or `/<herd>/doks/` with a non-reserved herd segment (`store::RESERVED_HERD_NAMES`); `#`, relative `../doks`, `/sources/...` do not trigger.
 
----
-▸ 2026-11-10T17:57:23Z [doklink-1]
+#### 2026-11-10T17:57:23Z
+
+*doklink-1*
 
 Decision: the picker lists only DocGroup::Dok entries from `App.doks.entries` (reloaded via `reload_doks` if the Doks tab was never shown); ranking path-prefix < path-substring < title-substring, capped at 20 like the yak picker. Inserted text is `/<path>` including `.md`, no anchor.
 
----
-▸ 2026-11-10T17:57:24Z [doklink-1]
+#### 2026-11-10T17:57:24Z
+
+*doklink-1*
 
 Decision: the help-bar hint reads `Tab → complete dok link` in a dok context; yak hint unchanged. Docs: docs/tui.md (editor sentence + new bullet in Following links), keymap/editor.rs Tab rows (3). The yak skill and README do not mention Tab completion, so no change there (grep below).
 
----
-▸ 2026-11-10T18:00:57Z [doklink-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T18:00:57Z
+
+*doklink-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T18:01:05Z [doklink-1]
+#### 2026-11-10T18:01:05Z
+
+*doklink-1*
 
 Summary: Tab after `/doks/…` or `/<herd>/doks/…` in any multi-line editor opens the existing picker over the farm's doks (seeded with the tail; Enter replaces the token with the full `/path.md`). Yak completion unchanged.
 
@@ -96,22 +98,14 @@ Summary: Tab after `/doks/…` or `/<herd>/doks/…` in any multi-line editor op
 - Tests: 3 new (`tab_after_a_dok_link_…`, `…herd_dok_link…`, `…non_dok_path_is_a_plain_tab`), new insta snapshot `dok_picker_over_editor` (attached); the existing yak-completion tests pass untouched, no existing snapshot changed.
 - Gate: `yaks verify` PASS; `cargo clippy --all-targets` warning count 104 before and after.
 
----
-▸ 2026-11-10T18:01:06Z [doklink-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFRyApIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:01:06Z
+
+*doklink-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFRyApIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T18:01:52Z [herd-unlock]
-kind: landed
-commit: 7b06f81674b897edf6f7109d1be2d1673b56a4cf
-source: fe2cec01e0be580d1571f451e1a8c2b64da963a2
-branch: main
----
+#### 2026-11-10T18:01:52Z
+
+*herd-unlock · kind: landed · commit: 7b06f81674b897edf6f7109d1be2d1673b56a4cf · source: fe2cec01e0be580d1571f451e1a8c2b64da963a2 · branch: main*
 
 landed: 7b06f816 yaks-ca57: Tab completes dok links (/doks/…, /<herd>/doks/…) in editors

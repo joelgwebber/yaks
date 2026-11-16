@@ -14,13 +14,15 @@ tags:
 
 Eg, in yaks-a893, it's clearly slamming the CPU when I move the cursor around through the description in view-mode.
 
----
-▸ 2026-10-17T16:52:15Z [delta-perf]
+#### 2026-10-17T16:52:15Z
+
+*delta-perf*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T16:54:33Z [delta-perf]
+#### 2026-10-17T16:54:33Z
+
+*delta-perf*
 
 Diagnosis (delta-perf, 2026-10-17), so nobody has to redo it.
 
@@ -42,8 +44,9 @@ Diagnosis (delta-perf, 2026-10-17), so nobody has to redo it.
 - `selected()` is always a full `rows()` rebuild, and so is everything built on it: `detail_line_count()`, `detail_dlines()`, `detail_jumps()`, `selected_shed_only()`, used several times per keypress by `move_detail_line`, `scroll_line_into_view`, `detail_max_scroll`, the status bar's `link_hint` and the renderer.
 - For a yak that exists only in another shed (yaks-a893 in Joel's checkout), `detail_dlines()` calls `rows()` a second time via `selected_shed_only()` and clones all 461 tasks.
 
----
-▸ 2026-10-17T16:54:41Z [delta-perf]
+#### 2026-10-17T16:54:41Z
+
+*delta-perf*
 
 Quick fix (delta-perf): `App::block_hscroll` takes the yak id from its caller (`render_detail` already holds `task`; `scroll_block` already had `id`) instead of calling `selected()`. A doc note on `App::rows` now says what it costs and that per-row and per-frame loops must not reach it.
 
@@ -55,12 +58,14 @@ Evidence:
 
 The rest (about a dozen `rows()` per key remain) is the follow-up yaks-bc30.
 
----
-▸ 2026-10-17T16:55:06Z [delta-perf]
+#### 2026-10-17T16:55:06Z
+
+*delta-perf*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T16:55:06Z [delta-perf]
+#### 2026-10-17T16:55:06Z
+
+*delta-perf*
 
 moved: shaving -> shorn

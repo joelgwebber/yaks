@@ -13,8 +13,9 @@ tags:
 
 Bump to 0.0.29, tag, publish to npm via the release workflow, then publish the migrated farms (Joel, 2026-11-02: land, cut a release, get the migrations done).
 
----
-▸ 2026-11-02T16:44:16Z [delta:farm-wiki]
+#### 2026-11-02T16:44:16Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -24,8 +25,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-02T17:10:42Z [delta:farm-wiki]
+#### 2026-11-02T17:10:42Z
+
+*delta:farm-wiki*
 
 Released **0.0.30** (Joel, 2026-11-02).
 
@@ -48,8 +50,9 @@ Released **0.0.30** (Joel, 2026-11-02).
 
 Installed 0.0.30 to `~/.cargo/bin` (`cargo install --path .`). Since last night the binary there had gone missing, so `yaks` on PATH had been resolving to the pnpm 0.0.28.
 
----
-▸ 2026-11-02T17:10:43Z [delta:farm-wiki]
+#### 2026-11-02T17:10:43Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

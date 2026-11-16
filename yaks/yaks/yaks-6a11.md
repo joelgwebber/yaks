@@ -41,8 +41,9 @@ Each must stay readable on GitHub and in the TUI, greppable and diffable.
 - The merge driver (`yaks-4a53`), `store::parse_notes` and `split_note_head`, the TUI comment parser and the schema-5 rendering rules all read this.
 - AGENTS.md: "don't change the on-disk format lightly". This yak should end in a recorded decision, backed by a spike on a copy of a real farm, before any code.
 
----
-▸ 2026-10-31T15:56:39Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:39Z
+
+*delta:Cloud Runners*
 
 Decision (Joel, 2026-10-31): do this design before `yaks-bdf9` and `yaks-a3fc`, since it decides where their fields live.
 
@@ -52,8 +53,9 @@ Decision (Joel, 2026-10-31): do this design before `yaks-bdf9` and `yaks-a3fc`, 
 - **Doctor noise:** explicit `kind`s (a shear summary, an answer, a verify result) should let doctor check for the right note instead of heuristics, cutting false alarms like "shorn but has no recorded note" (five today under `doctor --strict`).
 - **Design Q&A in yaks:** the skills should push design-phase questions and answers into yak asks/answers rather than chat, for provenance. Tracked as its own skills yak, which depends on this one.
 
----
-▸ 2026-10-31T15:57:19Z [delta:Cloud Runners]
+#### 2026-10-31T15:57:19Z
+
+*delta:Cloud Runners*
 
 asked: needs human
 
@@ -100,25 +102,29 @@ None of them is a portable standard for metadata on a section:
 
 So the choice is (A), consistent and terse, or (B), pretty on GitHub. Reserved keys and note ids (`reply_to` needs one) are separate follow-ups for this design.
 
----
-▸ 2026-10-31T15:58:01Z [delta:Cloud Runners]
+#### 2026-10-31T15:58:01Z
+
+*delta:Cloud Runners*
 
 Related bug found while writing the ask above: the note parser isn't fence-aware, so example notes inside code blocks split into fake notes. Filed as `yaks-4cd7`; fix it before this design ships examples in the docs.
 
----
-▸ 2026-10-31T16:04:10Z [Joel Webber]
+#### 2026-10-31T16:04:10Z
+
+*Joel Webber*
 
 What about (A), but with a `---` HR underneath, like in frontmatter? At least then it would render separated by the line.
 
----
-▸ 2026-10-31T16:08:34Z [yakherd]
+#### 2026-10-31T16:08:34Z
+
+*yakherd*
 
 picked up
 
 Picking up Joel's answer: (A) with a frontmatter-style `---` under the metadata. Decision recorded below; implementing now as the yakherd's prep commit (core parse/write), then the command and TUI surface via a worker.
 
----
-▸ 2026-10-31T16:08:35Z [yakherd]
+#### 2026-10-31T16:08:35Z
+
+*yakherd*
 
 Decision (Joel, 2026-10-31, answering the syntax ask): metadata is YAML `key: value` lines directly under the `▸` marker, closed by a `---` line, like the yak's own frontmatter.
 
@@ -144,30 +150,35 @@ Atlas and UVs done.
 
 On GitHub the metadata lines followed by `---` become a setext H2 heading, so a note with metadata shows its byline as a heading with GitHub's rule under it. It is visually separated, as Joel wanted, but larger than the byline of a note without metadata. The TUI parses notes itself and is unaffected. Putting a blank line before the `---` would make it a plain rule instead, but it would no longer look like frontmatter; revisit only if the heading reads badly in practice.
 
----
-▸ 2026-10-31T16:08:35Z [yakherd]
+#### 2026-10-31T16:08:35Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:16:35Z [yakherd]
+#### 2026-10-31T16:16:35Z
+
+*yakherd*
 
 Core landed in 7f78a28: `NoteEntry.meta` / `kind()` / `get()`, `append_note_meta`, `append_entry`, `meta_block`, `parse_meta`, the TUI comment block's `meta`, merge-driver preservation. The command and TUI surface follow from a worker.
 
----
-▸ 2026-10-31T16:42:40Z [yakherd]
+#### 2026-10-31T16:42:40Z
+
+*yakherd*
 
 Done. The format is in `7f78a28` (core: parse, write, fences, TUI round trip, merge driver); the surface is in `71ca61e` (`yaks-b8cd`): command kinds, `update --meta`, JSON, the TUI header, doctor `needs-drift`.
 
 Still open, as follow-ups rather than part of this yak: `reply_to` (needs note ids), and the skills text (`yaks-4c2a`, plus the notes section of the `yaks` skill, written by the yakherd next).
 
----
-▸ 2026-10-31T16:42:41Z [yakherd]
+#### 2026-10-31T16:42:41Z
+
+*yakherd*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: 7f78a28c82f9f04486208814cdbfacaf3d08d937
@@ -176,8 +187,9 @@ branch: main
 
 landed: 7f78a28 yaks-4cd7, yaks-6a11: fence-aware note boundaries; note metadata (key: value lines under the marker, c (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:20Z [yakherd]
+#### 2026-10-31T17:24:20Z
+
+*yakherd*
 
 kind: landed
 commit: 1dfb324a06776fee6fa2aac4210e2da3a57d9f9c

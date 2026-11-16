@@ -27,8 +27,9 @@ Today `slaughter` refuses a yak with any non-dead descendant, *shorn included*, 
 
 Design fork (behavior change): see the ask on yaks-9b41.
 
----
-▸ 2026-11-01T17:16:54Z [yakherd]
+#### 2026-11-01T17:16:54Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -38,8 +39,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T17:22:27Z [yakherd]
+#### 2026-11-01T17:22:27Z
+
+*yakherd*
 
 kind: landed
 sha: 7a314e2
@@ -55,8 +57,9 @@ Done in 7a314e2 (local main).
 
 Evidence: `cargo test --workspace --locked` green in the CI-like env; updated `slaughter_guards_and_family_sweeps` (shorn grandchild stays shorn, shorn-only child doesn't block, dead move refused, doctor flags hand-edited dead parent), TUI confirm snapshot now "AND its 1 unfinished descendant" (A2 is shorn). Real CLI on a scratch farm: `slaughter <umbrella>` with one shorn and one hairy child refused naming only the hairy one (exit 1); `--family` slaughtered the hairy child and the umbrella; the shorn child stayed shorn; doctor clean.
 
----
-▸ 2026-11-01T17:22:27Z [yakherd]
+#### 2026-11-01T17:22:27Z
+
+*yakherd*
 
 kind: move
 from: shaving

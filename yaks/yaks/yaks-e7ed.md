@@ -12,13 +12,15 @@ tags:
 - delta
 ---
 
----
-▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:44:58Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-09T20:44:58Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:44:58Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Claim (coordinator). Owner: show-1.
 
@@ -32,13 +34,15 @@ Out of scope: writes; sheds.rs internals (another worker is refactoring compare_
 
 Evidence: tests that FAIL before (tests/show_sheds.rs, real binary, a git worktree shed as in tests/inbox_sheds.rs): a shed that added a note and moved the yak shows exactly that note and the status; an identical shed is only counted; a yak only in the shed is shown with --sheds and still exits 1 without it. Judge: coordinator, at landing.
 
----
-▸ 2026-10-09T20:52:33Z [show-1]
+#### 2026-10-09T20:52:33Z
+
+*show-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-09T20:53:54Z [show-1]
+#### 2026-10-09T20:53:54Z
+
+*show-1*
 
 Start: Fri Oct  9 20:46:28 UTC 2026. `yaks path yaks-e7ed`: /Users/joel/src/yaks/.delta/worktrees/tv2dwd6ghd1a/yaks/.yaks/shaving/yaks-e7ed.md
 
@@ -46,8 +50,9 @@ Built: `Show` gains `--sheds`; `Farm::show_sheds` (src/farm.rs, beside `show`) r
 
 Evidence: tests/show_sheds.rs (3 tests, real binary, git worktree sheds). Without my src changes (git stash of main/farm/json) all 3 FAIL: `error: unexpected argument '--sheds' found`; with them pass. Gate `cargo test --release`: every suite ok (493 unit, show_sheds 3 passed, inbox_sheds 7, etc.). Note: `yaks verify` ran the yak's configured `cargo test -p yaks` (debug) -> PASS; the stated release gate was run separately by hand, all `test result: ok`.
 
----
-▸ 2026-10-09T20:53:54Z [show-1]
+#### 2026-10-09T20:53:54Z
+
+*show-1*
 
 Decision: JSON shape = the existing show object plus `sheds: [{shed, path, status, needs, new_notes:[{ts,actor,text}], same, absent}]`, one entry per shed with a farm of its own (all of them, including same/absent ones, flagged by booleans so scripts need no text parsing); `status`/`needs` null when absent/unset. Rejected: listing only differing sheds (hides the counts the text form shows), a separate summary object (breaks "existing object plus sheds"). Without --sheds there is no `sheds` key.
 
@@ -61,7 +66,8 @@ Decision: yak only in sheds: prints `<id> is not in this checkout.` then the She
 
 Decision: sheds with a different-but-unreadable farm or Shared/None are not listed individually (spec); status is printed as the status directory name (hairy/shaving/...) matching JSON, not the `{:?}` capitalised form of `show`.
 
----
-▸ 2026-10-09T20:53:54Z [show-1]
+#### 2026-10-09T20:53:54Z
+
+*show-1*
 
 moved: shaving -> shorn

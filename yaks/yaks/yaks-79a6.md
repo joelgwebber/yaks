@@ -19,8 +19,9 @@ In Joel's `joel` repo, `review-watch` drops launchd, `osascript`, `nudge` and it
 
 The skill lives in Joel's repo, uncommitted in a Delta worktree as of 2026-11-04 (`fullstory-b446` tracks it); coordinate with Joel before touching it.
 
----
-▸ 2026-11-05T04:42:40Z [sched-1]
+#### 2026-11-05T04:42:40Z
+
+*sched-1*
 
 Done. `review-watch` (Joel's `joel` repo, uncommitted in the Delta worktree) rewritten onto the `yaks-scheduling` contract.
 
@@ -30,12 +31,8 @@ Done. `review-watch` (Joel's `joel` repo, uncommitted in the Delta worktree) rew
 
 Not done: the skill can't be loaded through the `skill` tool this turn (the catalog is fixed at turn start), so I checked its frontmatter by script instead. The first real use is the cold read.
 
----
-▸ 2026-11-05T04:42:41Z [sched-1]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-05T04:42:41Z
+
+*sched-1 · kind: move · from: hairy · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

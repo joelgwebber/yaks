@@ -16,8 +16,9 @@ Since v0.0.30: yaks-be20 (a bare name in an attachment is a sibling attachment; 
 
 Gate before tagging, as in yaks-a5f8: the exact commit passes `cargo test --workspace --locked` with an empty HOME (reproduces a runner with no git identity).
 
----
-▸ 2026-11-04T01:29:09Z [delta:Fix relative image links in yak attachme]
+#### 2026-11-04T01:29:09Z
+
+*delta:Fix relative image links in yak attachme*
 
 kind: move
 from: hairy
@@ -27,8 +28,9 @@ thread: ksQQNSYysfbwRGKL-KGL8e-aQpLOAEKHPJIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T01:49:21Z [delta:Fix relative image links in yak attachme]
+#### 2026-11-04T01:49:21Z
+
+*delta:Fix relative image links in yak attachme*
 
 Released **0.0.31** (Joel, 2026-11-04: "cut a release once everything's in").
 
@@ -40,8 +42,9 @@ Released **0.0.31** (Joel, 2026-11-04: "cut a release once everything's in").
 
 Installed locally with `cargo install --path .` from the same tree. `yaks tui` sessions started before need a restart.
 
----
-▸ 2026-11-04T01:49:21Z [delta:Fix relative image links in yak attachme]
+#### 2026-11-04T01:49:21Z
+
+*delta:Fix relative image links in yak attachme*
 
 kind: move
 from: shaving

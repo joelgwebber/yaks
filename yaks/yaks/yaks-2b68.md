@@ -15,8 +15,9 @@ verify: cargo test --workspace
 
 Implements yaks-9756. Measure first (pack size, commits, largest blobs) on this farm and the `joel` farm.
 
----
-▸ 2026-11-01T22:12:17Z [delta:farm-wiki]
+#### 2026-11-01T22:12:17Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -28,8 +29,9 @@ moved: hairy -> shaving
 
 [weight-yaks-and-joel](yaks-2b68/weight-yaks-and-joel.txt)
 
----
-▸ 2026-11-01T22:19:22Z [delta:farm-wiki]
+#### 2026-11-01T22:19:22Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -52,8 +54,9 @@ Not done, as decided: partial-clone farm fetch and ref layout, pending the numbe
 
 Tests: `tests/weight.rs` covers the report and LFS end to end, and skips when git-lfs is missing. `cargo test --workspace`: 926 passed.
 
----
-▸ 2026-11-01T22:21:39Z [delta:farm-wiki]
+#### 2026-11-01T22:21:39Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -61,8 +64,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T22:21:39Z [delta:farm-wiki]
+#### 2026-11-01T22:21:39Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

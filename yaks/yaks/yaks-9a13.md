@@ -21,32 +21,26 @@ For a bare host whose directory name says nothing (`repository`), take the name 
 
 A test on `farm_home_with` with a bare `repository.git` host that has an `origin`.
 
----
-▸ 2026-11-06T22:00:50Z [schism-feedback]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:00:50Z
+
+*schism-feedback · kind: move · from: hairy · to: shaving · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T22:09:25Z [schism-feedback]
+#### 2026-11-06T22:09:25Z
+
+*schism-feedback*
 
 Fixed together with yaks-35b5 on branch `shared-farm-home` (fc891687): a repository with an `origin` is named after the URL's last segment, so Delta's `repository.git` gives `schism-<hash>`. Existing worktrees keep working because a registered worktree wins; see the evidence on yaks-35b5.
 
----
-▸ 2026-11-06T22:23:35Z [schism-feedback]
+#### 2026-11-06T22:23:35Z
+
+*schism-feedback*
 
 Landed in e52342db with yaks-35b5. schism's farm is now `schism-6afd61e7`, not `repository-c0e58d55`.
 
----
-▸ 2026-11-06T22:23:37Z [schism-feedback]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:23:37Z
+
+*schism-feedback · kind: move · from: shaving · to: shorn · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

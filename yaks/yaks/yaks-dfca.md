@@ -39,18 +39,21 @@ The observation log `.yaks/artifacts/yaks-df61/**`, every other yak file under `
 - A grep for `lane` (case-insensitive, word and identifier) over the whole tree EXCLUDING `.git`, `target/`, `.yaks/` and the allowed history, pasted, showing the few remaining hits and why each stays.
 - Docs parity (the project rule): every surface that named the command now names the new one.
 
----
-▸ 2026-10-06T21:31:51Z [delta-lead]
+#### 2026-10-06T21:31:51Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-06T21:31:51Z [delta-lead]
+#### 2026-10-06T21:31:51Z
+
+*delta-lead*
 
 Claim (coordinator delta-lead). Owner: worker shd-1. Scope: the whole tree except the history listed in the description. Judge: the coordinator re-runs the gate, runs `yaks sheds` and `yaks lanes` against the real checkouts, and greps for stragglers. Forbidden: renaming anything in the allowed history, changing behaviour, any other yak, adopting "clip" or "barn".
 
----
-▸ 2026-10-06T21:32:19Z [shd-1]
+#### 2026-10-06T21:32:19Z
+
+*shd-1*
 
 Start: Tue Oct  6 21:32:15 UTC 2026
 
@@ -58,13 +61,15 @@ Path: /Users/joel/src/yaks/.delta/worktrees/vk8z2vjzgdqh/yaks/.yaks/shaving/yaks
 
 Old binary copied to scratch (yaks-old) before any edit.
 
----
-▸ 2026-10-06T21:34:21Z [shd-1]
+#### 2026-10-06T21:34:21Z
+
+*shd-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-06T21:34:35Z [shd-1]
+#### 2026-10-06T21:34:35Z
+
+*shd-1*
 
 Decision: mechanical `Lane`->`Shed`, `lane`->`shed` (perl, case-preserving) over every non-history text file, then read every hunk. A token census first showed no false positives (no plane/planet/Elane), so the identifier case needed no word-boundary guard. Rejected: per-file hand edits (error-prone for ~800 hits); a blind replace without the diff review.
 
@@ -83,7 +88,8 @@ Evidence:
 
 Summary: src/lanes.rs -> src/sheds.rs (git mv), Command::Lanes -> Sheds, Farm::lanes -> sheds, all types/tests/strings renamed; README, docs/cli.md, docs/skills.md, .agents/skills/** and the Delta skill's example title (`sheds-1: build yaks sheds CLI`) updated; no behaviour change.
 
----
-▸ 2026-10-06T21:34:35Z [shd-1]
+#### 2026-10-06T21:34:35Z
+
+*shd-1*
 
 moved: shaving -> shorn

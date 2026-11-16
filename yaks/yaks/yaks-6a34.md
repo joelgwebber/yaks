@@ -39,20 +39,23 @@ Verified on a scratch clone before adopting: write from a clone via the farm, pr
 
 Undo: merge `farm` once more, `git worktree remove ~/src/yaks-farm`, `git branch -d farm`, remove `live_branch:` from config.
 
----
-▸ 2026-10-18T05:15:36Z [delta-farm]
+#### 2026-10-18T05:15:36Z
+
+*delta-farm*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-18T05:24:49Z [delta-farm]
+#### 2026-10-18T05:24:49Z
+
+*delta-farm*
 
 Setup done on this machine (delta-farm, 2026-10-18): `~/src/yaks-farm` = sparse worktree of branch `farm` (yaks-da69's `live_branch: farm` is committed on main, 92a4ac5). Verified with `~/go/bin/yaks`: `yaks path` resolves to `/home/joel/src/yaks-farm/.yaks` from the primary, from a subdirectory of it, from a Delta clone and from the farm worktree; a shear written from the Delta clone landed in the farm with both code checkouts clean; `yaks commit` committed on `farm`; the coordinator-side landing (`git fetch local farm && git merge local/farm`, push `main`) brought it to main as a fast-forward; `yaks sheds` from the primary lists the clone and the farm worktree as `shares this farm`; `preflight: ok` in the farm.
 
 Hazard found: the `yaks` on this machine's PATH is the pnpm 0.0.20 install, which ignores `live_branch:` and writes the checkout's stale `.yaks/` (`yaks path yaks-6a34` there printed `~/src/yaks/.yaks/...`), and `~/go/bin` is not ahead of it on PATH here. Until a release carries this, every human shell and every worker must use `~/go/bin/yaks` (the brief names the binary the coordinator ran). A write by an old binary shows up as a dirty `.yaks/` in a code checkout: `yaks status` there, then move the edit into the live farm by hand.
 
----
-▸ 2026-10-18T05:54:58Z [delta-farm]
+#### 2026-10-18T05:54:58Z
+
+*delta-farm*
 
 Round 1 spawned (delta-farm, 2026-10-18 ~05:55Z), base 1ffd6d8, worker profile default model (not overridden):
 - `shear-1` -> yaks-27c6 (shear-with-comment), dir wzmvex2kk3z0
@@ -63,15 +66,17 @@ Not spawned from Joel's starred set: yaks-1bbd (search context) is folded into y
 
 First observation: 20 s after spawn `yaks sheds` lists all three clones by thread-title slug, each `shares this farm`; every brief printed the live-farm finish with no `YAKS_DIR`.
 
----
-▸ 2026-10-18T06:07:45Z [delta-farm]
+#### 2026-10-18T06:07:45Z
+
+*delta-farm*
 
 Round 1, first landing (delta-farm): `shear-1` (yaks-27c6) landed by SHA with land.sh, clean (base an ancestor, computed tree equal); my review and real run on a scratch farm agreed with the worker's report. Farm commit + `merge local/farm` + push to main worked as designed: the farm commit swept up 15 of Joel's TUI edits from tonight and the worker's attachment with no extra step, main fast-forwarded, the primary stayed clean.
 
 Trial finding #1 (fixed, yaks-5924): `yaks preflight --push-main` asked the FARM's checkout for the `local` remote; under a live farm that is the farm worktree, which has none, so the landing check failed though the push was fine. Now asked of the invoking checkout. Exactly the kind of "the farm root is not the code checkout" assumption to look for elsewhere (status/commit/preflight's git-state are correct to use the farm root).
 
----
-▸ 2026-10-18T06:15:40Z [delta-farm]
+#### 2026-10-18T06:15:40Z
+
+*delta-farm*
 
 Round 1 result (delta-farm): 3 workers, 3 clean landings (all land.sh merges by SHA, base an ancestor, computed tree equal, no conflicts despite all three touching handlers.rs / help_content / tests.rs / docs/tui.md), 854 tests green on main, one trial bug found and fixed (yaks-5924).
 
@@ -84,18 +89,21 @@ What the live farm changed, observed:
 
 Friction: `preflight --push-main` (fixed). Nothing else.
 
----
-▸ 2026-10-18T16:00:15Z [delta-farm]
+#### 2026-10-18T16:00:15Z
+
+*delta-farm*
 
 Linear landing in place (yaks-2355): workers land as one squash commit, the farm by `yaks commit --land` (cherry-picks), and `farm` follows `main` by itself. The farm worktree is pattern-sparse (`--no-cone '/.yaks/'`): only `.yaks/` on disk. Round-1 spaghetti left in history as is (Joel).
 
----
-▸ 2026-10-18T20:13:09Z [delta-farm]
+#### 2026-10-18T20:13:09Z
+
+*delta-farm*
 
 Round 2 result (delta-farm): 2 workers (clobber-1 yaks-9f5c, attach-edit-1 yaks-56c1) both landed by land.sh's new SQUASH path (first real use): one single-parent commit each on main, worker message + author + `Squashed-from:` trailer, tree identical to the computed merge, no conflicts though both touched src/tui/handlers.rs, src/tui/tests.rs and docs/tui.md. main stays linear through code AND farm landings (`yaks commit --land`). 869 tests green. No asks again (both designs were decided in the claims), so the live ask path is still untested. No stale-copy writes, no `.yaks/` in any worker commit. Also landed this round by the yakherd: yaks-6c4f (source links under the live farm), yaks-4809 (farm-branch discovery groundwork).
 
----
-▸ 2026-10-19T04:29:29Z [delta:herd-pass]
+#### 2026-10-19T04:29:29Z
+
+*delta:herd-pass*
 
 Verdict (herd pass, 2026-10-19): the trial held and became the model. It went further than planned: the farm is an orphan branch (yaks-73f4) rather than a sparse worktree of `farm`; this repo migrated (yaks-87a3), `yaks migrate --to-branch` does it for any repo (yaks-bd7e), and a fresh clone bootstraps its farm worktree on first use (yaks-a260, released in 0.0.21). This yak is now the umbrella for finishing the model; the open children, in rough order:
 
@@ -106,22 +114,26 @@ Verdict (herd pass, 2026-10-19): the trial held and became the model. It went fu
 5. yaks-e5fb: `yaks land` replaces land.sh.
 6. yaks-b1e9, yaks-0ef9: `init --mode branch` / `farm status`; the per-user home for everything else.
 
----
-▸ 2026-10-21T19:54:36Z [delta:herd-dirs]
+#### 2026-10-21T19:54:36Z
+
+*delta:herd-dirs*
 
 2026-10-21: added yaks-472e (farm branch sync lifecycle: commit, pull, push), design first; it takes over the `yaks sync` and auto-commit pieces that were notes on yaks-4a53.
 
----
-▸ 2026-10-21T22:10:48Z [delta:herd-dirs]
+#### 2026-10-21T22:10:48Z
+
+*delta:herd-dirs*
 
 Round 3 (delta:herd-dirs), base 47120db, anthropic/claude-sonnet-5-5: `land-1` -> yaks-e5fb + yaks-3bcd (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb3eJIBxBCA0aLJyrhJPreUvVwLftHG); `init-1` -> yaks-b1e9 (thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACb4h5IBxBCA0aLJyrhJPreUvVwLftHG). The yakherd takes yaks-7bfd (discovery). Then yaks-b048 (skills rewrite, depends on 7bfd), yaks-8f2e folded into it; yaks-0ef9 last.
 
----
-▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+#### 2026-10-22T00:59:55Z
+
+*delta:herd-dirs*
 
 Wrapped up: every child shorn. The farm is a branch (yaks-73f4), the sync lifecycle (yaks-472e), round 3 (yaks-7bfd, yaks-b1e9, yaks-e5fb/yaks-3bcd) and the skills rewrite (yaks-b048) are on main. Spun out to top level: yaks-9eaa (sheds from stamps), yaks-0ef9 (per-user state), yaks-c43b (TUI dirty marks), yaks-d794 (path --all). Release 0.0.22 (schema 6) awaits Joel's go-ahead.
 
----
-▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+#### 2026-10-22T00:59:55Z
+
+*delta:herd-dirs*
 
 moved: shaving -> shorn

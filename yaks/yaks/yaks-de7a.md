@@ -27,13 +27,15 @@ Cause: `.github/workflows/release.yml` builds `x86_64-unknown-linux-gnu` and `aa
 
 Verify on a container with an older glibc (e.g. `debian:bookworm`, 2.36): no warning, and `yaks --version` runs.
 
----
-▸ 2026-11-01T15:37:48Z [yakherd]
+#### 2026-11-01T15:37:48Z
+
+*yakherd*
 
 Confirmed by the memcraft runner yakherd (2026-11-01): every worker brief has to tell workers to pipe yaks through `grep -v GLIBC`. Raising the priority: this costs every agent on such hosts.
 
----
-▸ 2026-11-01T16:08:26Z [yakherd]
+#### 2026-11-01T16:08:26Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -42,8 +44,9 @@ to: shaving
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:13:31Z [yakherd]
+#### 2026-11-01T16:13:31Z
+
+*yakherd*
 
 Fixed in `8d9a1b1`: both Linux targets build on `ubuntu-22.04` (glibc 2.35) instead of `ubuntu-latest` (24.04, 2.39).
 
@@ -58,8 +61,9 @@ Fixed in `8d9a1b1`: both Linux targets build on `ubuntu-22.04` (glibc 2.35) inst
 - **Dispatch dry runs and npm:** that dry run's publish step failed with `You cannot publish over the previously published versions: 0.0.27`. Newer npm checks the registry even with `--dry-run`, so a dispatch on an already-published version always ends there. It is harmless, since the log shows the dry-run branch, but it reads like a failure. Worth a line in `RELEASING.md`, or making the dry run skip publish for a published version.
 - **Fallback:** if `ubuntu-22.04` images retire, switch to musl targets or `cargo-zigbuild` with a glibc floor (the options in this yak's description).
 
----
-▸ 2026-11-01T16:13:32Z [yakherd]
+#### 2026-11-01T16:13:32Z
+
+*yakherd*
 
 kind: move
 from: shaving
@@ -68,8 +72,9 @@ to: shorn
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-01T16:17:57Z [yakherd]
+#### 2026-11-01T16:17:57Z
+
+*yakherd*
 
 kind: landed
 commit: 8d9a1b1274ff58ed9ba45ed66d17a4c270302a48

@@ -13,8 +13,9 @@ tags:
 
 Phase 3, first half, of [the design](/doks/design/tui-model.md#1-rows-and-views) (yaks-f1e6 is the second half's yak): a list row is a yak or a document, and the Wiki tab becomes an ordinary flat view of document rows, using the list's own cursor, rendering and key dispatch.
 
----
-▸ 2026-11-03T04:11:26Z [herd-tui]
+#### 2026-11-03T04:11:26Z
+
+*herd-tui*
 
 Claim (yakherd herd-tui): worker `rows-1` (Sonnet 5.5), from main at `642be42e` (phases 1 and 2 landed).
 
@@ -42,14 +43,16 @@ Claim (yakherd herd-tui): worker `rows-1` (Sonnet 5.5), from main at `642be42e` 
 
 **Judge.** herd-tui at landing.
 
----
-▸ 2026-11-03T04:12:04Z [rows-1]
+#### 2026-11-03T04:12:04Z
+
+*rows-1*
 
 Start Tue Nov  3 04:12:04 UTC 2026. Checkout /home/user/yaks-4, HEAD 642be42 yaks-fbb0: TUI command table (keymap.rs) for the non.
 Farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-be65.md
 
----
-▸ 2026-11-03T04:21:56Z [rows-1]
+#### 2026-11-03T04:21:56Z
+
+*rows-1*
 
 Progress: implemented, gate not yet run.
 
@@ -59,8 +62,9 @@ Progress: implemented, gate not yet run.
 - Headless: Wiki view with `j` moves `cursor` and `entry=`; `S` does nothing there.
 - Docshots: regenerated on this tree and on the baseline tree; the four Wiki SVGs are byte-identical.
 
----
-▸ 2026-11-03T04:21:56Z [rows-1]
+#### 2026-11-03T04:21:56Z
+
+*rows-1*
 
 Decision: yak commands are bound with `bind_row(Yak, ..)`, not left kind-less; a document row finds no binding for them and does nothing. Rejected: leaving them kind-less and making each handler check `selected()` (the bottom hint then shows `c/C:new`, `X:del`, `f:filter` on a document row and breaks the Wiki hint literal).
 
@@ -82,8 +86,9 @@ Decision: `set_wiki_entries` calls `touch()` (memo key), and re-seats `App.curso
 
 [wiki-view-cursor-moved](yaks-be65/wiki-view-cursor-moved.txt)
 
----
-▸ 2026-11-03T04:23:14Z [rows-1]
+#### 2026-11-03T04:23:14Z
+
+*rows-1*
 
 kind: verify
 result: pass
@@ -91,8 +96,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T04:23:23Z [rows-1]
+#### 2026-11-03T04:23:23Z
+
+*rows-1*
 
 Summary: rows are now `Item::Yak | Item::Doc`; the Wiki view is a flat list of document rows served by the list's cursor, render and key dispatch; the keymap table takes an optional row kind.
 
@@ -103,8 +109,9 @@ Summary: rows are now `Item::Yak | Item::Doc`; the Wiki view is a flat list of d
 - Attached: `wiki-view-cursor-moved.txt` (headless frames, Wiki view, cursor 0 then 1, S inert).
 Finished Tue Nov  3 04:23:23 UTC 2026.
 
----
-▸ 2026-11-03T04:23:23Z [rows-1]
+#### 2026-11-03T04:23:23Z
+
+*rows-1*
 
 kind: move
 from: shaving
@@ -114,8 +121,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_EipIBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T04:23:46Z [herd-tui]
+#### 2026-11-03T04:23:46Z
+
+*herd-tui*
 
 kind: landed
 commit: 50af0a9a3dc5be6ee8315a1a14c23311c3cc54fb
@@ -125,7 +133,8 @@ branch: main
 
 landed: 50af0a9a yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
 
----
-▸ 2026-11-03T04:27:43Z [herd-tui]
+#### 2026-11-03T04:27:43Z
+
+*herd-tui*
 
 Landed by herd-tui as `50af0a9a` (worker `63fcca62`). Gate on it: 30 suites ok. Headless on my build: Wiki view `j` moves the shared cursor, `U` on a doc row is accepted, `Enter` opens the viewer.

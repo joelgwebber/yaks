@@ -13,18 +13,15 @@ tags:
 
 From yaks-f04d ("agents make up labels"). Known tags with descriptions already exist: the `tags:` map in `schemas/yak.md` (parsed in `src/schemas.rs`, shown by `yaks dok types`). Nothing uses them when a tag is written. Advisory, never a refusal: `yaks create --tags` / `yaks update --add-tag` print a warning naming a tag the farm does not list, with the nearest known ones, when the farm has a `schemas/yak.md` with `tags:`; silent when it has none.
 
----
-▸ 2026-11-10T21:11:52Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:52Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:26Z [herd-unlock]
+#### 2026-11-10T21:12:26Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `tagwarn-1`, Sonnet 5.5.
 
@@ -36,13 +33,15 @@ A tag not in the farm's known tags (`schemas/yak.md` `tags:`, via `src/schemas.r
 
 Integration tests: warning on an unknown tag, none on a known one, none when no schema. Gate `cargo test --workspace`.
 
----
-▸ 2026-11-10T21:14:15Z [tagwarn-1]
+#### 2026-11-10T21:14:15Z
+
+*tagwarn-1*
 
 Start 2026-11-10T21:14:15Z; checkout /Users/joel/src/yaks/.delta/worktrees/jaghh9sj6kkr/yaks
 
----
-▸ 2026-11-10T21:19:37Z [tagwarn-1]
+#### 2026-11-10T21:19:37Z
+
+*tagwarn-1*
 
 Decision: one helper, `schemas::unknown_tag_warnings(root, tags)`, called from the create, update and bulk arms in `src/main.rs` via `warn_unknown_tags`. Rejected: putting the warning in `Farm::create`/`update` (the TUI form would then warn too, which the claim puts out of scope, and the library would print).
 
@@ -62,35 +61,26 @@ Scratch farm run (own binary):
 
 Tests: `tests/tag_warn.rs` (5) + `schemas::edit_distance_counts_edits`. Docs: clap help (`--tags`, `update --add-tag`, `bulk --add-tag`), `docs/cli.md` create section, `yaks` skill Tags line. `cargo test -p yaks skills` passes; `cargo fmt --check` clean; clippy warning count unchanged (104 before and after).
 
----
-▸ 2026-11-10T21:30:26Z [tagwarn-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:30:26Z
+
+*tagwarn-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:30:35Z [tagwarn-1]
+#### 2026-11-10T21:30:35Z
+
+*tagwarn-1*
 
 Summary: create --tags, update --add-tag and bulk --add-tag warn on stderr for a tag not in schemas/yak.md tags: (five nearest by edit distance); advice only, silent without known tags. verify PASS; evidence in the scratch-farm note above. Commit f06f67c5.
 
----
-▸ 2026-11-10T21:30:37Z [tagwarn-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFV6lZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:30:37Z
+
+*tagwarn-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFV6lZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:31:01Z [herd-unlock]
-kind: landed
-commit: de313d74c26780d69c44e7ae00c6daedd7c897f1
-source: f06f67c516bcea1ecec4e3e22035af2827675bc4
-branch: main
----
+#### 2026-11-10T21:31:01Z
+
+*herd-unlock · kind: landed · commit: de313d74c26780d69c44e7ae00c6daedd7c897f1 · source: f06f67c516bcea1ecec4e3e22035af2827675bc4 · branch: main*
 
 landed: de313d74 yaks-bcd7: warn when create/update/bulk write a tag not among the farm's known tags

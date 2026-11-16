@@ -22,13 +22,15 @@ Follow-up to yaks-48d6 (read its diagnosis note first: harness, numbers, call gr
 
 **Evidence:** extend the `ROWS_CALLS` test counter (src/tui/viewmodel.rs) with a test pinning `rows()` to at most 1 per keypress and per frame; the headless timing harness from yaks-48d6 before and after.
 
----
-▸ 2026-10-17T18:14:58Z [delta-lead]
+#### 2026-10-17T18:14:58Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T18:14:58Z [delta-lead]
+#### 2026-10-17T18:14:58Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **cache-1**. Joel: "peel this off to a worker so it doesn't bite us in the future".
 
@@ -48,20 +50,23 @@ Evidence:
 
 Judge: coordinator at landing.
 
----
-▸ 2026-10-17T18:38:52Z [cache-1]
+#### 2026-10-17T18:38:52Z
+
+*cache-1*
 
 Started cache-1, 2026-10-17 18:15 UTC. `yaks path yaks-bc30` = /home/joel/src/yaks/.delta/worktrees/2ctx82g6p0j3/yaks/.yaks/yaks-bc30.md (my checkout).
 
 Baseline harness (target/bench/run.sh; this repo's `.yaks/` copied to target/bench/farm; `yaks tui --headless --diff --size 120x50`: Tab Tab, `/`, "unify view and edit", Enter, 6×j to land on yaks-a893, `l`, then N×j): 0 keys ~1.07 s; 60 keys 4.8–7.1 s on a noisy machine, i.e. roughly 60–100 ms per key. The unmodified release binary is target/bench/yaks-before.
 
----
-▸ 2026-10-17T18:46:45Z [cache-1]
+#### 2026-10-17T18:46:45Z
+
+*cache-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T18:47:02Z [cache-1]
+#### 2026-10-17T18:47:02Z
+
+*cache-1*
 
 Decision: key the caches on the inputs themselves, not on a scattered `cache = None`. `rows()` is keyed on (view key/sort/limit, live filter, collapsed set, family-scope map, starred set, `data_gen`); detail lines on (`data_gen`, selected yak's location, `copies: home`, detail width, the in-place edit slot, the clock's minute). Only the two big inputs, `App::all` and `sheds.snapshot`, use a generation counter: `App::touch()` (src/tui/memo.rs), called from `reload`, `reload_preserving_selection` and `apply_sheds_snapshot`. So the single invalidation point is `touch()`, and the cheap inputs cannot be forgotten. Rejected: `cache = None` at every mutation site (tui.rs, handlers.rs, actions.rs and viewmodel.rs mutate filter/view/collapsed in ~15 places); a hash of `all` per call (costs as much as the rebuild).
 
@@ -87,7 +92,8 @@ That is about 30× per key; startup dominates what is left.
 
 Gates: `cargo test --workspace` 825 passed 0 failed; `cargo test --release` 825 passed 0 failed.
 
----
-▸ 2026-10-17T18:47:02Z [cache-1]
+#### 2026-10-17T18:47:02Z
+
+*cache-1*
 
 moved: shaving -> shorn

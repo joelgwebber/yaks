@@ -13,6 +13,6 @@ tags:
 
 Split out of yaks-640a when it was sheared as superseded. Known tags with descriptions live in `schemas/yak.md`, one list for the whole farm (`schemas::load`, `unknown_tag_warnings`). A consolidated farm holding several herds (`<herd>/yaks/`, projects with different vocabularies) gets one shared list, so a tag that is right for one project warns in another.
 
-The farm config already cascades one level, herd value else global (`store::Config::default_type_for` and friends, [yaks-98d5](yaks-98d5)). The question is whether tag lists should too, and where a herd's list lives (a `<herd>/schemas/yak.md`, or a `tags:` map under the herd in `config.yaml`).
+The farm config already cascades one level, herd value else global (`store::Config::default_type_for` and friends, [yaks-98d5](/yaks/yaks/yaks-98d5.md)). The question is whether tag lists should too, and where a herd's list lives (a `<herd>/schemas/yak.md`, or a `tags:` map under the herd in `config.yaml`).
 
-Only worth doing when a multi-herd farm actually complains. Noted in [yaks-640a](yaks-640a#2026-09-21T18:37:07Z) on 2026-09-21: "label definitions should be per-herd-overridable".
+Only worth doing when a multi-herd farm actually complains. Noted in [yaks-640a](/yaks/yaks/yaks-640a.md#2026-09-21t183707z) on 2026-09-21: "label definitions should be per-herd-overridable".

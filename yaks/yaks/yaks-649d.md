@@ -29,13 +29,15 @@ Paragraphs (soft/hard breaks), ATX + setext headings, bullet/ordered lists (star
 
 yaks-ea13's own body is the fixture: before/after headless frames attached, an insta snapshot test of it, and a docshots scene. Tests that fail first for: hanging indent of a wrapped list item, a wrapped quote keeping its bar, emphasis across a soft break, a soft break joining lines, yank returning source.
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the lead thread, in a new module (src/tui/mdrender.rs) first, wired into detail.rs after the quick-win workers land.
 
@@ -43,8 +45,9 @@ Claim (yakherd delta-lead, 2026-10-17): the coordinator builds this one in the l
 
 ![ea13-rendered-end](yaks-649d/ea13-rendered-end.png)
 
----
-▸ 2026-10-17T04:56:17Z [delta-lead]
+#### 2026-10-17T04:56:17Z
+
+*delta-lead*
 
 Core wired into the detail pane (delta-lead, 2026-10-17).
 
@@ -60,12 +63,14 @@ Evidence: `cargo test --release` all green (17 result lines ok). Attached PNGs (
 
 Remaining for this yak: nothing structural. Code/table horizontal scroll is yaks-c733, exact-line `E` is yaks-4fa6; inline-code-inside-a-link and footnote jumps are in their sibling yaks.
 
----
-▸ 2026-10-17T04:56:58Z [delta-lead]
+#### 2026-10-17T04:56:58Z
+
+*delta-lead*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T04:57:02Z [delta-lead]
+#### 2026-10-17T04:57:02Z
+
+*delta-lead*
 
 moved: shaving -> shorn

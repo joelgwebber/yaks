@@ -20,18 +20,15 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)). Prose and ski
 - Cold-read the new skill with a cheap model, as AGENTS.md prescribes (only if Joel asks for subagents).
 - Grep `docs/`, `README.md`, `.agents/skills/` and `src/` for the old wording.
 
----
-▸ 2026-11-04T23:41:39Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:41:39Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T23:51:03Z [sched-1]
+#### 2026-11-04T23:51:03Z
+
+*sched-1*
 
 Done on branch `scheduling`.
 
@@ -41,12 +38,8 @@ Done on branch `scheduling`.
 
 Not done: the cold-read scout check that AGENTS.md prescribes after a skills change. It needs a subagent and Joel has not asked for one; the acceptance yak (`yaks-79a6`) is the real cold read, by an agent that has to rewrite `review-watch` from this skill alone.
 
----
-▸ 2026-11-04T23:51:04Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:51:04Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

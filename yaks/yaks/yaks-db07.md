@@ -14,13 +14,15 @@ tags:
 
 Follow-ups to the request verb (see the design note on yaks-33c8): canned request kinds the skill defines, a doctor/list lint that finds bodies with runs of adjacent plain lines, bulk --request to queue them, and auto-tidy on import (yaks-00c4).
 
----
-▸ 2026-10-26T23:07:03Z [delta-lead]
+#### 2026-10-26T23:07:03Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T23:07:03Z [delta-lead]
+#### 2026-10-26T23:07:03Z
+
+*delta-lead*
 
 ## Plan (delta-lead, 2026-10-26)
 
@@ -45,13 +47,15 @@ Workers:
 - `kinds-1`: `request --kind` and `bulk --request` (`src/farm.rs`, `store`, `main.rs` Request/Bulk, TUI request editor gets no kind picker this round).
 - delta-lead: the skills.
 
----
-▸ 2026-10-26T23:07:58Z [delta-lead]
+#### 2026-10-26T23:07:58Z
+
+*delta-lead*
 
 Fan-out (delta-lead): runon-1 on yaks-ef3b (thread …AC17XpIB…), kinds-1 on yaks-f853 (thread …AC17k5IB…), both on the profile default model, base 696348e.
 
----
-▸ 2026-10-26T23:19:10Z [delta-lead]
+#### 2026-10-26T23:19:10Z
+
+*delta-lead*
 
 Done (delta-lead). Pushed to the human's checkout as `ab5e667`; installed with `cargo install --path .`.
 
@@ -62,7 +66,8 @@ Done (delta-lead). Pushed to the human's checkout as `ab5e667`; installed with `
 
 Auto-tidy on import stays with yaks-00c4 (noted there).
 
----
-▸ 2026-10-26T23:19:10Z [delta-lead]
+#### 2026-10-26T23:19:10Z
+
+*delta-lead*
 
 moved: shaving -> shorn

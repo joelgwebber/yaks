@@ -13,8 +13,9 @@ tags:
 
 Maybe it's just a skill thing, but it would be nice if there were a way for an agent to run a CLI command in the background, and have it return when something's ready. They do this sort of thing a lot for other CLI tools.
 
----
-▸ 2026-10-05T22:44:10Z [delta-lead]
+#### 2026-10-05T22:44:10Z
+
+*delta-lead*
 
 Relationship to yaks-c061, and when to do it (coordinator delta-lead, 2026-10-05; Joel asked whether they are redundant and whether to do them sooner).
 
@@ -32,13 +33,15 @@ Relationship to yaks-c061, and when to do it (coordinator delta-lead, 2026-10-05
 - It pairs with the lanes work (yaks-7204): asks and answers that sit in another checkout need the same cross-checkout visibility.
 - Leave f313 open and lower priority until c061 exists; when it does, `yaks wait [--for answers]` is a small command for harnesses that can run background tasks. In Delta the coordinator loop (check lanes and inbox, wake the worker) is the supported path.
 
----
-▸ 2026-10-26T21:51:27Z [delta-lead]
+#### 2026-10-26T21:51:27Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T21:51:51Z [delta-lead]
+#### 2026-10-26T21:51:51Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd). Owner: `wait-1`. Design: the latest design note on yaks-33c8.
 
@@ -60,15 +63,17 @@ Claim (delta-lead, yakherd). Owner: `wait-1`. Design: the latest design note on 
 
 **Gate:** `cargo test`. **Judge:** delta-lead at landing.
 
----
-▸ 2026-10-26T21:52:30Z [wait-1]
+#### 2026-10-26T21:52:30Z
+
+*wait-1*
 
 Started (wait-1): `date -u` = Mon Oct 26 21:52:25 UTC 2026. `yaks path yaks-f313` = /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f313.md
 
 [yaks-f313-wait-transcript](yaks-f313/yaks-f313-wait-transcript.txt)
 
----
-▸ 2026-10-26T21:58:14Z [wait-1]
+#### 2026-10-26T21:58:14Z
+
+*wait-1*
 
 Real-binary transcript (`./target/debug/yaks`, throwaway `mktemp -d` farm, `init --mode private`), attached as `yaks-f313-wait-transcript.txt`. Shell A ran `yaks wait --for agent --timeout 30s` in the background at 21:57:46; shell B ran `yaks answer` at 21:57:50; A exited 0 at 21:57:52 (within one 2s poll):
 
@@ -94,38 +99,45 @@ exit=1
 
 Tests fail first: with the hit predicates stubbed to `false`, 4 of the 7 `wait::tests` failed (immediate hit, `--new` flip, `--new` leave-and-return, mid-wait wake); restored, all 7 pass, and the 4 binary tests in `tests/wait.rs` pass.
 
----
-▸ 2026-10-26T21:58:15Z [wait-1]
+#### 2026-10-26T21:58:15Z
+
+*wait-1*
 
 Decision: the duration grammar is factored out of `store::parse_relative` as `store::parse_duration` (int + s/m/h/d/w), shared by `log --since` and `wait --timeout/--interval`. Rejected: calling `parse_since` and subtracting from now (accepts absolute dates, which make no sense as a timeout); adding a duration crate (forbidden, and a second grammar). Consequence: no sub-second interval (`500ms` is rejected); `--interval 0s` is refused.
 
----
-▸ 2026-10-26T21:58:15Z [wait-1]
+#### 2026-10-26T21:58:15Z
+
+*wait-1*
 
 Decision: `--interval` is documented (help + docs/cli.md) as a tuning knob rather than hidden. Rejected: hidden, since a harness that wants faster wake-ups or less polling has no other way to discover it.
 
----
-▸ 2026-10-26T21:58:15Z [wait-1]
+#### 2026-10-26T21:58:15Z
+
+*wait-1*
 
 Decision: `--new` keys rows by (id, needs) and keeps in its baseline only rows continuously present since start, so a yak picked up and then answered again during the wait counts as new. Rejected: a fixed start snapshot, which would miss that re-answer. Rows filtered out by `--for` never enter the baseline, so a human->agent flip is new under `--for agent` either way.
 
----
-▸ 2026-10-26T21:58:15Z [wait-1]
+#### 2026-10-26T21:58:15Z
+
+*wait-1*
 
 Decision: without `--for`, a hit is any row with a `needs` value (both sections), matching what `inbox` with no `--for` shows. The poll loop lives in a new `src/wait.rs` (generic over a fetch closure and a `Clock` trait) rather than in `src/farm.rs`, so the tests use a fake clock and no sleeps, and farm.rs (which request-1 is also editing) is untouched. Binary tests go in a new `tests/wait.rs`, not `tests/needs_loop.rs`, for the same reason.
 
----
-▸ 2026-10-26T21:58:16Z [wait-1]
+#### 2026-10-26T21:58:16Z
+
+*wait-1*
 
 Decision: the timeout message is `yaks wait: timed out after <DUR>: nothing [new ]awaiting <who>` on stderr, exit 2; a bad flag value is an ordinary error, exit 1. Rejected: exit 1 for a timeout, which a caller could not tell apart from an error.
 
----
-▸ 2026-10-26T21:59:23Z [wait-1]
+#### 2026-10-26T21:59:23Z
+
+*wait-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-26T21:59:32Z [wait-1]
+#### 2026-10-26T21:59:32Z
+
+*wait-1*
 
 Summary (wait-1): `yaks wait [--for human|agent] [filters] [--timeout DUR] [--new] [--json] [--interval DUR]` polls `Farm::inbox` (no lock) until a row for the audience appears, then calls `render_inbox(rows, audience, json)` unchanged, so it prints exactly what `inbox` prints, and exits 0. A timeout exits 2 with one stderr line and nothing on stdout.
 
@@ -134,13 +146,15 @@ Summary (wait-1): `yaks wait [--for human|agent] [filters] [--timeout DUR] [--ne
 - Docs: `--help`, `docs/cli.md` (table row + `### wait`), README command row.
 - Evidence: transcript note above (attached `yaks-f313-wait-transcript.txt`); `yaks verify` PASS.
 
----
-▸ 2026-10-26T21:59:32Z [wait-1]
+#### 2026-10-26T21:59:32Z
+
+*wait-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-26T22:01:42Z [delta-lead]
+#### 2026-10-26T22:01:42Z
+
+*delta-lead*
 
 Landed (delta-lead, yakherd): `655dacf` fast-forwarded onto `main` (the base matched). Not pushed yet; it goes out with yaks-b75b.
 

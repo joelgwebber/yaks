@@ -11,13 +11,15 @@ tags:
 - cli
 ---
 
----
-▸ 2026-10-26T23:07:33Z [delta-lead]
+#### 2026-10-26T23:07:33Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T23:07:33Z [delta-lead]
+#### 2026-10-26T23:07:33Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd). Owner: `kinds-1`. Plan: the latest note on yaks-db07.
 
@@ -41,15 +43,17 @@ Claim (delta-lead, yakherd). Owner: `kinds-1`. Plan: the latest note on yaks-db0
 
 **Gate:** `cargo test -p yaks`. **Judge:** delta-lead at landing.
 
----
-▸ 2026-10-26T23:08:04Z [kinds-1]
+#### 2026-10-26T23:08:04Z
+
+*kinds-1*
 
 Start (kinds-1): `Mon Oct 26 23:08:00 UTC 2026`.
 
 `yaks path yaks-f853`: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-f853.md`
 
----
-▸ 2026-10-26T23:12:22Z [kinds-1]
+#### 2026-10-26T23:12:22Z
+
+*kinds-1*
 
 Decision: the instruction texts live in `store::RequestKind::instruction(id)`, a clap `ValueEnum` in `src/store.rs` next to `request_text`, and take the yak id so the text says `yaks path <id>` and `yaks pickup <id>` literally. `store::compose_request` joins kind text and extra note.
 
@@ -58,15 +62,17 @@ Rejected:
 - a generic `yaks path <id>` placeholder: the agent would have to substitute it, and a bulk request then gives every yak an identical, less direct note;
 - putting the kind inside `Farm::request` (a new parameter): every caller, the TUI included, would change for what is only text composition. `Farm::request` stays as it was; the CLI composes the note and passes it.
 
----
-▸ 2026-10-26T23:12:22Z [kinds-1]
+#### 2026-10-26T23:12:22Z
+
+*kinds-1*
 
 Decision: "`--kind` or `--note` or both required" is a clap `ArgGroup` (`kind`, `note`, `note_file`; required, multiple), so the usage line shows it and clap exits 2 with its own error.
 
 Rejected: a hand-written check in the dispatch arm (exit 1, and invisible in `--help`). Before this change a bare `yaks request <id>` was allowed and recorded only the marker; it is now an error, as the claim asks.
 
----
-▸ 2026-10-26T23:12:23Z [kinds-1]
+#### 2026-10-26T23:12:23Z
+
+*kinds-1*
 
 Decision: `bulk --request` reuses the existing `bulk` dry-run/commit flow. Its extra text is a new `bulk --note` that `requires = "request"`; it is passed through `resolve_text`, so `--note -` reads stdin. The commit path is a new `request_many` that calls `Farm::request` per yak, like `update_many`. A yak awaiting a human is skipped, listed on one `skipped N awaiting a human (answer instead): ...` line, and does not fail the run (exit 0). An unknown id still exits 1. The dry run marks such a yak `(awaiting a human: request skipped)`, and `describe_bulk_mutation` adds `request <kind>` (with `(note: "...")` when given).
 
@@ -78,8 +84,9 @@ Rejected:
 
 The actor for bulk requests comes from `actor::resolve(None)`, since `bulk` has no `--as` (same as its field edits).
 
----
-▸ 2026-10-26T23:12:23Z [kinds-1]
+#### 2026-10-26T23:12:23Z
+
+*kinds-1*
 
 Tests fail first. In `tests/needs_loop.rs` I added `request_kind_writes_the_instruction_then_the_note` (it also checks that neither flag is an error) and `bulk_request_dry_runs_then_queues_and_skips_awaiting_human`, plus a `Farm::body` helper that reads the file via `yaks path`. With `git stash push -- src` (the original source):
 
@@ -91,8 +98,9 @@ test result: FAILED. 6 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; 
 
 With the change, `cargo test --test needs_loop` gives `test result: ok. 8 passed; 0 failed`.
 
----
-▸ 2026-10-26T23:12:23Z [kinds-1]
+#### 2026-10-26T23:12:23Z
+
+*kinds-1*
 
 Real-binary transcript (`./target/debug/yaks` on a throwaway `mktemp -d` farm, `git init`, `init --mode private`, three yaks labelled `docs`):
 
@@ -147,13 +155,15 @@ Summarize request: append one note summarizing this yak: its current state, the 
 Change nothing else. Add it with `yaks update yak-874d --note -`, then `yaks pickup yak-874d`.
 ```
 
----
-▸ 2026-10-26T23:14:11Z [kinds-1]
+#### 2026-10-26T23:14:11Z
+
+*kinds-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-26T23:15:20Z [kinds-1]
+#### 2026-10-26T23:15:20Z
+
+*kinds-1*
 
 Summary (kinds-1):
 
@@ -164,12 +174,14 @@ Summary (kinds-1):
 
 Evidence: two new tests in `tests/needs_loop.rs` fail on the old source and pass now; the real-binary transcript is above; `yaks verify` gives PASS for `cargo test -p yaks`.
 
----
-▸ 2026-10-26T23:15:20Z [kinds-1]
+#### 2026-10-26T23:15:20Z
+
+*kinds-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-26T23:19:10Z [delta-lead]
+#### 2026-10-26T23:19:10Z
+
+*delta-lead*
 
 Landed (delta-lead, yakherd) and pushed in ab5e667. Gate on the combined tree: 873 passed, 0 failed. Reproduced on a throwaway farm with my own build: list --run-on found the run-on yaks, bulk --run-on --request tidy dry-ran (skip marked), --commit queued one and skipped the yak awaiting a human, the tidy instruction is in the note, a bare request exits 2. Live farm: 124 yaks match --run-on.

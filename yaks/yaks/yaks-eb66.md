@@ -13,8 +13,7 @@ tags:
 
 Attribution (who wrote a note / made a transition), NOT ownership. Committed transitions already carry attribution via the git commit author, so this is mainly for in-file visibility and local-only mode. Add optional --as <actor> on update/shave/shorn, stamped into the note; default from an env (YAKS_ACTOR) or git user. Open design question: naming for humans vs agents, and agents acting on behalf of a human (agent@human?). Do NOT introduce yak ownership. From the experiment where [wtA]/[wtB] tags were used by hand.
 
----
-▸ 2026-09-03T16:22:56Z
+#### 2026-09-03T16:22:56Z
 
 [coordinator] DECISION (design settled, ready to build):
 - Store STABLE ACTOR IDENTITY, not ephemeral lane role. [wtA]/[coordinator] conflated the two; formalize identity only, do NOT globally-uniquify lane tags (transient by nature). Yak says which-work, actor says who; lane is usually redundant.
@@ -24,8 +23,9 @@ Attribution (who wrote a note / made a transition), NOT ownership. Committed tra
 - agent-on-behalf-of-human: an 'agent@human' handle (e.g. opus@joel) carries both, no second field.
 - Query surface: 'yaks log --by <actor>'; show actor in log/show output.
 
----
-▸ 2026-09-03T16:28:52Z [coordinator]
+#### 2026-09-03T16:28:52Z
+
+*coordinator*
 
 BUILT + verified. Actor attribution on notes.
 - store::append_note_as(body, ts, actor, note) stamps '▸ <ts> [actor]'; append_note is now a None wrapper (no churn at ~10 existing call sites). NoteEntry gains actor: Option<String>; parse_notes splits an optional trailing [actor] (bare notes -> None, byte-compatible, no migration).

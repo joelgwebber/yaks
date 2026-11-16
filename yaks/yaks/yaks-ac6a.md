@@ -31,11 +31,9 @@ Proposal:
 
 Needs a decision on the field name and whether the zone may be per herd (a family spread over zones). Lean: farm-wide only.
 
----
-▸ 2026-11-07T17:04:37Z [herd-stars]
-kind: ask
-needs: human
----
+#### 2026-11-07T17:04:37Z
+
+*herd-stars · kind: ask · needs: human*
 
 asked: needs human
 
@@ -50,37 +48,31 @@ Three calls before this is built (herd-stars), my lean on each:
 
 Absent `timezone:`, the machine's zone, as today.
 
----
-▸ 2026-11-08T00:48:13Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-08T00:48:13Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. `timezone:` works for me.
 2. Agreed, per-herd would just get silly.
 3. Yes, let's use the embedded one. The last thing we need is more environmental things to go wrong.
 
----
-▸ 2026-11-08T00:49:15Z [herd-stars]
-kind: pickup
----
+#### 2026-11-08T00:49:15Z
+
+*herd-stars · kind: pickup*
 
 picked up
 
 herd-stars: building it as answered: farm-wide `timezone:`, chrono-tz embedded.
 
----
-▸ 2026-11-08T00:49:17Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T00:49:17Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-08T00:52:09Z [herd-stars]
+#### 2026-11-08T00:52:09Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-tz`, per Joel's answers (2026-11-08): `timezone:` in `.yaks/config.yaml`, farm-wide only, the tz database embedded (`chrono-tz`).
 
@@ -96,8 +88,9 @@ Claim (yakherd herd-stars): worker `stars-tz`, per Joel's answers (2026-11-08): 
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-08T00:52:45Z [stars-tz]
+#### 2026-11-08T00:52:45Z
+
+*stars-tz*
 
 Start (stars-tz): date -u Sun Nov  8 00:52:35 UTC 2026
 
@@ -105,8 +98,9 @@ Start (stars-tz): date -u Sun Nov  8 00:52:35 UTC 2026
 - top-level: /Users/joel/src/yaks/.delta/worktrees/ena37215nmvk/yaks
 - HEAD: a29187b1de3d733b778ddc7f9fcc55df29b01458
 
----
-▸ 2026-11-08T01:01:38Z [stars-tz]
+#### 2026-11-08T01:01:38Z
+
+*stars-tz*
 
 Progress (stars-tz), 2026-11-08 ~01:40Z: code compiles and the existing suite compiles; writing the new tests next.
 
@@ -123,8 +117,9 @@ Left alone on purpose (UTC by their own contract, not `Local`; follow-up): `chec
 
 [ac6a-repro-and-size](yaks-ac6a/ac6a-repro-and-size.txt)
 
----
-▸ 2026-11-08T01:10:37Z [stars-tz]
+#### 2026-11-08T01:10:37Z
+
+*stars-tz*
 
 Decision notes (stars-tz):
 
@@ -141,40 +136,32 @@ Size: release binary 11,114,464 -> 12,320,672 bytes (+1,206,208, about +1.15 MiB
 
 Friction: none blocking; `yaks note` is `yaks update --note`.
 
----
-▸ 2026-11-08T01:12:29Z [stars-tz]
-kind: verify
-result: pass
----
+#### 2026-11-08T01:12:29Z
+
+*stars-tz · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-08T01:12:39Z [stars-tz]
+#### 2026-11-08T01:12:39Z
+
+*stars-tz*
 
 Summary (stars-tz): farm-wide `timezone:` (IANA, embedded chrono-tz) is the one farm clock for today, `+Nd`, date-only `due:`, regrow-due/tick, session note day and name, and datetime display (CLI and TUI); datetime `due:` keeps its offset; `every` steps on the wall clock in the farm zone. Bad zone: stderr warning once per command + `doctor` `bad-timezone`, machine zone used. Docs/help updated (docs/cli.md, docs/tui.md, README config block, yaks and yaks-scheduling skills, `--due`/`--every` clap help). Gate `cargo test --workspace`: all green (1087 unit + integration); `yaks verify` PASS. Old-vs-new repro and size attached.
 
----
-▸ 2026-11-08T01:12:40Z [stars-tz]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy3PZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T01:12:40Z
+
+*stars-tz · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy3PZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-08T01:13:19Z [herd-stars]
-kind: landed
-commit: 913e4f4a8e9f28e0d5eae5aea363545604bdf633
-source: cd5faac7e788d9d9190bb5a4d1121466cbe00097
-branch: main
----
+#### 2026-11-08T01:13:19Z
+
+*herd-stars · kind: landed · commit: 913e4f4a8e9f28e0d5eae5aea363545604bdf633 · source: cd5faac7e788d9d9190bb5a4d1121466cbe00097 · branch: main*
 
 landed: 913e4f4a yaks-ac6a: farm time zone (timezone: + chrono-tz); recurring datetimes keep wall-clock time across DST
 
----
-▸ 2026-11-08T01:16:19Z [herd-stars]
+#### 2026-11-08T01:16:19Z
+
+*herd-stars*
 
 herd-stars: landed `913e4f4a` (worker `cd5faac7`, clean squash); gate `cargo test --workspace` green on the merged tree. Reproduced with my build on a scratch farm (`timezone: America/New_York`, daily from `2026-10-31T19:30:00-04:00`, shear, `regrow-due`): `due: 2026-11-08T19:30:00-05:00`. A bad zone (`Mars/Olympus`) warns once and uses the machine's. Binary +1.15 MiB (chrono-tz). Follow-ups the worker named (UTC by contract, not `Local`): `check` stale_after's today, source directory dates, `--since` dates.

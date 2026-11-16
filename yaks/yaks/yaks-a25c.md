@@ -16,8 +16,9 @@ tags:
 
 Phase 6, the list half, of [the design](/doks/design/tui-model.md#4-search) (yaks-953f, yaks-c7ba): the `/` query leaves the view's filter, survives view switches, matches what `yaks find` searches, and has its own chip with the All count; tab counts apply it; Esc clears it first. A built-in unpinned All view holds every yak (dead included), page and source.
 
----
-▸ 2026-11-03T04:28:36Z [herd-tui]
+#### 2026-11-03T04:28:36Z
+
+*herd-tui*
 
 Claim (yakherd herd-tui): worker `query-1` (Sonnet 5.5), from main after phase 3b lands. Runs in parallel with phase 4a (`pane-1`); the scopes are disjoint by symbol.
 
@@ -73,8 +74,9 @@ Anything else: `yaks ask yaks-a25c`.
 
 **Judge.** herd-tui at landing.
 
----
-▸ 2026-11-03T04:43:08Z [herd-tui]
+#### 2026-11-03T04:43:08Z
+
+*herd-tui*
 
 kind: move
 from: hairy
@@ -84,13 +86,15 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T04:43:08Z [herd-tui]
+#### 2026-11-03T04:43:08Z
+
+*herd-tui*
 
 herd-tui: base is main at `200d48fa` (phase 3b landed).
 
----
-▸ 2026-11-03T04:57:42Z [query-1]
+#### 2026-11-03T04:57:42Z
+
+*query-1*
 
 Start: 2026-11-03T04:43:52Z (date -u). Farm file `/home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-a25c.md`; checkout `/home/user/yaks-7`; base `200d48f`.
 
@@ -103,8 +107,9 @@ Progress: the code, docs and tests are in; full gate green (`cargo test --worksp
 - `view::all_view()` (key `all`, unpinned, flat, updated desc, no limit), last in `default_views`.
 - Query chip in `render_tabs`; Esc: query first, then facets.
 
----
-▸ 2026-11-03T04:57:43Z [query-1]
+#### 2026-11-03T04:57:43Z
+
+*query-1*
 
 Decision: the All view is appended LAST in `default_views` (after Sheds), not beside Inbox. Rejected: next to Inbox (shifts the Starred/Wiki/Sheds indices that ~dozens of tests and the saved-order reconcile rely on, and it is unpinned so tab order does not show). The `v` picker lists it at the bottom.
 Decision: All's spec lists all four statuses (so the flat path keeps dead yaks). Rejected: a special case on the view key in `flat_rows`, which would hide a second source of truth for "dead is wanted".
@@ -121,8 +126,9 @@ Decision: All uses the globe-free basket emoji (U+1F9FA). Rejected: U+1F5C3 (a n
 
 [query-on-all-view](yaks-a25c/query-on-all-view.txt)
 
----
-▸ 2026-11-03T04:57:55Z [query-1]
+#### 2026-11-03T04:57:55Z
+
+*query-1*
 
 kind: verify
 result: fail
@@ -130,8 +136,9 @@ result: fail
 
 verify: `cargo test --workspace` -> FAIL (exit 127)
 
----
-▸ 2026-11-03T04:58:37Z [query-1]
+#### 2026-11-03T04:58:37Z
+
+*query-1*
 
 kind: verify
 result: pass
@@ -139,13 +146,15 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T04:58:44Z [query-1]
+#### 2026-11-03T04:58:44Z
+
+*query-1*
 
 Done. `yaks verify yaks-a25c`: PASS. Gate `cargo test --workspace`: all green. Attached headless frames: `query-chip-on-shaving.txt` (Shaving tab, chip `/"widget" · 6 in All` beside the tabs, no `filter:` chip) and `query-on-all-view.txt` (All view: matching yaks, then the matching page). New tests (`tui::tests::query`, 7, plus a Sheds one) cover each bullet of the claim. Docs: `docs/tui.md` (Layout, query chip, Search & filter, All, Wiki, Sheds), `README.md`, `?` help lines in `keymap.rs`. docshots regenerated and discarded: none of the SVGs shows a query or the picker, and this machine's toque restyles every SVG.
 
----
-▸ 2026-11-03T04:58:44Z [query-1]
+#### 2026-11-03T04:58:44Z
+
+*query-1*
 
 kind: move
 from: shaving
@@ -155,8 +164,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAEAkGJIBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T04:59:35Z [herd-tui]
+#### 2026-11-03T04:59:35Z
+
+*herd-tui*
 
 kind: landed
 commit: cd753ad896fc9ce1262d49f4bc81d2e8f3ac027c
@@ -166,7 +176,8 @@ branch: main
 
 landed: cd753ad8 yaks-a25c: global query with its own chip, and the All view
 
----
-▸ 2026-11-03T05:08:08Z [herd-tui]
+#### 2026-11-03T05:08:08Z
+
+*herd-tui*
 
 Landed by herd-tui as `cd753ad8` (worker `5239e6a7`). Gate ok. Headless on my build: `/widget` Enter Tab keeps the query (chip `/"widget"`), and the view picker shows All (3) counting a dead widget yak and a page.

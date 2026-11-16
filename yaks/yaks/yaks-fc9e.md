@@ -15,13 +15,15 @@ The cursor model for yaks details and documents is currently only line at a time
 
 While I don't think we need a full row:col:range selection model for viewing mode -- that would just be unnecessarily confusing -- I do think we need at least a concept of selected row *and* targeted link within that row. We could continue to use up/dn/j/k to change the row selection, we would allow [/] to move among the available links, including those on the same row.
 
----
-▸ 2026-11-03T12:17:37Z [Joel Webber]
+#### 2026-11-03T12:17:37Z
+
+*Joel Webber*
 
 Also note: The cursor doesn't update when you search, then move to the [n]ext result. The view jumps, but the cursor stays where it was. We should try to make all scenarios like this consistent.
 
----
-▸ 2026-11-03T21:48:07Z [delta:starred-batch]
+#### 2026-11-03T21:48:07Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -33,8 +35,9 @@ moved: hairy -> shaving
 
 [fc9e-tabs](yaks-fc9e/fc9e-tabs.txt)
 
----
-▸ 2026-11-03T21:55:06Z [delta:starred-batch]
+#### 2026-11-03T21:55:06Z
+
+*delta:starred-batch*
 
 Done in the shape you described: rows stay the cursor model, plus a *targeted link* within the row.
 
@@ -48,8 +51,9 @@ Evidence: tests `tab_visits_every_link_on_a_row_and_link_at_follows_it` and `the
 
 Not done: mouse click to target a specific link on a row (that is yaks-000b's territory).
 
----
-▸ 2026-11-03T21:55:06Z [delta:starred-batch]
+#### 2026-11-03T21:55:06Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

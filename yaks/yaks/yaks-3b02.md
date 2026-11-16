@@ -14,7 +14,6 @@ tags:
 
 Current approach: pristine char grid, then an aligned style-id grid + legend. Add a sparse variant using space for background to cut noise and chunk better. Cost: forces column-exact cross-reference of two 2D grids (hardest thing for an LLM). Baseline to beat.
 
----
-▸ 2026-08-22T14:43:38Z
+#### 2026-08-22T14:43:38Z
 
 Implemented in the headless harness as the 'parallel' encoding (a39e). Kept for back-compat/default; superseded by spans/interleaved per docs/tui-style-eval.md.

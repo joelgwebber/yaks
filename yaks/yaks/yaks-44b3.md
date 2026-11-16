@@ -45,13 +45,15 @@ All code for this family lands on the `wiki` branch of the yaks repo, never `mai
 - `yaks-3e1d` (embedded web UI): a later reader for pages.
 - `yaks-6a11` (note metadata, shorn) and `yaks-bdf9` (commit shas, shorn): the frontmatter design reuses their key/value model.
 
----
-▸ 2026-11-01T18:53:40Z [delta:farm-wiki]
+#### 2026-11-01T18:53:40Z
+
+*delta:farm-wiki*
 
 Plan (delta:farm-wiki, 2026-11-01): the family is filed, layer by layer, with dependencies. Design asks are open on the five children of yaks-7708; I'm implementing on the leans on the `wiki` branch of the yaks repo, starting with the field model (yaks-1f34), which everything else needs. Answers that change a lean get folded in as I go.
 
----
-▸ 2026-11-01T18:53:40Z [delta:farm-wiki]
+#### 2026-11-01T18:53:40Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -61,8 +63,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T22:26:18Z [delta:farm-wiki]
+#### 2026-11-01T22:26:18Z
+
+*delta:farm-wiki*
 
 Fan-out, 2026-11-01 (yakherd delta:farm-wiki), all from `wiki` at a150387:
 
@@ -72,32 +75,38 @@ Fan-out, 2026-11-01 (yakherd delta:farm-wiki), all from `wiki` at a150387:
 
 Landed by me since the last summary: yaks-8e75 (schemas), yaks-4c8c (merge driver plus `yaks conflicts`), yaks-fd7a (attach encoding), yaks-2b68 (`yaks weight`/`yaks lfs`). The core layer (yaks-f301) is now complete.
 
----
-▸ 2026-11-01T22:30:56Z [delta:farm-wiki]
+#### 2026-11-01T22:30:56Z
+
+*delta:farm-wiki*
 
 Fan-out continued: `import-1` takes yaks-5550 (`yaks import-hearth`, then the joel migration rehearsed on a scratch clone), on claude-sonnet-5-5, from `wiki` at e2a9aa1 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD1BtZIBxBCA0aLJyrhJPreUvVwLftHG)). I wrote the research skill (yaks-577f) myself and revised it after a claude-haiku-5-5 cold read. yaks-9cc1 (recurring yaks) has a proposal and an ask for Joel.
 
----
-▸ 2026-11-01T23:05:11Z [delta:farm-wiki]
+#### 2026-11-01T23:05:11Z
+
+*delta:farm-wiki*
 
 Landed: yaks-c0ac (`yaks check`, 206f23d), yaks-f0db (TUI auto-sync, 6a22550), yaks-84e0 (shared `linenav` viewer, 268a0c5 + 20f6bc6). Gate 950. Fan-out: `wiki-1` takes the TUI arc (yaks-ebb2, then yaks-7395, then yaks-1532) serially, on claude-opus-5-5, from 20f6bc6 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2ExZIBxBCA0aLJyrhJPreUvVwLftHG)). `import-1` is still running.
 
----
-▸ 2026-11-01T23:21:10Z [delta:farm-wiki]
+#### 2026-11-01T23:21:10Z
+
+*delta:farm-wiki*
 
 Landed yaks-5550 (`yaks import-hearth`, 844bf53). I reproduced it on a scratch clone of `joel`: 31 pages, 37 sources, doctor and check clean. Gate 955. Fan-out: `find-1` takes yaks-bdcb (`yaks find`, plus reserving `sessions`), on claude-sonnet-5-5, from 844bf53 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2d4ZIBxBCA0aLJyrhJPreUvVwLftHG)). `wiki-1` is still on the TUI arc.
 
----
-▸ 2026-11-02T00:36:33Z [delta:farm-wiki]
+#### 2026-11-02T00:36:33Z
+
+*delta:farm-wiki*
 
 Landed: yaks-bdcb (`yaks find`, be9d80b), an identity fix in `yaks commit` (75d9ef2), and wiki-1's TUI arc (f23a924, 9e59104, 8e42e47, f4c86b8). Layers 2–4 are complete; gate 995. Joel answered yaks-9cc1 (all three leans). Fan-out: `due-1` takes yaks-2fc5 (due dates and recurring yaks), on claude-sonnet-5-5, from f4c86b8 ([thread](delta://thread/ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD38RZIBxBCA0aLJyrhJPreUvVwLftHG)).
 
----
-▸ 2026-11-02T01:56:37Z [delta:farm-wiki]
+#### 2026-11-02T01:56:37Z
+
+*delta:farm-wiki*
 
 Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed with `cargo install --path .`. Migrated this farm to schema 7 (3860490) and turned on LFS (08ad4ad, 44 binaries converted). The model is written up in [the farm as a knowledge store](/doks/design/knowledge-store.md), and the migration steps in [migrate a farm](/doks/howto/migrate-a-farm.md).
 
----
-▸ 2026-11-02T17:10:43Z [delta:farm-wiki]
+#### 2026-11-02T17:10:43Z
+
+*delta:farm-wiki*
 
 Shipped in 0.0.30 (npm `latest`). The yaks and joel farms are migrated to schema 7 and published, and joel's main has dropped the Hearth layout. Open follow-ups: yaks-9f5e (import-hearth skips dot-files) and yaks-7058 (git calls per write).

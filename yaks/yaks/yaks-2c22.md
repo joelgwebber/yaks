@@ -15,18 +15,21 @@ tags:
 
 Prose rules in the skills have not kept agents on the rails (yaks-df61 O5, O6, O9). Candidate commands that take the checklist out of prose: (1) yaks brief <id> --as <actor>: print a worker brief from the yak itself (id, how to get a binary, actor, scope from notes, evidence contract = verify command or required attachments, forbidden moves, commit and return format); (2) yaks preflight [<id>...]: before landing, check each shorn yak has its verify last PASS, no untracked or unstaged files under .yaks/ (evidence not staged), the yak file and code are in the same commit, and the commit message names the id; exit non-zero with one actionable line per failure. Design test (yaks-coordinating): both are expressible as queries over files plus git status, so they may live in the tool; anything that assumes Delta or worktrees stays in the skill. Open: whether these generalise beyond Delta, and whether brief should be a template skill instead. Decide with Joel before building.
 
----
-▸ 2026-10-03T22:48:20Z [delta-lead]
+#### 2026-10-03T22:48:20Z
+
+*delta-lead*
 
 Design fork: build 'yaks brief <id>' and 'yaks preflight' in the tool, or keep the checklist in a skill? My lean: build 'preflight' first (pure file + git-status queries: verify last PASS, nothing untracked or unstaged under .yaks/, duplicate status dirs, yak move and code in one commit, id in the message), since trials 1-3 showed agents and coordinators miss exactly those checks and doctor already catches duplicate status dirs. Defer 'brief' until the skills restructure (yaks-5c9f) settles what a brief contains, because the template is still changing. Alternative: skill-only. Answer: preflight now / brief later / skill-only.
 
----
-▸ 2026-10-03T23:19:12Z [Joel Webber]
+#### 2026-10-03T23:19:12Z
+
+*Joel Webber*
 
 Agreed on both. The preflight gate will be a big help.
 
----
-▸ 2026-10-05T22:44:37Z [delta-lead]
+#### 2026-10-05T22:44:37Z
+
+*delta-lead*
 
 Design fork before I brief a worker (coordinator delta-lead). You agreed on 2026-10-03 to build `yaks brief <id>`; what is open is WHERE the template lives.
 
@@ -49,13 +52,15 @@ A. It follows the design test in `yaks-coordinating` section 2: what is true of 
 
 Cost: a user-visible command and a stable-ish output format, and the Delta skill must be edited to point at it. Say A, B, C or your own variant.
 
----
-▸ 2026-10-06T03:40:48Z [Joel Webber]
+#### 2026-10-06T03:40:48Z
+
+*Joel Webber*
 
 I'm good with putting these into the tools now. Can't always trust those sub-agents.
 
----
-▸ 2026-10-06T03:57:00Z [delta-lead]
+#### 2026-10-06T03:57:00Z
+
+*delta-lead*
 
 Recording the answer (coordinator delta-lead, on Joel's note above, 2026-10-06T03:40Z). Joel wrote: "I'm good with putting these into the tools now. Can't always trust those sub-agents."
 
@@ -63,13 +68,15 @@ I read that as option A: the binary owns the yak-derived core of the worker brie
 
 Clearing `needs` because the reply was a plain note, which leaves the block set (this is exactly the gap in yaks-c061).
 
----
-▸ 2026-10-06T03:58:20Z [delta-lead]
+#### 2026-10-06T03:58:20Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-06T03:58:20Z [delta-lead]
+#### 2026-10-06T03:58:20Z
+
+*delta-lead*
 
 Claim and settled design (coordinator delta-lead). Owner: worker brf-1. Joel: "I'm good with putting these into the tools now" (read as option A, recorded above): the binary owns the yak-derived core of the worker brief; the Delta skill keeps orchestration and its template shrinks to a pointer (the coordinator edits the skill after landing).
 
@@ -96,13 +103,15 @@ It must NOT contain orchestration the yak cannot know (spawn titles, Delta landi
 
 Judge: coordinator re-runs the gate and gives the output to a fresh scout as a worker brief.
 
----
-▸ 2026-10-06T19:52:06Z [brf-2]
+#### 2026-10-06T19:52:06Z
+
+*brf-2*
 
 Claim: worker brf-2 takes over from brf-1 (stalled after a draft). Start `date -u`: Tue Oct 6 19:51:44 UTC 2026. `ls .yaks/*/yaks-2c22.md`: `.yaks/shaving/yaks-2c22.md`. Seeding from brf-1's untracked src/brief.rs draft (reviewing every function against the settled design).
 
----
-▸ 2026-10-06T20:00:42Z [delta-lead]
+#### 2026-10-06T20:00:42Z
+
+*delta-lead*
 
 Decision: what I kept from brf-1's draft and what I changed (coordinator delta-lead, 2026-10-06).
 
@@ -114,8 +123,9 @@ Changed: the blocked section now says what to do once an ask is answered (`inbox
 
 Alternatives rejected: a `--json` form (nobody consumes it; the text is the product; add it when a caller exists); embedding the template from the skill at build time (option B in the ask: ties the binary to the optional skills); printing scope by symbol (the yak cannot know it, the coordinator adds it).
 
----
-▸ 2026-10-06T20:00:42Z [delta-lead]
+#### 2026-10-06T20:00:42Z
+
+*delta-lead*
 
 Done (coordinator delta-lead, 2026-10-06). `yaks brief <id> --as <name> [--yaks-dir <path>]` (src/brief.rs, the `Brief` subcommand) is in; commits ff3d3d2 (baseline draft), db14e9d, 504ad44 (16 tests), 4b4cd80 (docs), 433d192 (skills), 0cf54a0.
 
@@ -129,7 +139,8 @@ Clause comparison with the Delta skill's old fill-in template:
 - Only in the command (derived, so it cannot be forgotten): the gate from `verify:`/config, the binary's absolute path, `YAKS_DIR`, the team-vs-private finish rule, `yaks path`, `yaks verify`, `yaks attach`, `yaks pickup`, "never answer your own ask".
 - Only in the skill wrapper now (a yak cannot know): task and scope by symbol, out of scope, evidence beyond the gate, do not touch other checkouts, build your own binary when the task changes yaks itself. The old template's `ls .yaks/*/<id>.md` check is replaced by recording `yaks path <id>`.
 
----
-▸ 2026-10-06T20:00:42Z [delta-lead]
+#### 2026-10-06T20:00:42Z
+
+*delta-lead*
 
 moved: shaving -> shorn

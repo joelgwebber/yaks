@@ -15,8 +15,9 @@ tags:
 
 Phase 3, second half, of [the design](/doks/design/tui-model.md#1-rows-and-views); implements yaks-f1e6: the Sheds tab becomes an ordinary tree view. Each actor is a collapsible root row; its children are the yaks it touched (working, asking, then recent, as `Shed::rows` orders them). The tab's own cursors, key handlers and list renderer go.
 
----
-▸ 2026-11-03T04:24:11Z [herd-tui]
+#### 2026-11-03T04:24:11Z
+
+*herd-tui*
 
 Claim (yakherd herd-tui): worker `sheds-2` (Sonnet 5.5), from main at `50af0a9a` (phase 3a landed: `tree::Item`, `RowKind`, kind-aware `lookup`).
 
@@ -61,8 +62,9 @@ Roots are collapsible with the existing `collapsed` set and `Space`, keyed by a 
 
 **Judge.** herd-tui at landing.
 
----
-▸ 2026-11-03T04:27:48Z [sheds-2]
+#### 2026-11-03T04:27:48Z
+
+*sheds-2*
 
 Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-c354.md; top-level /home/user/yaks-5; 50af0a9 yaks-be65: row kinds (yak, document); the Wiki becomes a flat view of document rows
 
@@ -72,8 +74,9 @@ Start: Tue Nov  3 04:27:48 UTC 2026; yaks path: /home/user/.local/share/yaks/far
 
 ![tui-sheds-yak](yaks-c354/tui-sheds-yak.svg)
 
----
-▸ 2026-11-03T04:40:13Z [sheds-2]
+#### 2026-11-03T04:40:13Z
+
+*sheds-2*
 
 kind: verify
 result: fail
@@ -81,8 +84,9 @@ result: fail
 
 verify: `cargo test --workspace` -> FAIL (exit 101)
 
----
-▸ 2026-11-03T04:40:44Z [sheds-2]
+#### 2026-11-03T04:40:44Z
+
+*sheds-2*
 
 kind: verify
 result: pass
@@ -90,8 +94,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T04:41:56Z [sheds-2]
+#### 2026-11-03T04:41:56Z
+
+*sheds-2*
 
 Progress: implemented, gate green (`env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`: 30 suites ok, 882 bin tests).
 
@@ -101,8 +106,9 @@ Progress: implemented, gate green (`env -u YAKS_DIR -u YAKS_ACTOR cargo test --w
 - Headless on my build, scratch farm with two actors: tab to Sheds, `j` lands on alice's first yak, Enter shows the yak detail, `J` steps to the next yak, `J` again to bob's shed row and its pane (attached `sheds-tree-headless.txt`).
 - An earlier `yaks verify` FAIL in this thread was my own mistake (I exported `YAKS_DIR`/`YAKS_ACTOR` into the gate); the PASS note below is the correct run.
 
----
-▸ 2026-11-03T04:41:56Z [sheds-2]
+#### 2026-11-03T04:41:56Z
+
+*sheds-2*
 
 Decision: snapshots changed, all Sheds, nothing else.
 - `sheds_tab_list` (insta): now the tree, from a fixture farm that has the fixture's yaks (`shed_farm()` in `sheds_tab.rs` tests; the old `sample()` farm has none of the `mem-*` yaks so no child could show), 120x22 (was 120x14, the tree is taller). Its hint is the shed-row hint, and the tab strip counts differ only because the farm differs.
@@ -111,8 +117,9 @@ Decision: snapshots changed, all Sheds, nothing else.
 - `docs/assets/tui-sheds.svg`, `tui-sheds-detail.svg` changed; `tui-sheds-yak.svg` is new. `docshots.rs` renames the fixture's yaks to this docshots farm's (`sheds_of_this_farm()`), because the farm's yaks are `yaks-*` and the shed rows need yaks below them.
 - No non-Sheds snapshot changed: `git status` after the full gate lists only the three sheds `.snap` files. I regenerated every docshot on this tree and on a clean `git worktree` of HEAD: only `tui-sheds*.svg` differ between the two. The committed non-Sheds SVGs differ from either regeneration (toque's SVG now writes `fill-opacity`, `xml:space`), so I `git checkout`ed them rather than commit unrelated churn. The two regenerated Sheds SVGs therefore use the newer toque style while their neighbours keep the older one.
 
----
-▸ 2026-11-03T04:41:56Z [sheds-2]
+#### 2026-11-03T04:41:56Z
+
+*sheds-2*
 
 Decision: a shed's pane keys are `Ctx::Detail` bindings by kind, not a new surface. `surface_kind()` now also names the row kind in the pane; the yak-only pane bindings (line cursor, links, find, `E`, `S`...) became `bind_pane(Yak, ..)`, and a shed pane gets `h`/`Esc`/`J`/`K`/`#`/`W`/`U`/`?`/`q` (kind-less, as before) plus `y` (copy name) and `r` (rescan). Rejected: leaving the pane's keys kind-less (then the shed pane's bottom hint advertised `Tab:link  Enter:follow  E:edit`, all no-ops there).
 
@@ -128,8 +135,9 @@ Decision: `Space` and the persisted `collapsed` set take `shed:<name>`; a collap
 
 Decision: the shed pane keeps no scroll or cursor (it never has more than a screenful in practice, and its yaks are the rows beside it). `selected_shed_yak`'s duty is the cursor itself: `sheds_state_header` now reports the shed the cursor is in (`shed=`); the yak is the header's own `sel=`.
 
----
-▸ 2026-11-03T04:42:21Z [sheds-2]
+#### 2026-11-03T04:42:21Z
+
+*sheds-2*
 
 kind: verify
 result: pass
@@ -137,8 +145,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T04:42:21Z [sheds-2]
+#### 2026-11-03T04:42:21Z
+
+*sheds-2*
 
 Summary: the Sheds tab is an ordinary tree view. Shed roots (today's order and text, collapsible, `shed:<name>`) with their touched yaks as depth-1 yak rows (kind tag dim at the right); `/` filters; a shed row's pane is the shed, a yak row's the yak (J/K, U/W, every yak key work). `Ctx::Sheds`/`ShedDetail` and the tab's cursors, key handlers and list renderer are deleted.
 - Gate: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`: 30 suites ok; `yaks verify` PASS.
@@ -146,8 +155,9 @@ Summary: the Sheds tab is an ordinary tree view. Shed roots (today's order and t
 - Docs: `docs/tui.md` (intro, `W` row, Sheds key table, Sheds tab section, new screenshot), `README.md` line; `?` and the hint are generated.
 - Attached: headless frames on a real scratch farm, the fixture's yak-detail frame, and `tui-sheds-yak.svg`.
 
----
-▸ 2026-11-03T04:42:21Z [sheds-2]
+#### 2026-11-03T04:42:21Z
+
+*sheds-2*
 
 kind: move
 from: shaving
@@ -157,8 +167,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T04:43:01Z [herd-tui]
+#### 2026-11-03T04:43:01Z
+
+*herd-tui*
 
 kind: landed
 commit: 200d48faff9b6d8aa420c44b2a084e1b5465a752
@@ -168,7 +179,8 @@ branch: main
 
 landed: 200d48fa yaks-c354: Sheds becomes a tree view (actor roots, touched yaks as yak rows)
 
----
-▸ 2026-11-03T04:46:15Z [herd-tui]
+#### 2026-11-03T04:46:15Z
+
+*herd-tui*
 
 Landed by herd-tui as `200d48fa` (worker `074f09c2`). Gate on it: 30 suites ok. Headless on my build with two actors: roots w1/w2 with their yaks as children, `Enter` on a yak shows its detail, `J` steps to the next row (the w2 shed pane).

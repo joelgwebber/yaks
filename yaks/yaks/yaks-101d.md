@@ -17,8 +17,9 @@ verify: cargo test --workspace
 
 Implements yaks-ccb1. A shared resolver used by refs, doctor, peek and the TUI; old `../src` and `../blob/<sha>` forms stay valid; `yaks refs` accepts a page path; `yaks peek <link>` prints the span; `yaks mv` moves a page and rewrites links to it.
 
----
-▸ 2026-11-01T20:35:16Z [delta:farm-wiki]
+#### 2026-11-01T20:35:16Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -28,8 +29,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T20:50:13Z [delta:farm-wiki]
+#### 2026-11-01T20:50:13Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -66,8 +68,9 @@ Done on the `wiki` branch (`99416ed`).
 
 Not here: the TUI following page links and a peek preview (yaks-7395), link checks over sources (yaks-2c42/yaks-c0ac).
 
----
-▸ 2026-11-01T20:51:28Z [delta:farm-wiki]
+#### 2026-11-01T20:51:28Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -75,8 +78,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T20:51:28Z [delta:farm-wiki]
+#### 2026-11-01T20:51:28Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

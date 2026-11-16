@@ -15,18 +15,15 @@ From the first reflection round (yaks-2b40): when `yaks land` falls back to a ch
 
 Options: `yaks land --continue` (runs the continue and records), or `yaks land <sha>` on an already-applied pick recognises it and records only. Lean: `--continue`, mirroring git.
 
----
-▸ 2026-11-10T21:11:51Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:51Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:25Z [herd-unlock]
+#### 2026-11-10T21:12:25Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `landcont-1`, Sonnet 5.5.
 
@@ -38,8 +35,9 @@ Claim (yakherd herd-unlock-2): worker `landcont-1`, Sonnet 5.5.
 
 An integration test (like `tests/` ones for land, if any; else new) that builds a conflict, resolves it, runs `--continue`, and checks the landed note. Gate `cargo test --workspace`.
 
----
-▸ 2026-11-10T21:17:56Z [landcont-1]
+#### 2026-11-10T21:17:56Z
+
+*landcont-1*
 
 Started 2026-11-10T21:14Z (`date -u`), checkout `/Users/joel/src/yaks/.delta/worktrees/a1y6t2gq6x45/yaks`.
 
@@ -51,16 +49,15 @@ Decision: `yaks land <sha>` while a stopped landing's CHERRY_PICK_HEAD matches t
 
 Decision: `--continue` also accepts a pick the user already finished with `git cherry-pick --continue` (HEAD moved on from the saved head) and only records. Rejected: refusing, which would force a hand-written note, the exact bug.
 
----
-▸ 2026-11-10T21:43:11Z [landcont-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:43:11Z
+
+*landcont-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:43:19Z [landcont-1]
+#### 2026-11-10T21:43:19Z
+
+*landcont-1*
 
 Summary: `yaks land --continue` / `--abort` shipped.
 
@@ -71,22 +68,14 @@ Summary: `yaks land --continue` / `--abort` shipped.
 - Gate: `cargo test --workspace` green on the final run (one `init_modes` test failed once in a run alongside other workers, passed alone and in the rerun: not in this change); `cargo fmt --check` ok; clippy warning count unchanged at 104.
 - Docs: clap help, `docs/cli.md`, `yaks-coordinating` section 6. `.agents/skills/land/SKILL.md` says only "Conflicts: pause", unchanged.
 
----
-▸ 2026-11-10T21:43:20Z [landcont-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVgG5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:43:20Z
+
+*landcont-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVgG5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:43:43Z [herd-unlock]
-kind: landed
-commit: f67e29fd81cb80bb110f00a89c13620ba64f1e5b
-source: b035f37bfa376fca9615657fd8b44cbc48dbe4b0
-branch: main
----
+#### 2026-11-10T21:43:43Z
+
+*herd-unlock · kind: landed · commit: f67e29fd81cb80bb110f00a89c13620ba64f1e5b · source: b035f37bfa376fca9615657fd8b44cbc48dbe4b0 · branch: main*
 
 landed: f67e29fd yaks-760d: yaks land --continue and --abort finish or give up a conflicting cherry-pick landing and record it

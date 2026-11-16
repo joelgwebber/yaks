@@ -24,18 +24,21 @@ Out of scope: src/store.rs, migrate, doctor, sheds, skills.
 
 Evidence (fail first): a flat-farm status change reports `moved`; a combined status change plus note reports both; a staged migration reports the one line; the existing v3-shaped tests still pass.
 
----
-▸ 2026-10-12T20:00:39Z [delta-lead]
+#### 2026-10-12T20:00:39Z
+
+*delta-lead*
 
 Amended by D10 (see yaks-8b7a): an attachment is now any file under `.yaks/<id>/` (use phase 1's predicate), not `.yaks/artifacts/<id>/`; and the migration's one summary line also covers the attachments moving. The legacy deleted-plus-added pairing is transitional (phase 4 deletes it): keep it in one function.
 
----
-▸ 2026-10-12T20:20:37Z [delta-lead]
+#### 2026-10-12T20:20:37Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-12T20:20:38Z [delta-lead]
+#### 2026-10-12T20:20:38Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: git-1. Spec: the description, the amendment note on this yak, and yaks-8b7a's D7.
 
@@ -50,15 +53,17 @@ Evidence (fail first): the un-ignored test passes; a status change plus a note r
 - Finish staging is the old layout's: `git add -A -- .yaks/shaving/<id>.md .yaks/shorn/<id>.md` plus `.yaks/artifacts/<id>` if you attached something, and NEVER name a path that does not exist (git then stages nothing at all). Check `git status --short` is empty after your commit.
 - File ownership is strict (three workers run at once): touch only the files your claim names. If you must touch another, `yaks ask` instead.
 
----
-▸ 2026-10-12T20:23:54Z [git-2]
+#### 2026-10-12T20:23:54Z
+
+*git-2*
 
 git-2 started: Mon Oct 12 20:23:49 UTC 2026
 
 yaks path yaks-9f91: /Users/joel/src/yaks/.delta/worktrees/qzztv7bg68rg/yaks/.yaks/shaving/yaks-9f91.md
 
----
-▸ 2026-10-12T20:33:09Z [git-2]
+#### 2026-10-12T20:33:09Z
+
+*git-2*
 
 Decision: the status transition is read in `changes::read` (HEAD's and the working tree's `status:` stored on each `Change` as `status_before`/`status_after`), so `classify` and `generate_message` stay pure functions of `&[Change]` and `yaks status` and `yaks commit` cannot disagree. Rejected: having `classify` shell out to git (breaks the pure unit tests, runs git per call) and doing it only in `status.rs` (commit would say `updated` where status says `moved`).
 
@@ -72,17 +77,20 @@ Decision: `head_text` moved from status.rs to changes.rs (pub) so `read` can use
 
 Note: `yaks attach` in the new binary still writes `.yaks/artifacts/<id>/` (another worker's scope); `attachment_owner` accepts both shapes, so status reports `artifacts` either way (tested flat `<id>/`; real-machine run saw the legacy shape).
 
----
-▸ 2026-10-12T20:34:07Z [git-2]
+#### 2026-10-12T20:34:07Z
+
+*git-2*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-12T20:34:16Z [git-2]
+#### 2026-10-12T20:34:16Z
+
+*git-2*
 
 Done. `yaks status`/`yaks commit` now report an in-place `status:` change in a flat farm as `moved <from> -> <to>` / `shaving <id>` etc.; a flat attachment reports `artifacts`; a staged migration is one line `farm layout migrated: N yaks` and commit message `yaks: migrate the farm to the flat layout (N yaks)`. Old deleted+added pairing kept in `changes::legacy_pair`. tests/status.rs `clean_then_dirty_with_check_exit_codes` un-ignored and passing. New tests in src/status.rs: flat move, move+note, edit-not-a-move, flat attachment, staged migration, old-layout move. Docs: docs/cli.md and README.md status/commit rows, `///` help of Status/Commit in main.rs. Gate: `cargo test --release` all suites green (537 unit, 3 pre-existing ignored).
 
----
-▸ 2026-10-12T20:34:16Z [git-2]
+#### 2026-10-12T20:34:16Z
+
+*git-2*
 
 moved: shaving -> shorn

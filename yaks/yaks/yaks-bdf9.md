@@ -33,13 +33,15 @@ Example: `yaks commits yaks-e5fb` lists four farm commits, while the real code c
 - Frontmatter (`landed: [sha]`) vs a note event vs both (see the structured comments design).
 - Relation to `yaks-d695` (PRs field): the same "where is this yak's code" family of fields.
 
----
-▸ 2026-10-31T15:18:27Z [delta:Cloud Runners]
+#### 2026-10-31T15:18:27Z
+
+*delta:Cloud Runners*
 
 The `yaks commits` bug found here is filed separately as yaks-7a11, so it can be fixed now, independent of this design.
 
----
-▸ 2026-10-31T15:56:38Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:38Z
+
+*delta:Cloud Runners*
 
 Decision (Joel, 2026-10-31): store commit shas in yaks.
 
@@ -48,18 +50,21 @@ Decision (Joel, 2026-10-31): store commit shas in yaks.
 - For private farms the recorded sha is the only link from yak to code, and that's acceptable.
 - Where the fields live (frontmatter vs note metadata) follows `yaks-6a11`, settled first.
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T17:12:33Z [yakherd]
+#### 2026-10-31T17:12:33Z
+
+*yakherd*
 
 Done: `yaks-7a11` (commits greps the code repo), `yaks-735a` (land records `kind: landed` with commit and source; `--yak` for private farms; commits reads recorded shas first), `yaks-4728` (recorded branches). Dogfooded: every landing in the `yaks-039b` family has a landed note (by hand before `7e4a014`, automatic after).
 
----
-▸ 2026-10-31T17:12:33Z [yakherd]
+#### 2026-10-31T17:12:33Z
+
+*yakherd*
 
 kind: move
 from: shaving

@@ -14,13 +14,15 @@ tags:
 
 Shows whether the farm branch has unpublished commits or is behind its upstream as of the last fetch. A library function the TUI indicator (yaks-ce5d) reuses.
 
----
-▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+#### 2026-10-21T20:33:01Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+#### 2026-10-21T20:33:01Z
+
+*delta:herd-dirs*
 
 Claim (delta:herd-dirs, yakherd). Owner: `status-1`. Also owns yaks-d4a7 (preflight on a farm branch): same files, same idea.
 
@@ -38,15 +40,17 @@ Claim (delta:herd-dirs, yakherd). Owner: `status-1`. Also owns yaks-d4a7 (prefli
 
 **Judge:** the yakherd.
 
----
-▸ 2026-10-21T20:34:01Z [status-1]
+#### 2026-10-21T20:34:01Z
+
+*status-1*
 
 Started status-1.
 - date -u: Wed Oct 21 20:33:58 UTC 2026
 - yaks path yaks-bd1d: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bd1d.md
 
----
-▸ 2026-10-21T20:38:48Z [status-1]
+#### 2026-10-21T20:38:48Z
+
+*status-1*
 
 Real run of my built ./target/release/yaks in this machine's real farm (no fetch done by me):
 
@@ -65,8 +69,9 @@ preflight: ok
 
 Before the change, preflight on a branch farm with a dirty yak failed with `.yaks/yak/yaks/yak-0001.md has unstaged changes (git add it)` etc. (seen by disabling the branch rule in test `a_branch_farm_with_uncommitted_yaks_warns_once_and_does_not_fail`; it fails there, passes with the rule).
 
----
-▸ 2026-10-21T20:38:49Z [status-1]
+#### 2026-10-21T20:38:49Z
+
+*status-1*
 
 Decision: preflight's branch-farm line is a new `Report.warnings` (text `preflight: warning: ...`, JSON `warnings`), not `skipped` and not a failure.
 - Rejected: reusing `skipped` (it means "check could not apply", and the check did run); failing (the spec says it must not fail, and `ok` stays true).
@@ -82,13 +87,15 @@ Decision: text wording when behind>0 says `yaks sync` reconciles (ahead only: pu
 
 Decision: the sync line is the LAST line of `yaks status` (after the commit hint), and is absent for in-tree and private farms. `--check` unchanged.
 
----
-▸ 2026-10-21T20:46:45Z [status-1]
+#### 2026-10-21T20:46:45Z
+
+*status-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-21T20:46:53Z [status-1]
+#### 2026-10-21T20:46:53Z
+
+*status-1*
 
 Done (status-1).
 - `status::SyncState` + `status::sync_state(root)` (None unless `store::farm_branch(root)`; no fetch; no upstream -> `upstream: None`); `Report.sync`; one extra last line in `yaks status` and JSON `sync`.
@@ -97,12 +104,14 @@ Done (status-1).
 - Docs: docs/cli.md rows, README rows, yaks skill rows, clap help for status/preflight.
 - Gate `cargo test --release`: all suites ok (754 passed lib + integration suites); `yaks verify`: PASS.
 
----
-▸ 2026-10-21T20:46:54Z [status-1]
+#### 2026-10-21T20:46:54Z
+
+*status-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-21T20:52:02Z [delta:herd-dirs]
+#### 2026-10-21T20:52:02Z
+
+*delta:herd-dirs*
 
 Landed (delta:herd-dirs): 8f77dde. Review: re-ran full cargo test --release with driver-1's work merged (767 unit, every suite ok); real `yaks status` on this machine's farm shows 'farm branch yaks: N ahead, 0 behind origin/yaks'. Accepted the warnings field and the publishes/reconciles wording.

@@ -32,13 +32,15 @@ Drop git/Delta discovery from sheds; build them from note attribution. Keep the 
 - `yaks-f1e6` (sheds view like list/tree) and `yaks-19c3` (activity log view) fit the note-based model directly.
 - `yaks-2610` decided against storing hashes because it was circular with the farm on `main`; that premise is gone.
 
----
-▸ 2026-10-31T16:08:35Z [yakherd]
+#### 2026-10-31T16:08:35Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:19:03Z [yakherd]
+#### 2026-10-31T16:19:03Z
+
+*yakherd*
 
 Fan-out 2026-10-31 (yakherd: the "Cloud Runners" Delta thread). Base `7f78a28` (the prep commit: fence-aware note boundaries plus the note metadata core; `yaks-4cd7` shorn).
 
@@ -50,8 +52,9 @@ Fan-out 2026-10-31 (yakherd: the "Cloud Runners" Delta thread). Base `7f78a28` (
 
 The yakherd keeps the skills (`yaks-0071`, then `yaks-4c2a` after the metadata surface), landing, and review. Wave 2 after these land: `yaks-a3fc` (commits so far from pushed branches) and `yaks-d695` (PR field).
 
----
-▸ 2026-10-31T16:55:04Z [yakherd]
+#### 2026-10-31T16:55:04Z
+
+*yakherd*
 
 Wave 1 landed on the yakherd's `main`:
 
@@ -78,8 +81,9 @@ Trial observations for `yaks-7d57` (wave 1, all local, same machine):
 - Sync was not in play (same machine; the yakherd syncs).
 - The yakherd itself wrote its first notes as `delta:Cloud Runners` before setting `YAKS_ACTOR`, which is the split the rule exists for.
 
----
-▸ 2026-10-31T17:24:35Z [yakherd]
+#### 2026-10-31T17:24:35Z
+
+*yakherd*
 
 ## Status 2026-10-31: everything built, rebased onto the human's `main`, not yet pushed there
 

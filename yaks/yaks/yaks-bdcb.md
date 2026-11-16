@@ -15,8 +15,9 @@ verify: cargo test --workspace
 
 Hearth has wiki_search and source_search; yaks search only matches yak id/title/description. Add one search over page bodies and frontmatter, sources' extracted.md and source.md, and yak bodies (notes included), returning path plus matching line, with --scope (wiki/, sources/, a herd) and --json. Plain substring/regex scan of the files first (farms are small, see yaks weight); an index only if measured slow, and then a per-user rebuildable cache per AGENTS.md. Found while writing the research skill (yaks-577f).
 
----
-▸ 2026-11-01T23:20:50Z [delta:farm-wiki]
+#### 2026-11-01T23:20:50Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -26,8 +27,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T23:20:51Z [delta:farm-wiki]
+#### 2026-11-01T23:20:51Z
+
+*delta:farm-wiki*
 
 Claim (yakherd delta:farm-wiki): worker `find-1`, on branch `wiki` at 844bf53.
 
@@ -64,13 +66,15 @@ Also reserve `sessions` as a herd name: add it to `store::RESERVED_HERD_NAMES`. 
 
 **Judge.** The coordinator, at landing.
 
----
-▸ 2026-11-01T23:22:38Z [find-1]
+#### 2026-11-01T23:22:38Z
+
+*find-1*
 
 Started 2026-11-01T23:22:38Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks, branch wiki. Yak file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-bdcb.md. Plan: new src/find.rs with a small hand-rolled regex matcher (regex is only a transitive dep in Cargo.lock, not in Cargo.toml, and Cargo.toml edits are forbidden), Find variant next to Search, sessions reserved, docs, tests/find.rs.
 
----
-▸ 2026-11-01T23:39:01Z [find-1]
+#### 2026-11-01T23:39:01Z
+
+*find-1*
 
 kind: verify
 result: fail
@@ -78,8 +82,9 @@ result: fail
 
 verify: `cd /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks && cargo test --workspace` -> FAIL (exit 101)
 
----
-▸ 2026-11-01T23:39:36Z [find-1]
+#### 2026-11-01T23:39:36Z
+
+*find-1*
 
 kind: verify
 result: fail
@@ -87,8 +92,9 @@ result: fail
 
 verify: `cd /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks && cargo test --workspace` -> FAIL (exit 101)
 
----
-▸ 2026-11-01T23:40:02Z [find-1]
+#### 2026-11-01T23:40:02Z
+
+*find-1*
 
 kind: verify
 result: pass
@@ -96,8 +102,9 @@ result: pass
 
 verify: `env | grep -E "^(GIT|HOME|XDG|USER)" > /tmp/find1-env.txt; git config user.email >> /tmp/find1-env.txt` -> PASS (exit 0)
 
----
-▸ 2026-11-01T23:44:56Z [find-1]
+#### 2026-11-01T23:44:56Z
+
+*find-1*
 
 kind: verify
 result: pass
@@ -105,8 +112,9 @@ result: pass
 
 verify: `cd /Users/joel/src/yaks/.delta/worktrees/59zfz4ga383n/yaks && GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t cargo test --workspace > /tmp/find1-gate3.txt 2>&1; tail -15 /tmp/find1-gate3.txt; ! grep -qE 'FAILED|^error' /tmp/find1-gate3.txt` -> PASS (exit 0)
 
----
-▸ 2026-11-01T23:45:16Z [find-1]
+#### 2026-11-01T23:45:16Z
+
+*find-1*
 
 Done. `yaks find` implemented (src/find.rs, Find in src/main.rs next to Search, `sessions` added to RESERVED_HERD_NAMES, docs/cli.md `find` section + reserved-name lists, README, `yaks` skill table, `yaks-research` "Find before you write"). Gate: 972 passed, 0 failed (verify recorded PASS).
 
@@ -129,8 +137,9 @@ Decision: empty pattern is refused.
 
 Gate note: in this shell git has no identity for test repos with HOME overridden (tests/init_modes.rs, attribution.rs, ...), so a plain `cargo test --workspace` fails 8-10 tests that fail the same way on the untouched wiki branch (verified by stash). The verify command sets GIT_AUTHOR/COMMITTER name+email to pass.
 
----
-▸ 2026-11-01T23:45:17Z [find-1]
+#### 2026-11-01T23:45:17Z
+
+*find-1*
 
 kind: move
 from: shaving
@@ -140,8 +149,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOAD2d4ZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-01T23:45:48Z [delta:farm-wiki]
+#### 2026-11-01T23:45:48Z
+
+*delta:farm-wiki*
 
 kind: landed
 commit: be9d80b6c77cbf3fd90917ca4d619966aa4523b1
@@ -151,7 +161,8 @@ branch: wiki
 
 landed: be9d80b yaks-bdcb: yaks find, full-text search over yaks, pages, sources and sessions
 
----
-▸ 2026-11-01T23:51:08Z [delta:farm-wiki]
+#### 2026-11-01T23:51:08Z
+
+*delta:farm-wiki*
 
 Landed as be9d80b (yakherd). The gate then showed 8 failures in `tests/attribution.rs`. They predate this yak (they fail at 844bf53 too): `commit::run` had no identity fallback, a gap from yaks-a838, fixed in 75d9ef2. Gate after the fix: 972 passed, run without the GIT_* overrides find-1 put in `verify:`. Reset the yak's verify to plain `cargo test --workspace`.

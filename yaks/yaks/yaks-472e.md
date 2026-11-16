@@ -34,8 +34,9 @@ Joel (2026-10-21): with the farm always on its own branch and worktree, `yaks co
 
 Evidence when built: two clones of a scratch repo with a farm branch; edits on both (different yaks, then the same yak); `sync` on each converges with no hand git; a private farm refuses to push.
 
----
-▸ 2026-10-21T20:12:06Z [Joel Webber]
+#### 2026-10-21T20:12:06Z
+
+*Joel Webber*
 
 Design discussion:
 1. I dig `sync` with options for the half-sync special cases.
@@ -50,8 +51,9 @@ Design discussion:
 
 On the auto-commit flow (or lack thereof), we need to decide on the tradeoff between "automatic" and "extra state for the user/ui to manage". I was initially inclined towards "automatic", but I see a strong argument for making it explicit, so that the human and agent both have the option of futzing with local changes to yaks, comments, etc, without being forced to publish them unexpectedly. Let's go with that direction, and just accept the extra complexity, unless there's a strong counterargument.
 
----
-▸ 2026-10-21T20:29:39Z [delta:herd-dirs]
+#### 2026-10-21T20:29:39Z
+
+*delta:herd-dirs*
 
 Decision (Joel 2026-10-21 on-yak answers, recorded by delta:herd-dirs):
 
@@ -72,13 +74,15 @@ Plan (baby yaks; 1-3 in parallel on cheaper workers, coordinator reviews and lan
 
 Skills guidance goes into yaks-b048.
 
----
-▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+#### 2026-10-21T20:33:01Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T20:34:01Z [delta:herd-dirs]
+#### 2026-10-21T20:34:01Z
+
+*delta:herd-dirs*
 
 Round 1 spawned (delta:herd-dirs, 2026-10-21), base 1e95cd3 (mergedriver stub prep commit), model anthropic/claude-sonnet-5-5 for all three:
 - `driver-1` -> yaks-4a53 (merge driver), thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACZFrpIBxBCA0aLJyrhJPreUvVwLftHG
@@ -87,17 +91,20 @@ Round 1 spawned (delta:herd-dirs, 2026-10-21), base 1e95cd3 (mergedriver stub pr
 
 Next, after landing: yaks-e3b2 (sync; needs 4a53 + 85bb's is_private), then yaks-ce5d (TUI; needs bd1d + e3b2).
 
----
-▸ 2026-10-21T21:11:47Z [delta:herd-dirs]
+#### 2026-10-21T21:11:47Z
+
+*delta:herd-dirs*
 
 Round 2 (delta:herd-dirs): landed 0e1775b (private, 85bb), cabc284 + 3bc2282 (sync, e3b2, built by the yakherd). Spawned `tui-sync-1` -> yaks-ce5d, anthropic/claude-sonnet-5-5, base 3bc2282, thread ksQQfIIp_WA2ToGZ4UwiEcPWKpLOACad2ZIBxBCA0aLJyrhJPreUvVwLftHG.
 
----
-▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
+#### 2026-10-21T21:44:08Z
+
+*delta:herd-dirs*
 
 All children landed (delta:herd-dirs): 8f77dde status, 0b114a4 driver, 0e1775b private, cabc284+3bc2282 sync, 47120db TUI chip + W/U. Skills guidance on when to sync stays with yaks-b048. Not pushed anywhere; publishing the farm (`yaks sync`) and pushing main are Joel's call.
 
----
-▸ 2026-10-21T21:44:08Z [delta:herd-dirs]
+#### 2026-10-21T21:44:08Z
+
+*delta:herd-dirs*
 
 moved: shaving -> shorn

@@ -14,18 +14,15 @@ The "peek" affordance in doks can be really useful, but:
 1. It can't be shown/hidden when needed.
 2. We don't get it for yaks, just doks.
 
----
-▸ 2026-11-07T17:04:42Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:42Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:05:34Z [herd-stars]
+#### 2026-11-07T17:05:34Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-peek`.
 
@@ -43,16 +40,18 @@ Claim (yakherd herd-stars): worker `stars-peek`.
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-07T17:07:28Z [stars-peek]
+#### 2026-11-07T17:07:28Z
+
+*stars-peek*
 
 Start: 2026-11-07T17:07Z (`date -u`).
 
 - `yaks path yaks-a004`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-a004.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/brgsw94dabng/yaks
 
----
-▸ 2026-11-07T17:09:41Z [stars-peek]
+#### 2026-11-07T17:09:41Z
+
+*stars-peek*
 
 Finding: `p` already works in the viewer from both entry points; I could not reproduce "can't hide".
 
@@ -64,16 +63,15 @@ Finding: `p` already works in the viewer from both entry points; I could not rep
 
 ![tui-yak-peek](yaks-a004/tui-yak-peek.svg "Color SVG frame of the same scene (docshot tui-yak-peek)")
 
----
-▸ 2026-11-07T17:25:20Z [stars-peek]
-kind: verify
-result: pass
----
+#### 2026-11-07T17:25:20Z
+
+*stars-peek · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T17:25:48Z [stars-peek]
+#### 2026-11-07T17:25:48Z
+
+*stars-peek*
 
 Decision: the detail pane reserves the peek rows only while it is focused (`App::detail_has_peek`: shown, focus Detail, no dok open, a farm, no block editor, a peekable link anywhere in the yak). Rejected: reserving them whenever the pane is drawn beside the list (7 rows lost, and a blank rule, for every yak with a link while the cursor is on the list) and showing the peek only when the cursor is on a link (the page would jump as the cursor moves; the viewer reserves for the same reason).
 
@@ -95,20 +93,14 @@ Summary: the yak detail pane now shows the viewer's peek pane (one `render_peek`
 
 Evidence not gathered: I did not run the new yak-pane tests against the unchanged tree (they cannot compile-pass without the new code: `p` was unbound in Detail and the status bar carried the peek); the viewer tests passed before and after, as found above.
 
----
-▸ 2026-11-07T17:25:49Z [stars-peek]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp9bZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:25:49Z
+
+*stars-peek · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEp9bZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T17:43:43Z [herd-stars]
-kind: landed
-commit: e08cfa4f62b3f01007a7cb8a761db06c75926243
----
+#### 2026-11-07T17:43:43Z
+
+*herd-stars · kind: landed · commit: e08cfa4f62b3f01007a7cb8a761db06c75926243*
 
 Landed by herd-stars as `e08cfa4f` (worker `9c9b9362`), by cherry-pick: `run_cmd`'s no-op arm in `keymap.rs` conflicted with yaks-e5f9's image commands; merged. Gate `cargo test --workspace` green.

@@ -12,13 +12,15 @@ tags:
 
 We just get a one-line editor right now, which makes it difficult to answer more complex questions, and edit as you go. It's going to become a comment anyway, so might as well use the same comment affordance as usual.
 
----
-▸ 2026-10-26T20:55:58Z [delta-lead]
+#### 2026-10-26T20:55:58Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-26T20:55:58Z [delta-lead]
+#### 2026-10-26T20:55:58Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd). Owner: `answer-editor-1` (Delta subthread).
 
@@ -28,8 +30,9 @@ Scope: `open_ask`, `open_answer`, `needs_edit`, the `EditAction::Ask`/`Answer` c
 
 Evidence: a TUI test that fails before (a multi-line answer round-trips into the note with needs: agent), insta snapshot of the open answer editor, headless frame attached. Gate: `cargo test`. Judge: delta-lead at landing.
 
----
-▸ 2026-10-26T20:56:27Z [answer-editor-1]
+#### 2026-10-26T20:56:27Z
+
+*answer-editor-1*
 
 Started 2026-10-26T20:56:23Z (`date -u`: Mon Oct 26 20:56:23 UTC 2026).
 
@@ -40,33 +43,39 @@ Started 2026-10-26T20:56:23Z (`date -u`: Mon Oct 26 20:56:23 UTC 2026).
 
 [answer-editor-after-save](yaks-ce5e/answer-editor-after-save.txt)
 
----
-▸ 2026-10-26T21:02:50Z [answer-editor-1]
+#### 2026-10-26T21:02:50Z
+
+*answer-editor-1*
 
 Decision: ask and answer open `M`'s new-comment editor through a new `App::open_needs_edit(answer)` in `src/tui/blockedit.rs`, sharing a factored-out `open_slot_editor` with `open_block_edit`; the `EditAction::Ask`/`Answer` carried by the editor routes Ctrl-S to `needs_edit`. Rejected: a separate full-screen multi-line `Overlay::Edit` (a second editor UI, not "the same comment affordance"); a flag on `BlockEdit` (the action already says where the save goes).
 
----
-▸ 2026-10-26T21:02:50Z [answer-editor-1]
+#### 2026-10-26T21:02:50Z
+
+*answer-editor-1*
 
 Decision: the verb lives in the provisional header label (`▸ Answer <id> · <actor> · now`) and in the right-hand hints (`Ctrl-S answer (needs: agent) · Ctrl-C cancel`, shortening to `Ctrl-S answer`), plus the bottom status line (`Ctrl-S answer: needs agent · …`). Rejected: keeping the old one-line prompt text (`— hands it to an agent (Enter save …)`), since Enter is now a newline and the header has limited width.
 
----
-▸ 2026-10-26T21:02:50Z [answer-editor-1]
+#### 2026-10-26T21:02:50Z
+
+*answer-editor-1*
 
 Decision: empty/cancel behaviour kept as today: Ctrl-S on an empty editor still asks/answers with no note (as Enter on an empty one-line prompt did, unlike `M` which refuses an empty comment); cancel of an empty editor closes with no confirm; cancel with text now asks "discard?" first, like every multi-line editor. Rejected: making an empty save a no-op (would change the existing "answer without comment" path).
 
----
-▸ 2026-10-26T21:02:50Z [answer-editor-1]
+#### 2026-10-26T21:02:50Z
+
+*answer-editor-1*
 
 Decision: removed the old live tests `ask_raises_needs_and_records_the_question` / `answer_hands_the_yak_to_an_agent_and_records_the_reply` (they committed with Enter, now a newline) and replaced the yaks-027a label-separator test with `ask_and_answer_editors_name_the_verb_and_the_save`; the new multi-line live tests cover the same outcomes. After a save the line cursor goes to the new note, as after `M`. Rejected: keeping Enter-as-save tests by adding a special Enter binding (would break multi-line typing).
 
----
-▸ 2026-10-26T21:03:55Z [answer-editor-1]
+#### 2026-10-26T21:03:55Z
+
+*answer-editor-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-26T21:04:04Z [answer-editor-1]
+#### 2026-10-26T21:04:04Z
+
+*answer-editor-1*
 
 Summary: `a` (ask / answer) now opens `M`'s multi-line in-place comment editor instead of the one-line prompt.
 
@@ -77,17 +86,20 @@ Summary: `a` (ask / answer) now opens `M`'s multi-line in-place comment editor i
 - Docs: `docs/tui.md` key table row for `a` + a paragraph under "Editing in place". `help_content` ("Ask / answer (answer: needs agent)") is still accurate, left unchanged.
 - Gate: `yaks verify yaks-ce5e` PASS.
 
----
-▸ 2026-10-26T21:04:05Z [answer-editor-1]
+#### 2026-10-26T21:04:05Z
+
+*answer-editor-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-26T21:06:03Z [delta-lead]
+#### 2026-10-26T21:06:03Z
+
+*delta-lead*
 
 Landed as 595697b (delta-lead, yakherd), via yaks land of worker commit 5d6a85e. Full gate re-run: 822 passed, 0 failed. Reproduced with my own debug build on a throwaway farm: a then two typed lines then Ctrl-S sets needs: agent, and the note holds both lines.
 
----
-▸ 2026-10-26T21:08:02Z [delta-lead]
+#### 2026-10-26T21:08:02Z
+
+*delta-lead*
 
 Rebased onto your main (c4b0b9f, 5 new commits) and pushed to your checkout as 4f94dad. In docs/tui.md I kept the new a row and took upstream's svg A/O row. Gate after the rebase: 849 passed, 0 failed.

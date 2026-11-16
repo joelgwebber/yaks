@@ -12,8 +12,9 @@ tags:
 - infra
 ---
 
----
-▸ 2026-10-01T17:14:54Z [Joel Webber]
+#### 2026-10-01T17:14:54Z
+
+*Joel Webber*
 
 Moved all three repos out of rocketsurgery-games:
 - joelgwebber/toque: new repo, pushed main (11 tags) + repointed Cargo.toml/README org refs, origin repointed.

@@ -13,7 +13,8 @@ tags:
 
 Solo/local = ops in local refs/yaks/*, never pushed; nothing to gitignore since refs are not working-tree. Team = git-bug native workflow: push/pull the yak refs; concurrent edits auto-merge (op-log CRDT) on fetch, then rebuild cache. Worktrees share one .git, so refs/yaks/* is shared across all worktrees automatically: a live shared herd for free, and isolation-compatible (ref writes to shared .git are allowed even under Claude Code worktree isolation). FRICTION: custom refs need explicit refspec config (remote.origin.fetch/push); git clone/push ignore them by default; teammates must opt in. git-bug also has a Bridge workflow (two-way GitHub/Jira sync), a richer version of our one-way rollup projection.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

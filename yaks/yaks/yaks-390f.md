@@ -12,7 +12,7 @@ tags:
 - cli
 ---
 
-Split out of [yaks-acc0](yaks-acc0) (the schema-9 migration), as Joel allowed on [yaks-6cf2](yaks-6cf2) ("if we do need to handle that parsing case, defer it and leave a comment about unifying the resolution").
+Split out of [yaks-acc0](/yaks/yaks/yaks-acc0.md) (the schema-9 migration), as Joel allowed on [yaks-6cf2](/yaks/yaks/yaks-6cf2.md) ("if we do need to handle that parsing case, defer it and leave a comment about unifying the resolution").
 
 Decision 4 of yaks-1151 was: a pinned `code:path@sha#L12` is stored as the host URL `https://github.com/o/r/blob/<sha>/path#L12`, which yaks parses back into a code link. The first half is cheap (`hosting::Repo::file_url`, landed). The second half does not exist: `links::parse` is pure and does not know the code repo's remote, so a host URL parses as `Link::Url`. If the migration rewrote pinned code links before that exists, then:
 

@@ -17,8 +17,9 @@ verify: cargo test --workspace
 
 Implements the sources half of yaks-aae6. Port of Hearth's local-file and directory snapshots (`internal/sources`), minus fetching and extraction. `yaks promote <id>/<file> --source|--page PATH` moves an attachment and rewrites the yak's link.
 
----
-▸ 2026-11-01T21:19:21Z [delta:farm-wiki]
+#### 2026-11-01T21:19:21Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -28,8 +29,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T21:26:40Z [delta:farm-wiki]
+#### 2026-11-01T21:26:40Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -57,8 +59,9 @@ Done on the `wiki` branch.
 
 `yaks attach` should percent-encode spaces in the link it writes (or wrap the destination in `<...>`), so attachments with spaces render as links.
 
----
-▸ 2026-11-01T21:28:37Z [delta:farm-wiki]
+#### 2026-11-01T21:28:37Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -66,8 +69,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T21:28:37Z [delta:farm-wiki]
+#### 2026-11-01T21:28:37Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

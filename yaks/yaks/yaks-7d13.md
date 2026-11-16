@@ -16,8 +16,9 @@ Part of yaks-1151. Establish, with evidence, which link forms render and navigat
 
 [linkhost-evidence](yaks-7d13/linkhost-evidence.md)
 
----
-▸ 2026-11-11T22:10:12Z [triage-1]
+#### 2026-11-11T22:10:12Z
+
+*triage-1*
 
 ## Findings: how hosts resolve farm links (linkhost-1)
 
@@ -86,12 +87,8 @@ Parsing the remote: handle `git@{host}:{path}.git`, `ssh://[user@]{host}[:port]/
 - Obsidian and VS Code handling of `/` links.
 - Listing limits on hosts other than GitHub.
 
----
-▸ 2026-11-11T22:39:28Z [triage-1]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-11T22:39:28Z
+
+*triage-1 · kind: move · from: hairy · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

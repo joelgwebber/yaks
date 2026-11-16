@@ -18,13 +18,15 @@ Must cover: H1/H2/H3 (three visibly distinct levels that do not read like the pa
 
 Evidence: a docshots scene rendering every style against the default and a light terminal palette; attach the frames. Get Joel's sign-off on the frame before the renderer core consumes it.
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T04:31:30Z [delta-lead]
+#### 2026-10-17T04:31:30Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **palette-1**.
 
@@ -36,8 +38,9 @@ Evidence + judge: Joel decides by looking. Rasterize the SVG to PNG (headless Ch
 
 Do NOT regenerate docs/assets docshots (several workers would collide on the SVGs; the coordinator regenerates them after landing). Re-accept any insta snapshot your change moves (`INSTA_UPDATE=always cargo test`, or `cargo insta accept` if installed) and read every changed .snap diff before committing. `cargo fmt` reformats files nobody touched (src/actor.rs, src/tui/docshots.rs, src/tui/tests.rs): run `cargo fmt -- <your files>` and `git checkout` those three if they changed. Docs/help parity per AGENTS.md (docs/tui.md, help_content in src/tui/render.rs) where behaviour a user sees changes.
 
----
-▸ 2026-10-17T04:33:10Z [palette-1]
+#### 2026-10-17T04:33:10Z
+
+*palette-1*
 
 Start Sat Oct 17 04:33:10 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktrees/g01yg13e0zfq/yaks/.yaks/yaks-bc53.md
 
@@ -45,8 +48,9 @@ Start Sat Oct 17 04:33:10 AM UTC 2026; path: /home/joel/src/yaks/.delta/worktree
 
 ![tui-md-palette](yaks-bc53/tui-md-palette.png)
 
----
-▸ 2026-10-17T04:41:57Z [palette-1]
+#### 2026-10-17T04:41:57Z
+
+*palette-1*
 
 Decision: no code-block background. Alternatives rejected: Indexed(236/237) grey (subtle on dark, a black slab on light terminals), Rgb tint (same, and pins a hue). Code is set apart by green fg + the dim fence line instead; the constraint (16-colour, dark+light safe) wins over the "optional subtle bg" in the description.
 
@@ -62,20 +66,23 @@ Decision: bullets use cyan non-bold (was cyan bold) so they don't read like pane
 
 Decision: light-terminal panel in the swatch is simulated by re-colouring buffer cells with VS Code Light+ ANSI values (toque's SVG renderer is dark-only), so both panels come from the same palette calls in one SVG.
 
----
-▸ 2026-10-17T04:41:57Z [palette-1]
+#### 2026-10-17T04:41:57Z
+
+*palette-1*
 
 Summary: new src/tui/palette.rs (single style table; unit tests: distinct heading levels != pane_label, distinct alert colours, only 16 ANSI colours + no bg, bullet cycle); src/tui/markdown.rs reads every style from it (heading levels, dim `#`/`>` markers); new docshots scene `docshots_md_palette` -> docs/assets/tui-md-palette.svg (only this SVG generated; the diff in docshots.rs is pure additions); docs/tui.md gains a "Markdown styles" paragraph + embed. No `?` help / CLI change (no key or flag changed). Attached: SVG + PNG (rasterized with `firefox --headless --screenshot`, since no Chrome on this box; emoji-free swatch so Firefox is fine).
 
 Gate: `cargo test --workspace` and `cargo test --release` both pass (605 unit + all integration tests).
 
----
-▸ 2026-10-17T04:42:02Z [palette-1]
+#### 2026-10-17T04:42:02Z
+
+*palette-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T04:42:09Z [palette-1]
+#### 2026-10-17T04:42:09Z
+
+*palette-1*
 
 asked: needs human
 
@@ -90,24 +97,28 @@ What I'd like your eye on:
 
 Reply = approve, or tell me which styles to change.
 
----
-▸ 2026-10-17T16:29:41Z [Joel Webber]
+#### 2026-10-17T16:29:41Z
+
+*Joel Webber*
 
 I dig it!
 
----
-▸ 2026-10-17T17:01:32Z [delta-lead]
+#### 2026-10-17T17:01:32Z
+
+*delta-lead*
 
 picked up
 
 Joel signed off ('I dig it!'). Shearing: palette.rs is the one style table, used by mdrender, the editor highlighter and syntax colours.
 
----
-▸ 2026-10-17T17:01:43Z [delta-lead]
+#### 2026-10-17T17:01:43Z
+
+*delta-lead*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T17:01:43Z [delta-lead]
+#### 2026-10-17T17:01:43Z
+
+*delta-lead*
 
 moved: shaving -> shorn

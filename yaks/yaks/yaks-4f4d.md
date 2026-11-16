@@ -27,8 +27,9 @@ Decide and do:
 
 Lives in toque with the rasterizer (see the toque yak under yaks-4e9c); yaks only consumes it.
 
----
-▸ 2026-11-04T01:14:32Z [indent-links]
+#### 2026-11-04T01:14:32Z
+
+*indent-links*
 
 Findings from rasterizing a real docshot with the embedded fonts (`docs/assets/tui-image-caption.svg`, landed with yaks-0370), next to the same SVG in headless Chrome:
 
@@ -43,18 +44,15 @@ Why it matters beyond looks: yaks-8fd1 (a `yaks render` command) depends on this
 
 Not started; lives in toque with the rasterizer.
 
----
-▸ 2026-11-08T00:49:16Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T00:49:16Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-08T00:52:10Z [herd-stars]
+#### 2026-11-08T00:52:10Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-fonts`, in the toque repo (attached by Joel 2026-11-08), with the `--scale` addition yaks-8fd1 needs.
 
@@ -72,8 +70,9 @@ Claim (yakherd herd-stars): worker `stars-fonts`, in the toque repo (attached by
 
 **Judge.** herd-stars at landing, which pushes toque `main` (Joel authorized landing, 2026-11-08) before yaks-8fd1 bumps the dependency.
 
----
-▸ 2026-11-08T00:53:00Z [stars-fonts]
+#### 2026-11-08T00:53:00Z
+
+*stars-fonts*
 
 Started: 2026-11-08T00:52:52Z (date -u)
 
@@ -82,8 +81,9 @@ Started: 2026-11-08T00:52:52Z (date -u)
 - toque HEAD: 240eb5f9fdc275d74504a7f6323ce04c2be2e581
 - note: yaks commands only find the farm from the yaks worktree (toque has none).
 
----
-▸ 2026-11-08T01:07:28Z [stars-fonts]
+#### 2026-11-08T01:07:28Z
+
+*stars-fonts*
 
 Progress (about 1h in): fonts, script, API and tests are working in the toque worktree (uncommitted); measuring binary deltas and writing docs next.
 
@@ -104,8 +104,9 @@ Findings so far:
 
 ![showcase-after](yaks-4f4d/showcase-after.png "AFTER (3x via svg_to_png_scaled): box corners/borders, bold-italic, braille, arrows, accents, emoji; Powerline and CJK draw as boxes, not blank")
 
----
-▸ 2026-11-08T01:18:32Z [stars-fonts]
+#### 2026-11-08T01:18:32Z
+
+*stars-fonts*
 
 Summary (toque commits f2100c5 fonts+script, 4fdb374 API+tests+README; parent 240eb5f; not pushed):
 
@@ -139,22 +140,20 @@ Builds: `cargo build --release` in the yaks worktree with a temporary `[patch]` 
 - Oblique box/symbol glyphs are the upright ones (a terminal draws them upright too).
 - DejaVu 2.34 comes from SourceForge: if that URL rots, set `TOQUE_DEJAVU_DIR`.
 
----
-▸ 2026-11-08T01:18:33Z [stars-fonts]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy6vZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-08T01:18:33Z
+
+*stars-fonts · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEy6vZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-08T01:18:38Z [stars-fonts]
+#### 2026-11-08T01:18:38Z
+
+*stars-fonts*
 
 Correction to the summary's first "Known limits" bullet (garbled): the box-drawing borders are continuous with DejaVu 2.34 at 14px font / 18px row (verified in the attached showcase). The real gaps are: no Greek/Cyrillic/Latin Extended-B (DejaVu has them; cost not measured), no combining marks, and no flags/skin tones/ZWJ (they draw as their parts).
 
----
-▸ 2026-11-08T01:19:39Z [herd-stars]
+#### 2026-11-08T01:19:39Z
+
+*herd-stars*
 
 herd-stars: landed in toque as `f2100c5` + `4fdb374`, pushed to toque's `origin/main` (Joel authorized landing, 2026-11-08). Gate in toque: `cargo test --all-features` 21 passed, `cargo test` 13 passed. Looked at the showcase PNG: box corners, italic and bold italic, braille, Latin accents and emoji draw; Powerline and CJK draw as visible boxes. yaks picks it up with yaks-8fd1's `cargo update -p toque`.

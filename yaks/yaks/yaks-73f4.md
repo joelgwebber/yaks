@@ -21,8 +21,9 @@ Design questions:
 - Provenance: `yaks commits <id>` joins on ids in code commits only; the farm's history is on its own branch.
 - Relation to private mode (untracked) and to the nested-repo pattern, which quiet mode largely supersedes.
 
----
-▸ 2026-10-18T19:35:20Z [delta-farm]
+#### 2026-10-18T19:35:20Z
+
+*delta-farm*
 
 Rescoped (Joel + delta-farm, 2026-10-18): "quiet mode" becomes THE model, subsuming public mode and (nearly) private. The farm is an ORPHAN branch (`yaks`, or `yaks/<team>` for isolated farms in a monorepo) holding only `.yaks/`, checked out as its own worktree (one live farm per machine, as in yaks-6a34). Nothing about yaks is ever committed to `main`. Shared = pushed to origin; personal = pushed elsewhere (`branch.yaks.pushRemote`); local/private = never pushed, guarded by a pre-push hook. Joel: every farm lives in SOME repo, even a never-pushed `git init`, so every operation has one shape.
 
@@ -40,8 +41,9 @@ Breaks today already (found while checking): source links `[x](../src/foo.rs)` r
 
 Plan: design note + migration for this repo (move `.yaks/` history onto an orphan branch, drop `.yaks/` from main in one commit), retiring the main-tracking parts of yaks-2355 (`sync_live`, `--land`) since an orphan farm never shares history with main. One migration covering yaks-b32e's layout decision too, if any.
 
----
-▸ 2026-10-18T20:02:13Z [delta-farm]
+#### 2026-10-18T20:02:13Z
+
+*delta-farm*
 
 Design for the build (delta-farm, before code):
 
@@ -55,17 +57,20 @@ Design for the build (delta-farm, before code):
 
 **Deferred to children/siblings**: `yaks init --mode branch` + XDG default path (yaks-b1e9, yaks-0ef9), `yaks sync` + merge driver (yaks-4a53), the private pre-push hook, named farms per team via a pointer `branch:` key, and yaks-b32e's layout (decided before migrating if it changes paths).
 
----
-▸ 2026-10-18T21:15:00Z [delta-farm]
+#### 2026-10-18T21:15:00Z
+
+*delta-farm*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+#### 2026-10-22T00:59:55Z
+
+*delta:herd-dirs*
 
 All children shorn (discovery, bootstrap, migration, stale-copy redirect, large-farm docs). Shearing with the umbrella yaks-6a34.
 
----
-▸ 2026-10-22T00:59:55Z [delta:herd-dirs]
+#### 2026-10-22T00:59:55Z
+
+*delta:herd-dirs*
 
 moved: shaving -> shorn

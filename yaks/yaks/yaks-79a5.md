@@ -25,12 +25,14 @@ Ideas, roughly cheapest first:
 
 Lean: 3 and 4 first (no history rewriting), 6 stays the practice, 5 is the answer only if the noise stays a problem after those; 1 and 2 are the clever ones and the ones that can bite.
 
----
-▸ 2026-10-19T04:26:22Z [delta:herd-pass]
+#### 2026-10-19T04:26:22Z
+
+*delta:herd-pass*
 
 Done by yaks-73f4 (option 5 here): yak commits now live only on the orphan farm branch, so code history and PRs carry none. Slaughtered in the 2026-10-19 herd pass.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

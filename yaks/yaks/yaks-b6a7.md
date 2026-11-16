@@ -13,18 +13,15 @@ tags:
 
 A note link (`yaks-1a2b#<timestamp>`, yaks-c5bd) opens its yak in the TUI but leaves the cursor at the top. It should land on the note, as a `#heading` link lands on its heading in the text viewer. Found while building yaks-c5bd.
 
----
-▸ 2026-11-06T23:12:43Z [herd-upkeep-2]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T23:12:43Z
+
+*herd-upkeep-2 · kind: move · from: hairy · to: shaving · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEX_fZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T23:13:40Z [herd-upkeep-2]
+#### 2026-11-06T23:13:40Z
+
+*herd-upkeep-2*
 
 Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tui-1`.
 
@@ -33,26 +30,26 @@ Claim (yakherd herd-upkeep-2, 2026-11-06): worker `tui-1`.
 - **Evidence:** a test driving the TUI (toque/headless) to follow a note link and asserting the selected row is that note, plus a text frame attached to the yak. `docs/tui.md` (links), if it describes what following a yak link does.
 - **Judge:** `cargo test -p yaks` and the attached frame; the yakherd looks at it at landing.
 
----
-▸ 2026-11-06T23:15:10Z [tui-1]
+#### 2026-11-06T23:15:10Z
+
+*tui-1*
 
 Start: Fri Nov  6 23:15 UTC 2026
 
 - farm: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-b6a7.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/371r3jvw781f/yaks
 
----
-▸ 2026-11-06T23:27:21Z [tui-1]
-kind: verify
-result: pass
----
+#### 2026-11-06T23:27:21Z
+
+*tui-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 [b6a7-note-link-frame](yaks-b6a7/b6a7-note-link-frame.txt)
 
----
-▸ 2026-11-06T23:27:36Z [tui-1]
+#### 2026-11-06T23:27:36Z
+
+*tui-1*
 
 Decision: a new `Target::Note { id, anchor }` variant, not an `Option` note on `Target::Task`.
 
@@ -69,8 +66,9 @@ Decision: a missing note opens the yak at the top, notification `→ <id> (no no
 
 - Rejected: refusing to open the yak, since the claim note says to open it.
 
----
-▸ 2026-11-06T23:27:37Z [tui-1]
+#### 2026-11-06T23:27:37Z
+
+*tui-1*
 
 Done: following a note link in the TUI lands the detail cursor on that note.
 
@@ -80,22 +78,14 @@ Done: following a note link in the TUI lands the detail cursor on that note.
 - Evidence: frame attached (`b6a7-note-link-frame.txt`); `yaks verify` PASS (full `cargo test`).
 - No insta snapshot changed.
 
----
-▸ 2026-11-06T23:27:38Z [tui-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjb85IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T23:27:38Z
+
+*tui-1 · kind: move · from: shaving · to: shorn · thread: ksQQKUp3Ux8dTNqgb6cSSWpUMpLOAEjb85IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-06T23:28:26Z [herd-upkeep-2]
-kind: landed
-commit: 6006e665e18eada8f3e71526a8430003c9f78893
-source: fcce895f48fb36292df815df0104bc114f3b79cb
-branch: main
----
+#### 2026-11-06T23:28:26Z
+
+*herd-upkeep-2 · kind: landed · commit: 6006e665e18eada8f3e71526a8430003c9f78893 · source: fcce895f48fb36292df815df0104bc114f3b79cb · branch: main*
 
 landed: 6006e665 yaks-b6a7: following a note link in the TUI lands on its note

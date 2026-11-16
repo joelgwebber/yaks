@@ -21,18 +21,15 @@ Out: running commands, notifications, installing a clock.
 
 Done when: tests incl. dry-run vs real and idempotence (a second tick regrows nothing); `--help`, `docs/cli.md`, README updated; the coordinator runs it by hand against a scratch farm and looks at the report.
 
----
-▸ 2026-11-04T23:00:31Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:00:31Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T23:09:40Z [sched-1]
+#### 2026-11-04T23:09:40Z
+
+*sched-1*
 
 Done on branch `scheduling`, rebased onto `origin/main` (0.0.32, after the doks rename).
 
@@ -45,12 +42,8 @@ Not done, deliberately: `--sync`. The design said it needs a two-machine duplica
 
 Decision: stale claims come from the sheds' own `Stale` liveness (two hours), not a new threshold. Decision: a woken yak due soon appears once, in the inbox section.
 
----
-▸ 2026-11-04T23:09:41Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:09:41Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

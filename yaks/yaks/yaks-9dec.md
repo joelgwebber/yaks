@@ -13,8 +13,9 @@ tags:
 - tui
 ---
 
----
-▸ 2026-11-03T05:08:29Z [herd-tui]
+#### 2026-11-03T05:08:29Z
+
+*herd-tui*
 
 kind: move
 from: hairy
@@ -24,8 +25,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T05:08:29Z [herd-tui]
+#### 2026-11-03T05:08:29Z
+
+*herd-tui*
 
 Claim (yakherd herd-tui): worker `nav-2` (Sonnet 5.5), from main at `a6634e38` (phases 4a and 6a landed).
 
@@ -49,8 +51,9 @@ Claim (yakherd herd-tui): worker `nav-2` (Sonnet 5.5), from main at `a6634e38` (
 
 **Judge.** herd-tui at landing.
 
----
-▸ 2026-11-03T05:13:39Z [nav-2]
+#### 2026-11-03T05:13:39Z
+
+*nav-2*
 
 Started 2026-11-03T05:08:57Z. Farm file: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-9dec.md; top-level /home/user/yaks-8; base a6634e3.
 
@@ -68,8 +71,9 @@ Decision: App::scroll_block(dir) stays as a thin wrapper (builds lines + width f
 
 Evidence grep (`grep -rn "detail_line\|detail_scroll\|detail_anchor\|detail_find\|detail_match\|detail_hscroll" src`): only unrelated names remain: methods open_detail_find, detail_find_jump, detail_find_matches, detail_line_count, detail_line_to, move_detail_line, click_detail_line, settle_detail_scroll; sheds_tab.rs detail_lines fn; test fn names detail_find_*; and the `detail_scroll=` state_header string. AGENTS.md never named the detail_* fields (only the `detail_nav` module); the linenav.rs module doc is updated.
 
----
-▸ 2026-11-03T05:14:12Z [nav-2]
+#### 2026-11-03T05:14:12Z
+
+*nav-2*
 
 kind: verify
 result: pass
@@ -77,8 +81,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T05:14:17Z [nav-2]
+#### 2026-11-03T05:14:17Z
+
+*nav-2*
 
 kind: move
 from: shaving
@@ -88,8 +93,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECAE5IBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T05:14:40Z [herd-tui]
+#### 2026-11-03T05:14:40Z
+
+*herd-tui*
 
 kind: landed
 commit: e9e3c6c2e6c2d390c64bc2c1cf60352b02871a6a
@@ -99,7 +105,8 @@ branch: main
 
 landed: e9e3c6c2 yaks-9dec: the detail pane's state is one LineNav (App.detail)
 
----
-▸ 2026-11-03T05:14:49Z [herd-tui]
+#### 2026-11-03T05:14:49Z
+
+*herd-tui*
 
 Landed by herd-tui as `e9e3c6c2` (worker `1d552b3e`).

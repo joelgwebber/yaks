@@ -9,7 +9,7 @@ description: 'Why and how the weekly reflection round keeps /doks/lessons.md: wh
 
 # Reflecting on sessions
 
-Accepted by Joel (2026-11-06, [yaks-7168](yaks-7168)); the procedure is the `yaks-upkeep` skill's "Reflecting on sessions". Originally a proposal: the weekly reflection Hearth planned (hearth-3285, never built), split between yaks and an agent harness by the rule the family follows. What can be decided from the files is a command; judgement is the `yaks-upkeep` skill; putting text in front of a model is the harness's.
+Accepted by Joel (2026-11-06, [yaks-7168](/yaks/yaks/yaks-7168.md)); the procedure is the `yaks-upkeep` skill's "Reflecting on sessions". Originally a proposal: the weekly reflection Hearth planned (hearth-3285, never built), split between yaks and an agent harness by the rule the family follows. What can be decided from the files is a command; judgement is the `yaks-upkeep` skill; putting text in front of a model is the harness's.
 
 ## What review leaves undone
 
@@ -30,11 +30,11 @@ Reflection is that cross-note pass. It runs on a schedule, over the notes since 
 
 ## Budget and demotion
 
-Added 2026-11-10 ([yaks-2b40](yaks-2b40), from [the agent-memory research](/doks/research/agent-memory-dreaming.md), sections 2, 4, 5 and 9). The lessons dok is read in full at every session start, so it gets a budget (about 50 lines) and an index shape: a `## Rules` list of one-line rules linking to per-subject detail, each lesson with *how we know* and a *seen* date.
+Added 2026-11-10 ([yaks-2b40](/yaks/yaks/yaks-2b40.md), from [the agent-memory research](/doks/research/agent-memory-dreaming.md), sections 2, 4, 5 and 9). The lessons dok is read in full at every session start, so it gets a budget (about 50 lines) and an index shape: a `## Rules` list of one-line rules linking to per-subject detail, each lesson with *how we know* and a *seen* date.
 
 - A lesson leaves three ways: *absorbed* (now in a skill or `AGENTS.md`, or a yak fixed it), *wrong*, or *faded* (not seen for three rounds).
 - A lesson already in context that still recurs gets a yak for a mechanism, not more text; the next round checks each such fix and says `recurred` or `gone`.
-- The first round ran by hand on 2026-11-10 ([yaks-20ff](yaks-20ff)).
+- The first round ran by hand on 2026-11-10 ([yaks-20ff](/yaks/yaks/yaks-20ff.md)).
 
 ## Closing the loop
 

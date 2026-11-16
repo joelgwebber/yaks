@@ -31,8 +31,9 @@ The tool half of yaks-dedc (diagnosis in its notes). In `src/sources.rs` (`add`,
 - Run my own binary on the real scenario: the Confluence HTML plus a converted `.md`, saved once with `--url --title --text`; show the resulting `source.md` and listing.
 - `cargo test`, `cargo fmt -- <my files>`, `cargo clippy` clean.
 
----
-▸ 2026-11-04T17:23:26Z [source-fix]
+#### 2026-11-04T17:23:26Z
+
+*source-fix*
 
 kind: move
 from: hairy
@@ -42,8 +43,9 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T17:29:20Z [source-fix]
+#### 2026-11-04T17:29:20Z
+
+*source-fix*
 
 Done on branch `yaks-dedc-sources` (1720ba8), not merged to `main`.
 
@@ -55,8 +57,9 @@ Evidence: four new unit tests in `src/sources.rs` (text lands, html alone, refus
 
 Not done: `promote` still records `Promoted from the yak attachment <id>/<file>` (a farm path, not a scratch path, so left alone).
 
----
-▸ 2026-11-04T17:29:21Z [source-fix]
+#### 2026-11-04T17:29:21Z
+
+*source-fix*
 
 kind: move
 from: shaving

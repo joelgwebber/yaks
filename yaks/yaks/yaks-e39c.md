@@ -12,13 +12,15 @@ tags:
 - delta
 ---
 
----
-▸ 2026-10-09T20:24:48Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:24:48Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-09T20:24:48Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:24:48Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Claim (coordinator). Owner: chg-1.
 
@@ -32,13 +34,15 @@ Out of scope: `-C`, inbox, any write.
 
 Evidence: tests that FAIL before your change: a worktree shed that creates one yak, moves one, and adds two notes by two actors; `changes <branch>` lists exactly those with the actors; `changes main` from that shed shows the main checkout's own changes since the fork (or "no changes of its own"); an unknown name prints resolve's candidate list and exits 1. Judge: the coordinator, at landing.
 
----
-▸ 2026-10-09T20:26:50Z [chg-1]
+#### 2026-10-09T20:26:50Z
+
+*chg-1*
 
 Start Fri Oct  9 20:26:50 UTC 2026; path: /Users/joel/src/yaks/.delta/worktrees/99yx2fj5eh45/yaks/.yaks/shaving/yaks-e39c.md
 
----
-▸ 2026-10-09T20:34:58Z [chg-1]
+#### 2026-10-09T20:34:58Z
+
+*chg-1*
 
 Implemented `yaks changes SHED` (+ `--json`).
 - src/sheds.rs: `YakChange`, pure `yak_changes(base, theirs)` (same four rules as `compare_farms`, but carries the note entries via `store::parse_notes`), `Changes`, `changes(shed, cwd, farm_root)`, `render_changes`, `changes_json`; `vs_marker` now delegates to a shared `base_marker` (output unchanged). `compare_farms`, `discover`, `resolve`, `shed_paths` untouched.
@@ -47,8 +51,9 @@ Implemented `yaks changes SHED` (+ `--json`).
 - Fail-without-change check: reverted src/{main,farm,sheds}.rs via `git apply -R`, ran `cargo test --release --test changes`: both tests FAILED; unit tests cannot compile without the change. Restored and re-verified identical.
 - Docs: docs/cli.md, README.md, .agents/skills/yaks/SKILL.md (row, --json list, shed bullet), clap help.
 
----
-▸ 2026-10-09T20:34:58Z [chg-1]
+#### 2026-10-09T20:34:58Z
+
+*chg-1*
 
 Decision: reuse the baseline `inspect` already chose (`Shed.farm_base`) and re-read the base farm with `base_farm`, rather than extend `FarmDelta`/`compare_farms` to carry entries. Rejected: widening `FarmDelta` (would change `Eq`/shape that `sheds` tests and JSON build on; risk to byte-identical `sheds` output).
 
@@ -64,17 +69,20 @@ Decision: note text shown is the first non-empty trimmed line; JSON carries full
 
 Decision: `resolve` error goes to stderr as `error: <resolve's message>`, exit 1, nothing on stdout.
 
----
-▸ 2026-10-09T20:35:44Z [chg-1]
+#### 2026-10-09T20:35:44Z
+
+*chg-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-09T20:36:24Z [chg-1]
+#### 2026-10-09T20:36:24Z
+
+*chg-1*
 
 Summary: yaks changes SHED shipped (sheds.rs/farm.rs/main.rs, tests in sheds.rs + tests/changes.rs, docs). Full 'cargo test --release' green (sheds suite 491 passed, 0 failed); gate recorded PASS. Finished Fri Oct  9 20:36:24 UTC 2026.
 
----
-▸ 2026-10-09T20:36:24Z [chg-1]
+#### 2026-10-09T20:36:24Z
+
+*chg-1*
 
 moved: shaving -> shorn

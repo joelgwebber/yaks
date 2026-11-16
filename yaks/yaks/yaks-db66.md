@@ -34,11 +34,9 @@ If blessed:
 
 A test attaching to a dok and moving it; the skill and `docs/` text.
 
----
-▸ 2026-11-06T21:37:49Z [schism-feedback]
-kind: ask
-needs: human
----
+#### 2026-11-06T21:37:49Z
+
+*schism-feedback · kind: ask · needs: human*
 
 asked: needs human
 
@@ -46,35 +44,29 @@ Images and other files beside a dok or session note: bless the sibling directory
 
 Lean: bless the sibling directory for the farm's own artifacts (screenshots it made, diagrams), and keep sources for outside material.
 
----
-▸ 2026-11-06T21:48:01Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T21:48:01Z
+
+*sched-1 · kind: answer · needs: agent*
 
 Agreed, I think that's a very easy pattern to follow, and also easy to browse on the filesystem.
 
----
-▸ 2026-11-07T17:04:28Z [herd-stars]
-kind: pickup
----
+#### 2026-11-07T17:04:28Z
+
+*herd-stars · kind: pickup*
 
 picked up
 
 herd-stars: blessed sibling directory; a worker builds attach/mv/doctor/weight for it, I write the skill text.
 
----
-▸ 2026-11-07T17:04:44Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:44Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:05:35Z [herd-stars]
+#### 2026-11-07T17:05:35Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-dokattach` builds the commands; herd-stars writes the skill text after landing.
 
@@ -91,16 +83,18 @@ Claim (yakherd herd-stars): worker `stars-dokattach` builds the commands; herd-s
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-07T17:06:47Z [stars-dokattach]
+#### 2026-11-07T17:06:47Z
+
+*stars-dokattach*
 
 Start: 2026-11-07 17:06:44 UTC (`date -u`).
 
 - `yaks path yaks-db66`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-db66.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/vqz90cnfqhr3/yaks
 
----
-▸ 2026-11-07T17:12:15Z [stars-dokattach]
+#### 2026-11-07T17:12:15Z
+
+*stars-dokattach*
 
 What already held (checked, not changed):
 
@@ -111,8 +105,9 @@ What already held (checked, not changed):
 
 Not done: `rename-attachment` for doks (follow-up; it needs the same doc-path dispatch plus rewriting links in the doc and every doc that links it), and `mv` rewriting links held in session notes (`dok_move` scans yaks and doks only, as before).
 
----
-▸ 2026-11-07T17:12:16Z [stars-dokattach]
+#### 2026-11-07T17:12:16Z
+
+*stars-dokattach*
 
 Decision: a document path is told from a yak id by `id.contains('/') || id.ends_with(".md")` in `yaks attach` (yak ids are flat). Rejected: trying the yak id first and falling back (an unknown id would silently be searched as a path), or a new `--dok` flag (the task asks for the first argument to be the path).
 
@@ -126,16 +121,15 @@ Decision: `mv` refuses when the dok's sibling directory also holds doks (`doks/a
 
 Decision: link rewrite in `mv`: a link into the sibling directory stays relative-down in the moved dok (`<new-stem>/file`), and becomes `/<new-dir>/file` from anywhere else (the farm-root form `mv` already uses). Rejected: rewriting the moved dok's own sibling links to the absolute form (that is what `mv` did for other relative links, but it makes a dok with attachments not viewable standalone).
 
----
-▸ 2026-11-07T17:22:08Z [stars-dokattach]
-kind: verify
-result: pass
----
+#### 2026-11-07T17:22:08Z
+
+*stars-dokattach · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T17:22:20Z [stars-dokattach]
+#### 2026-11-07T17:22:20Z
+
+*stars-dokattach*
 
 Scratch-farm run with `./target/debug/yaks` (YAKS_DIR = a temp farm), output as observed:
 
@@ -164,28 +158,21 @@ Tests (failed before the change: "no such task: doks/topics/a.md" and `mv` not r
 
 Summary: `yaks attach` takes a dok or session path (`Farm::attach_doc_many`, sharing `store_attachments` with the yak path); `mv` moves the directory and rewrites links into it; docs/cli.md and clap help for `attach` and `mv` updated. Gate `yaks verify yaks-db66`: PASS.
 
----
-▸ 2026-11-07T17:22:26Z [stars-dokattach]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpwipIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:22:26Z
+
+*stars-dokattach · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpwipIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T17:28:41Z [herd-stars]
-kind: landed
-commit: 4def079b70fe06dc9f5cd67c7f3408080c20bb22
-source: e4c2dd0d4e14a09acbda6fc579f5147eeb645015
-branch: main
----
+#### 2026-11-07T17:28:41Z
+
+*herd-stars · kind: landed · commit: 4def079b70fe06dc9f5cd67c7f3408080c20bb22 · source: e4c2dd0d4e14a09acbda6fc579f5147eeb645015 · branch: main*
 
 landed: 4def079b yaks-db66: attach to doks and session notes via a sibling directory; mv takes it along
 
----
-▸ 2026-11-07T17:38:38Z [herd-stars]
+#### 2026-11-07T17:38:38Z
+
+*herd-stars*
 
 herd-stars: landed `4def079b` (worker `e4c2dd0d`, clean squash) and the skill text as `88c36ed6`: the `yaks` skill's "Links" and attach lines and `yaks-research`'s image rule (the farm's own pictures are the dok's attachments; outside material is a source).
 

@@ -14,8 +14,9 @@ tags:
 
 Old ones can get pretty noisy after you've been working for a while.
 
----
-▸ 2026-11-03T21:24:33Z [delta:starred-batch]
+#### 2026-11-03T21:24:33Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -27,8 +28,9 @@ moved: hairy -> shaving
 
 [sheds-after](yaks-58f0/sheds-after.txt)
 
----
-▸ 2026-11-03T21:40:26Z [delta:starred-batch]
+#### 2026-11-03T21:40:26Z
+
+*delta:starred-batch*
 
 Done in d3aa34a: a quiet shed (idle, no claim, no open ask: `Shed::quiet`, the same rule that dims it) starts collapsed to its `▶ N`. `Space` opens it and that is remembered.
 
@@ -37,8 +39,9 @@ Done in d3aa34a: a quiet shed (idle, no claim, no open ask: `Shed::quiet`, the s
 
 Evidence: test `idle_sheds_start_collapsed_and_space_opens_them`, updated list snapshot, and a headless frame of this farm's Sheds tab (attached): the eleven idle sheds are one line each.
 
----
-▸ 2026-11-03T21:40:28Z [delta:starred-batch]
+#### 2026-11-03T21:40:28Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

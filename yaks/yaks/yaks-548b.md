@@ -16,8 +16,9 @@ tags:
 
 Make needs actionable in the TUI: (1) a list-row badge/indicator for needs-blocked yaks (parallels the CLI row marker); (2) a filter/saved-view for the inbox (yaks awaiting a human); (3) keybindings to ask (block + prompt for a question) and answer (clear + prompt for a reply) from the detail/list, reusing the CLI verbs. Builds on detail rendering (yaks-4e8a) and the comment-actor work (yaks-1edb).
 
----
-▸ 2026-09-03T20:10:42Z [wt-tui]
+#### 2026-09-03T20:10:42Z
+
+*wt-tui*
 
 Done — all three parts landed in src/tui.rs.
 

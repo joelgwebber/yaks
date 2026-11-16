@@ -16,8 +16,9 @@ tags:
 
 Feels like there might be an intentional delay for some reason?
 
----
-▸ 2026-11-03T21:40:35Z [delta:starred-batch]
+#### 2026-11-03T21:40:35Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -27,8 +28,9 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T21:42:04Z [delta:starred-batch]
+#### 2026-11-03T21:42:04Z
+
+*delta:starred-batch*
 
 Investigated (delta:starred-batch), not fixed.
 
@@ -37,8 +39,9 @@ Investigated (delta:starred-batch), not fixed.
 
 So headless shows no difference; whatever Joel sees may be terminal-side.
 
----
-▸ 2026-11-03T21:42:05Z [delta:starred-batch]
+#### 2026-11-03T21:42:05Z
+
+*delta:starred-batch*
 
 kind: ask
 needs: human
@@ -51,8 +54,9 @@ I can't reproduce a `:wq`-only pause: headlessly both `:wq` and Ctrl-S take ~0.5
 1. In your terminal, does Ctrl-S really feel instant on the *same* kind of edit (a comment or description, not a single-line field)? If both pause, I'd fold this into yaks-7058 (make the commit cheaper, or run it after the frame is drawn).
 2. If only `:wq` pauses: which terminal, and is it inside tmux/zellij? An escape-time delay on the `Esc` you press before `:` is my next suspect.
 
----
-▸ 2026-11-03T21:53:17Z [Joel Webber]
+#### 2026-11-03T21:53:17Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -62,8 +66,9 @@ You're right -- it's actually both; I just didn't notice. Sometimes it seems ins
 
 Are we doing more work on write than just editing the yak file? Might this just be some UI refresh cost that's more expensive than expected?
 
----
-▸ 2026-11-03T22:09:33Z [delta:starred-batch]
+#### 2026-11-03T22:09:33Z
+
+*delta:starred-batch*
 
 kind: pickup
 ---
@@ -72,8 +77,9 @@ picked up
 
 Measuring write cost: commit vs reload.
 
----
-▸ 2026-11-03T22:10:03Z [delta:starred-batch]
+#### 2026-11-03T22:10:03Z
+
+*delta:starred-batch*
 
 Measured (release build, clone of this farm, `yaks update --note` from the CLI, three runs each):
 
@@ -85,8 +91,9 @@ So the yak write and the TUI's refresh are cheap; ~450 ms of every *changing* wr
 
 Decision: fold this into yaks-7058 (now a dependency) rather than fix it twice. Two parts there would remove the pause: cache discovery for the process and build the commit from one `status` (yaks-7058's plan), and in the TUI, run the commit after the frame that shows the saved text is drawn, so even a slow git never blocks the redraw.
 
----
-▸ 2026-11-03T22:10:05Z [delta:starred-batch]
+#### 2026-11-03T22:10:05Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving
@@ -96,18 +103,15 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> hairy
 
----
-▸ 2026-11-04T21:28:12Z [perf-907a]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T21:28:12Z
+
+*perf-907a · kind: move · from: hairy · to: shaving · thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T21:35:34Z [perf-907a]
+#### 2026-11-04T21:35:34Z
+
+*perf-907a*
 
 Where the ~0.5-0.9 s of a changing save goes. Release build, a clone of this farm (880 yaks), driven in a real pty (`yaks tui`, `:wq` then Enter, time to first output), plus a `git` shim logging every spawn with timestamps. No-op saves skip all of it.
 
@@ -134,11 +138,9 @@ Not caused by git config: `core.fsmonitor=true` is set in `~/.gitconfig` and mak
 
 Not found: anything `:wq`-specific, a timer, or an `Esc` delay. `:wq` and Ctrl-S share `commit_edit`.
 
----
-▸ 2026-11-04T21:35:35Z [perf-907a]
-kind: ask
-needs: human
----
+#### 2026-11-04T21:35:35Z
+
+*perf-907a · kind: ask · needs: human*
 
 asked: needs human
 
@@ -153,31 +155,30 @@ Three fixes would together take a changing save from ~0.7 s to about the no-git 
 
 Question: OK to do 1 and 2 now, with 3(a)? Should yaks-7058 be done first, as it carries most of the weight?
 
----
-▸ 2026-11-04T22:25:22Z [Joel Webber]
-kind: answer
-needs: agent
----
+#### 2026-11-04T22:25:22Z
+
+*Joel Webber · kind: answer · needs: agent*
 
 1, 2: Yes, absolutely. We have a place for caches in ~/.local for exactly this sort of thing.
 3. I'm reading this as optimistic concurrency in the TUI. Let's file a yak and defer for re-measurement.
 
----
-▸ 2026-11-04T22:31:41Z [perf-907a]
+#### 2026-11-04T22:31:41Z
+
+*perf-907a*
 
 Decision (Joel, 2026-11-04): do yaks-7058, yaks-bcd4 and yaks-1ebf, with a cache for the git discovery. The deferred commit is filed as its own yak and waits for a re-measure after those three.
 
----
-▸ 2026-11-04T22:31:41Z [perf-907a]
-kind: pickup
----
+#### 2026-11-04T22:31:41Z
+
+*perf-907a · kind: pickup*
 
 picked up
 
 Decision recorded; checking open questions before starting
 
----
-▸ 2026-11-04T23:24:32Z [perf-907a]
+#### 2026-11-04T23:24:32Z
+
+*perf-907a*
 
 Status after yaks-7058 (dd61f317) and yaks-bcd4 (f62e889c), local `main`, installed with `cargo install --path .` (restart a running `yaks tui`).
 
@@ -190,11 +191,9 @@ What is left of it is the per-change commit itself, ~280 ms: 13 git spawns at 25
 
 yaks-1ebf no longer matters (its reload is 44 ms, after the saved frame): recommending it is shorn as not needed.
 
----
-▸ 2026-11-04T23:24:32Z [perf-907a]
-kind: ask
-needs: human
----
+#### 2026-11-04T23:24:32Z
+
+*perf-907a · kind: ask · needs: human*
 
 asked: needs human
 
@@ -203,17 +202,16 @@ Re-measured: a changing save is ~330 ms now (was ~730 ms); ~280 ms of that is th
 1. yaks-1ebf (second reload after our own save): it is now 44 ms and happens after the saved frame is drawn, so it no longer causes the pause. Lean: shear it as not needed rather than build the own-write skip. OK?
 2. Is ~330 ms good enough to shear this yak, or do you want the last step? Options: (a) shear yaks-907a now and leave yaks-d262 (commit after the saved frame) open; (b) do yaks-d262 now; (c) try to cut the commit to fewer spawns first (drop the second `status` by diffing the paths the command wrote against the snapshot; lean: only if you still feel it, since it would save ~60 ms). Lean: (a), after you try the installed build and say whether it still feels slow.
 
----
-▸ 2026-11-05T04:36:31Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-05T04:36:31Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. SGTM
 2. Let's land what we have, then I'll test manually before doing yaks-d262.
 
----
-▸ 2026-11-05T05:33:23Z [perf-907a]
+#### 2026-11-05T05:33:23Z
+
+*perf-907a*
 
 Decision (Joel, 2026-11-04, in the thread): close yaks-1ebf as not needed; close this yak with the changes on local `main` and keep yaks-d262 open; Joel will try the installed build for a while.
 
@@ -221,20 +219,15 @@ Code: yaks-7058 (`dd61f317`) and yaks-bcd4 (`f62e889c`), on local `main`, not pu
 
 Follow-ups: yaks-d262 (commit after the saved frame is drawn; reopen the question if the build still feels slow), yaks-717b (a test that fails on a rerun).
 
----
-▸ 2026-11-05T05:33:26Z [perf-907a]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-05T05:33:26Z
+
+*perf-907a · kind: move · from: shaving · to: shorn · thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-05T05:33:38Z [perf-907a]
-kind: pickup
----
+#### 2026-11-05T05:33:38Z
+
+*perf-907a · kind: pickup*
 
 picked up
 

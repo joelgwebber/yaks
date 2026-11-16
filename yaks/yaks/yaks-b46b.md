@@ -30,8 +30,9 @@ That is exactly what yaks could do itself. A worktree added in the HOST repo is 
 - **Test:** a bare host plus a clone with alternates; the first yaks command in the clone creates the worktree, and a second clone finds it.
 - **Docs and skills:** the coordinating skill's Delta section, and the error text.
 
----
-▸ 2026-11-01T16:17:55Z [yakherd]
+#### 2026-11-01T16:17:55Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -40,8 +41,9 @@ to: shaving
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:17:56Z [yakherd]
+#### 2026-11-01T16:17:56Z
+
+*yakherd*
 
 Fixed in `5b00c04`. When discovery runs in a clone that borrows a **bare** host's objects, bootstrap now adds the farm worktree in the host (`git -C <host> worktree add`). Every clone of that host finds it through the host's `git worktree list`.
 
@@ -61,8 +63,9 @@ Fixed in `5b00c04`. When discovery runs in a clone that borrows a **bare** host'
 
 Once released, memcraft's `scripts/runner-setup.sh` no longer needs its farm-worktree block. That's their repo to trim.
 
----
-▸ 2026-11-01T16:17:56Z [yakherd]
+#### 2026-11-01T16:17:56Z
+
+*yakherd*
 
 kind: landed
 commit: 5b00c04453f42139a6aec1d2b87ca153c37d719a
@@ -71,8 +74,9 @@ branch: main
 
 landed: 5b00c04
 
----
-▸ 2026-11-01T16:17:57Z [yakherd]
+#### 2026-11-01T16:17:57Z
+
+*yakherd*
 
 kind: move
 from: shaving

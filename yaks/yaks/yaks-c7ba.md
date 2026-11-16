@@ -16,8 +16,9 @@ We'll need to figure out what the right affordance is for this. `/` is already t
 
 We also need to decide whether the search results fit naturally into views like any other, and whether they can be saved as filters. It *may* already be the case that "filtering" an existing view and removing its constraints does what we'd want, in which case this may be a very small lift.
 
----
-▸ 2026-11-03T02:19:22Z [tui-design]
+#### 2026-11-03T02:19:22Z
+
+*tui-design*
 
 Folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c.
 
@@ -25,13 +26,15 @@ Global search becomes a built-in, unpinned **All** view (every yak, dead include
 
 For the record, Recent is not global: it stops at 50 rows (`RECENT_LIMIT`, applied after filtering) and hides dead yaks.
 
----
-▸ 2026-11-03T05:30:02Z [herd-tui]
+#### 2026-11-03T05:30:02Z
+
+*herd-tui*
 
 Done by herd-tui through phase 6a (yaks-a25c), landed as `cd753ad8`: `/` is a global query matching what `yaks find` searches, with an unpinned All view (every yak incl. dead, pages, sources) and the All count on the query chip.
 
----
-▸ 2026-11-03T05:30:02Z [herd-tui]
+#### 2026-11-03T05:30:02Z
+
+*herd-tui*
 
 kind: move
 from: hairy

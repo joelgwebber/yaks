@@ -19,18 +19,21 @@ Then the Sheds tab and `yaks sheds` compute per shed, from the farm alone: yaks 
 
 Delete once the trial holds: fork points / base farms / `compare_farms` / `yak_changes` / `landed` / `needs_superseded` / `outstanding_ids` in sheds.rs, `inbox --sheds`, `show --sheds`, `answer <id>@<shed>`, `changes <shed>`, the TUI ghost rows, badges and `copies:` chip. Keep: discovery (host, pins, worktrees), names, git state. Blocked on the trial's verdict.
 
----
-▸ 2026-10-19T04:29:29Z [delta:herd-pass]
+#### 2026-10-19T04:29:29Z
+
+*delta:herd-pass*
 
 Herd pass 2026-10-19: unblocked, the trial's verdict is in (yaks-6a34). The per-shed farm-diff commands it deletes (`changes <shed>`, `inbox --sheds`, `show --sheds`, `answer <id>@<shed>`, ghost rows) are also what the skills rewrite (yaks-b048) stops teaching, so land the two together or skills first. yaks-0309 and yaks-9a06 (ordering) now sit under this yak.
 
----
-▸ 2026-10-21T03:30:36Z [delta:herd-pass]
+#### 2026-10-21T03:30:36Z
+
+*delta:herd-pass*
 
 Joel (2026-10-19): agreed that the skills stop teaching the per-shed farm-diff commands now (yaks-b048), ahead of their deletion here.
 
----
-▸ 2026-10-21T21:30:17Z [delta:sheds-review]
+#### 2026-10-21T21:30:17Z
+
+*delta:sheds-review*
 
 Review 2026-10-21 (delta:sheds-review), on main @ 3bc2282 (sync/private/merge-driver landed, tui-sync-1 shorn and awaiting its landing). What the shared-farm model has already made vacuous, so this yak's delete list is concrete:
 
@@ -48,18 +51,21 @@ Review 2026-10-21 (delta:sheds-review), on main @ 3bc2282 (sync/private/merge-dr
 
 Design question for the replacement (the per-write stamp): the shed is per-MACHINE metadata (a Delta dir id or worktree path means nothing on another machine once the farm is pushed), while the actor is already the durable, committed 'who' (`delta:<thread title>` when unnamed). So consider recording the shed OUTSIDE the yak files: an uncommitted per-shed activity log under the farm (e.g. `.yaks/.activity/<shed-id>`, gitignored like `.lock`; one `ts  id  op` line per write), joined to discovery by shed id (`main`, the Delta dir id, else the worktree dir). No schema bump, nothing to merge, the sheds view = git facts + that log (claims, touched yaks newest first, liveness from the newest line). Alternative: a stamp in the note header (schema 7, committed, meaningless off-machine). Joel to pick.
 
----
-▸ 2026-10-22T02:45:25Z [delta:sheds-review]
+#### 2026-10-22T02:45:25Z
+
+*delta:sheds-review*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T02:45:25Z [delta:sheds-review]
+#### 2026-10-22T02:45:25Z
+
+*delta:sheds-review*
 
 Decision (Joel 2026-10-21): record the shed OUTSIDE the yak files, in an uncommitted per-machine activity log under the farm (gitignored like `.lock`), joined to discovery by checkout. No schema bump. Rejected: a shed stamp in the note header (schema 7, committed, meaningless on another machine). The actor stays the durable 'who'.
 
----
-▸ 2026-10-22T03:24:41Z [delta:sheds-review]
+#### 2026-10-22T03:24:41Z
+
+*delta:sheds-review*
 
 Implementation in progress (delta:sheds-review): activity log + slim sheds view built; gate green; docs updated. Evidence next.
 
@@ -67,8 +73,9 @@ Implementation in progress (delta:sheds-review): activity log + slim sheds view 
 
 [surveyor-sheds](yaks-9eaa/surveyor-sheds.txt)
 
----
-▸ 2026-10-22T03:25:39Z [delta:sheds-review]
+#### 2026-10-22T03:25:39Z
+
+*delta:sheds-review*
 
 Done (delta:sheds-review). Summary:
 
@@ -85,12 +92,14 @@ Evidence:
 
 Children: yaks-0309 (ordering: attention, then most recent writer) and yaks-9a06 (detail newest first) are delivered here.
 
----
-▸ 2026-10-22T03:26:19Z [delta:sheds-review]
+#### 2026-10-22T03:26:19Z
+
+*delta:sheds-review*
 
 verify: `cargo test --release` -> PASS (exit 0)
 
----
-▸ 2026-10-22T03:26:28Z [delta:sheds-review]
+#### 2026-10-22T03:26:28Z
+
+*delta:sheds-review*
 
 moved: shaving -> shorn

@@ -15,8 +15,9 @@ tags:
 
 If the trial (yaks-6a34) holds, the private skill's runtime rules (one live farm, live claims and asks, one writer per yak, workers stage nothing under `.yaks/`) apply to every farm, and the team skill's landing rules move to "the yakherd commits the farm on `farm` and merges it into main". One farm-mode skill, with a short paragraph per remaining difference (private: ids out of git). Cold-read with a cheap scout per the skills README rule. Blocked on the trial's verdict.
 
----
-▸ 2026-10-19T04:30:31Z [delta:herd-pass]
+#### 2026-10-19T04:30:31Z
+
+*delta:herd-pass*
 
 Audit (herd pass, 2026-10-19), against the skills at v0.0.21. Nothing in `yaks init` writes AGENTS.md boilerplate (grep: no AGENTS/CLAUDE in src/); the yaks sections in canon/hearth/j15r AGENTS.md were hand-written by agents from the skills, so fixing the skills fixes the source, and the repos need a one-time edit (see yaks-7cd1 for giving that guidance a home in the farm instead).
 
@@ -39,21 +40,24 @@ Also fold in: yaks-248d (linking yaks, now stable paths), yaks-8f2e (large-farm 
 
 Order: decide yaks-9eaa's fate for `changes`/`inbox --sheds`/`answer @shed` first (or write the skills as if they are gone), so the skills never teach a command we are about to delete.
 
----
-▸ 2026-10-21T03:30:36Z [delta:herd-pass]
+#### 2026-10-21T03:30:36Z
+
+*delta:herd-pass*
 
 Joel (2026-10-19), on the proposal above:
 - Go with one `yaks-coordinating` and simplify as much as possible ("Yes, please!").
 - The skills stop teaching `changes <shed>`, `inbox --sheds`, `show --sheds` and `answer <id>@<shed>` now ("That SGTM"); they are slated for deletion under yaks-9eaa.
 - The bundled `yaks` skill gets a brevity pass too: it has grown long-winded and should be slimmed for clarity, not just rewritten for the new model.
 
----
-▸ 2026-10-21T22:54:55Z [delta:herd-dirs]
+#### 2026-10-21T22:54:55Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T23:11:05Z [delta:herd-dirs]
+#### 2026-10-21T23:11:05Z
+
+*delta:herd-dirs*
 
 First pass written (uncommitted in the delta:herd-dirs checkout, pending Joel's review):
 
@@ -64,8 +68,9 @@ First pass written (uncommitted in the delta:herd-dirs checkout, pending Joel's 
 
 Gate green; skill loads through the real `skill` tool. No cold-read scout yet.
 
----
-▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+#### 2026-10-22T00:59:43Z
+
+*delta:herd-dirs*
 
 Done. Landed on main:
 - `00fbc8c` yaks-4c93: retire the four companion skills (RETIRED list, install removes untouched copies).
@@ -76,7 +81,8 @@ Done. Landed on main:
 
 Evidence: full gate (`cargo build --release && cargo test --release --no-fail-fast`) 20 suites green on 3b1e175; `cargo test --bin yaks skills::` 37 passed; real-binary retirement run in a temp dir (3 removed, edited one kept).
 
----
-▸ 2026-10-22T00:59:43Z [delta:herd-dirs]
+#### 2026-10-22T00:59:43Z
+
+*delta:herd-dirs*
 
 moved: shaving -> shorn

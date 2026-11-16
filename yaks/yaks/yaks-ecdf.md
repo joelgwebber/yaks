@@ -12,11 +12,9 @@ tags:
 
 Yak notes are a rich source of information about what we've been up to. And often more focused than raw conversation threads. So we should summarize them on a regular cadence and ensure they feed into the overall km-flow.
 
----
-▸ 2026-11-10T18:00:10Z [herd-unlock]
-kind: ask
-needs: human
----
+#### 2026-11-10T18:00:10Z
+
+*herd-unlock · kind: ask · needs: human*
 
 asked: needs human
 
@@ -27,44 +25,34 @@ This overlaps an open question in [the agent-memory research](/doks/research/age
 
 Lean: 1, and let the reflection round read the same window's `Decision:` notes for lessons sessions didn't report. Say if you want the weekly digest for your own reading anyway; that would be 2 as a human-facing extra.
 
----
-▸ 2026-11-10T18:37:30Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-10T18:37:30Z
+
+*sched-1 · kind: answer · needs: agent*
 
 Yup, (1) makes perfect sense. We can fold this in however you see fit.
 
----
-▸ 2026-11-10T18:44:25Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T18:44:25Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 
 herd-unlock: folding yak notes into the review round in yaks-upkeep, option 1.
 
----
-▸ 2026-11-10T18:44:26Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:44:26Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T18:45:54Z [herd-unlock]
+#### 2026-11-10T18:45:54Z
+
+*herd-unlock*
 
 Done (herd-unlock), option 1, in `27c8b9eb`: the `yaks-upkeep` review round now reads the week's yak notes (`yaks log --since <last round>`: `Decision:` notes and shear notes of yaks shorn in the window) beside the session notes, keeps what outlives the yak in doks by citing the note, and accounts for the window. No digest dok. The recurring review yak (yaks-dad8, due tomorrow) carries it.
 
----
-▸ 2026-11-10T18:45:55Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:45:55Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

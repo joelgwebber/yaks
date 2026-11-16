@@ -12,13 +12,15 @@ tags:
 - cli
 ---
 
----
-▸ 2026-10-21T20:33:01Z [delta:herd-dirs]
+#### 2026-10-21T20:33:01Z
+
+*delta:herd-dirs*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-21T20:33:02Z [delta:herd-dirs]
+#### 2026-10-21T20:33:02Z
+
+*delta:herd-dirs*
 
 Claim (delta:herd-dirs, yakherd). Owner: `private-1`.
 
@@ -36,15 +38,17 @@ Claim (delta:herd-dirs, yakherd). Owner: `private-1`.
 
 **Judge:** the yakherd.
 
----
-▸ 2026-10-21T20:34:02Z [private-1]
+#### 2026-10-21T20:34:02Z
+
+*private-1*
 
 Start: Wed Oct 21 20:33:58 UTC 2026 (date -u)
 
 yaks path yaks-85bb: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-85bb.md
 
----
-▸ 2026-10-21T20:38:17Z [private-1]
+#### 2026-10-21T20:38:17Z
+
+*private-1*
 
 Decision: `yaks private` is handled before a farm is opened (like `init`/`migrate --to-branch`), so it works from the code checkout, the farm worktree or a repo with no `.yaks/`. Rejected: running it through `Farm::open` (would fail where no farm resolves, and it touches the repository, not a farm).
 - Decision: the hook re-reads `yaks.private` and `yaks.branch` at push time rather than baking the branch in. Rejected: a generated per-branch hook (stale after a `yaks.branch` change; `--off` would have to rewrite it). `--off` still removes our hook, but a leftover hook is inert once the flag is unset (tested).
@@ -56,23 +60,27 @@ Decision: `yaks private` is handled before a farm is opened (like `init`/`migrat
 - `yaks sync` does not exist in this tree yet: clap help, docs/cli.md and the skill say "`yaks sync`, once it exists" must refuse on `yaks.private` (`privatefarm::is_private`); the dead-code warning is avoided because `--off` uses it. Whoever lands sync should reword.
 - Evidence: 5 unit tests in src/privatefarm.rs (scratch repo + bare origin + orphan farm worktree): baseline farm push works before `yaks private`; after it `git push origin yaks` (from the farm worktree) and `git push origin --all` (code checkout) both exit non-zero with the message and the bare remote has no refs; `git push origin main` then works; idempotent re-run; `--off` restores pushing and removes the hook; foreign hook untouched/reported and not removed by `--off`; core.hooksPath; custom yaks.branch; non-repo errors. Manually with ./target/release/yaks on a throwaway repo: private -> push --all rc=1, farm push rc=1, main rc=0; --off -> farm push rc=0, remote has both refs.
 
----
-▸ 2026-10-21T20:41:45Z [private-1]
+#### 2026-10-21T20:41:45Z
+
+*private-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-21T20:54:29Z [private-1]
+#### 2026-10-21T20:54:29Z
+
+*private-1*
 
 Summary: new src/privatefarm.rs (is_private, install_guard, remove_guard, run + 5 tests), Command::Private { off } + early dispatch + `mod privatefarm;` in src/main.rs, rows in docs/cli.md and the yaks skill (table + farm-on-a-branch bullet). `yaks verify` PASS recorded above; full `cargo test --release` green on rerun.
 - Observed flake, not mine: tests/sheds_layouts.rs `a_flat_shed_forked_before_the_migration_falls_back_to_the_next_base_not_to_nothing` failed twice in full-suite runs (left "checkout", right "merge-base"; reflog second-boundary/timing under load) and passed 6/6 alone both with and without my change (stash -u baseline).
 
----
-▸ 2026-10-21T20:54:30Z [private-1]
+#### 2026-10-21T20:54:30Z
+
+*private-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-21T20:58:21Z [delta:herd-dirs]
+#### 2026-10-21T20:58:21Z
+
+*delta:herd-dirs*
 
 Landed (delta:herd-dirs): 0e1775b (single-parent, Squashed-from 5a7c0ae). Review with my build on a scratch repo + bare origin: `yaks private` -> `git push origin yaks` and `git push --all` refused, remote empty; `--off` removes the hook and the push goes through. Full gate green (19 suites). Sync will reword the 'once it exists' lines.

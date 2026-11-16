@@ -14,13 +14,15 @@ tags:
 
 Follows yaks-2177 (yaks discover). Its findings 2 and 3: from a linked Delta clone the primary's plain git worktrees are missed (run git worktree list in the repo alternates/local names, when it is a checkout); from a managed clone only the root scan finds siblings. Wire the root scan into sheds::discover; then the -C/--shed reference-shed selector (yaks-7eea).
 
----
-▸ 2026-10-09T20:01:45Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:01:45Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-09T20:01:45Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:01:45Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Replan (Joel, 2026-10-09): give up on "magical" Delta discovery from outside a checkout. Discover every shed from inside any sibling using git data only:
 1. Own git dir: `git rev-parse --absolute-git-dir`.
@@ -37,8 +39,9 @@ Remove: the Delta root scan, `--root`, the name-based sibling scan, the alternat
 
 [pins-fixture](yaks-c635/pins-fixture.txt)
 
----
-▸ 2026-10-09T20:12:45Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:12:45Z
+
+*delta:Delta :Yaks (cont'd)*
 
 Done. `sheds::shed_paths` is now the only discovery path: git worktrees here; the host from alternates; refs/delta pins resolved through `<store>/<dir>/<name>.git` and core.worktree; and the host checkout's git worktrees when the host is not bare. Removed: the name-based sibling scan, the `.delta/worktrees` scan, the Delta root scan, `--root`, `repo_match`/`same_repo`/`normalize_url`, and `yaks discover`'s outside-a-repo mode (it now exits 1 with "run it from inside a checkout").
 
@@ -52,7 +55,8 @@ Tests: 5 new sheds tests (linked, managed, fresh clone before its first commit, 
 
 Docs: docs/cli.md (sheds discovery and the discover row), README.md, the yaks skill table, and the yaks-coordinating-delta model paragraph (which now gives the macOS shared-layout path and says sheds come from pins and are visible from inside any checkout).
 
----
-▸ 2026-10-09T20:12:45Z [delta:Delta :Yaks (cont'd)]
+#### 2026-10-09T20:12:45Z
+
+*delta:Delta :Yaks (cont'd)*
 
 moved: shaving -> shorn

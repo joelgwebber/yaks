@@ -15,17 +15,20 @@ tags:
 
 Follow-up to the yaks-38dc TUI plan (approach C in the 2026-10-12 brainstorm, deferred by Joel): an activity log view across every shed, newest first, i.e. `yaks log` over all sheds' farms: timestamp, actor, yak, first line, with the shed named. Arrival signals (a new ask in any shed flashes in the status bar) are part of approach B, not this. Build only after B and the Sheds tab (A) have been used for a while; decide then whether it is a view or a watch mode.
 
----
-▸ 2026-10-19T04:27:07Z [delta:herd-pass]
+#### 2026-10-19T04:27:07Z
+
+*delta:herd-pass*
 
 Herd pass 2026-10-19: with one farm per machine this is just `yaks log` on screen; 'which shed' needs the stamps of yaks-9eaa.
 
----
-▸ 2026-10-31T15:56:26Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:26Z
+
+*delta:Cloud Runners*
 
 Adopted into `yaks-039b` under `yaks-da23` (2026-10-31): the note-based sheds rebuild is the natural place for this view work.
 
----
-▸ 2026-10-31T19:28:04Z [yakherd]
+#### 2026-10-31T19:28:04Z
+
+*yakherd*
 
 Graduated from `yaks-da23` (shorn) to `yaks-039b`: a shorn parent must not hold unfinished children (Joel, 2026-10-31).

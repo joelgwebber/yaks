@@ -19,20 +19,17 @@ Part of the scheduling arc ([design](/doks/design/scheduling.md)).
 
 Done when: snapshots, `docs/tui.md`, and the `?` help generated from the table.
 
----
-▸ 2026-11-04T23:27:45Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:27:45Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
 [yaks-f561-frames](yaks-f561/yaks-f561-frames.md)
 
----
-▸ 2026-11-04T23:41:32Z [sched-1]
+#### 2026-11-04T23:41:32Z
+
+*sched-1*
 
 Done on branch `scheduling`.
 
@@ -45,12 +42,8 @@ Decision: unpinned (above). Decision: the chip counts the whole farm, not the ac
 
 Not done: the notice that a woken recurring yak is in the Inbox was already added with yaks-a041 (`regrew X (awaiting agent)`), so there is nothing more to do for that bullet.
 
----
-▸ 2026-11-04T23:41:33Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:41:33Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

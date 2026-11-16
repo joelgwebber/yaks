@@ -13,13 +13,13 @@ tags:
 
 Model 3 (pure FS): files authoritative, coordinator is sole herd writer on main; zero new engine; no merge/concurrency (single writer); provenance via file+commit (works); human-editable files; but limited worker autonomy, no live cross-worktree sharing, PR-cleanliness needs the coordinator to land herd separately. Git-store: refs authoritative + materialized cache; big new engine (ops, clocks, compile, sync); mergeless + live-shared-across-worktrees + PR-clean + intrinsic attribution + multi-writer-safe + isolation-compatible; but ref-sync friction, platform-invisibility, provenance rework, ongoing maintenance (git-bug itself is barely maintained, a signal of cost/thin adoption). Lean: Model 3 now (tiny effort, max reliability for small careful parallelism); git-store as the north-star architecture if multi-agent-native coordination justifies the engine, pursued via the incremental path so the file experience survives as the cache.
 
----
-▸ 2026-09-01T23:31:59Z
+#### 2026-09-01T23:31:59Z
 
 Refined architectural judgment (path-independent). Retracting the 'git-store as north star' framing. Divorced from what we have built: FILE-BASED is the better TARGET for yaks' core identity (tasks as plain greppable/diffable/hand-editable files; status as directory; single simple binary). git-store trades that differentiator away for mergeless multi-writer concurrency, which careful parallelism does not need (disjoint assignment / single-writer removes contention with zero engine). Even WITH a materialized cache, git-store still loses platform visibility (GitHub/PR/git log), trivial hand-editing, and file-level git history. git-store wins ONLY in the private + distributed + offline + multi-writer/multi-machine quadrant (git-bug's niche). Not a general north star; a different product that wins in one quadrant.
 
----
-▸ 2026-10-05T22:43:55Z [delta-lead]
+#### 2026-10-05T22:43:55Z
+
+*delta-lead*
 
 Thoughts for future consideration (coordinator delta-lead, 2026-10-05), prompted by Joel's question about how we handle git commits in linear and parallel work (yaks-0a87, yaks-75cc, now shorn). No decision asked; a trigger to revisit is at the end.
 
@@ -45,12 +45,14 @@ Residual risk: two lanes (or a lane and the human) both append to the SAME yak; 
 ## Recommendation
 Do not build 2 or 3 now. The incidents above all have shipped mitigations, and the last six landings produced no hand-resolved yak-file conflict. Revisit when ANY of these happens: a landing needs a hand-resolved conflict inside `.yaks/`, a yak edit is lost, or two lanes need to write the same yak routinely. Count them in the observation log (yaks-df61) so the trigger is evidence, not a feeling.
 
----
-▸ 2026-10-06T03:58:55Z [delta-lead]
+#### 2026-10-06T03:58:55Z
+
+*delta-lead*
 
 Trigger check (coordinator delta-lead, 2026-10-06): one hand-resolved conflict inside .yaks/ has now happened, an append/append on yaks-2c22 (the coordinator's ask and the human's answer appended to the same file) when merging the human's commit. It resolved by keeping both. One incident is not the pattern; the count stays in yaks-df61.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead

@@ -15,7 +15,7 @@ partial: 1
 
 ## Summary
 
-Built and rehearsed the schema-9 migration for [yaks-1151](yaks-1151): the farm moves from `.yaks/` to the branch root, links become paths a markdown host follows, sources get slugs, and notes get the `#### <timestamp>` shape. The work landed on local `main` (not pushed) and was rehearsed on clones of five real farms, with the numbers and the checks on [yaks-acc0](yaks-acc0). Docs, skills and clap help were swept in [yaks-df4e](yaks-df4e). No real farm was migrated; that is the human's call.
+Built and rehearsed the schema-9 migration for [yaks-1151](/yaks/yaks/yaks-1151.md): the farm moves from `.yaks/` to the branch root, links become paths a markdown host follows, sources get slugs, and notes get the `#### <timestamp>` shape. The work landed on local `main` (not pushed) and was rehearsed on clones of five real farms, with the numbers and the checks on [yaks-acc0](/yaks/yaks/yaks-acc0.md). Docs, skills and clap help were swept in [yaks-df4e](/yaks/yaks/yaks-df4e.md). No real farm was migrated; that is the human's call.
 
 ## Turns
 

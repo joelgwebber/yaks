@@ -29,18 +29,21 @@ Joel (2026-10-31): before building tooling such as `yaks checkpoint`, run experi
 - Score each convention per worker from the farm and the remote afterwards: `yaks log --by <worker>`, sync times against write times, branches on origin against the shas the notes name.
 - Record a `Decision:` per convention: rule is enough, or needs a tool.
 
----
-▸ 2026-10-31T16:55:10Z [yakherd]
+#### 2026-10-31T16:55:10Z
+
+*yakherd*
 
 First observations from the 2026-10-31 local run (three LiteLLM Sonnet workers) are on `yaks-039b`'s wave-2 note. Short version: stable `YAKS_ACTOR` names everywhere; notes at milestones rather than on a clock; sync untested (same machine). A cloud-runner run is still needed for the sync and checkpoint conventions.
 
----
-▸ 2026-10-31T17:12:34Z [yakherd]
+#### 2026-10-31T17:12:34Z
+
+*yakherd*
 
 Pre-trial finding (`yaks-4728` end-to-end check): the obvious branch naming `yaks/<worker>/...` fails outright beside a branch farm. The skills now warn and `update --meta branch=` warns, so the trial should check that workers pick a different prefix.
 
----
-▸ 2026-11-01T01:10:23Z [yakherd]
+#### 2026-11-01T01:10:23Z
+
+*yakherd*
 
 Trial run started by Joel, 2026-11-01: memcraft cloud runner thread `ksQQOn_lPggNQrKkBKNvXOzaN5LOADYRe5IBxBCA0aLJyrhJPreUvVwLftHG`, new yaks `mem-4fcd`, `mem-f4c5`, `mem-f5cf`.
 
@@ -50,8 +53,9 @@ Confounds to read results against:
 - **The runner was wiped a third time** at the start of this run. Farm writes made before its next `yaks sync` are lost with each wipe.
 - **Bootstrap.** The farm worktree on the runner is made by hand in `scripts/runner-setup.sh`, because yaks refuses to on a bare host (filed separately).
 
----
-▸ 2026-11-01T01:20:46Z [yakherd]
+#### 2026-11-01T01:20:46Z
+
+*yakherd*
 
 Check at 2026-11-01 ~01:20Z, after Joel updated the runner's skills (`yaks skills install --user`, so `~/.agents/skills` is 0.0.27; the repo's `.agents/skills` is still 0.0.24) and told it to re-read them:
 
@@ -62,8 +66,9 @@ Check at 2026-11-01 ~01:20Z, after Joel updated the runner's skills (`yaks skill
 - **Not yet observed:** workers (none spawned yet), checkpoint branches, landed notes, heartbeat cadence.
 - **Risk:** workers in subthreads that load skills with the `skill` tool get the repo's 0.0.24 copies, unless the repo is updated or the brief carries the rules.
 
----
-▸ 2026-11-01T15:37:48Z [yakherd]
+#### 2026-11-01T15:37:48Z
+
+*yakherd*
 
 Report from the runner yakherd (`herd`, later `delta:herd`), about 8 workers in:
 
@@ -73,18 +78,21 @@ Report from the runner yakherd (`herd`, later `delta:herd`), about 8 workers in:
 - **Thread tools:** unavailable on the runner, so liveness came from note age only.
 - **Possible Delta isolation leak:** an isolated worker's new file appeared as an external edit in the herd's worktree. The runner is investigating; that's a Delta question, not yaks.
 
----
-▸ 2026-11-01T15:37:57Z [yakherd]
+#### 2026-11-01T15:37:57Z
+
+*yakherd*
 
 Correction to the last note: not a Delta isolation leak. A worker edited the herd's checkout by absolute path (details on `yaks-6344`).
 
----
-▸ 2026-11-01T15:38:30Z [yakherd]
+#### 2026-11-01T15:38:30Z
+
+*yakherd*
 
 Resolved: Joel committed the 0.0.27 skills to memcraft as `48ed523` (on `origin/main`), so subthread workers get current skills too. The 0.0.24 copies I reported were from before that push.
 
----
-▸ 2026-11-01T22:53:27Z [yakherd]
+#### 2026-11-01T22:53:27Z
+
+*yakherd*
 
 Observed memcraft across a cloud → local → cloud runner switch (farm synced 2026-11-01 ~22:50Z; coordinator now `herd-memcraft`).
 

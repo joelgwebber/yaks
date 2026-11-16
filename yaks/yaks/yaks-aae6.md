@@ -58,8 +58,9 @@ Every repo with a farm has a code branch and the farm branch, including a knowle
 
 Hearth's `core/`, `instructions/`, `views/`, `schedules/` and protected paths are agent-layer concepts and stay in Hearth. Session notes (`raw/sessions/`) wait until the workflow layer.
 
----
-▸ 2026-11-01T18:53:39Z [delta:farm-wiki]
+#### 2026-11-01T18:53:39Z
+
+*delta:farm-wiki*
 
 kind: ask
 needs: human
@@ -73,8 +74,9 @@ Three choices in the layout; I'm building on the leans unless you say otherwise.
 2. **Sources at the farm root** (`sources/<id>/`, shared by all herds, deduplicated farm-wide) rather than per herd. Lean: farm root. A paper cited by two herds is one source.
 3. **Two branches even for a knowledge-only repo** (`main` holds `AGENTS.md` and scaffolding, or experiment code as in `joel`). Lean: yes; one layout everywhere, and `joel` already wants code on `main`.
 
----
-▸ 2026-11-01T20:02:20Z [Joel Webber]
+#### 2026-11-01T20:02:20Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -84,8 +86,9 @@ needs: agent
 2. Yes, exactly.
 3. Agreed; the degenerate case costs ~nothing, so let's keep it consistent.
 
----
-▸ 2026-11-01T20:09:14Z [delta:farm-wiki]
+#### 2026-11-01T20:09:14Z
+
+*delta:farm-wiki*
 
 kind: pickup
 ---
@@ -98,8 +101,9 @@ Decision (Joel, 2026-11-01): all three leans accepted.
 - Sources sit at the farm root, `sources/<id>/`, deduplicated farm-wide.
 - Every repo with a farm has two branches, including knowledge-only repos.
 
----
-▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+#### 2026-11-01T20:09:15Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy

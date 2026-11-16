@@ -24,18 +24,15 @@ yaks stays ignorant of what the URL is: fetching, converting and canonicalising 
 
 Without `--refresh` nothing changes: a saved web page you cited does not move under you.
 
----
-▸ 2026-11-06T01:23:39Z [source-refresh]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T01:23:39Z
+
+*source-refresh · kind: move · from: hairy · to: shaving · thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T01:23:40Z [source-refresh]
+#### 2026-11-06T01:23:40Z
+
+*source-refresh*
 
 Plan, from reading [sources.rs](code:src/sources.rs):
 
@@ -44,8 +41,9 @@ Plan, from reading [sources.rs](code:src/sources.rs):
 - `find` (dedupe by sha) matched on the id's `-<sha8>` suffix, which a refreshed source no longer has. It now checks each `source.md`'s `sha256:`, so "saving the same content again returns the existing source" stays true after a refresh.
 - Tests first: refresh updates in place, unchanged is a no-op, no match creates, `--refresh` without `--url` is refused, a plain `add` of a refreshed source's current bytes finds it.
 
----
-▸ 2026-11-06T01:32:34Z [source-refresh]
+#### 2026-11-06T01:32:34Z
+
+*source-refresh*
 
 Done and tested.
 
@@ -55,12 +53,8 @@ Done and tested.
 
 Evidence: four new unit tests (refresh in place, plain add never refreshes, `--refresh` needs `--url`, ambiguous URL), a scripted run of the built binary (Saved, Already saved, Refreshed, Already saved), and the full `cargo test` green (964 unit tests plus the integration suites).
 
----
-▸ 2026-11-06T01:32:35Z [source-refresh]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T01:32:35Z
+
+*source-refresh · kind: move · from: shaving · to: shorn · thread: ksQQcsYXd-T6RPSH25f_4VJRspLOAETlkJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

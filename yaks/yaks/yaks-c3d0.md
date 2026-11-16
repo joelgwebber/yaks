@@ -16,21 +16,21 @@ Currently selecting a source link immediately opens it in the default editor (or
 
 Once in that UI, a *second* affordance can open it with the system editor. Another would be useful for copying the absolute path of the file, so the user can open it however they like. I'm not quite sure how/if to handle that case for source files pinned to specific git-hashes. We'll want to think through that before committing fully to a design.
 
----
-▸ 2026-11-11T21:10:17Z [sched-1]
+#### 2026-11-11T21:10:17Z
+
+*sched-1*
 
 Come to think of it, the copy absolute path and open in system editor affordances would be useful for yaks, doks, sessions, and sources as well. Hopefully there's a clean way to generalize this so we don't end up with a bunch of weird special cases.
 
----
-▸ 2026-11-11T21:46:11Z [sched-1]
+#### 2026-11-11T21:46:11Z
+
+*sched-1*
 
 Related to the git-hash linking problem -- we should ensure that we can also link to Github, which should be easier to do for files "at the given hash". If that can be done locally as well, great, but if not at least we can fall back to the GHUI.
 
----
-▸ 2026-11-14T11:19:34Z [linkplan-lead]
-kind: ask
-needs: human
----
+#### 2026-11-14T11:19:34Z
+
+*linkplan-lead · kind: ask · needs: human*
 
 asked: needs human
 
@@ -47,51 +47,47 @@ Design for viewing and taking a link out (plan: [/doks/design/farm-layout-and-li
    Lean: (b). The `g` menu entry already gives the permalink, so `p` stays a local path.
 4. **When the farm has no recognised host** (no remote, or a custom domain): `g` says why and points at `git config yaks.host`. Lean: that.
 
----
-▸ 2026-11-14T12:49:40Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-14T12:49:40Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. Perfect.
 2. Sounds like a good unification. I dig it.
 3. I like it. I hadn't considered the possibility of just dropping a temp copy, but that seems useful. Note that there will also be occasional cases where we can't see the reference, because an agent on another machine decides to drop a local hash. Not an intended state, but one we should be resilient to.
 4. :thumbs-up:
 
----
-▸ 2026-11-14T17:51:11Z [linkplan-lead]
-kind: pickup
----
+#### 2026-11-14T17:51:11Z
+
+*linkplan-lead · kind: pickup*
 
 picked up
 
 Decision (Joel): all four as proposed: Enter on a `code:` link opens the read-only viewer; `O` is the take-it-out menu everywhere (`e` editor, `o` system open, `p` absolute path, `r` farm or repo path, `g` host link); `p` on a pinned `code:` file is the working-tree path when unchanged since the pin, else a read-only temp copy; no recognised host says so and names `yaks.host`. Added by Joel: resilience when a referenced commit is not visible locally (an agent on another machine dropped or never pushed a hash): that must give a clear message and a fallback, never an error or a hang.
 
----
-▸ 2026-11-14T22:59:04Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T22:59:04Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T22:59:05Z [linkplan-lead]
+#### 2026-11-14T22:59:05Z
+
+*linkplan-lead*
 
 Claim: worker `viewer-1` (Sonnet tier; the design is settled by Joel's answers above, so this is implementation, and review is the cost). Owns: the TUI follow dispatch (`src/tui/follow.rs`, `src/tui/source.rs`, `follow_link` in `src/tui/detail_nav.rs`, the three open/follow sites in `src/tui/handlers.rs`: `LinkOpenExternal`, `FileOpenExternal` and the link-follow arm), a new read-only code viewer kind, the `O` menu overlay and its `EXTRAS` help rows, the `LinkOpenExternal` / `FileOpenExternal` rows in `src/tui/keymap.rs`, `Space::content` / `Space::local_path` / `Space::web_url` call sites in `locate.rs` (use them; remove the `#[allow(dead_code)]` that waits on this yak), `docs/tui.md`, tests and snapshots. Out of scope: note parsing and `tui/content.rs` (`notefmt-1`), `sources.rs` and `locate::farm_file` (`srcslug-1`), `check.rs`, the resolver's behaviour, any stored link form, `migrate.rs`. Where a file overlaps (`detail_nav.rs`: `notefmt-1` edits note-anchor lines only; `locate.rs`: `srcslug-1` edits `farm_file` only) keep to your own functions so the three merge cleanly. Judge: the coordinator re-runs the evidence in a real toque session on its own build.
 
----
-▸ 2026-11-14T22:59:43Z [viewer-1]
+#### 2026-11-14T22:59:43Z
+
+*viewer-1*
 
 Start: Sat Nov 14 22:59:38 UTC 2026 (viewer-1).
 
 - farm path: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-c3d0.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/5qj7ed84tg41/yaks
 
----
-▸ 2026-11-14T23:36:07Z [viewer-1]
+#### 2026-11-14T23:36:07Z
+
+*viewer-1*
 
 Checkpoint (viewer-1), `date -u` ~23:40. Honest state: design read, first code in; the viewer and menu are NOT written yet.
 
@@ -107,8 +103,9 @@ Plan (next):
 - `Overlay::TakeOut` modal menu (e/o/p/r/g), opened by one new `Cmd::TakeOut` (`O`) in Viewer, Detail pane (yak), List Doc rows and List Yak rows; replaces `LinkOpenExternal`/`FileOpenExternal` on `O` in the text viewer and the pane. Image viewer keeps `O` = open externally (it is the only thing it can do, and it already shares the name `file.open_external`).
 - `EXTRAS` rows for the menu keys, docs/tui.md, hints, tests, frames.
 
----
-▸ 2026-11-15T00:05:09Z [viewer-1]
+#### 2026-11-15T00:05:09Z
+
+*viewer-1*
 
 Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin yaks` was green (1192 passed) before the new tests; new `src/tui/takeout.rs` has 9 tests, all passing.
 
@@ -123,16 +120,15 @@ Checkpoint 2 (viewer-1): implementation compiles and `cargo test -p yaks --bin y
 
 [frames](yaks-c3d0/frames.txt "text frames (a) (b) (c) from the real binary: yaks tui --headless on a scratch checkout with a GitHub origin")
 
----
-▸ 2026-11-15T00:18:13Z [viewer-1]
-kind: verify
-result: pass
----
+#### 2026-11-15T00:18:13Z
+
+*viewer-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-15T00:18:30Z [viewer-1]
+#### 2026-11-15T00:18:30Z
+
+*viewer-1*
 
 Decision: `O` takes the one `take.out` command on every surface (viewer, image viewer, yak pane, Doks row, yak row); `LinkOpenExternal` and `FileOpenExternal` are removed, not kept beside it. The image viewer's `O` also opens the menu (its `o` is system open), rather than staying a direct open: one rule, one extra key.
 
@@ -154,22 +150,14 @@ Evidence: unit tests in `tui/takeout.rs` (9: viewer + colours + landing, plain t
 
 Not done / assumed: the menu's `e` was verified to queue the editor command (and with none set, the message), not by running a real editor; `o` launched the real opener once in the demo. The clipboard is stubbed under `cargo test`; in the demo the real `arboard` was used (`copied ...` shown). `r` on a pane link in a yak (not a file) says "this link names no file" only for non-file places; a Yak place gives the yak's file path. Rebased onto 7585597e with no conflicts; gate re-run after: 1439 passed, 0 failed, `cargo fmt --check` clean.
 
----
-▸ 2026-11-15T00:18:31Z [viewer-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGNghZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-15T00:18:31Z
+
+*viewer-1 · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAGNghZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-15T00:19:10Z [linkplan-lead]
-kind: landed
-commit: 2e2185f1f624d8fe255bc1e7e95257028ceddfd9
-source: 6f3a9b85dcfe78aad83b5175de3d07dcbf5887b5
-branch: main
----
+#### 2026-11-15T00:19:10Z
+
+*linkplan-lead · kind: landed · commit: 2e2185f1f624d8fe255bc1e7e95257028ceddfd9 · source: 6f3a9b85dcfe78aad83b5175de3d07dcbf5887b5 · branch: main*
 
 landed: 2e2185f1 yaks-c3d0: code: links open in a read-only coloured viewer; O is the take-it-out menu (editor, system, paths, host link) everywhere; a missing commit degrades to one line

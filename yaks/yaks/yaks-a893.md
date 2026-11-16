@@ -22,15 +22,17 @@ Direction to evaluate: editing happens *in place* in the detail pane. The block 
 
 Deliverable: a short design note on this yak with mock frames (headless renders of a prototype, or hand-drawn text frames), agreed with Joel, then implementation yaks.
 
----
-▸ 2026-10-17T05:00:19Z [delta-lead]
+#### 2026-10-17T05:00:19Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
 [today-view-M-E](yaks-a893/today-view-M-E.txt)
 
----
-▸ 2026-10-17T05:00:19Z [delta-lead]
+#### 2026-10-17T05:00:19Z
+
+*delta-lead*
 
 Design note (delta-lead, 2026-10-17). Today's three surfaces are attached (`today-view-M-E.txt`: headless 90x34 frames of the detail pane, `M`, and `E` on a comment). Problems seen there:
 
@@ -80,32 +82,37 @@ A new overlay `Overlay::BlockEdit { id, block: Option<usize> /* None = new comme
 
 Questions for Joel are asked on this yak.
 
----
-▸ 2026-10-17T05:00:19Z [delta-lead]
+#### 2026-10-17T05:00:19Z
+
+*delta-lead*
 
 asked: needs human
 
 View/edit design (note above, with a mock frame): OK to (1) edit the description and comments *in place* in the detail pane (`E` on a body row, `M` for a new comment at the end, `Ctrl-S` saves just that block), and (2) drop the content blocks from the `E` edit form so it holds only header fields (create keeps its description)? That removes the accordion and yaks-c6f4. If yes I'll split it into implementation yaks and fan it out.
 
----
-▸ 2026-10-17T16:53:38Z [Joel Webber]
+#### 2026-10-17T16:53:38Z
+
+*Joel Webber*
 
 I dig it. That sounds like a plan to me.
 
----
-▸ 2026-10-17T17:01:43Z [delta-lead]
+#### 2026-10-17T17:01:43Z
+
+*delta-lead*
 
 picked up
 
 Joel approved the in-place edit design ('I dig it. That sounds like a plan to me.'). Splitting into implementation yaks below.
 
----
-▸ 2026-10-17T17:02:15Z [delta-lead]
+#### 2026-10-17T17:02:15Z
+
+*delta-lead*
 
 Design approved by Joel. Implementation: yaks-597d (in-place editing, one worker: render/handlers/actions are too coupled to split), then yaks-92e5 (form trims to header fields). This design yak shears when both land.
 
----
-▸ 2026-10-17T18:01:17Z [delta-lead]
+#### 2026-10-17T18:01:17Z
+
+*delta-lead*
 
 Design delivered:
 
@@ -115,12 +122,14 @@ Design delivered:
 
 Checked on the real build: `E` on a comment edits it in place, a save changes only that block, `M` appends a comment, `E` on the list opens a header-only form.
 
----
-▸ 2026-10-17T18:01:21Z [delta-lead]
+#### 2026-10-17T18:01:21Z
+
+*delta-lead*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T18:01:21Z [delta-lead]
+#### 2026-10-17T18:01:21Z
+
+*delta-lead*
 
 moved: shaving -> shorn

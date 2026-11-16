@@ -16,32 +16,37 @@ Enter at the end of a `> `, `- `, `* `, `1. ` (renumbered to `2. `) or `- [ ] ` 
 
 Implement in the edtui fork (a line-break hook or a markdown-aware `LineBreak` option on the `yaks-integration` branch), not as a yaks-side key shim: yaks-182f removed those because shims break vim count composition. Then `cargo update -p edtui`.
 
----
-▸ 2026-10-17T05:00:46Z [delta-lead]
+#### 2026-10-17T05:00:46Z
+
+*delta-lead*
 
 asked: needs human
 
 Auto-continue lives in the edtui fork (github.com/joelgwebber/edtui, `yaks-integration`), and Cargo pulls it from GitHub, so landing it means pushing a branch to that fork and then `cargo update -p edtui` here. OK for me (or a worker) to push a feature branch to the fork and merge it into `yaks-integration`? If you'd rather review fork changes yourself first, say so and I'll stop at a pushed feature branch.
 
----
-▸ 2026-10-17T13:22:47Z [Joel Webber]
+#### 2026-10-17T13:22:47Z
+
+*Joel Webber*
 
 Yup, works for me. Feel free to commit whatever changes you need to our edtui fork. We'll resolve them later.
 
----
-▸ 2026-10-17T17:02:37Z [delta-lead]
+#### 2026-10-17T17:02:37Z
+
+*delta-lead*
 
 picked up
 
 Joel OK'd fork commits. Worker autocont-1 develops it; the coordinator reviews and merges into yaks-integration.
 
----
-▸ 2026-10-17T17:02:37Z [delta-lead]
+#### 2026-10-17T17:02:37Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T17:02:37Z [delta-lead]
+#### 2026-10-17T17:02:37Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **autocont-1**.
 
@@ -57,8 +62,9 @@ Two repos:
 
 Evidence: fork tests; yaks tests; a headless or toque frame of the comment editor after typing `- a<Enter>b<Enter><Enter>` and `> q<Enter>`. Judge: coordinator at landing; the coordinator then merges your branch into `yaks-integration`, switches Cargo.toml back to `branch = "yaks-integration"` and re-runs `cargo update -p edtui`.
 
----
-▸ 2026-10-17T17:03:26Z [autocont-1]
+#### 2026-10-17T17:03:26Z
+
+*autocont-1*
 
 Started autocont-1.
 
@@ -69,13 +75,15 @@ Started autocont-1.
 
 [autocont-quote](yaks-1f84/autocont-quote.txt)
 
----
-▸ 2026-10-17T17:09:27Z [autocont-1]
+#### 2026-10-17T17:09:27Z
+
+*autocont-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T17:09:39Z [autocont-1]
+#### 2026-10-17T17:09:39Z
+
+*autocont-1*
 
 Decision: continuation lives in `LineBreak` itself, behind `EditorState::set_markdown_continuation(bool)` (default off).
 
@@ -103,7 +111,8 @@ Docs: `docs/tui.md` Edit table row, plus the `?` help overlay entry (`Enter`, `h
 
 Fork branch `yaks/md-autocontinue`, head ff5c1a9db3420a8d1d6f84d86a4b87155612d5c3 (one commit on top of yaks-integration 6ba0dbf), pushed. yaks `Cargo.toml` edtui branch points at it, `Cargo.lock` is updated, and it is temporary: the coordinator switches it back after merging into `yaks-integration`.
 
----
-▸ 2026-10-17T17:09:39Z [autocont-1]
+#### 2026-10-17T17:09:39Z
+
+*autocont-1*
 
 moved: shaving -> shorn

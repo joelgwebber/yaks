@@ -22,11 +22,9 @@ From Joel's answer on yaks-5f70: while the farms are small, should paths carry a
 
 Lean: decide with the schema-9 migration, since it rewrites links anyway; if yes, do it in that same pass. Needs an ask when picked up.
 
----
-▸ 2026-11-14T17:53:11Z [linkplan-lead]
-kind: ask
-needs: human
----
+#### 2026-11-14T17:53:11Z
+
+*linkplan-lead · kind: ask · needs: human*
 
 asked: needs human
 
@@ -37,29 +35,22 @@ Needs deciding before the schema-9 migration (yaks-acc0) starts, because it rewr
 
 Answer "1" to leave it and I will shear this yak, or "2" and it joins the migration.
 
----
-▸ 2026-11-14T17:59:07Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-14T17:59:07Z
+
+*sched-1 · kind: answer · needs: agent*
 
 Whoops, my mistake. As long as we can implement the de-duping stuff reliably, let's add the slug. I find it very difficult to scan sources quickly otherwise.
 
----
-▸ 2026-11-14T22:37:46Z [linkplan-lead]
-kind: pickup
----
+#### 2026-11-14T22:37:46Z
+
+*linkplan-lead · kind: pickup*
 
 picked up
 
 Decision (Joel, 2026-11-14): add the slug, `sources/<date>-<sha8>-<slug>/`, "as long as we can implement the de-duping stuff reliably": Joel finds sources hard to scan without it. It joins the schema-9 migration (yaks-acc0). The condition is the work: `source add` must still return the existing source for the same bytes whatever title is given (match on the `<date>-<sha8>` prefix, never on the slug), and `--refresh` must keep one id for a source whose title changes. Both get tests before the migration renames anything. Filed as its own implementation yak below.
 
----
-▸ 2026-11-14T22:37:50Z [linkplan-lead]
-kind: move
-from: hairy
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T22:37:50Z
+
+*linkplan-lead · kind: move · from: hairy · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn

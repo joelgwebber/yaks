@@ -17,13 +17,15 @@ Let's try and unify search handling in such a way that the filter: header and ac
 
 [search-design](yaks-953f/search-design.md)
 
----
-▸ 2026-09-23T21:40:08Z [design-scout]
+#### 2026-09-23T21:40:08Z
+
+*design-scout*
 
 Design proposal (covers yaks-1bbd too)
 
----
-▸ 2026-09-23T21:40:08Z [design-scout]
+#### 2026-09-23T21:40:08Z
+
+*design-scout*
 
 Root cause found + reproduced headlessly: the persisting 'filter: q' is a toast (App.notification is never cleared anywhere), not the real header; set_view does wipe the search. Decisions:
 1. Phase 1 fix: clear toasts on every keypress globally [lean] vs only on view switch? Also drop the redundant 'filter: q' toast on search commit [lean yes].
@@ -31,8 +33,9 @@ Root cause found + reproduced headlessly: the persisting 'filter: q' is a toast 
 3. Detail /: update only a shared vim-style search register, not the list filter [lean], and should n past the last match roll into the next matching yak [lean yes]?
 4. List n/N with an active query: next/prev row [lean] or reserve n only for 're-apply last search' when the query is empty? Phase 1 can proceed immediately once Q1 is answered; Q2-4 gate phases 2-3.
 
----
-▸ 2026-11-03T02:19:20Z [tui-design]
+#### 2026-11-03T02:19:20Z
+
+*tui-design*
 
 Folded into the unified TUI design, [wiki/design/tui-model.md](/doks/design/tui-model.md), tracked by yaks-9c3c. This yak's part is §4, "Search": phase 1 (notifications clear on the next key) and phase 6 (the query and the register).
 
@@ -44,8 +47,9 @@ Changes from the design attached here:
 
 The questions asked on this yak are answered or carried into the design's Decisions and Open questions.
 
----
-▸ 2026-11-03T03:07:29Z [tui-design]
+#### 2026-11-03T03:07:29Z
+
+*tui-design*
 
 kind: answer
 needs: agent
@@ -53,8 +57,9 @@ needs: agent
 
 Answered by Joel in chat, 2026-11-02, relayed by tui-design: every question here is settled by the unified design's Decisions, [wiki/design/tui-model.md](/doks/design/tui-model.md#decisions). Implementation follows that page's phases.
 
----
-▸ 2026-11-03T03:07:30Z [tui-design]
+#### 2026-11-03T03:07:30Z
+
+*tui-design*
 
 kind: pickup
 ---
@@ -63,13 +68,15 @@ picked up
 
 Nothing to do now: the answers live in the design page; this yak's work is a phase there.
 
----
-▸ 2026-11-03T05:52:28Z [herd-tui]
+#### 2026-11-03T05:52:28Z
+
+*herd-tui*
 
 Done by herd-tui through phases 1 (yaks-cc16, notifications clear on the next key) and 6a (yaks-a25c, the `/` query is global with its own chip, persists across views and is part of each history location).
 
----
-▸ 2026-11-03T05:52:28Z [herd-tui]
+#### 2026-11-03T05:52:28Z
+
+*herd-tui*
 
 kind: move
 from: hairy

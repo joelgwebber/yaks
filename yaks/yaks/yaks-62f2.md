@@ -23,8 +23,9 @@ Found when `yaks-da23` was shorn while it still held `yaks-f1e6` and `yaks-19c3`
 - **Skills:** the `yaks` skill's Workflow "Done" step already says to shear the parent when its last child is shorn. Add the converse as a hard rule: never shear a yak over unfinished children; graduate them first. The same goes for `yaks-working`'s finish step and the coordinating skill's reconcile step.
 - **Docs and help:** `docs/cli.md` (`shorn`, `doctor`) and `--help`.
 
----
-▸ 2026-11-01T16:23:55Z [yakherd]
+#### 2026-11-01T16:23:55Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -33,8 +34,9 @@ to: shaving
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T16:31:37Z [yakherd]
+#### 2026-11-01T16:31:37Z
+
+*yakherd*
 
 kind: landed
 sha: ac5c6e2
@@ -56,8 +58,9 @@ Evidence:
 
 Follow-up filed: create/reparent onto a shorn parent still produces the state (doctor catches it).
 
----
-▸ 2026-11-01T16:31:37Z [yakherd]
+#### 2026-11-01T16:31:37Z
+
+*yakherd*
 
 kind: move
 from: shaving

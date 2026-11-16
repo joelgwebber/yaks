@@ -14,7 +14,8 @@ needs: agent
 
 Consider a settings/config panel or key for editing user-global and per-project config (vim_mode, keybindings, etc.) from inside the TUI. Out of scope for the vim-keys rollout itself.
 
----
-▸ 2026-11-14T18:03:52Z [sched-1]
+#### 2026-11-14T18:03:52Z
+
+*sched-1*
 
 We also need this for other configuration options we landed, like label configurations, herds, etc.

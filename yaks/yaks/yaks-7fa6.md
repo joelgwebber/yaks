@@ -37,19 +37,15 @@ Persistent agents, launchd/cron integration and OS notifications. A persistent a
 - `create --key` and `list --source` belong in this arc.
 - A new `yaks-scheduling` skill.
 
----
-▸ 2026-11-04T22:36:22Z [sched-1]
-kind: move
-from: hairy
-to: shaving
-child: yaks-0079
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T22:36:22Z
+
+*sched-1 · kind: move · from: hairy · to: shaving · child: yaks-0079 · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T23:51:12Z [sched-1]
+#### 2026-11-04T23:51:12Z
+
+*sched-1*
 
 Seven of eight children are shorn, all on branch `scheduling` (6 commits on top of `origin/main` at 0.0.32, rebased once for the doks rename). Not merged to `main`, not installed, not released: waiting on Joel.
 
@@ -57,12 +53,8 @@ Left: `yaks-79a6`, the acceptance test (shrink `review-watch` onto `yaks-schedul
 
 Follow-ups not filed as yaks: `yaks tick --sync` (needs a two-machine duplicate-regrow test first); a docshots scene for the new form rows and Due view (text frames are attached to `yaks-2986` and `yaks-f561` instead); the cold-read scout check on the new skill.
 
----
-▸ 2026-11-05T04:42:41Z [sched-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-05T04:42:41Z
+
+*sched-1 · kind: move · from: shaving · to: shorn · thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

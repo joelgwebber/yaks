@@ -32,8 +32,9 @@ The skill half of yaks-dedc (diagnosis in its notes). Depends on the tool yak, s
 - `cargo test -p yaks skills`; grep for the old `--part-of ... when it is a separate file` wording across `docs/ .agents/ README.md src/`.
 - The scout's two answers, attached.
 
----
-▸ 2026-11-04T17:28:37Z [source-fix]
+#### 2026-11-04T17:28:37Z
+
+*source-fix*
 
 kind: move
 from: hairy
@@ -43,8 +44,9 @@ thread: ksQQc0mhDGDdTV-sOKzlcBdkVpLOAEMHM5IBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T17:29:21Z [source-fix]
+#### 2026-11-04T17:29:21Z
+
+*source-fix*
 
 Done on branch `yaks-dedc-sources` (ad0ee0d), not merged.
 
@@ -54,8 +56,9 @@ Done on branch `yaks-dedc-sources` (ad0ee0d), not merged.
 
 Not run: the cold-read scout from the brief (subagents weren't asked for in this thread). Worth doing after the branch lands, with the two scenario questions in the yak.
 
----
-▸ 2026-11-04T17:29:22Z [source-fix]
+#### 2026-11-04T17:29:22Z
+
+*source-fix*
 
 kind: move
 from: shaving

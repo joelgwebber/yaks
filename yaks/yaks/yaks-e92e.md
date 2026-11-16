@@ -20,13 +20,15 @@ Fix: three-way. An edit is outstanding only when the SHED made it, i.e. `store::
 
 Evidence: a test that fails first: shed forks, the reference re-parents a yak the shed noted, the reference also has the note. Before: not landed. After: landed. Plus a shed that really edited a field the reference lacks is still outstanding, and one where both edited different fields. Real machine: `yaks sheds` from ~/src/fs/subtext/surveyor no longer lists re-parented yaks for a shed that is only behind.
 
----
-▸ 2026-10-16T19:53:21Z [delta]
+#### 2026-10-16T19:53:21Z
+
+*delta*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-16T20:00:10Z [delta]
+#### 2026-10-16T20:00:10Z
+
+*delta*
 
 Decision: field-wise three-way, with the reference settling any field it also changed. A field counts as the shed's outstanding edit only when the shed changed it (base -> theirs) AND the reference still holds the base value (`store::edits_landed`). Rejected:
 - `edited(base, theirs) && edited(reference, theirs)` (yak-level): still flags a yak when the reference edited a different field after the shed's edit landed.
@@ -34,8 +36,9 @@ Decision: field-wise three-way, with the reference settling any field it also ch
 
 A shed-created yak (no base) is unchanged: any difference is outstanding.
 
----
-▸ 2026-10-16T20:00:10Z [delta]
+#### 2026-10-16T20:00:10Z
+
+*delta*
 
 Evidence. The new test `sheds::tests::landed_edits_are_three_way` covers: behind only (re-parented in the reference), the shed's own label (outstanding), both edited different fields (outstanding), both edited the same field (landed), and the surveyor review case. Restoring the old `c.edited` condition made it FAIL (`left: {yaks-behind, yaks-both, yaks-mine, yaks-took}`). With the fix it passes. Full `cargo test --release`: 17 suites, 0 failures.
 
@@ -47,7 +50,8 @@ collapse  1 new notes                                          landed (1 yak)
 ```
 Scratch clone removed afterwards. Docs: the `landed` rule in docs/cli.md `sheds` now states the edit case. README, the skill and `--help` don't spell out the rule (they say "already in the reference"), so they still hold.
 
----
-▸ 2026-10-16T20:00:10Z [delta]
+#### 2026-10-16T20:00:10Z
+
+*delta*
 
 moved: shaving -> shorn

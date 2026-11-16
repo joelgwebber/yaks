@@ -23,26 +23,30 @@ The command and TUI surface for note metadata. The format and core API landed in
 5. **`yaks doctor`: drift between `needs:` and the notes.** If the latest ask/answer/request/pickup note *with* `kind` metadata implies a `needs` state that disagrees with frontmatter `needs:`, report it. Yaks with no kinded notes are never flagged.
 6. **Docs and help** for all of the above: `docs/cli.md`, `docs/tui.md`, `--help`, the `?` overlay if a key changes. Not `.agents/skills/`; the yakherd writes the skills.
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:17:15Z [yakherd]
+#### 2026-10-31T16:17:15Z
+
+*yakherd*
 
 Claim (yakherd). Owner: worker `meta-1`. Scope: as described. Owns in `src/main.rs`: the `Update` command's args and dispatch, `Show`/`Log` JSON. In `src/farm.rs`: the note-writing methods (moves, ask, answer, request, pickup, verify). TUI: `detail::comment_label` / the comment header. Doctor: a new drift check. Out of scope: `sheds`, `land`, `commits`, `.agents/skills/`. Evidence: a failing-first test per item, a TUI text frame of a comment with metadata attached, the full gate. Judge: yakherd at landing.
 
----
-▸ 2026-10-31T16:18:06Z [meta-1]
+#### 2026-10-31T16:18:06Z
+
+*meta-1*
 
 Start (meta-1).
 
 - `date -u`: Sat Oct 31 16:18:03 UTC 2026
 - `yaks path yaks-b8cd`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-b8cd.md
 
----
-▸ 2026-10-31T16:28:45Z [meta-1]
+#### 2026-10-31T16:28:45Z
+
+*meta-1*
 
 Progress (meta-1), 16:5x UTC.
 
@@ -51,13 +55,15 @@ Progress (meta-1), 16:5x UTC.
 
 [comment-header-metadata-frame](yaks-b8cd/comment-header-metadata-frame.txt)
 
----
-▸ 2026-10-31T16:36:44Z [meta-1]
+#### 2026-10-31T16:36:44Z
+
+*meta-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-31T16:38:48Z [meta-1]
+#### 2026-10-31T16:38:48Z
+
+*meta-1*
 
 Decision: `answer` notes carry a `needs` key (`agent`, or `none` for `--done` or a yak with no `needs`), and `ask` notes carry `needs: <who>`. Rejected: inferring from `kind` alone, because `answer --done` and an answer on a yak with no `needs` leave no `needs:`, and would read as drift.
 
@@ -79,18 +85,21 @@ Summary: commands write `kind` metadata and keep their body text. `update --meta
 
 Skills should say (yakherd owns): `update --meta key=value` and `kind`s exist; the commands stamp kinds themselves; `needs-drift` meaning; and the notes line in `src/brief.rs` and the `yaks` skill's notes section could mention metadata.
 
----
-▸ 2026-10-31T16:38:49Z [meta-1]
+#### 2026-10-31T16:38:49Z
+
+*meta-1*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:42:39Z [yakherd]
+#### 2026-10-31T16:42:39Z
+
+*yakherd*
 
 Landed by the yakherd as `71ca61e` (squash of `1e6ce08`). Re-ran `cargo test --workspace` (all green with the fsmonitor workaround). Reproduced on a scratch farm with the landed build: moves, checkpoints, asks and answers carry `kind` metadata; `--meta` rejects a bad key and a missing note; `show --json` lists notes with `meta`; a hand-edited `needs:` that disagrees with the latest answer is reported by `doctor` as `needs-drift`.
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: 71ca61e943004f270ffdad04850e685f7a706e41
@@ -99,8 +108,9 @@ branch: main
 
 landed: 71ca61e yaks-b8cd: note metadata surface: kinds from commands, update --meta, JSON notes/meta, TUI header, doc (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:16Z [yakherd]
+#### 2026-10-31T17:24:16Z
+
+*yakherd*
 
 kind: landed
 commit: a7bc9534cefc000f38f42cf9d8a6e0a35aae7bbc
@@ -109,8 +119,9 @@ branch: main
 
 landed (rebased onto `c2b640f`, your checkout's `main`): a7bc953 yaks-4728, yaks-b8cd: clippy tidy in the new tests (was `4dda0fa`)
 
----
-▸ 2026-10-31T17:24:19Z [yakherd]
+#### 2026-10-31T17:24:19Z
+
+*yakherd*
 
 kind: landed
 commit: 920c436af1f6130790f9d82ddaf0039cdcc49a15

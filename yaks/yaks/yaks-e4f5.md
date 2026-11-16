@@ -16,18 +16,15 @@ Joel pointed at Anthropic's "The components of agent memory" (Lance Martin, 2026
 
 Deliverable: a research dok (what the article says, mapped onto what yaks already has, what it doesn't), the article saved as a source, and follow-ups filed where the dok recommends work. Instruction files and skills are not edited: proposals go to Joel as asks.
 
----
-▸ 2026-11-08T16:22:23Z [memory-1]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQobtw8z0aRtm7OxvMZr8p4JLOAE33iJIBxBCg_8DSgeNASrgoPHtnOl5O
----
+#### 2026-11-08T16:22:23Z
+
+*memory-1 · kind: move · from: hairy · to: shaving · thread: ksQQobtw8z0aRtm7OxvMZr8p4JLOAE33iJIBxBCg_8DSgeNASrgoPHtnOl5O*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-08T16:24:17Z [memory-1]
+#### 2026-11-08T16:24:17Z
+
+*memory-1*
 
 Done. Findings in [/doks/research/agent-memory-dreaming.md](/doks/research/agent-memory-dreaming.md); the article is saved as `sources/2026-11-08-f2310691` (text only; figures not read, the two cookbooks it links not read).
 
@@ -38,14 +35,10 @@ What it found, in short:
 - Two instances of drift in hand: `knowledge-store.md` describes `wiki/`, `yaks page` and `import-hearth`, and `AGENTS.md`'s list of files `cargo fmt` reformats is half out of date.
 - The loop isn't running: three session notes, no `lessons.md`, no recurring upkeep yaks.
 
-Filed under yaks-1c89: [yaks-6cf2](yaks-6cf2) (check flags doks whose cited code changed), [yaks-464b](yaks-464b) (refresh knowledge-store), and [yaks-2b40](yaks-2b40) (the skill and convention changes, held on one ask to Joel).
+Filed under yaks-1c89: [yaks-6cf2](/yaks/yaks/yaks-6cf2.md) (check flags doks whose cited code changed), [yaks-464b](/yaks/yaks/yaks-464b.md) (refresh knowledge-store), and [yaks-2b40](/yaks/yaks/yaks-2b40.md) (the skill and convention changes, held on one ask to Joel).
 
----
-▸ 2026-11-08T16:24:17Z [memory-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQobtw8z0aRtm7OxvMZr8p4JLOAE33iJIBxBCg_8DSgeNASrgoPHtnOl5O
----
+#### 2026-11-08T16:24:17Z
+
+*memory-1 · kind: move · from: shaving · to: shorn · thread: ksQQobtw8z0aRtm7OxvMZr8p4JLOAE33iJIBxBCg_8DSgeNASrgoPHtnOl5O*
 
 moved: shaving -> shorn

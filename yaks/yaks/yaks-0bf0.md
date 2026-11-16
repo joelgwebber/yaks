@@ -28,13 +28,15 @@ Things to work out (this is mostly a layout problem, not a decoding one):
 
 Depends on the viewer from yaks-4305 (`src/tui/imageview.rs`, the shared picker on `App`). Acceptance: scroll a yak body past an image in Ghostty with no artifacts and no flicker, plus a toque frame with the half-block image in the pane.
 
----
-▸ 2026-10-22T20:47:07Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:47:07Z
+
+*delta:Add basic image attachment rendering*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-22T20:55:37Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:55:37Z
+
+*delta:Add basic image attachment rendering*
 
 Claim (yakherd, thread of yaks-4305). Order: after yaks-89fc (size syntax: `imagesize::cells`, `MdRow.images`) lands, because this yak uses both. I do this one myself (it changes the detail pane's row model), not a worker.
 
@@ -49,8 +51,9 @@ Plan, recorded before the code so a reviewer can argue with it:
 
 Evidence: toque frames with a half-block image inline in a body (before scrolling, mid-scroll, wholly off-screen), a unit test that an image-only paragraph reserves rows and a mixed paragraph does not, and the real-terminal check in Ghostty by the human (not something I can observe).
 
----
-▸ 2026-10-22T20:55:43Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T20:55:43Z
+
+*delta:Add basic image attachment rendering*
 
 asked: needs human
 
@@ -59,26 +62,30 @@ Two forks before I build this, with my leans (I will start on the parts that do 
 1. A farm-config switch to turn inline images off (`inline_images: false`, default on). Lean: yes, because kitty/sixel redraw bugs differ per terminal and the half-block fallback is a fine escape hatch. Alternative: no config, rely on the terminal query's fallback only. This adds a surface to `.yaks/config.yaml`.
 2. Images that only partly fit the pane. Lean: draw an image only when it fits entirely in the visible area, else show the `🖼 alt` placeholder text for its visible rows (no cropping). Alternative: crop at the pane edge, which looks smoother while scrolling but protocol images (kitty, sixel) crop unreliably, so some terminals would show garbage.
 
----
-▸ 2026-10-22T20:58:41Z [Joel Webber]
+#### 2026-10-22T20:58:41Z
+
+*Joel Webber*
 
 1. SGTM. Especially with various terminal maintainers fighting about image support for years.
 2. Why not just scale down instead? Should be pretty efficient with Rust image libs.
 
----
-▸ 2026-10-22T20:58:49Z [Joel Webber]
+#### 2026-10-22T20:58:49Z
+
+*Joel Webber*
 
 Response in comment above.
 
----
-▸ 2026-10-22T21:49:01Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:49:01Z
+
+*delta:Add basic image attachment rendering*
 
 picked up
 
 Read your answers. (1) `inline_images` config switch: yes, I will add it (default on). (2) "Scale down instead": I read my question 2 too loosely, so one narrower question follows; the rest of the layout code waits on it.
 
----
-▸ 2026-10-22T21:49:01Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T21:49:01Z
+
+*delta:Add basic image attachment rendering*
 
 asked: needs human
 
@@ -90,20 +97,23 @@ I mixed two cases in question 2; your "scale down" answers the first, and I need
    - (B) Re-scale the visible part to the visible rows, so the image shrinks and grows as you scroll. It costs a re-encode and, on kitty, a re-transmit at every scroll step, which will probably flicker, and the picture changes size under your eyes.
    - (C) Draw only fully visible images, placeholder otherwise (my first plan: no flicker, but it pops in and out).
 
----
-▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:12:53Z
+
+*delta:Add basic image attachment rendering*
 
 Recorded by the yakherd from the human's comments in the Delta thread (not typed into this yak): on (A) clip a partly visible image at the pane edge: "That works. Let's try it and see how it goes."
 
----
-▸ 2026-10-22T22:12:53Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:12:53Z
+
+*delta:Add basic image attachment rendering*
 
 picked up
 
 Building (A) clip-at-edge plus the inline_images switch.
 
----
-▸ 2026-10-22T22:24:50Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:24:50Z
+
+*delta:Add basic image attachment rendering*
 
 Decision (yakherd): partial visibility uses ratatui-image's `SlicedImage`/`SlicedProtocol`, not a placeholder. It clips at the pane edge on every protocol (kitty via unicode-placeholder row skip, half-blocks, sixel by dropping bands, iTerm2 by per-row slices), so the human's choice (A) works everywhere and the "placeholder on sixel/iTerm2" fallback in my earlier lean is not needed. Rejected: `StatefulImage` (re-encodes on every size change and blocks the frame), re-scaling the visible part (flicker).
 
@@ -111,8 +121,9 @@ Decision: an image expands only when it is alone in a TOP-LEVEL paragraph (no li
 
 Decision: layout reads only the image HEADER (`ImageReader::into_dimensions`), at build time; decode and encode happen at first DRAW and only for images intersecting the visible rows, cached by (path, mtime, cols, rows) with a small cap. So opening a yak with twenty screenshots decodes the one or two on screen.
 
----
-▸ 2026-10-22T22:44:09Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:44:09Z
+
+*delta:Add basic image attachment rendering*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
@@ -120,8 +131,9 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 
 ![tui-image-inline-clipped](yaks-0bf0/tui-image-inline-clipped.png)
 
----
-▸ 2026-10-22T22:44:38Z [delta:Add basic image attachment rendering]
+#### 2026-10-22T22:44:38Z
+
+*delta:Add basic image attachment rendering*
 
 Built (yakherd), committed in the thread clone as ea538c8 (on top of 7462a6f); not pushed to the user's `main`. `yaks verify yaks-0bf0`: PASS (`cargo test --workspace`, 730 in the bin).
 
@@ -139,18 +151,21 @@ Decision: `build_inline` stretches the decoded image to exactly cols x rows cell
 
 Follow-up if wanted: images inside list items and quotes (need the container gutter as a draw offset).
 
----
-▸ 2026-10-25T21:07:19Z [Joel Webber]
+#### 2026-10-25T21:07:19Z
+
+*Joel Webber*
 
 Looking really good! One small nit -- the cursor movement in view-mode goes "underneath" an inline image based on its height in cells, forcing you to move down across many cells to move past a large image. I believe this should be more like edit mode, where you only have to move a single cell to get past the image.
 
----
-▸ 2026-10-25T21:18:04Z [delta:Add basic image attachment rendering]
+#### 2026-10-25T21:18:04Z
+
+*delta:Add basic image attachment rendering*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-25T21:21:22Z [delta:Add basic image attachment rendering]
+#### 2026-10-25T21:21:22Z
+
+*delta:Add basic image attachment rendering*
 
 Cursor fix (yakherd), committed in the thread clone as c4b0b9f, after the human's nit: moving the line cursor through a body went "underneath" an inline image one reserved row at a time.
 
@@ -164,12 +179,14 @@ Installed the build to ~/.cargo/bin/yaks and ~/go/bin/yaks (identical). The huma
 
 Closing the yak. Follow-ups not filed: images inside list items and quotes; an svg inline (it has no header size).
 
----
-▸ 2026-10-25T21:21:22Z [delta:Add basic image attachment rendering]
+#### 2026-10-25T21:21:22Z
+
+*delta:Add basic image attachment rendering*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-25T21:26:26Z [delta:Add basic image attachment rendering]
+#### 2026-10-25T21:26:26Z
+
+*delta:Add basic image attachment rendering*
 
 Landed (yakherd): the thread's five commits fast-forwarded onto the user's checkout main (2b1f3ba..c4b0b9f: yaks-89fc 7462a6f, yaks-0bf0 ea538c8 and c4b0b9f, yaks-4e9c 67122a0 and e4e378d). Verified there: git log shows c4b0b9f, status clean, no MERGE_HEAD. The first push attempt printed nothing and did not land; the second did. origin not pushed. toque origin/main 240eb5f. Release build installed to ~/.cargo/bin/yaks and ~/go/bin/yaks from c4b0b9f.

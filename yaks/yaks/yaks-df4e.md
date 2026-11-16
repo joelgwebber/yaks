@@ -18,27 +18,20 @@ Last of yaks-1151: update every surface that mentions `.yaks/`, a link form or t
 
 Evidence: a grep for `.yaks/` and the old link forms across `docs/`, `.agents/skills/`, `README.md` and `src/`, showing only the intended hits.
 
----
-▸ 2026-11-15T08:45:30Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-15T08:45:30Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-15T08:45:32Z [linkplan-lead]
+#### 2026-11-15T08:45:32Z
+
+*linkplan-lead*
 
 Done in a7a34957. Swept `.yaks/` from README.md, docs/ (cli, tui, README, skills), AGENTS.md, the `yaks`, `yaks-coordinating`, `yaks-scheduling` and `land` skills, `src/brief.rs` and the clap help; the remaining `.yaks/` hits are the intended ones (the stub, the pre-schema-9 notes, the stray-layout finding, the migrate docs). New text: the schema-9 section of `migrate` (cli.md and clap help), `stray-layout` under `check`, the path forms in the link table, and the farm dok `howto/migrate-a-farm.md`. `update --note` and `session touched` now print the host-followable note link on a new-shape body, with tests. Not done: `doks/design/knowledge-store.md` mentions no layout, so left alone; no cold-read scout of the skills prose.
 
----
-▸ 2026-11-15T08:45:34Z [linkplan-lead]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-15T08:45:34Z
+
+*linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

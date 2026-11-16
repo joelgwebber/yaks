@@ -20,13 +20,15 @@ The build-and-cutover half of yaks-73f4's design note. One arc, done by the yakh
 
 Evidence: full test suite; on this machine `yaks path` resolves the farm from ~/src/yaks, a subdir, this Delta clone and the farm worktree; a worker-less round trip (note, commit, push main) leaves main with no `.yaks/` and farm history intact (`git log yaks -- .yaks/yaks-6a34.md` reaches its creation).
 
----
-▸ 2026-10-18T21:15:04Z [delta-farm]
+#### 2026-10-18T21:15:04Z
+
+*delta-farm*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-18T21:25:20Z [delta-farm]
+#### 2026-10-18T21:25:20Z
+
+*delta-farm*
 
 Cutover done (delta-farm, 2026-10-18).
 
@@ -36,7 +38,8 @@ Cutover done (delta-farm, 2026-10-18).
 
 Evidence: `yaks path` from ~/src/yaks (with the leftover), ~/src/yaks/src/tui, this Delta clone and ~/src/yaks-farm: all `/home/joel/src/yaks-farm/.yaks`. `git log yaks -- .yaks/yaks-6a34.md`: 7 commits back to its creation; `yaks commits yaks-ee0a` (an old yak) still finds its history. Full `cargo test --release` 867 passed; land.sh selftest all passed.
 
----
-▸ 2026-10-18T21:25:20Z [delta-farm]
+#### 2026-10-18T21:25:20Z
+
+*delta-farm*
 
 moved: shaving -> shorn

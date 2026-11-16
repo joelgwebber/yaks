@@ -14,18 +14,15 @@ See the attached screenshot.
 
 ![bad-shorn-filter](yaks-c14e/bad-shorn-filter.png)
 
----
-▸ 2026-11-10T21:11:50Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:50Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:23Z [herd-unlock]
+#### 2026-11-10T21:12:23Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `shornfilter-1`, Sonnet 5.5.
 
@@ -41,15 +38,17 @@ Tree views, unless the same rule is broken there too (then say so in a note and 
 
 A test that fails first: All view, drawer toggles shorn off, no shorn row remains and the count matches. A `yaks tui --headless` frame of it, attached. Gate `cargo test --workspace`.
 
----
-▸ 2026-11-10T21:13:10Z [shornfilter-1]
+#### 2026-11-10T21:13:10Z
+
+*shornfilter-1*
 
 Start 2026-11-10T21:13:10Z; checkout /Users/joel/src/yaks/.delta/worktrees/pfapv7at78cw/yaks, base 686d328a.
 
 [shorn-after](yaks-c14e/shorn-after.txt "After the fix: All view, drawer status chips hairy+shaving+dead lit (shorn off): 3 rows, no shorn yak (yak-1fc5), where before it stayed")
 
----
-▸ 2026-11-10T21:35:05Z [shornfilter-1]
+#### 2026-11-10T21:35:05Z
+
+*shornfilter-1*
 
 Cause: `flat_rows` (and `view_count`) only read the status scope for `dead` (`want_dead = statuses.contains(Dead)`); every other status was ignored, so on All (a flat view whose spec lists every status) switching `shorn` off in the drawer changed nothing.
 
@@ -63,35 +62,26 @@ Decision: the tab count (`view_count`) uses the view's saved spec statuses, not 
 
 Decision: docs: one sentence under Filter drawer in `docs/tui.md`. Grep for old wording ("dead ones included", "flat view", statuses) in docs/ .agents/skills/ README.md src/ found nothing contradicting it.
 
----
-▸ 2026-11-10T21:42:44Z [shornfilter-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:42:44Z
+
+*shornfilter-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:42:49Z [shornfilter-1]
+#### 2026-11-10T21:42:49Z
+
+*shornfilter-1*
 
 Summary: flat views now honour every status chip via FilterSpec::admits_status (src/filter.rs, used by flat_rows and view_count); docs/tui.md updated; verify PASS; headless frame attached.
 
----
-▸ 2026-11-10T21:42:50Z [shornfilter-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVPepIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:42:50Z
+
+*shornfilter-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVPepIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:43:15Z [herd-unlock]
-kind: landed
-commit: d147c2bc8876a1ab29a8345d4fb04b91c2a8e2e4
-source: 1f23b31dbed4e9af0999a173a7b285932b33a2b9
-branch: main
----
+#### 2026-11-10T21:43:15Z
+
+*herd-unlock · kind: landed · commit: d147c2bc8876a1ab29a8345d4fb04b91c2a8e2e4 · source: 1f23b31dbed4e9af0999a173a7b285932b33a2b9 · branch: main*
 
 landed: d147c2bc yaks-c14e: flat views honour the drawer's status chips (FilterSpec::admits_status)

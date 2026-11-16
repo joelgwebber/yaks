@@ -13,8 +13,9 @@ tags:
 
 Layer 2 of the umbrella: the CLI and store for pages, sources, schemas, links and commits. All code on the `wiki` branch.
 
----
-▸ 2026-11-01T18:54:20Z [delta:farm-wiki]
+#### 2026-11-01T18:54:20Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -24,8 +25,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T22:26:26Z [delta:farm-wiki]
+#### 2026-11-01T22:26:26Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving
@@ -35,8 +37,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-01T22:26:31Z [delta:farm-wiki]
+#### 2026-11-01T22:26:31Z
+
+*delta:farm-wiki*
 
 Core layer complete on `wiki`. Every child is shorn:
 

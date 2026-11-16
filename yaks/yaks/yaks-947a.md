@@ -23,8 +23,9 @@ It implements these yaks, which are sheared as their phases land:
 
 Coordinated by herd-tui on a Delta cloud runner; workers are Sonnet 5.5 subthreads.
 
----
-▸ 2026-11-03T03:47:40Z [herd-tui]
+#### 2026-11-03T03:47:40Z
+
+*herd-tui*
 
 kind: move
 from: hairy
@@ -35,8 +36,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T03:52:22Z [herd-tui]
+#### 2026-11-03T03:52:22Z
+
+*herd-tui*
 
 Wave 1 started (herd-tui, base `9a8c7b4`, Sonnet 5.5 workers):
 
@@ -45,20 +47,23 @@ Wave 1 started (herd-tui, base `9a8c7b4`, Sonnet 5.5 workers):
 
 Runner setup: rustup stable, and git 2.47.1 built into `~/.local` (the system git 2.39 lacks `worktree add --orphan` and `merge-tree --merge-base`, failing 22 tests and `yaks land`).
 
----
-▸ 2026-11-03T04:11:59Z [herd-tui]
+#### 2026-11-03T04:11:59Z
+
+*herd-tui*
 
 Wave 1 landed: phase 1 as `f18b13db` plus herd follow-up `a22c9843`, phase 2 as `642be42e`. Gate green on each.
 
 Phase 3 is split into yaks-be65 (row kinds, Wiki as a view) and yaks-c354 (Sheds as a tree view), run back to back. Started `rows-1` (Sonnet 5.5) on yaks-be65 from `642be42e`, thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_EipIBxBCtY3f3KUhDW5IL-PWT3Nbm`.
 
----
-▸ 2026-11-03T04:27:44Z [herd-tui]
+#### 2026-11-03T04:27:44Z
+
+*herd-tui*
 
 Phase 3a landed as `50af0a9a`. Started `sheds-2` on yaks-c354 (phase 3b) from it, thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD_xRZIBxBCtY3f3KUhDW5IL-PWT3Nbm`.
 
----
-▸ 2026-11-03T05:08:57Z [herd-tui]
+#### 2026-11-03T05:08:57Z
+
+*herd-tui*
 
 Progress (herd-tui):
 
@@ -67,8 +72,9 @@ Progress (herd-tui):
 - Started `nav-2` on yaks-9dec (phase 4b, the `LineNav` fold), thread `ksQQAxHGlH5JRk2_BHzLBG1rrJLOAECAE5IBxBCtY3f3KUhDW5IL-PWT3Nbm`. Next: 6b (yaks-c215), then 5 (yaks-a2c5), then 7 (yaks-6919).
 - Disk: worker `target/` dirs are about 3.3 GB each on a 32 GB disk; landed workers' targets are deleted after landing.
 
----
-▸ 2026-11-03T06:11:22Z [herd-tui]
+#### 2026-11-03T06:11:22Z
+
+*herd-tui*
 
 All seven phases landed (herd-tui, Sonnet 5.5 workers). Each passed the full gate on the landed commit and was checked headlessly on the coordinator's build.
 
@@ -87,8 +93,9 @@ Follow-ups:
 - yaks-7c6e: the holistic key rethink; the which-key ask on yaks-6919 is still open.
 - The viewer and image-viewer bottom lines are fixed text, not generated from the keymap, so they ignore overrides.
 
----
-▸ 2026-11-03T06:11:23Z [herd-tui]
+#### 2026-11-03T06:11:23Z
+
+*herd-tui*
 
 kind: move
 from: shaving
@@ -98,7 +105,8 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T13:02:24Z [herd-tui]
+#### 2026-11-03T13:02:24Z
+
+*herd-tui*
 
 Landed on origin/main by herd-tui at Joel's request: fast-forward 9a8c7b4..c98d7e3c (11 commits, gate green on the tip). Joel tests locally before tweaks and a release.

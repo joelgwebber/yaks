@@ -15,18 +15,15 @@ Found while reading for [the agent-memory research](/doks/research/agent-memory-
 
 Rewrite it to the current model (doks, sources, schemas, sessions) and add a `stale_after:`. It is design history that the Hearth framing explains, so keep what still holds and say what changed rather than only overwriting.
 
----
-▸ 2026-11-10T21:11:51Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:51Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:14:45Z [herd-unlock]
+#### 2026-11-10T21:14:45Z
+
+*herd-unlock*
 
 Done (herd-unlock-2): [/doks/design/knowledge-store.md](/doks/design/knowledge-store.md) rewritten to the current model.
 
@@ -35,12 +32,8 @@ Done (herd-unlock-2): [/doks/design/knowledge-store.md](/doks/design/knowledge-s
 - Frontmatter: `stale_after: P6M`, `verified: 2026-11-10`, tags `doks, design` (was `wiki`), description rewritten.
 - Every yak it links exists; `yaks doctor` reports nothing for it.
 
----
-▸ 2026-11-10T21:14:46Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:14:46Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

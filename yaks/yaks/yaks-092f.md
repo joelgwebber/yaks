@@ -11,13 +11,15 @@ tags:
 - cli
 ---
 
----
-▸ 2026-10-27T00:47:44Z [delta-lead]
+#### 2026-10-27T00:47:44Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-27T00:47:44Z [delta-lead]
+#### 2026-10-27T00:47:44Z
+
+*delta-lead*
 
 Joel (2026-10-26, in the coordinating thread): a tidy should remove the request note when done, rather than add more notes.
 
@@ -28,8 +30,9 @@ Decision (delta-lead):
 - Both canned kinds end with it: tidy (the tidied body is the result) and summarize (the summary note is the result).
 - Rejected: auto-dropping on every pickup of a request (free-text requests can carry context worth keeping), and a separate `yaks done` verb (pickup is already the only thing that clears needs).
 
----
-▸ 2026-10-27T00:50:59Z [delta-lead]
+#### 2026-10-27T00:50:59Z
+
+*delta-lead*
 
 Done (delta-lead). Pushed to the human's checkout and installed with `cargo install --path .`.
 
@@ -43,7 +46,8 @@ Evidence:
 - Gate: 875 passed, 0 failed.
 - Real binary on a throwaway farm: request `--kind tidy`, fix the body, `pickup --drop-request`. The diff against the original yak is only the added blank line plus `updated:`. On an answered yak `--drop-request` exits 1; with `--note` it exits 2.
 
----
-▸ 2026-10-27T00:50:59Z [delta-lead]
+#### 2026-10-27T00:50:59Z
+
+*delta-lead*
 
 moved: shaving -> shorn

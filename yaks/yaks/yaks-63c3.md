@@ -42,8 +42,9 @@ How farm writes become commits, and how concurrent writes merge, now that the fa
 - Many more farm commits (this farm has about 790 today). Commits are small and pack well; the checkout-weight design yak measures it.
 - A commit per command adds a few git processes (tens of ms) to each write; agents won't notice, and the TUI is the place to measure.
 
----
-▸ 2026-11-01T18:53:39Z [delta:farm-wiki]
+#### 2026-11-01T18:53:39Z
+
+*delta:farm-wiki*
 
 kind: ask
 needs: human
@@ -55,8 +56,9 @@ asked: needs human
 2. **Prose conflicts leave markers in the file** (the merge itself succeeds), listed by `yaks conflicts` and doctor. Lean: yes, for page bodies and yak descriptions; notes stay a union and fields follow their merge rule, so frontmatter is never left with markers.
 3. **TUI coalescing:** a burst of edits to one document within a few seconds becomes one commit. Lean: yes, about 5 seconds.
 
----
-▸ 2026-11-01T20:07:39Z [Joel Webber]
+#### 2026-11-01T20:07:39Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -66,8 +68,9 @@ needs: agent
 2. Exactly. I think this will be a very effective pattern, giving us the flexibility to always merge forward without creating metadata inconsistencies, allowing humans and agents to fix up semantic conflicts later.
 3. That's fine as well -- we can see where that gets us, and tweak as needed. It would also be good to auto-sync with some reasonable regularity, so upstream changes get reflected even in the absence of local ones.
 
----
-▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+#### 2026-11-01T20:09:15Z
+
+*delta:farm-wiki*
 
 kind: pickup
 ---
@@ -81,8 +84,9 @@ Decision (Joel, 2026-11-01):
 3. TUI coalescing of a burst of edits (about 5 s) into one commit.
 4. **New:** the TUI auto-syncs on a regular interval, so upstream changes show up without local ones. Filed under yaks-a838's family.
 
----
-▸ 2026-11-01T20:09:15Z [delta:farm-wiki]
+#### 2026-11-01T20:09:15Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy

@@ -12,20 +12,21 @@ tags:
 
 Preserve a draft when an edit form or comment is dismissed or interrupted, so in-progress text is not lost.
 
----
-▸ 2026-08-26T13:02:05Z
+#### 2026-08-26T13:02:05Z
 
 Related: yaks-275f (confirm-on-cancel for dirty yaks). Both address losing work when an edit is dismissed; coordinate the designs.
 
 [683f-design](yaks-683f/683f-design.md)
 
----
-▸ 2026-09-23T21:39:11Z [design-scout]
+#### 2026-09-23T21:39:11Z
+
+*design-scout*
 
 Design proposal attached
 
----
-▸ 2026-09-23T21:39:11Z [design-scout]
+#### 2026-09-23T21:39:11Z
+
+*design-scout*
 
 Design attached (683f-design.md). Decisions:
 1. Dirty cancel: replace 275f's y/N with 'k=keep draft (default) / d=discard / Esc=back', or drop the prompt and always keep silently? Lean: 3-way prompt, keep default.
@@ -33,38 +34,32 @@ Design attached (683f-design.md). Decisions:
 3. Phase 1 saves on dismiss/quit only (autosave via the 250ms loop in P2), or autosave from day one? Lean: dismiss/quit first.
 4. Mid-edit external changes clobbered on commit: in scope or separate yak? Lean: separate; 683f only warns on restore when base 'updated' differs. Drafts stored at `~/.config/yaks/<slug>/drafts/<key>.json`, keys `edit:<id>/comment:<id>/create:<parent|root>`.
 
----
-▸ 2026-11-06T04:58:33Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T04:58:33Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. I like the three-way prompt idea.
 2. I'm good to start by trying auto-restore.
 3. Yeah, we can start there and see how it goes. I originally wanted this becauuse of crash bugs, but we haven't had that problem in a while.
 4. SGTM.
 
----
-▸ 2026-11-10T17:49:46Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T17:49:46Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T17:50:28Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T17:50:28Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 
 herd-unlock: delegating phase 1 of the attached design to worker drafts-1 (Sonnet), with the four answers as decided.
 
----
-▸ 2026-11-10T17:50:30Z [herd-unlock]
+#### 2026-11-10T17:50:30Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock): worker `drafts-1`, Sonnet 5.5. Phase 1 of [the design](yaks-683f/683f-design.md), with the answers of 2026-11-06.
 
@@ -86,13 +81,15 @@ Autosave, ask/answer drafts, a drafts picker, the `✎` tree marker, clobber-on-
 
 Tests: dismiss-keep then reopen restores; `d` discards; commit clears; stale warning. A toque text frame of a restored form with its badge and of the three-way prompt, attached. Gate `cargo test --workspace`. Judge: the yakherd at landing.
 
----
-▸ 2026-11-10T17:52:18Z [drafts-1]
+#### 2026-11-10T17:52:18Z
+
+*drafts-1*
 
 Start: Tue Nov 10 17:52:18 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/.yaks/yaks/yaks/yaks-683f.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/v49c5a8gdr4r/yaks.
 
----
-▸ 2026-11-10T18:27:52Z [drafts-1]
+#### 2026-11-10T18:27:52Z
+
+*drafts-1*
 
 Plan (before coding), read of the code:
 
@@ -104,16 +101,15 @@ Plan (before coding), read of the code:
 
 [restored](yaks-683f/restored.txt "text frame: edit form reopened, restored from the draft, with its 'draft (saved just now) · Ctrl-R original' badge")
 
----
-▸ 2026-11-10T19:06:03Z [drafts-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T19:06:03Z
+
+*drafts-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T19:06:37Z [drafts-1]
+#### 2026-11-10T19:06:37Z
+
+*drafts-1*
 
 Decision: the three-way prompt is a new `ConfirmAction::KeepDraft`, used only when the stashed overlay is a form or a new comment (`keeps_drafts`). Rejected: extending `PickAction` (a Pick's Esc means cancel, but here Esc must go back to editing) and replacing the `y/N` everywhere (block edits, attachment edits and ask/answer/request have no draft, so `k=keep` would be false). They keep `Discard changes? (y/N)`.
 
@@ -141,22 +137,14 @@ Docs parity: `docs/tui.md` "Drafts" section; `?` overlay rows in `EXTRAS` (k/Ent
 
 Summary: dirty cancel of the create form, edit form and a new comment now offers keep/discard/back (keep default); keep saves a JSON draft under the farm's config dir; reopening restores it with a badge and Ctrl-R reverts; commit, discard and refused-save paths update the draft; startup GC. Gate: `yaks verify` PASS.
 
----
-▸ 2026-11-10T19:06:37Z [drafts-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR7IZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T19:06:37Z
+
+*drafts-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFR7IZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T19:07:03Z [herd-unlock]
-kind: landed
-commit: 686d328a0b281e8f6570ed738e7ea083e9a1037a
-source: 61db35cd36c66c65155390004b4f3e04acbff7e4
-branch: main
----
+#### 2026-11-10T19:07:03Z
+
+*herd-unlock · kind: landed · commit: 686d328a0b281e8f6570ed738e7ea083e9a1037a · source: 61db35cd36c66c65155390004b4f3e04acbff7e4 · branch: main*
 
 landed: 686d328a yaks-683f: keep unfinished form and comment edits as drafts (keep/discard/back prompt, auto-restore, Ctrl-R revert)

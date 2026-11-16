@@ -29,11 +29,9 @@ The `yaks-research` skill says "`doks/topics/`, `doks/projects/` and `doks/peopl
 
 The skill text (`yaks`, `yaks-research`) and, if `created:` is stamped, a test and `docs/`.
 
----
-▸ 2026-11-06T21:37:50Z [schism-feedback]
-kind: ask
-needs: human
----
+#### 2026-11-06T21:37:50Z
+
+*schism-feedback · kind: ask · needs: human*
 
 asked: needs human
 
@@ -42,36 +40,30 @@ Two dok-format questions, my lean on each.
 1. **`created:` on doks.** Have `yaks dok new` stamp `created:` (not `updated:`, which hand edits would leave stale). Alternative: leave dates to git history.
 2. **Folders follow kinds, not subjects.** `doks/topics/` holds `topic` doks on any subject; a typed kind gets its own folder (`doks/screenshots/` for `type: screenshot`); subjects are tags, never folders. Alternative: leave layout to each farm, as the skill says now.
 
----
-▸ 2026-11-06T21:48:51Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-06T21:48:51Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. Agreed.
 2. That also works for me.
 
----
-▸ 2026-11-07T17:04:28Z [herd-stars]
-kind: pickup
----
+#### 2026-11-07T17:04:28Z
+
+*herd-stars · kind: pickup*
 
 picked up
 
 herd-stars: doing it myself: dok new stamps created:, and the folders-follow-kinds and dated-dok rules in the skills.
 
----
-▸ 2026-11-07T17:04:44Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:44Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:38:40Z [herd-stars]
+#### 2026-11-07T17:38:40Z
+
+*herd-stars*
 
 Done by herd-stars in `2206248e`, per Joel's two answers.
 
@@ -80,12 +72,8 @@ Done by herd-stars in `2206248e`, per Joel's two answers.
 - `docs/cli.md` and `dok new --help` updated.
 - Evidence: `tests/doks.rs` (the caller's `created` wins), the TUI new-dok test (a parseable RFC 3339 stamp), and a scratch farm: `created: '2026-11-07T17:38:25Z'` on a new dok, `doctor` clean with a typed schema. Full gate green.
 
----
-▸ 2026-11-07T17:38:41Z [herd-stars]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:38:41Z
+
+*herd-stars · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

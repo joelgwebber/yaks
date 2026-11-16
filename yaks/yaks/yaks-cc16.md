@@ -13,8 +13,9 @@ tags:
 
 Phase 1 of [the design](/doks/design/tui-model.md#phases) (yaks-953f, its phase 1): a notification lasts until the next key, and the search commit stops writing a `filter: q` toast. Today `App.notification` is never cleared, so a stale `filter: widget` toast outlives the search it describes.
 
----
-▸ 2026-11-03T03:47:40Z [herd-tui]
+#### 2026-11-03T03:47:40Z
+
+*herd-tui*
 
 kind: move
 from: hairy
@@ -24,8 +25,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAC-kJZIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T03:48:20Z [herd-tui]
+#### 2026-11-03T03:48:20Z
+
+*herd-tui*
 
 Claim (yakherd herd-tui): worker `notify-1` (Sonnet 5.5), from main at `9a8c7b4`.
 
@@ -48,13 +50,15 @@ Claim (yakherd herd-tui): worker `notify-1` (Sonnet 5.5), from main at `9a8c7b4`
 
 **Judge.** herd-tui at landing.
 
----
-▸ 2026-11-03T03:52:10Z [notify-1]
+#### 2026-11-03T03:52:10Z
+
+*notify-1*
 
 Start: Tue Nov  3 03:52:10 UTC 2026; farm path: /home/user/.local/share/yaks/farms/yaks-b0f8dcf9/.yaks/yaks/yaks/yaks-cc16.md; checkout: /home/user/yaks-2
 
----
-▸ 2026-11-03T03:55:33Z [notify-1]
+#### 2026-11-03T03:55:33Z
+
+*notify-1*
 
 kind: verify
 result: fail
@@ -64,8 +68,9 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 
 [search-commit-tab-frame](yaks-cc16/search-commit-tab-frame.txt)
 
----
-▸ 2026-11-03T03:57:13Z [notify-1]
+#### 2026-11-03T03:57:13Z
+
+*notify-1*
 
 Decision: the mouse clear sits in `App::handle_mouse` (`src/tui/mouse.rs`), the wrapper over `handle_mouse_inner`, which is the single mouse entry (`handle_event` calls it). It clears even when an overlay is open and the mouse is otherwise ignored, since "next mouse event" is the rule. Rejected: clearing in `handle_event`, which would miss tests and callers that call `handle_mouse` directly.
 
@@ -86,8 +91,9 @@ Regression check: with `handlers.rs` and `mouse.rs` reverted to HEAD, `search_co
 
 Summary: `handle_key` and `App::handle_mouse` clear `notification` first. The `Overlay::Search` commit no longer toasts `filter: q`. 3 new tests plus the snapshot `search_commit_then_tab_no_toast`, which is attached. `docs/tui.md` has one added sentence. Docs parity: grepped for `filter:` toast mentions in `docs`, `README.md`, `.agents/skills` and `src`, and found none to update.
 
----
-▸ 2026-11-03T03:57:19Z [notify-1]
+#### 2026-11-03T03:57:19Z
+
+*notify-1*
 
 kind: verify
 result: fail
@@ -95,13 +101,15 @@ result: fail
 
 verify: `cargo test --workspace` -> FAIL (exit 101)
 
----
-▸ 2026-11-03T03:57:34Z [notify-1]
+#### 2026-11-03T03:57:34Z
+
+*notify-1*
 
 Decision: set this yak's `verify:` to `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace`, because the default gate fails under the `YAKS_DIR` this job must export (see the surprise note). Rejected: leaving it and recording FAIL, which says nothing about the change. The coordinator may reset it with `yaks update yaks-cc16 --verify ''`.
 
----
-▸ 2026-11-03T03:58:03Z [notify-1]
+#### 2026-11-03T03:58:03Z
+
+*notify-1*
 
 kind: verify
 result: pass
@@ -109,8 +117,9 @@ result: pass
 
 verify: `env -u YAKS_DIR -u YAKS_ACTOR cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-03T03:58:07Z [notify-1]
+#### 2026-11-03T03:58:07Z
+
+*notify-1*
 
 kind: move
 from: shaving
@@ -120,8 +129,9 @@ thread: ksQQAxHGlH5JRk2_BHzLBG1rrJLOAD9uc5IBxBCtY3f3KUhDW5IL-PWT3Nbm
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-03T03:59:16Z [herd-tui]
+#### 2026-11-03T03:59:16Z
+
+*herd-tui*
 
 kind: landed
 commit: f18b13db770c4631ed8a32d99a3390b6076e23e1
@@ -131,8 +141,9 @@ branch: main
 
 landed: f18b13db yaks-cc16: notifications clear on the next key or mouse event; a kept search no longer toasts filter: q
 
----
-▸ 2026-11-03T04:04:13Z [herd-tui]
+#### 2026-11-03T04:04:13Z
+
+*herd-tui*
 
 Landed by herd-tui: worker commit `c5105119` as `f18b13db`, plus my follow-up commit on top.
 

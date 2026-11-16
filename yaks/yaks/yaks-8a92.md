@@ -23,23 +23,21 @@ Before telling anyone to migrate, look at the farm branch's upstream (`origin/ya
 
 The skills say the farm is "checked out once per machine", but a Delta-managed repository and the user's checkout are two hosts, so two worktrees whose writes meet only through `yaks sync`. Either say so in the `yaks` skill, or make the two share one worktree (keyed by the origin URL rather than the git dir); yaks-9a13 (`repository-…`) touches the same code.
 
----
-▸ 2026-11-06T22:09:26Z [schism-feedback]
+#### 2026-11-06T22:09:26Z
+
+*schism-feedback*
 
 The two-worktrees half is yaks-35b5 (built, not landed). This yak keeps the migrate-message half: suggest fetching when `origin/<branch>` is already on the current schema.
 
----
-▸ 2026-11-06T22:18:25Z [schism-feedback]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:18:25Z
+
+*schism-feedback · kind: move · from: hairy · to: shaving · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-06T22:23:35Z [schism-feedback]
+#### 2026-11-06T22:23:35Z
+
+*schism-feedback*
 
 Landed on `main` as 34ded4b5 and installed.
 
@@ -47,12 +45,8 @@ Landed on `main` as 34ded4b5 and installed.
 
 Evidence: the test `a_stale_farm_whose_upstream_is_migrated_is_told_to_fast_forward` (a pushed schema-7 farm, then a migrated upstream with the worktree reset behind it); full `cargo test` green. The `yaks` skill's "Never migrate" paragraph and `docs/cli.md` `migrate` say what to do with the new message.
 
----
-▸ 2026-11-06T22:23:37Z [schism-feedback]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-06T22:23:37Z
+
+*schism-feedback · kind: move · from: shaving · to: shorn · thread: ksQQNtlWqzuUT5COVXyFQVm8cZLOAEgKKZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

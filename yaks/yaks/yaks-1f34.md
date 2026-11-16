@@ -15,8 +15,9 @@ verify: cargo test --workspace
 
 Implements yaks-8384. A `Doc { fields, body }` with an ordered key->Value map parsed from a YAML subset, byte-exact round-trip of untouched keys, one-key edits that rewrite only that key. `Task` keeps typed accessors and gains `fields`; the list fast path stays. Failing-first tests: round-trip of every yak in this farm and the `joel` farm, nested maps (`generated: {by, at}`, `sources:` list of maps), comments, quoting.
 
----
-▸ 2026-11-01T18:54:20Z [delta:farm-wiki]
+#### 2026-11-01T18:54:20Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -26,8 +27,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T19:10:46Z [delta:farm-wiki]
+#### 2026-11-01T19:10:46Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -52,8 +54,9 @@ Done on the `wiki` branch (`8d3dd73`). `Task.extra` is now a `Fields` value: fro
 
 Not done here: field specs and merge rules per key (yaks-8e75 for schemas, yaks-4c8c for the merge driver).
 
----
-▸ 2026-11-01T19:10:48Z [delta:farm-wiki]
+#### 2026-11-01T19:10:48Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: fail
@@ -61,8 +64,9 @@ result: fail
 
 verify: `cargo test --workspace` -> FAIL (exit 101)
 
----
-▸ 2026-11-01T19:10:48Z [delta:farm-wiki]
+#### 2026-11-01T19:10:48Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving
@@ -72,8 +76,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+#### 2026-11-01T19:10:53Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shorn
@@ -83,8 +88,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: shorn -> hairy
 
----
-▸ 2026-11-01T19:10:53Z [delta:farm-wiki]
+#### 2026-11-01T19:10:53Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -94,8 +100,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T19:13:38Z [delta:farm-wiki]
+#### 2026-11-01T19:13:38Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -103,8 +110,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
+#### 2026-11-01T19:13:42Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -113,8 +121,9 @@ commit: b1135f4
 
 Correction: my earlier gate run had a compile error in the test-only `src/tui/docshots.rs` that my grep missed; the first `yaks verify` caught it. Fixed and amended: the commit is now `b1135f4` (not `8d3dd73`). `yaks verify` PASS: 872 tests, 0 failed.
 
----
-▸ 2026-11-01T19:13:42Z [delta:farm-wiki]
+#### 2026-11-01T19:13:42Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

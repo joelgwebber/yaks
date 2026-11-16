@@ -14,8 +14,9 @@ tags:
 Trying to follow a link like yaks-37da from within a doc gives `wiki/howto/yaks-37da: not in this farm`.
 Looks like it's trying to follow them as though they're relative resources, when yaks are absolute by definition.
 
----
-▸ 2026-11-03T21:13:56Z [delta:starred-batch]
+#### 2026-11-03T21:13:56Z
+
+*delta:starred-batch*
 
 kind: move
 from: hairy
@@ -25,13 +26,15 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T21:20:55Z [delta:starred-batch]
+#### 2026-11-03T21:20:55Z
+
+*delta:starred-batch*
 
 Same bug as yaks-0e15, fixed there (yak ids in links are absolute; `Link::Yak`).
 
----
-▸ 2026-11-03T21:20:56Z [delta:starred-batch]
+#### 2026-11-03T21:20:56Z
+
+*delta:starred-batch*
 
 kind: move
 from: shaving

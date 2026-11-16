@@ -23,11 +23,9 @@ Cause: the `yaks-upkeep` skill, "Reviewing session notes", step 3 says to "cite 
 - yaks-85a6 makes the links openable.
 - Offer Joel a pass over schism's 62 citations once the form is settled (a schism-farm chore, not done here).
 
----
-▸ 2026-11-14T11:19:33Z [linkplan-lead]
-kind: ask
-needs: human
----
+#### 2026-11-14T11:19:33Z
+
+*linkplan-lead · kind: ask · needs: human*
 
 asked: needs human
 
@@ -39,51 +37,42 @@ How should a session citation in a dok read? Today the `yaks-upkeep` skill says 
 
 Lean: 1 now; 2 as its own yak if you want citations queryable. One new fact since this was filed: the sessions and sources paths stay as they are (`/sessions/...`, `/sources/...`), per the decision on yaks-1151, so the example does not change with the layout work. Also: do you want a pass over schism's 62 existing citations once the form is settled (a schism-farm edit)?
 
----
-▸ 2026-11-14T17:48:25Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-14T17:48:25Z
+
+*sched-1 · kind: answer · needs: agent*
 
 I'm good with (1) in general. While these repos are still all quite small, though, should we consider updating sessions to include simple slugs in their paths alongside the dates and hashes? They're produced by models in the first place, so that wouldn't be too much of a problem. For the existing ones, we could just leave them as-is, or do one-time surgery to update them in place. I'm pretty sure I'm the only one using them so far, so that shouldn't be much trouble.
 
----
-▸ 2026-11-14T17:51:06Z [linkplan-lead]
-kind: pickup
----
+#### 2026-11-14T17:51:06Z
+
+*linkplan-lead · kind: pickup*
 
 picked up
 
 Decision (Joel): option 1. Link words that carry meaning (the date a fact was settled, or the phrase the session established), no `sessions:` frontmatter for now. Existing citations are left as they are. Joel also asked whether session paths should carry a slug: they already do (`sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md`); the dated-and-hashed directories are sources (`sources/<date>-<sha8>/`), asked separately on the migration yak.
 
----
-▸ 2026-11-14T17:52:05Z [linkplan-lead]
+#### 2026-11-14T17:52:05Z
+
+*linkplan-lead*
 
 Correction to my pickup note: I said the sources question was "asked separately on the migration yak". It was not; it is now its own yak under yaks-1151 (see the sources-slug idea there). Session paths already carry a slug, so only sources lack one.
 
 Work to do here (own tier, a prose change): in the `yaks-upkeep` skill, "Reviewing session notes" step 3 and the example near it, replace `[session](/sessions/...)` with a citation whose link words carry meaning (the date a fact was settled, or the phrase the session established). Existing citations in other farms stay as they are.
 
----
-▸ 2026-11-14T17:54:16Z [linkplan-lead]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T17:54:16Z
+
+*linkplan-lead · kind: move · from: hairy · to: shaving · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-14T17:55:43Z [linkplan-lead]
+#### 2026-11-14T17:55:43Z
+
+*linkplan-lead*
 
 Done in `yaks-upkeep` ("Reviewing session notes" step 4, the feedback entry template and the worked example): citations now link the date a fact was settled or the phrase a session established, never a bare "session". `cargo test -p yaks skills` passes (37). Left alone, per Joel: the existing citations in other farms, and no `sessions:` frontmatter. Session paths already carry a slug; the sources question is yaks-49c5.
 
----
-▸ 2026-11-14T17:55:48Z [linkplan-lead]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-14T17:55:48Z
+
+*linkplan-lead · kind: move · from: shaving · to: shorn · thread: ksQQw3f_HRXkT-eF6oV8kx3Nn5LOAFi59ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

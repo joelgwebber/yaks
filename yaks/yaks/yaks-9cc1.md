@@ -16,8 +16,9 @@ tags:
 
 Layer 5. Joel (2026-11-01): reminders often want extra data (a link to the plumber's page), and recurring yaks are useful beyond Hearth: maintenance, weekly metric checks. Starting idea: a yak that regrows on a schedule. Needs the field model (yaks-8384).
 
----
-▸ 2026-11-01T22:26:46Z [delta:farm-wiki]
+#### 2026-11-01T22:26:46Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -27,8 +28,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T22:26:47Z [delta:farm-wiki]
+#### 2026-11-01T22:26:47Z
+
+*delta:farm-wiki*
 
 ## Proposal: due dates and recurring yaks (layer 5)
 
@@ -58,8 +60,9 @@ Both use the field model (yaks-1f34), so neither needs a new file format: they a
 
 Implementation would be one worker-sized yak once the ask below is answered: fields in `schemas/yak.md`, `list --due`, overdue rendering, `regrow-due`, and docs.
 
----
-▸ 2026-11-01T22:26:47Z [delta:farm-wiki]
+#### 2026-11-01T22:26:47Z
+
+*delta:farm-wiki*
 
 kind: ask
 needs: human
@@ -71,8 +74,9 @@ asked: needs human
 2. **The clock lives outside yaks:** `yaks regrow-due` is idempotent, and the harness, cron or TUI tick calls it. Lean: yes, with the TUI running it on load and on each sync tick.
 3. **Schedule syntax:** ISO 8601 durations (`P1W`, `P1M`) only, or also words (`monday`, `1st`, `weekdays`)? Lean: durations now, words later if you find you want them.
 
----
-▸ 2026-11-01T22:50:24Z [Joel Webber]
+#### 2026-11-01T22:50:24Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -82,8 +86,9 @@ needs: agent
 2. That makes sense, and works well in either offline or agent-harness mode.
 3. Let's keep the schedule syntax simple and predictable. Agents will have no trouble with this, and we can layer on CLI/TUI convenience affordances later if needed.
 
----
-▸ 2026-11-02T00:36:10Z [delta:farm-wiki]
+#### 2026-11-02T00:36:10Z
+
+*delta:farm-wiki*
 
 kind: pickup
 ---
@@ -92,13 +97,15 @@ picked up
 
 Decision (Joel, 2026-11-01): all three leans. One yak regrows (its history accumulates); the clock lives outside yaks (`yaks regrow-due` is idempotent and called by a harness, cron, or the TUI on load and each sync tick); schedules are ISO 8601 durations only. Implementation is yaks-9cc1's child, below.
 
----
-▸ 2026-11-02T01:29:27Z [delta:farm-wiki]
+#### 2026-11-02T01:29:27Z
+
+*delta:farm-wiki*
 
 Implemented by yaks-2fc5 (landed 7560285).
 
----
-▸ 2026-11-02T01:29:28Z [delta:farm-wiki]
+#### 2026-11-02T01:29:28Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

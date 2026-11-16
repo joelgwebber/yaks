@@ -10,13 +10,15 @@ tags:
 - markdown
 ---
 
----
-▸ 2026-10-27T01:14:30Z [delta-lead]
+#### 2026-10-27T01:14:30Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-27T01:14:30Z [delta-lead]
+#### 2026-10-27T01:14:30Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd). Joel queued 122 `--kind tidy` requests after `pickup --drop-request` landed (yaks-092f). The farm is committed at `9c9cabc`, the state before any tidy.
 
@@ -25,13 +27,15 @@ Claim (delta-lead, yakherd). Joel queued 122 `--kind tidy` requests after `picku
 - Judge: `/tmp/tidy/check.py <ids>` against `9c9cabc`. It checks that the frontmatter is unchanged apart from `needs:`/`updated:`, that exactly the latest request note is removed, and that the words are identical in order (ignoring whitespace, fence lines and added list markers). It also reports what `--run-on` still flags.
 - delta-lead re-runs the checker over all 122 at the end and spot-reads a sample in the TUI.
 
----
-▸ 2026-10-27T01:15:25Z [delta-lead]
+#### 2026-10-27T01:15:25Z
+
+*delta-lead*
 
 Fan-out (delta-lead): yaks-00c4 done by hand to validate the brief and the checker (OK). tidy-1 to tidy-4 on claude-sonnet-5-5 (cheap, mechanical, per AGENTS.md), with batches of 30/31/31/29 ids; the brief is /tmp/tidy/BRIEF.md.
 
----
-▸ 2026-10-27T02:37:29Z [delta-lead]
+#### 2026-10-27T02:37:29Z
+
+*delta-lead*
 
 Done (delta-lead). All 122 tidy requests are handled. Each request note was removed with `pickup --drop-request`, and no other notes were added.
 
@@ -43,7 +47,8 @@ Done (delta-lead). All 122 tidy requests are handled. Each request note was remo
 
 Lesson for the brief and the check script: `yaks` only finds the farm from inside a checkout, and three workers lost a first run by working from `/tmp/tidy`. A future brief should say to run from the repo.
 
----
-▸ 2026-10-27T02:37:29Z [delta-lead]
+#### 2026-10-27T02:37:29Z
+
+*delta-lead*
 
 moved: shaving -> shorn

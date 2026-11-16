@@ -20,13 +20,15 @@ Goal: know where the time goes (per-shed and per-step timings), then make the co
 
 Evidence: before/after timings on this machine and on ~/src/j15r.
 
----
-▸ 2026-10-13T00:11:39Z [delta-lead]
+#### 2026-10-13T00:11:39Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-13T00:11:39Z [delta-lead]
+#### 2026-10-13T00:11:39Z
+
+*delta-lead*
 
 Claim (delta-lead, yakherd): owner perf-1 (Sonnet worker, its own Delta thread). Runs in parallel with yaks-8814 (needs-1) and yaks-98f1 (the TUI Sheds tab, delta-lead).
 
@@ -40,15 +42,17 @@ Out of scope: `outstanding_ids` and the landed rules (yaks-8814 owns them), anyt
 
 Evidence: per-step timings before/after (how you measured them, in a note); `yaks sheds` and `yaks sheds --json` output byte-identical before/after on this machine (diff them, `farm_activity`/`FARM ACTIVE` timestamps aside if they move); `yaks changes main` and `yaks inbox --sheds` likewise; full `cargo test --release` green. Judge: delta-lead at landing, re-timed on the real machine.
 
----
-▸ 2026-10-13T00:12:57Z [perf-1]
+#### 2026-10-13T00:12:57Z
+
+*perf-1*
 
 Start: Tue Oct 13 00:12:57 UTC 2026
 
 yaks path yaks-07fe: /Users/joel/src/yaks/.delta/worktrees/53smxwrxenfm/yaks/.yaks/yaks-07fe.md
 
----
-▸ 2026-10-13T00:26:33Z [perf-1]
+#### 2026-10-13T00:26:33Z
+
+*perf-1*
 
 Profile (before binary, release, this machine: 4 live sheds incl. current, 61 orphaned pins, 14 cores). Measured with a TEMPORARY Instant wrapper around `git_raw`, `newest_mtime`, `load_farm` and `discover` (removed before committing; a python git shim was rejected: it cost ~0.3 s per call and drowned the signal).
 - `yaks sheds` wall 1.2-1.5 s; user 0.28, sys 0.61.
@@ -59,8 +63,9 @@ Profile (before binary, release, this machine: 4 live sheds incl. current, 61 or
 
 Plan: (1) run the per-shed inspection and the pin resolution on a bounded thread pool, order preserved; (2) cut git calls: fold rev-parse probes into one, one rev-list --left-right, skip the trivially-true is-ancestor, one worktree list per repo, one for-each-ref via a combined `discover_all`; (3) memoize the base farm per (base commit, farm path) within one call and parse the blobs in memory instead of a temp dir.
 
----
-▸ 2026-10-13T00:49:16Z [perf-1]
+#### 2026-10-13T00:49:16Z
+
+*perf-1*
 
 Decision: no persistent cache. The wall time was 80 serial `git` spawns at ~10 ms each, not filesystem work, so reducing and overlapping the spawns got 4x without a derived-cache design (which is yours to approve). Rejected: a per-user cache keyed on (HEAD, farm mtime), a `libgit2`/`gix` dependency (forbidden), a persistent `git cat-file --batch-check` daemon.
 
@@ -72,8 +77,9 @@ Decision: base farms memoized per `discover` by (base commit, farm path in check
 
 Decision: new `sheds::discover_all(cwd, farm_root) -> (sheds, orphaned pins)` from one pass (the host and pin groups were read twice: discover, then `orphaned_pins`); `Command::Sheds` uses it. `discover` is now `discover_all(..).0`. `orphaned_pins` keeps its signature (the TUI tab calls it) and is marked `#[allow(dead_code)]` in the CLI binary because only the TUI tab will use it. `changes`, `farm_line`, `is_outstanding`, `label_line` untouched. `outstanding_ids`/`landed` untouched.
 
----
-▸ 2026-10-13T00:49:16Z [perf-1]
+#### 2026-10-13T00:49:16Z
+
+*perf-1*
 
 Timings, wall clock, 7 runs each (min / median / max, seconds), this machine (4 sheds incl. current, 61 orphaned pins), measured by a python subprocess loop with the before binary (target/yaks-before, built before any edit) and the after binary back to back:
 - `yaks sheds`: before 1.24 / 1.28 / 1.69, after 0.31 / 0.32 / 0.40
@@ -88,12 +94,14 @@ Parity: `yaks sheds`, `sheds --json`, `changes main`, `inbox --sheds` byte-ident
 
 Left on the table (not done): `changes main` is still ~0.1 s above `sheds` because `shed_yak_changes` re-reads the base farm and reference farm serially after discover (a combined call would need src/main.rs changes beyond this yak); the remaining `sheds` wall is ~14 spawns on the critical path at ~10 ms and ~0.5 s sys, mostly fork/exec cost of git on macOS.
 
----
-▸ 2026-10-13T00:50:05Z [perf-1]
+#### 2026-10-13T00:50:05Z
+
+*perf-1*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-13T00:50:12Z [perf-1]
+#### 2026-10-13T00:50:12Z
+
+*perf-1*
 
 moved: shaving -> shorn

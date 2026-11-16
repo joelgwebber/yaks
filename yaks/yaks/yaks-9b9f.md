@@ -22,23 +22,27 @@ GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=false carg
 
 Fix: have the test repo set `core.fsmonitor=false` (or exclude `fsmonitor--daemon` from the snapshot).
 
----
-▸ 2026-10-31T15:56:25Z [delta:Cloud Runners]
+#### 2026-10-31T15:56:25Z
+
+*delta:Cloud Runners*
 
 Adopted into `yaks-039b` under `yaks-d3ad` (2026-10-31): the git/Delta shed discovery this concerns is being removed. Slaughter as obsolete when `yaks-d3ad` lands.
 
----
-▸ 2026-10-31T16:47:44Z [sheds-1]
+#### 2026-10-31T16:47:44Z
+
+*sheds-1*
 
 Obsolete (sheds-1): yaks-d3ad deleted the flaky test (`inspecting_a_shed_changes_nothing_in_it`) with the git-discovery code it tested. For the yakherd to slaughter.
 
----
-▸ 2026-10-31T16:52:21Z [yakherd]
+#### 2026-10-31T16:52:21Z
+
+*yakherd*
 
 Obsolete: the code this concerns was removed in `b2e4638` (`yaks-d3ad`). Slaughtered by the yakherd.
 
----
-▸ 2026-10-31T16:52:21Z [yakherd]
+#### 2026-10-31T16:52:21Z
+
+*yakherd*
 
 kind: move
 from: hairy

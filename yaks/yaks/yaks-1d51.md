@@ -10,8 +10,9 @@ updated: '2026-10-27T01:20:33Z'
 
 Make skill installation braindead simple and hard to screw up.
 
----
-▸ 2026-09-23T03:04:51Z [agent]
+#### 2026-09-23T03:04:51Z
+
+*agent*
 
 DESIGN (research-backed; sources: Agent Skills spec via code.claude.com/docs/en/skills, openskills README).
 
@@ -52,8 +53,9 @@ E. Staleness surfacing without agent cooperation: fold a skills-staleness check 
 
 OPEN FORKS for the human: (i) should upgrade be opt-in or should doctor auto-nag? (ii) adopt-on-first-upgrade for unmanaged files, or always require --force? (iii) do we stamp yaks-tracker too, or only yaks?
 
----
-▸ 2026-09-23T04:02:21Z [agent]
+#### 2026-09-23T04:02:21Z
+
+*agent*
 
 CORRECTIONS + VERIFICATION after Joel pushed back on two claims. Both were worth checking; one of my framings was misleading.
 
@@ -66,8 +68,9 @@ CORRECTIONS + VERIFICATION after Joel pushed back on two claims. Both were worth
 
 4. NEW LEVER: the spec ships an official validator, 'skills-ref validate ./my-skill'. Worth wiring into the skills test / CI as the spec-compliance gate, which subsumes e233 and prevents the next invented field.
 
----
-▸ 2026-09-23T04:18:23Z [agent]
+#### 2026-09-23T04:18:23Z
+
+*agent*
 
 ROUND 3 -- two premise corrections + a design problem with auto-install.
 
@@ -93,8 +96,9 @@ REFINED AUTO-INSTALL RULES (for implementation):
   - Opt-out via env/config for CI and sandboxes; silent on no-op, one line when it acts; skip for --help/--version and the  subcommands themselves.
   - d8e9 guard is SEPARATE and must survive --force: refuse to write into the yaks source checkout's own skills/ dir (detect ancestor Cargo.toml with name = "yaks"). --force is what caused d8e9, so it cannot be the escape hatch for that case.
 
----
-▸ 2026-09-23T04:19:39Z [agent]
+#### 2026-09-23T04:19:39Z
+
+*agent*
 
 NOTE: the preceding note has three spans mangled by an authoring accident -- I used backticks inside a shell argument and they were command-substituted. One of them EXECUTED a skills install with the v0.0.9 binary on PATH and clobbered ~/.agents/skills/yaks/SKILL.md with the stale bundled copy, losing the Evidence section. Restored from the current build and verified identical to the repo source. Read those spans as: (1) a downgrade requires an explicit skills-install-with-force; (2) never a --dir target; (3) skip the skills subcommands themselves.
 
@@ -104,14 +108,16 @@ REFINED RULE: auto-install only when the embedded version is strictly greater th
 
 CONSEQUENCE worth accepting deliberately: a skills-only fix does not reach users until the next version bump, since auto-upgrade keys on version. That is already true of the shipped binary (the skill is baked in via include_str), so it costs nothing new -- but it does mean skills edits should ride a release, and the dev loop uses an explicit forced install rather than relying on auto-install.
 
----
-▸ 2026-09-23T04:41:58Z [agent]
+#### 2026-09-23T04:41:58Z
+
+*agent*
 
 Family complete. All three children shorn: e233 (spec-compliant frontmatter + a test enforcing the six allowed keys), d8e9 (the symlink clobber -- see its notes; the root cause was a ~/.agents/skills symlink into the repo, not a stray --dir), and bd9a (provenance stamp, seven-state machine, skills status, doctor advisory, and startup auto-sync).
 
 Net effect against the original goal -- make skill installation braindead simple and hard to screw up: installation is now mostly invisible (ordinary commands top it up), and the failure modes that actually bit us are structurally prevented rather than documented away. The design held up under contact: every guardrail in this yak's notes earned its place, and the two that mattered most (monotonic versions, resolve-symlinks-before-guarding) were both discovered by breaking the thing for real rather than by reasoning.
 
----
-▸ 2026-09-23T04:42:00Z [agent]
+#### 2026-09-23T04:42:00Z
+
+*agent*
 
 verify: `cargo test --workspace` -> PASS (exit 0)

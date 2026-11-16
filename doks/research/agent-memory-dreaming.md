@@ -14,7 +14,7 @@ description: What Anthropic's agent-memory article ("dreaming", the transcripts-
 
 # Agent memory and "dreaming": what to take for doks and lessons
 
-Read on 2026-11-08 for [yaks-e4f5](yaks-e4f5). Joel asked what Anthropic's article says about keeping an agent's memory consolidated and current, and what that teaches us about keeping doks and lessons salient. This is a first read of one vendor article; what was and wasn't read is under [Limits](#limits).
+Read on 2026-11-08 for [yaks-e4f5](/yaks/yaks/yaks-e4f5.md). Joel asked what Anthropic's article says about keeping an agent's memory consolidated and current, and what that teaches us about keeping doks and lessons salient. This is a first read of one vendor article; what was and wasn't read is under [Limits](#limits).
 
 ## In one paragraph
 
@@ -22,7 +22,7 @@ The article describes a stack: **transcripts** (the log of what happened), **not
 
 ## What the article says
 
-From [the saved text](/sources/2026-11-08-f2310691/extracted.md). Anthropic's own evaluations, so evidence of a claim, not of the truth.
+From [the saved text](/sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance/extracted.md). Anthropic's own evaluations, so evidence of a claim, not of the truth.
 
 - **Memory is a prediction about what a future session will need.** Strong models judge salience well on their own: told only that a memory folder exists, they used it well, and fixed rules ("record only failures") cost Opus 5 and 4.7 much of memory's gain. Older models needed steering (read your notes first; test your theories).
 - **Store what isn't readable from the environment.** In Pokémon, Sonnet 3.7 wrote 413 files recording state the screen shows every turn; it went stale and the agent spent its steps tidying. Fable 5 wrote nine files and a `global.md` dashboard (current goal, a plan, its own rules for using memory) and got further.
@@ -47,10 +47,10 @@ Two things the farm does that match the article without having read it: the sess
 
 ## Where the farm stands
 
-The upkeep loop is built ([yaks-1c89](yaks-1c89)) but has barely run, so most of what follows is about what it should do once it does:
+The upkeep loop is built ([yaks-1c89](/yaks/yaks/yaks-1c89.md)) but has barely run, so most of what follows is about what it should do once it does:
 
 - There are **three** session notes, all unpromoted lessons. There is **no** `/doks/lessons.md`.
-- None of the three recurring yaks the skill describes (review, reflect, tidy) exists. The only recurring yak, "Sweep the review queue" ([yaks-3979](yaks-3979)), is dead.
+- None of the three recurring yaks the skill describes (review, reflect, tidy) exists. The only recurring yak, "Sweep the review queue" ([yaks-3979](/yaks/yaks/yaks-3979.md)), is dead.
 - So the stack stops at the notes layer. Nothing dreams, and nothing reaches context except by hand.
 - The notes already contain exactly what the article says only a cross-session pass can see. `cargo fmt` reformatting files nobody touched is a lesson in all three notes. Parallel workers colliding on one shared doc section is in two. A flaky `tests/init_modes.rs` is in two.
 

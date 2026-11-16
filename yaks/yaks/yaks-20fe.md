@@ -32,11 +32,9 @@ Every farm's upkeep already produces the raw material: session notes carry `## L
 
 Lean: the dok plus the recurring collector, with entries deduped by `--key` so the collector never has to write to another farm.
 
----
-▸ 2026-11-10T17:59:27Z [herd-unlock]
-kind: ask
-needs: human
----
+#### 2026-11-10T17:59:27Z
+
+*herd-unlock · kind: ask · needs: human*
 
 asked: needs human
 
@@ -46,37 +44,31 @@ Three choices for the cross-farm feedback loop (the description has the detail a
 2. **Who carries it here:** a weekly recurring yak in this farm reads every farm on this machine (read-only) and files or extends yaks with `--key <farm>#<entry>`, so it never duplicates and never writes to another farm. Alternative: other farms create yaks here directly with `yaks -C`. Lean: the collector.
 3. **Scope now:** skill text plus the recurring yak, no new command until two rounds show it pays. Lean: yes.
 
----
-▸ 2026-11-10T18:43:49Z [sched-1]
-kind: answer
-needs: agent
----
+#### 2026-11-10T18:43:49Z
+
+*sched-1 · kind: answer · needs: agent*
 
 1. Ooh, clever idea. I like that, and it stays out of the repo proper, and can have a well-known location.
 2. Yeah, let's just start with the collector.
 3. SG. We might come back later and offer a way for others to take their feedback and send it, but that will matter more when it's not just a couple of us.
 
----
-▸ 2026-11-10T18:44:25Z [herd-unlock]
-kind: pickup
----
+#### 2026-11-10T18:44:25Z
+
+*herd-unlock · kind: pickup*
 
 picked up
 
 herd-unlock: writing the feedback dok into yaks-upkeep's review and reflection steps, and creating the weekly collector yak here.
 
----
-▸ 2026-11-10T18:44:27Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:44:27Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T18:45:55Z [herd-unlock]
+#### 2026-11-10T18:45:55Z
+
+*herd-unlock*
 
 Done (herd-unlock), as answered, in `27c8b9eb`:
 
@@ -85,12 +77,8 @@ Done (herd-unlock), as answered, in `27c8b9eb`:
 - The collector: yaks-feaf, weekly, `--wake agent`; reads every other farm on the machine read-only and files with `--key feedback-to-yaks:<farm>#<heading>` (checked on a scratch farm: a second create returns `Exists`).
 - Later, when it isn't just a couple of you: a way for other people to send theirs.
 
----
-▸ 2026-11-10T18:45:56Z [herd-unlock]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T18:45:56Z
+
+*herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

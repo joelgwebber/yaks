@@ -19,8 +19,9 @@ Implements the schema-7 format change decided on yaks-aae6 and yaks-8384, in one
 - `wiki`, `sources` and `schemas` become reserved herd names.
 - `SCHEMA = 7`; `yaks migrate` rewrites the key (a fixup), refusing a farm with a herd named like a reserved dir.
 
----
-▸ 2026-11-01T20:09:21Z [delta:farm-wiki]
+#### 2026-11-01T20:09:21Z
+
+*delta:farm-wiki*
 
 kind: move
 from: hairy
@@ -30,8 +31,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T20:25:12Z [delta:farm-wiki]
+#### 2026-11-01T20:25:12Z
+
+*delta:farm-wiki*
 
 kind: checkpoint
 branch: wiki
@@ -61,8 +63,9 @@ Done on the `wiki` branch (`ba4245d`, rebased onto `main` v0.0.28 first).
 
 The shared `yaks` farm and the installed binary stay on schema 6 until the `wiki` branch squash-merges: a schema-7 farm would be refused by the binary released from `main`. Coordination keeps using the installed `yaks`; the `wiki` binary runs only on copies and scratch farms.
 
----
-▸ 2026-11-01T20:26:18Z [delta:farm-wiki]
+#### 2026-11-01T20:26:18Z
+
+*delta:farm-wiki*
 
 kind: verify
 result: pass
@@ -70,8 +73,9 @@ result: pass
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-01T20:26:23Z [delta:farm-wiki]
+#### 2026-11-01T20:26:23Z
+
+*delta:farm-wiki*
 
 kind: move
 from: shaving

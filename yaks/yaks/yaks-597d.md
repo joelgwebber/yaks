@@ -21,13 +21,15 @@ Implements the design Joel approved on yaks-a893 (read its design note and mock 
 - `Ctrl-S` saves only that block, through `content::assemble` (other blocks round-trip byte-identical; `M` appends via the existing comment path, attributed as today). `Ctrl-C` / `Esc` cancel with the existing dirty-confirm. After saving, the block re-renders in place and the line cursor stays on the same source line.
 - Docs/help: `help_content`, `help_hint`, docs/tui.md, the docshots (replace the `M`/`E` frames).
 
----
-▸ 2026-10-17T17:02:15Z [delta-lead]
+#### 2026-10-17T17:02:15Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T17:02:15Z [delta-lead]
+#### 2026-10-17T17:02:15Z
+
+*delta-lead*
 
 Claim (yakherd delta-lead, 2026-10-17): owner **inplace-1**.
 
@@ -37,8 +39,9 @@ Out of scope: removing the form's content blocks (the follow-up yak), mdrender.r
 
 Evidence: failing-first tests (E on a comment row opens the block editor at that block with the cursor on the right source line; Ctrl-S saves only that block, others byte-identical; M adds a comment at the end; Esc with edits asks to confirm; the rendered rows above the editor stay put); headless frames of E and M with context visible; docshot SVG → PNG via Firefox, looked at. Judge: coordinator at landing, then Joel by trying `~/go/bin/yaks`.
 
----
-▸ 2026-10-17T17:03:02Z [inplace-1]
+#### 2026-10-17T17:03:02Z
+
+*inplace-1*
 
 inplace-1 start: Sat Oct 17 05:02:59 PM UTC 2026
 
@@ -54,8 +57,9 @@ yaks path yaks-597d: /home/joel/src/yaks/.delta/worktrees/13wv27ckc2gj/yaks/.yak
 
 [frame-M](yaks-597d/frame-M.txt)
 
----
-▸ 2026-10-17T17:50:27Z [inplace-1]
+#### 2026-10-17T17:50:27Z
+
+*inplace-1*
 
 Decision: the editor region is rows in the detail row model, not an overlay drawn on top.
 
@@ -95,8 +99,9 @@ Decision: the help bar while editing shows the vim mode tag + `Ctrl-S save · Ct
 
 Decision: the detail help hint gains `M:comment` (`E:edit` unchanged, since E still serves header rows); `help_content` documents E/M/Ctrl-S/Ctrl-C; docs/tui.md has an "Editing in place" paragraph and two docshots (`tui-edit-inplace.svg`, `tui-edit-inplace-new.svg`, scene `docshots_edit_inplace`). Four insta snapshots moved, each by exactly the `M:comment` text in the detail help bar (read the .snap diffs).
 
----
-▸ 2026-10-17T17:50:27Z [inplace-1]
+#### 2026-10-17T17:50:27Z
+
+*inplace-1*
 
 Evidence (inplace-1):
 
@@ -107,12 +112,14 @@ Evidence (inplace-1):
 
 Not covered: mouse (ignored while any overlay is open, as before); live terminal. `~/go/bin/yaks` install is the coordinator's.
 
----
-▸ 2026-10-17T17:50:31Z [inplace-1]
+#### 2026-10-17T17:50:31Z
+
+*inplace-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T17:50:42Z [inplace-1]
+#### 2026-10-17T17:50:42Z
+
+*inplace-1*
 
 moved: shaving -> shorn

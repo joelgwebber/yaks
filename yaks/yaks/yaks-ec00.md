@@ -50,8 +50,9 @@ Joel (2026-11-01): make sure cloud runners always get an up-to-date `yaks` CLI a
 - yaks-fe33 (repeatable trials per environment: a runner trial is how to test this)
 - yaks-de7a (Linux release binaries for runners' glibc)
 
----
-▸ 2026-11-02T17:44:34Z [delta:skills-upgrade-audit]
+#### 2026-11-02T17:44:34Z
+
+*delta:skills-upgrade-audit*
 
 Audit (2026-11-02, delta:skills-upgrade-audit): what the skills and the binary tell an agent about upgrading `yaks` and migrating a farm, on 0.0.30 / schema 7.
 
@@ -74,8 +75,9 @@ Audit (2026-11-02, delta:skills-upgrade-audit): what the skills and the binary t
 3. The schema gate only runs at `Farm::open`. A running `yaks tui` that auto-syncs (yaks-f0db) can pull a migrated farm and keep writing old-shape files into it. Filed separately as a bug.
 4. No session-start version check: `yaks --version` against the latest release and the farm's `schema` are not in the workflow.
 
----
-▸ 2026-11-02T17:44:54Z [delta:skills-upgrade-audit]
+#### 2026-11-02T17:44:54Z
+
+*delta:skills-upgrade-audit*
 
 kind: ask
 needs: human
@@ -90,8 +92,9 @@ Upgrade and migrate guidance for agents, from the audit above. Four questions; m
 3. **Make it automatic in the binary instead.** A cheap "a newer yaks is available" notice (once per day, cached, never on `--json`), and/or a farm `min_version` in `config.yaml` that warns an older binary before the schema bump hits. Lean: `min_version` first: it is local, needs no network, and the coordinator who migrates sets it. Leave the registry check for later.
 4. **Order of operations for a schema bump**, written into `yaks-coordinating`: upgrade every machine's binary, then migrate once, then sync, then restart TUIs. Lean: yes, plus the TUI fix in yaks-9786 so a stale TUI can't corrupt the farm meanwhile.
 
----
-▸ 2026-11-03T02:38:56Z [Joel Webber]
+#### 2026-11-03T02:38:56Z
+
+*Joel Webber*
 
 kind: answer
 needs: agent
@@ -102,8 +105,9 @@ needs: agent
 3. Agreed.
 4. :thumbs-up:
 
----
-▸ 2026-11-03T14:21:51Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:21:51Z
+
+*delta:skills-upgrade-audit*
 
 kind: pickup
 ---
@@ -112,8 +116,9 @@ picked up
 
 First pass (Joel's answers): upgrade recipe in skill + newer-schema error; agents never migrate, always ask a human; farm min_version warning; schema-bump order in yaks-coordinating; TUI fix yaks-9786. Children below.
 
----
-▸ 2026-11-03T14:21:59Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:21:59Z
+
+*delta:skills-upgrade-audit*
 
 kind: move
 from: hairy
@@ -124,13 +129,15 @@ thread: ksQQGwTub5pWSfWv5Hlp3m1Av5LOAD8vcpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-03T14:30:09Z [delta:skills-upgrade-audit]
+#### 2026-11-03T14:30:09Z
+
+*delta:skills-upgrade-audit*
 
 First pass landed locally in 7ed9402 (yaks-c2fc, yaks-c69d, yaks-9786 shorn). Remaining from the original research questions: skills in two locations, version visibility in the farm, runner setup recipe, dev-build version stamps.
 
----
-▸ 2026-11-07T16:03:47Z [sources-intake]
+#### 2026-11-07T16:03:47Z
+
+*sources-intake*
 
 Evidence from the research intake (yaks-3610, 2026-11-07), for the "two yaks on PATH" and stale-skills questions.
 

@@ -28,18 +28,15 @@ Lever: one `git status --porcelain=v2 --branch -z --untracked-files=all -- .` re
 
 Checks: a headless timing of a no-commit save (`YAKS_NO_AUTOCOMMIT=1`) before and after; it is ~173 ms now against ~45 ms for a plain directory with no git.
 
----
-▸ 2026-11-04T23:03:25Z [perf-907a]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:03:25Z
+
+*perf-907a · kind: move · from: hairy · to: shaving · thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-04T23:14:41Z [perf-907a]
+#### 2026-11-04T23:14:41Z
+
+*perf-907a*
 
 Landed on local `main` as the commit after dd61f317 (not pushed). `FarmSync::read` (the TUI chip, run on every reload) now uses `changes::read_with_sync`: one `git status --porcelain -z --branch --ahead-behind` gives the dirty files and the branch standing, so a reload is 1 git spawn where it was 4 (the two `status`-ish calls plus `rev-parse @{upstream}` and `rev-list --count`); the discovery calls were already cached by yaks-7058.
 
@@ -49,12 +46,8 @@ Parity: `the_one_call_standing_matches_sync_state` compares it with `status::syn
 
 Measured, TUI `:wq` save on a clone of this farm, first output: ~312 ms (700-760 ms before yaks-7058). The tail of the git log still shows two reloads back to back: that is yaks-1ebf.
 
----
-▸ 2026-11-04T23:14:42Z [perf-907a]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-04T23:14:42Z
+
+*perf-907a · kind: move · from: shaving · to: shorn · thread: ksQQstI5T-eCRACxAjKJdNo3oJLOAEQG4JIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn

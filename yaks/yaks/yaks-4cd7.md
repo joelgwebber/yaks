@@ -24,13 +24,15 @@ Found 2026-10-31: an ask on `yaks-6a11` that included example notes was parsed a
 
 Make `parse_notes`, `description` and the TUI comment parser skip fenced code blocks (backtick and tilde fences, any length) when looking for delimiters. The same goes for the merge driver if it splits on notes. Test with a note containing a fenced example of a note.
 
----
-▸ 2026-10-31T16:08:35Z [yakherd]
+#### 2026-10-31T16:08:35Z
+
+*yakherd*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-31T16:16:34Z [yakherd]
+#### 2026-10-31T16:16:34Z
+
+*yakherd*
 
 Fixed in the prep commit for the `yaks-039b` family: `store::note_starts` skips `---` / `▸` pairs inside closed code fences, and every body scanner uses it (`parse_notes`, `description`, `refs`, the TUI comment parser in `tui/content.rs`). A fence that never closes is ignored, so a broken note can't swallow the notes after it.
 
@@ -44,18 +46,21 @@ Fixed in the prep commit for the `yaks-039b` family: `store::note_starts` skips 
 < ▸ 2026-10-31T15:20:00Z  yaks-6a11  …  [tex-1]         (an example inside a fence)
 ```
 
----
-▸ 2026-10-31T16:16:34Z [yakherd]
+#### 2026-10-31T16:16:34Z
+
+*yakherd*
 
 Landed in 7f78a28.
 
----
-▸ 2026-10-31T16:16:34Z [yakherd]
+#### 2026-10-31T16:16:34Z
+
+*yakherd*
 
 moved: shaving -> shorn
 
----
-▸ 2026-10-31T16:52:20Z [yakherd]
+#### 2026-10-31T16:52:20Z
+
+*yakherd*
 
 kind: landed
 commit: 7f78a28c82f9f04486208814cdbfacaf3d08d937
@@ -64,8 +69,9 @@ branch: main
 
 landed: 7f78a28 yaks-4cd7, yaks-6a11: fence-aware note boundaries; note metadata (key: value lines under the marker, c (recorded by hand: landed with a yaks binary from before `yaks-735a`)
 
----
-▸ 2026-10-31T17:24:20Z [yakherd]
+#### 2026-10-31T17:24:20Z
+
+*yakherd*
 
 kind: landed
 commit: 1dfb324a06776fee6fa2aac4210e2da3a57d9f9c

@@ -19,8 +19,9 @@ Two skill gaps:
 
 cowpaths/joel worked around both in its AGENTS.md (joel-0333 in that farm): every session that talks with Joel syncs, ticks and works the agent inbox first.
 
----
-▸ 2026-11-09T19:23:26Z [review-watch-agent]
+#### 2026-11-09T19:23:26Z
+
+*review-watch-agent*
 
 Joel, 2026-11-09 (in the cowpaths/joel review-watch thread): the new design is meant to support aggressive syncing, so agents should be told to sync as often as they like, not to leave it to the human.
 

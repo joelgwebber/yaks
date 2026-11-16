@@ -13,18 +13,15 @@ tags:
 
 Would be useful to be able to star doks, just like yaks.
 
----
-▸ 2026-11-10T21:11:50Z [herd-unlock]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:11:50Z
+
+*herd-unlock · kind: move · from: hairy · to: shaving · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-10T21:12:24Z [herd-unlock]
+#### 2026-11-10T21:12:24Z
+
+*herd-unlock*
 
 Claim (yakherd herd-unlock-2): worker `dokstar-1`, Sonnet 5.5.
 
@@ -40,8 +37,9 @@ Sources, session notes; a CLI for stars.
 
 Tests: star a dok in the Doks tab, it appears in Starred, `*` again removes it; the file round-trips both kinds. A `yaks tui --headless` frame of the Starred view with a dok, attached. Gate `cargo test --workspace`.
 
----
-▸ 2026-11-10T21:13:32Z [dokstar-1]
+#### 2026-11-10T21:13:32Z
+
+*dokstar-1*
 
 Start 2026-11-10T21:13:29Z; checkout /Users/joel/src/yaks/.delta/worktrees/pcjanhhk4b1n/yaks
 
@@ -49,16 +47,15 @@ Start 2026-11-10T21:13:29Z; checkout /Users/joel/src/yaks/.delta/worktrees/pcjan
 
 [viewer](yaks-f93a/viewer.txt "A starred dok open in the viewer: ⭐ in the header")
 
----
-▸ 2026-11-10T21:37:14Z [dokstar-1]
-kind: verify
-result: pass
----
+#### 2026-11-10T21:37:14Z
+
+*dokstar-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-10T21:37:40Z [dokstar-1]
+#### 2026-11-10T21:37:40Z
+
+*dokstar-1*
 
 Decision: one `*` command (`yak.star`) with a `Doks` row binding and a `Viewer` binding, not a new `dok.star` command. Rejected: a separate `Cmd` (a second name for one intent; `?` groups and the exceptions test already cover `YakStar`).
 
@@ -74,8 +71,9 @@ Decision: `*` with a dok open stars that dok (viewer binding), found by `AttachV
 
 Decision: the star glyph ⭐ ends a dok row (path column shrinks by 3 cells) and follows the kind label in the viewer header, as on yak rows and the yak pane header.
 
----
-▸ 2026-11-10T21:37:40Z [dokstar-1]
+#### 2026-11-10T21:37:40Z
+
+*dokstar-1*
 
 Shape of the fix: `App::toggle_star` takes its target from `star_target` (open dok, else yak, else dok row); `working_set_rows` resolves yaks then doks (stale entries skipped); `YakStar` bound in `Doc` rows and the `Viewer` (run in `run_viewer_cmd`); row and header render the star; `docs/tui.md` updated (Starred line, `*` row, Doks tab key table and bullet).
 
@@ -83,22 +81,14 @@ Evidence: new tests in `src/tui/doks_tab.rs` (star in Doks tab shows in Starred 
 
 Docs grep for "Star": only `docs/tui.md` (3 places, updated) and `src/tui/keymap.rs` help lines; nothing in `README.md`, `docs/cli.md`, `docs/README.md` or `.agents/skills/`.
 
----
-▸ 2026-11-10T21:37:41Z [dokstar-1]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVVKpIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-10T21:37:41Z
+
+*dokstar-1 · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFVVKpIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-10T21:38:08Z [herd-unlock]
-kind: landed
-commit: dd0656cc8f1c4d854e273377170360237ed57a49
-source: 2a72292743ff6bf5d8797ef9f0a847304e08cb26
-branch: main
----
+#### 2026-11-10T21:38:08Z
+
+*herd-unlock · kind: landed · commit: dd0656cc8f1c4d854e273377170360237ed57a49 · source: 2a72292743ff6bf5d8797ef9f0a847304e08cb26 · branch: main*
 
 landed: dd0656cc yaks-f93a: star doks with * (Doks tab, viewer), listed in the Starred view

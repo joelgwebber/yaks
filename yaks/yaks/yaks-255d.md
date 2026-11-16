@@ -14,18 +14,15 @@ When a yak's description is empty, there's no way to select it for editing in th
 
 ISTR this was an explicit simplification in the inline editor design, but I think the patient might have lost something important in this particular surgery. Let's see if there's a way to better unify the create/edit modes so that they both naturally get the right behavior here. I don't see a strong need to _also_ extend this to comment editing for the time being, which I hope will simplify things somewhat.
 
----
-▸ 2026-11-07T17:04:41Z [herd-stars]
-kind: move
-from: hairy
-to: shaving
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:04:41Z
+
+*herd-stars · kind: move · from: hairy · to: shaving · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEpUNJIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-07T17:05:33Z [herd-stars]
+#### 2026-11-07T17:05:33Z
+
+*herd-stars*
 
 Claim (yakherd herd-stars): worker `stars-form`, who then takes yaks-000b in the same checkout (both touch the create/edit form).
 
@@ -40,8 +37,9 @@ Claim (yakherd herd-stars): worker `stars-form`, who then takes yaks-000b in the
 
 **Judge.** herd-stars at landing.
 
----
-▸ 2026-11-07T17:07:48Z [stars-form]
+#### 2026-11-07T17:07:48Z
+
+*stars-form*
 
 Start: Sat Nov  7 17:07:47 UTC 2026
 
@@ -52,8 +50,9 @@ Start: Sat Nov  7 17:07:47 UTC 2026
 
 ![edit-herd](yaks-255d/edit-herd.svg "docs scene tui-edit-herd (regenerated): the multi-herd edit form now ends in the description editor")
 
----
-▸ 2026-11-07T17:24:25Z [stars-form]
+#### 2026-11-07T17:24:25Z
+
+*stars-form*
 
 Decision: the description is saved through the existing `Farm::update` (`TaskEdit::description` + `base`), not a new `Farm` setter. It already writes a description under the one farm lock together with the header fields, and its `base` keeps comments appended since the form opened. Rejected: a new `Farm::set_description` (a second lock or a duplicate of `update`'s fields), and `content::parse`/`assemble` (it rewrites the comments to the canonical shape, so they are not byte for byte).
 
@@ -67,8 +66,9 @@ Decision: `CreateForm::description` is now a plain `RefCell<EditorState>` (was `
 
 Decision: regenerated only `docs/assets/tui-edit-herd.svg`, the one scene showing the form. The regeneration also changed its tab strip and opacity styling, because the renderer moved since it was last made (`Doks` tab, `fill-opacity`); the other 24 regenerated SVGs were discarded.
 
----
-▸ 2026-11-07T17:24:32Z [stars-form]
+#### 2026-11-07T17:24:32Z
+
+*stars-form*
 
 Fail-first: on the unchanged source (create.rs, handlers.rs, store.rs checked out; tests.rs adapted to the old `Option`), the four new tests fail:
 
@@ -81,37 +81,28 @@ With the change they pass, plus `store::note_tests::with_description_replaces_th
 
 Docs parity: `docs/tui.md` (Edit form paragraph), the two `E` help lines in `keymap.rs` (`bind_row` and `bind_pane`), the `docshots.rs` scene comment, the `CreateForm` doc comment.
 
----
-▸ 2026-11-07T17:29:10Z [stars-form]
-kind: verify
-result: pass
----
+#### 2026-11-07T17:29:10Z
+
+*stars-form · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-11-07T17:29:20Z [stars-form]
+#### 2026-11-07T17:29:20Z
+
+*stars-form*
 
 Summary: `E` on a yak (list row, or a header row in the pane) now opens the create form's shape: the header rows plus the description editor seeded with the yak's description (never its comments). Ctrl-S writes the header fields and a changed description in one `Farm::update` (one lock) and leaves the comments byte for byte; an unchanged description is not rewritten; a stale save writes nothing and puts the text on the clipboard. In-place block editing is unchanged. Docs, `?` help lines and the multi-herd docs scene updated.
 
 Docs-parity grep (`header fields only|header rows only|header-only|Edit: the form|body is never part`) over `docs/`, `.agents/`, `README.md`, `src/`: the only hits left are the new text and `CreateForm::changed_body`'s comment ("header-only edit never rewrites the body"), which is still true.
 
----
-▸ 2026-11-07T17:29:22Z [stars-form]
-kind: move
-from: shaving
-to: shorn
-thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG
----
+#### 2026-11-07T17:29:22Z
+
+*stars-form · kind: move · from: shaving · to: shorn · thread: ksQQcvZn6b-aQ7OxtwNwU3-8iJLOAEqF7pIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
 
----
-▸ 2026-11-07T17:43:44Z [herd-stars]
-kind: landed
-commit: 108a5291559aa0244044bcd2cbbd37d37832f3a3
-source: 37965d2c0bfd5b666886b154c9df76afc6bd0f9f
-branch: main
----
+#### 2026-11-07T17:43:44Z
+
+*herd-stars · kind: landed · commit: 108a5291559aa0244044bcd2cbbd37d37832f3a3 · source: 37965d2c0bfd5b666886b154c9df76afc6bd0f9f · branch: main*
 
 landed: 108a5291 yaks-255d: the edit form has the description editor, like create

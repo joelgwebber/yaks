@@ -23,13 +23,15 @@ In the case of source code, it would also be helpful to support link number/rang
 ## Commit-specific
 Ooh, it would be _really_ cool if you could reference repo files by `git` hash as well, so a yak can maintain historical connection to the _actual_ code, before it's changed. Again, open to format ideas; this case matters less for other markdown renderers, though it would be nice if the path still hit the right spot in the filesystem.
 
----
-▸ 2026-10-17T18:14:58Z [delta-lead]
+#### 2026-10-17T18:14:58Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-17T18:14:58Z [delta-lead]
+#### 2026-10-17T18:14:58Z
+
+*delta-lead*
 
 Joel agreed the format (2026-10-17, in the Delta thread): plain relative links, GitHub-style `#L` line fragments, and the GitHub blob-URL shape for pinned commits. Showing a resolved git blob can be deferred to a follow-up yak; it may dovetail with yaks-699b (viewing files inside the TUI).
 
@@ -44,8 +46,9 @@ Out of scope: an in-TUI file viewer (yaks-699b).
 
 Evidence: failing-first tests for parsing (path, both fragment forms, pinned prefix), Target classification, the status-bar text; a headless frame; a manual run with `EDITOR` set to a script that records its arguments. Judge: coordinator at landing.
 
----
-▸ 2026-10-17T18:20:36Z [srclinks-1]
+#### 2026-10-17T18:20:36Z
+
+*srclinks-1*
 
 Start (srclinks-1): Sat Oct 17 06:15:24 PM UTC 2026
 
@@ -54,8 +57,9 @@ Start (srclinks-1): Sat Oct 17 06:15:24 PM UTC 2026
 
 [frame-source-links](yaks-da5e/frame-source-links.txt)
 
----
-▸ 2026-10-17T18:28:41Z [srclinks-1]
+#### 2026-10-17T18:28:41Z
+
+*srclinks-1*
 
 Decision: pinned prefix = `../blob/<sha>/<path>` with `<sha>` 7-40 hex digits (GitHub's blob-URL shape, relative). Anything else under `../blob/` (short or non-hex) stays an ordinary repo path `blob/...`. Rejected: `@sha` suffix or `?rev=` query (no GitHub equivalent, breaks as a filesystem path); any `../blob/<x>/` regardless of hex (would hijack a real `blob/` directory).
 
@@ -74,17 +78,20 @@ Evidence (failing first):
 - Status bar frames in the attached frame-source-links.txt (`→ src/foo.rs:L2-L4@da07025`); the same run showed `→ src/foo.rs`, `→ src/foo.rs:L2-L4`, `→ src/nope.rs:L1`.
 - Docs parity: docs/tui.md (rendered-markdown paragraph), help_content Enter line (render.rs), skill "What the TUI renders" line.
 
----
-▸ 2026-10-17T18:28:46Z [srclinks-1]
+#### 2026-10-17T18:28:46Z
+
+*srclinks-1*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
 
----
-▸ 2026-10-17T18:28:57Z [srclinks-1]
+#### 2026-10-17T18:28:57Z
+
+*srclinks-1*
 
 Summary (srclinks-1): source links done, nothing deferred (pinned part included, so no follow-up yak). New `Target::Source`, `src/tui/source.rs` (parse, label, editor args, pinned-copy resolution, `App::open_source`), classification in `mdrender::link_target`, status-bar arm in `link_hint`, Enter/`O` in `follow_link`/`open_current_external`, editor suspend/resume in runtime.rs; `os_open` is now shared with `open_external`. Docs: docs/tui.md, help_content, yaks skill line. Gates: `cargo test --workspace` and `cargo test --release` both green (701 unit tests).
 
----
-▸ 2026-10-17T18:28:57Z [srclinks-1]
+#### 2026-10-17T18:28:57Z
+
+*srclinks-1*
 
 moved: shaving -> shorn

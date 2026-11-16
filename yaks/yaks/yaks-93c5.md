@@ -25,8 +25,9 @@ A **Families** section in the `yaks` skill, after Workflow, short because the to
 
 Then replace the Workflow lines, `yaks-working` 2 and 7 and coordinating Reconcile with short pointers, and check the result reads as one rule. Docs parity: README and docs if they restate it. Cold-read with a cheap scout afterwards (AGENTS.md).
 
----
-▸ 2026-11-01T17:30:52Z [yakherd]
+#### 2026-11-01T17:30:52Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -36,8 +37,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T17:31:47Z [yakherd]
+#### 2026-11-01T17:31:47Z
+
+*yakherd*
 
 kind: landed
 sha: ea50761
@@ -51,8 +53,9 @@ Done in ea50761.
 
 Evidence: `cargo test --bin yaks skills` (37 pass, BUNDLED guard); grep for "its parent if", "unfinished children", "graduat" across `.agents/skills`, README, docs/skills.md, src/brief.rs finds only the new section and pointers. Not done: the AGENTS.md cold read by a cheap scout (subagents are off unless asked); I re-read the three skills top to bottom myself.
 
----
-▸ 2026-11-01T17:31:48Z [yakherd]
+#### 2026-11-01T17:31:48Z
+
+*yakherd*
 
 kind: move
 from: shaving

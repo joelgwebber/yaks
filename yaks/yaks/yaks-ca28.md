@@ -22,18 +22,21 @@ Out of scope: src/store.rs (phase 1 already reads both layouts from disk), migra
 
 Evidence (fail first): a shed whose fork point is a v3 commit and whose working tree is v4 (it migrated) shows only its real changes; a v4 viewer and a v3 shed (not migrated) compare correctly both ways; a migration alone reads as "no changes of its own".
 
----
-▸ 2026-10-12T20:00:39Z [delta-lead]
+#### 2026-10-12T20:00:39Z
+
+*delta-lead*
 
 Amended by the transitional D4 (see yaks-8b7a): reading the FLAT layout from a git tree is the required part (after this farm migrates, every fork point is flat). Reading the old layout from a tree is transitional (phase 4 deletes it): keep it in one function. Permanent: a shed whose own farm is schema 3 reads as an old-layout clone, never as having deleted every yak.
 
----
-▸ 2026-10-12T20:20:37Z [delta-lead]
+#### 2026-10-12T20:20:37Z
+
+*delta-lead*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-12T20:20:38Z [delta-lead]
+#### 2026-10-12T20:20:38Z
+
+*delta-lead*
 
 Claim (coordinator). Owner: shed-1. Spec: the description, the amendment note on this yak, and yaks-8b7a's plan.
 
@@ -48,15 +51,17 @@ Evidence (fail first): fixtures for each case above, built with the new binary's
 - Finish staging is the old layout's: `git add -A -- .yaks/shaving/<id>.md .yaks/shorn/<id>.md` plus `.yaks/artifacts/<id>` if you attached something, and NEVER name a path that does not exist (git then stages nothing at all). Check `git status --short` is empty after your commit.
 - File ownership is strict (three workers run at once): touch only the files your claim names. If you must touch another, `yaks ask` instead.
 
----
-▸ 2026-10-12T20:23:53Z [shed-2]
+#### 2026-10-12T20:23:53Z
+
+*shed-2*
 
 shed-2 starting (replaces shed-1). date -u: Mon Oct 12 20:23:49 UTC 2026
 
 yaks path yaks-ca28: /Users/joel/src/yaks/.delta/worktrees/bm7tfggpbs0m/yaks/.yaks/shaving/yaks-ca28.md
 
----
-▸ 2026-10-12T20:55:55Z [shed-2]
+#### 2026-10-12T20:55:55Z
+
+*shed-2*
 
 Decision: no layout-specific comparison code. Every farm read in src/sheds.rs goes through one `load_farm` (store::load already reads both layouts; status comes from `status:` or the directory), so a base commit in either layout, a flat or old working tree, and either viewer compare through the same `yak_changes`. Rejected: normalising both sides to a canonical layout before comparing, or a layout-aware diff; neither is needed because `Task` has no layout.
 
@@ -76,12 +81,14 @@ Evidence: tests/sheds_layouts.rs (new, 5 tests, binary-driven, flat side written
 
 Also: scripts/discover-fixture.sh builds a flat farm (schema 4 + `.yaks/s-0001.md` with status:); ran it, discover output unchanged in shape. Docs: docs/cli.md sheds + changes rows, README.md sheds + changes rows (layout wording, `(old layout)`, farm.layout, changes --json layout). cargo fmt run on my files only; actor.rs/docshots.rs/tests.rs restored.
 
----
-▸ 2026-10-12T20:56:55Z [shed-2]
+#### 2026-10-12T20:56:55Z
+
+*shed-2*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
----
-▸ 2026-10-12T20:58:10Z [shed-2]
+#### 2026-10-12T20:58:10Z
+
+*shed-2*
 
 moved: shaving -> shorn

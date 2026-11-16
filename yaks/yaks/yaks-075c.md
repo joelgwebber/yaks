@@ -11,8 +11,9 @@ tags:
 - skills
 ---
 
----
-▸ 2026-10-27T19:02:28Z [delta:Check yaks-6beb comment list formatting]
+#### 2026-10-27T19:02:28Z
+
+*delta:Check yaks-6beb comment list formatting*
 
 From the yaks-6beb review: its Decision note is valid CommonMark, but it packs about six points into one paragraph, including an inline "X (option D), or Y (option A)" enumeration.
 
@@ -21,13 +22,15 @@ Two fixes:
 - The skill's Shape rule and the brief's notes line name inline enumeration as a failure.
 - The tidy request's instruction allows minimal connective edits, so a run-on enumeration can become a list.
 
----
-▸ 2026-10-27T19:02:36Z [delta:Check yaks-6beb comment list formatting]
+#### 2026-10-27T19:02:36Z
+
+*delta:Check yaks-6beb comment list formatting*
 
 moved: hairy -> shaving
 
----
-▸ 2026-10-27T19:04:46Z [delta:Check yaks-6beb comment list formatting]
+#### 2026-10-27T19:04:46Z
+
+*delta:Check yaks-6beb comment list formatting*
 
 Landed in the code commit above (not pushed): the skill's Shape rule and the brief's notes line now name inline enumeration as a failure, and the canned tidy instruction lets a tidy split an inline enumeration or a many-point paragraph into a lead-in and a list, changing only connecting words.
 
@@ -39,7 +42,8 @@ Evidence:
 
 Existing queued tidy requests (yaks-8dbb's batch) still carry the old "never change a word" text; only new requests get the new one.
 
----
-▸ 2026-10-27T19:04:50Z [delta:Check yaks-6beb comment list formatting]
+#### 2026-10-27T19:04:50Z
+
+*delta:Check yaks-6beb comment list formatting*
 
 moved: shaving -> shorn

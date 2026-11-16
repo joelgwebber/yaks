@@ -23,7 +23,8 @@ As we work through the mechanics and use-cases, let's make a point to identify U
 - Ephemeral agent-specific UI state -- relating to saved searches, a way for an agent to push a new UI state on the stack, so the user can just ESC out of it, back to where they were.
 - A way to "indicate" to the agent that you want it to look at a particular yak/herd/search/comment/... (we handle this for individual yaks with the ability to copy an id).
 
----
-▸ 2026-10-05T22:28:42Z [Joel Webber]
+#### 2026-10-05T22:28:42Z
+
+*Joel Webber*
 
 This could also be an interesting path for Delta integration. Bonus points if we can get Delta to emit some kind of in-thread UI affordance pointing to a particular place in the UI.

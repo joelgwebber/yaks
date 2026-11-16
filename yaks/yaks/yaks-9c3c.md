@@ -23,8 +23,9 @@ It also takes in what landed since the first two designs were written: the Wiki 
 
 The design is the farm page [wiki/design/tui-model.md](/doks/design/tui-model.md). The earlier per-yak designs are its references.
 
----
-▸ 2026-11-03T02:19:24Z [tui-design]
+#### 2026-11-03T02:19:24Z
+
+*tui-design*
 
 Drafted [wiki/design/tui-model.md](/doks/design/tui-model.md) and added a note to each folded yak (yaks-158d, yaks-953f, yaks-1bbd, yaks-c7ba, yaks-f1e6, yaks-0ac1) pointing back to it.
 
@@ -42,15 +43,17 @@ Open for Joel:
 - pages in Starred and Recent;
 - putting the command table second.
 
----
-▸ 2026-11-03T03:17:06Z [tui-design]
+#### 2026-11-03T03:17:06Z
+
+*tui-design*
 
 Design agreed by Joel, 2026-11-02: every open question resolved as leaned (decisions 5 to 8 on the page). The page is [wiki/design/tui-model.md](/doks/design/tui-model.md). The questions on yaks-158d and yaks-953f are answered there and their `needs` cleared.
 
 Implementation is the page's seven phases, carried by the folded yaks (yaks-953f phase 1 first, then the command table under yaks-0ac1).
 
----
-▸ 2026-11-03T03:17:06Z [tui-design]
+#### 2026-11-03T03:17:06Z
+
+*tui-design*
 
 kind: move
 from: shaving

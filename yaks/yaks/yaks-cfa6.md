@@ -19,8 +19,9 @@ Lean: make it true by construction instead. `yaks shave <child>` also shaves eac
 
 The cost: the ancestor's move is stamped with the worker's name, so `yaks sheds` lists the umbrella under that worker (as it already does when the worker follows the skill). Design fork: see the ask on yaks-9b41.
 
----
-▸ 2026-11-01T17:28:01Z [yakherd]
+#### 2026-11-01T17:28:01Z
+
+*yakherd*
 
 kind: move
 from: hairy
@@ -30,8 +31,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 
 moved: hairy -> shaving
 
----
-▸ 2026-11-01T17:30:51Z [yakherd]
+#### 2026-11-01T17:30:51Z
+
+*yakherd*
 
 kind: landed
 sha: 76aeae2
@@ -46,8 +48,9 @@ Done (see the landed sha).
 
 Evidence: `cargo test --workspace --locked` green (CI-like env); `shave_lifts_hairy_ancestors` (two hairy ancestors lifted outermost first, stops at a shaving one, `child:` and actor on the entry, no-op lifts nothing). Real CLI: `yaks shave <leaf>` under hairy mid under hairy top printed `Shaving yak-ff1c`, `Shaving yak-0899 (parent of yak-ff1c)`, `Shaving yak-5b34 (parent of yak-ff1c)`; top's last entry shows `child: yak-ff1c` and the `thread:`.
 
----
-▸ 2026-11-01T17:30:52Z [yakherd]
+#### 2026-11-01T17:30:52Z
+
+*yakherd*
 
 kind: move
 from: shaving

@@ -18,12 +18,14 @@ The bright-path workflow is basically "I know we're on a worktree, but I also wa
 
 I'm not quite sure what the CLI/TUI should show here -- it could be as simple as requiring a branch parameter for the CLI, and offering a branch lens in the shed TUI. Or it could be something more clever I haven't thought of yet.
 
----
-▸ 2026-10-19T04:26:21Z [delta:herd-pass]
+#### 2026-10-19T04:26:21Z
+
+*delta:herd-pass*
 
 Obviated by one farm per machine (yaks-6a34, yaks-73f4): every shed reads and writes the same farm worktree, so there are no per-shed copies to look up, merge, steer or lose; LFS-tracked attachments no longer travel through code merges (the orphan farm branch has no .gitattributes). Slaughtered in the 2026-10-19 herd pass; revive if it recurs under the new model.
 
----
-▸ 2026-10-19T04:26:23Z [delta:herd-pass]
+#### 2026-10-19T04:26:23Z
+
+*delta:herd-pass*
 
 moved: hairy -> dead
