@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T23:34:02Z'
+updated: '2026-11-17T23:36:05Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -178,3 +178,9 @@ source references: 69 edit(s) in 8 file(s)
 - No `.../source.md` or `.../extracted.md` link is left in doks, yaks or sessions, apart from prose and code spans that describe the old layout (historical text, correctly untouched).
 - `find monorepo --kind sources` finds hits in the YASS tree's own files.
 - TUI: the source shows `Files: 168 files`, and Enter opens the tree in the directory view. Holding `j` on it is now trivial (0.15 s for 30 keys).
+
+#### 2026-11-17T23:36:05Z
+
+*sources-triage*
+
+Docs, help and skills for the new layout committed on `main` (`docs/cli.md` incl. the schema-10 migrate section, `docs/tui.md`, `README.md`, the `yaks` and `yaks-research` skills, clap help). `cargo test -p yaks skills` green. Waiting on `s10tests-1` (yaks-03c8) for the test updates, then full gate and the design dok.
