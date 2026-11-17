@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T22:03:00Z'
+updated: '2026-11-17T22:08:22Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -42,3 +42,9 @@ Evidence, after (my release build, `source add <abs path>/notes.md` in a scratch
 Test: `a_local_file_records_its_name_never_a_path_or_host` (was `a_scratch_path_is_not_provenance_but_another_path_is`; it asserts no `host:` and no absolute path both for a file under the temp dir and one under `target/`, which the old test required to be recorded as an absolute path).
 
 Docs: 20 MiB per-file cap now in `source add --help`, `docs/cli.md` and the `yaks-research` skill; the resource/host rule in `docs/cli.md`, the skill and the `--url` help.
+
+#### 2026-11-17T22:08:22Z
+
+*srccli-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
