@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T23:02:45Z'
+updated: '2026-11-17T23:31:14Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -147,3 +147,16 @@ Per `sources/<dir>/source.md`:
 `sources::list`, dedup, `check`'s citations, `find` (the `.md` plus the sibling's text files), the Doks tab, the TUI viewer (a source is a plain markdown document; the extracted section goes), `peek`, `promote`, and the CLI messages.
 
 Also docs, `--help`, the `yaks` and `yaks-research` skills, and `/doks/design/knowledge-store.md`.
+
+#### 2026-11-17T23:31:14Z
+
+*sources-triage*
+
+Checkpoint (`sources-triage`): the schema-10 code is in, on `main` as a commit marked wip (not installed or released). It contains:
+
+- the writer and readers in `sources.rs`;
+- `locate`, `find`, `check`, `sessions`, `promote` and the TUI reading the new layout;
+- `src/migrate10.rs` (convert plus reference rewrite), with 3 passing tests;
+- `SCHEMA = 10`, wired into `yaks migrate`.
+
+The full gate shows 36 failures, all of them existing tests that still build or expect the old layout (`source.md`, `extracted.md`, `files/`). A worker is updating them. Docs and skills, plus a dry run of the migration against a copy of this farm, are next.
