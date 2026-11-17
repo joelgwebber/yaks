@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T23:31:14Z'
+updated: '2026-11-17T23:34:02Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -160,3 +160,21 @@ Checkpoint (`sources-triage`): the schema-10 code is in, on `main` as a commit m
 - `SCHEMA = 10`, wired into `yaks migrate`.
 
 The full gate shows 36 failures, all of them existing tests that still build or expect the old layout (`source.md`, `extracted.md`, `files/`). A worker is updating them. Docs and skills, plus a dry run of the migration against a copy of this farm, are next.
+
+#### 2026-11-17T23:34:02Z
+
+*sources-triage*
+
+Migration rehearsal (`sources-triage`): `yaks migrate` from a release build of the wip commit, run on a **copy** of this farm (the real farm only read; schema 9 → 10).
+
+```text
+sources: 28 source(s) made one file each; 2 directory tree(s) lifted out of `files/`; 17 duplicate copy(ies) of the text removed
+source references: 69 edit(s) in 8 file(s)
+```
+
+- The Thorsten source is one file: provenance on top, the article's text right under it, and the fxtwitter JSON kept beside it (`file:`).
+- The YASS source file is 18 lines (was 271, plus an 842 KiB joined copy). Its tree is directly in the sibling directory, so README's `[docs/monorepo.md](docs/monorepo.md)` now resolves. That closes yaks-289a by construction.
+- `doctor`: only the two dependencies that were already dangling. `check`: one finding fewer than the real farm, with no new broken or uncited source.
+- No `.../source.md` or `.../extracted.md` link is left in doks, yaks or sessions, apart from prose and code spans that describe the old layout (historical text, correctly untouched).
+- `find monorepo --kind sources` finds hits in the YASS tree's own files.
+- TUI: the source shows `Files: 168 files`, and Enter opens the tree in the directory view. Holding `j` on it is now trivial (0.15 s for 30 keys).
