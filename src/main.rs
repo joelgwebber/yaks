@@ -406,7 +406,7 @@ enum Command {
     /// `path:line: text`, grouped by file under its title. The match ignores
     /// case and is a literal substring unless `--regex`. Searches yak files
     /// (title, description, notes), doks (frontmatter and body), a source's
-    /// `source.md` and `extracted.md` (never the original file), and
+    /// file (`sources/<id>.md`) and the text files beside it, and
     /// `sessions/**.md`. `--scope` keeps paths under a prefix (`doks/topics/`,
     /// `sources`, a herd such as `web`; repeatable), `--kind` keeps one of
     /// yaks, doks, sources or sessions (repeatable). `--json` prints
@@ -1115,11 +1115,12 @@ enum Command {
     },
     /// Save outside material as a source, or list the farm's sources.
     ///
-    /// A source is a snapshot under `sources/<date>-<sha8>-<slug>/` (the
-    /// slug is from its title; the id is `<date>-<sha8>`, and any command that
-    /// takes an id takes it with or without the slug): the
-    /// original, `extracted.md` (its text, for text files), and `source.md`
-    /// saying what it is and where it came from. Cite its `source.md` from a
+    /// A source is one file, `sources/<date>-<sha8>-<slug>.md` (the slug is
+    /// from its title; the id is `<date>-<sha8>`, and any command that takes
+    /// an id takes it with or without the slug): its frontmatter says what it
+    /// is and where it came from, its body is the text. The original, when it
+    /// is not that text (a PDF, an image), and a directory's tree sit beside
+    /// it in `sources/<date>-<sha8>-<slug>/`. Cite `sources/<id>.md` from a
     /// dok's `sources:` or link it from a yak. yaks fetches nothing and
     /// converts nothing: save a downloaded copy with `--url` naming the dok,
     /// and your conversion of it with `--text`, as one source. Material that
@@ -1681,8 +1682,8 @@ enum SourceAction {
     /// and says what it left out. Saving the same content again reports the existing source,
     /// whatever `--title` says (it never renames or adds a second one, and
     /// says when it kept a different title: `source set` changes it);
-    /// `--refresh` updates one in place and keeps its directory name, slug
-    /// included; `--text-only` keeps a markdown file as its text alone.
+    /// `--refresh` updates one in place and keeps its name, slug
+    /// included; `--text-only` keeps only the text of a JSON or code file.
     Add {
         path: PathBuf,
         /// A title naming the thing, not the file (default: the file name).
@@ -1695,11 +1696,12 @@ enum SourceAction {
         #[arg(long)]
         url: Option<String>,
         /// Your conversion of the file to text (a dok's HTML to markdown, a
-        /// PDF to text): it becomes `extracted.md`, so one source holds the
-        /// original and the text you read. Not for a directory.
+        /// PDF to text): it becomes the source's body, so one source holds the
+        /// original and the text you read. For a directory, the body (a
+        /// summary of the tree), instead of a link to it.
         #[arg(long)]
         text: Option<PathBuf>,
-        /// `sources/<id>/source.md` of the source this is a part of.
+        /// `sources/<id>.md` of the source this is a part of.
         #[arg(long = "part-of")]
         part_of: Option<String>,
         /// Update in place: when a source already names `--url` as its
@@ -1708,10 +1710,11 @@ enum SourceAction {
         /// one. Saves a new source when none has the URL. Needs `--url`.
         #[arg(long)]
         refresh: bool,
-        /// Keep only `extracted.md`, with no separate copy of the original:
-        /// for a markdown or plain-text file that already is the text to
-        /// read (an exported document). The original's file name is not kept.
-        /// Not for a directory, a non-text file, or together with `--text`.
+        /// Keep only the text, as the source's body, with no copy of the
+        /// original beside it. A markdown or plain-text file is already kept
+        /// that way; this is for a text file of another kind (JSON, CSV,
+        /// code) whose text is all you want. Not for a directory, a non-text
+        /// file, or together with `--text`.
         #[arg(long = "text-only")]
         text_only: bool,
         #[arg(long = "as")]
@@ -1733,7 +1736,7 @@ enum SourceAction {
     /// so this is the way to change it.
     Set {
         /// The source: its id (`<date>-<sha8>`, slug or not), `sources/<id>`,
-        /// or `sources/<id>/source.md`.
+        /// or `sources/<id>.md`.
         source: String,
         /// The new title: what the thing is, not the file.
         #[arg(long)]
@@ -1742,15 +1745,15 @@ enum SourceAction {
     /// Mark a source on purpose for `yaks check`: kept without a citation
     /// (`--uncited WHY`), replaced by a newer source (`--superseded-by`), or
     /// `--clear` the mark. Sets the field `uncited:` / `superseded_by:` in
-    /// its `source.md` (one mark at a time) as one commit.
+    /// its file (one mark at a time) as one commit.
     Mark {
         /// The source: its id (`<date>-<sha8>`, slug or not), `sources/<id>`,
-        /// or `sources/<id>/source.md`.
+        /// or `sources/<id>.md`.
         source: String,
         /// Keep it without a citation, and say why.
         #[arg(long, value_name = "WHY", group = "how")]
         uncited: Option<String>,
-        /// Replaced by this source (its id or `sources/<id>/source.md`);
+        /// Replaced by this source (its id or `sources/<id>.md`);
         /// it must exist.
         #[arg(long = "superseded-by", value_name = "SOURCE", group = "how")]
         superseded_by: Option<String>,

@@ -393,7 +393,7 @@ part of a view's filter. It stays when you switch tabs (it never puts the `*`
 on one), every tab's count and list apply it, and it is what a saved view's own
 search (the drawer's search row) must also match. It matches the way `yaks find`
 searches: a yak's id, title and description and notes; a dok's file
-(frontmatter and body) and a source's `source.md` and extracted text, on top of
+(frontmatter and body) and a source's file (its provenance and its text), on top of
 its title, path, kind and tags; a shed's name, or one of its yaks (a tree keeps
 the ancestors of a match). In a list, `n`/`N` with no query set make the last
 in-pane search the query (with one set they do nothing; `N` is the previous
@@ -562,7 +562,7 @@ digits). It shows as plain link text; the status bar shows `src/foo.rs:L12-L40`
 [code viewer](#code-files-and-taking-things-out) at its lines, and `O` takes it out
 (an editor, the system, a path, a host link). A link
 to a **farm document** (a dok from the farm root, `[x](/doks/topics/x.md#setup)`;
-in a dok, a relative `notes.md` below it; a source's `/sources/<id>/source.md`;
+in a dok, a relative `notes.md` below it; a source's `/sources/<id>.md`;
 a session note's `/sessions/YYYY/MM/<note>.md`;
 `@<sha>` pins it) opens in the text viewer at its `#heading` or `#L12` row (see
 [Following links](#following-links-and-peek)); with the line cursor on one, the
@@ -796,7 +796,7 @@ left, and everything in it is read-only.
 It opens from:
 
 - **a link to a directory**: `[proj/](<id>/proj/)` in a yak, `[sketches](sketches/)`
-  in a dok, `/sources/<id>/files/` anywhere; the status bar shows the
+  in a dok, `/sources/<id>/` (the tree or original beside a source) anywhere; the status bar shows the
   destination and the peek pane lists the directory's top level;
 - **the `Attachments: 3 files` row** of a yak's detail pane (when its attachment
   directory holds files) and of a dok in the viewer; **`Files:`** on a source.
@@ -845,7 +845,7 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
 `v` is visual select here (the view picker is `` ` `` on a list row).
 
 - **`Enter` on a farm document** opens it in the viewer: a dok (frontmatter
-  above the body), a source (with its `extracted.md`), or any other text file of
+  above the body), a source (its provenance above its text), or any other text file of
   the farm; an image opens in the image viewer. A `#heading` lands the cursor on
   that heading, at the top of the dok; `#L12-L40` on line 12 of the file. A
   pinned link (`/doks/x.md@3f2a9c1`) shows the file as it was at that farm
@@ -916,8 +916,9 @@ dok list`, `yaks source list` and `yaks session list` read).
   `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
   rendered markdown body. A field the viewer can't flatten to one line (a list
-  of maps) shows its YAML as written. A **source** opens its `source.md`, then
-  its `extracted.md` under an `── extracted.md ──` row. A **session note**
+  of maps) shows its YAML as written. A **source** opens the same way: its
+  provenance as field rows, then its text, and a `Files:` row when an original
+  or a directory tree sits beside it. A **session note**
   opens like a dok: its frontmatter (who, when, the verdict counts,
   `promoted:`) as field rows, then its sections, with the images beside it
   drawn inline. The viewer moves like
@@ -945,7 +946,7 @@ dok list`, `yaks source list` and `yaks session list` read).
 - **`/` searches** the list with the global query, the same one every tab
   applies (its chip is on the tab row; `Esc` clears it). It matches a row's
   title, path, kind and tags and the text behind it: a dok's frontmatter and
-  body, a source's `source.md` and extracted text.
+  body, a source's file.
 - **Refresh**: the list is reread whenever the farm is (at startup, after a TUI
   change, and when files under the farm change), and on `Ctrl-R`.
 
