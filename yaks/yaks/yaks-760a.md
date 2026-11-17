@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:08:20Z'
+updated: '2026-11-17T22:12:27Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -108,3 +108,9 @@ Coordinator review (`sources-triage`): landed as `b5525ac1` on `main` (squash of
 - Diff read. `set_text` is now the only writer of `AttachView::text`, so the cache can't go stale through a direct assignment. The `cfg(test)` equality check on every hit covers the rest.
 - Re-ran with my own release build on my scratch copy (same `source.md` with the 842 KiB text): 30 `j` add 0.44 s, against 4.4 s before (under load from a concurrent `cargo test`).
 - `cargo fmt --check` clean. Full gate re-run noted below.
+
+#### 2026-11-17T22:12:27Z
+
+*sources-triage*
+
+Coordinator gate on main at b5525ac1: cargo test -p yaks, 1453 passed, 0 failed (36 suites, exit 0).
