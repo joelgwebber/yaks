@@ -346,14 +346,14 @@ Yaks and doks link with ordinary markdown links, in one grammar: `<target>[@<rev
 | one note of a yak | the id, `#` and the note's timestamp; or the file path and the heading's slug | `[the answer](yaks-1a2b#2026-11-04T22:13:03Z)`, `/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z` |
 | a farm document | path from the farm root, leading `/` | `/doks/topics/x.md`, `/sources/<id>/source.md` |
 | below the linking dok | relative, downward only | `notes/detail.md` (from `doks/topics/x.md`) |
-| a yak's attachment | `<id>/<file>`, from anywhere; inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `shot.png` |
+| a yak's attachment | `<id>/<file>`, from anywhere (a file of an attached directory: `<id>/<dir>/<path>`; the directory itself: `<id>/<dir>/`); inside an attachment, a bare sibling `<file>` | `yaks-1a2b/log.txt`, `yaks-1a2b/proj/src/main.rs`, `shot.png` |
 | the code repository | `code:` and a path from the repo root | `code:src/foo.rs#L12-L40` |
 | a URL | as is | `https://...` |
 
 - `@<rev>` (7 to 40 hex digits) pins a path to a commit: a farm path to a farm-branch commit, a `code:` path to a code commit (`code:src/foo.rs@3f2a9c1#L12`, `/doks/x.md@91be0d2#setup`).
 - `#L12` or `#L12-L40` names lines; any other `#anchor` a heading, by GitHub's slug rule (lowercase, spaces to `-`, punctuation dropped; a repeated heading gets `-1`, `-2`).
 - **A note** is named by its timestamp, which it keeps for life (removing another note never shifts it). Notes written in the same second (a shear note and its move) share one: the first is the plain timestamp, later ones take `-1`, `-2`. `yaks update --note` prints the new note's link (`Updated yaks-1a2b: note yaks-1a2b#2026-11-04T22:13:03Z`; on a farm at schema 9 the path form, `/yaks/yaks/yaks-1a2b.md#2026-11-04t221303z`, which GitHub follows), so copy it rather than building one; `peek` prints just that note and `doctor` reports a note link that leads nowhere. The TUI follows one to its yak, cursor on that note.
-- **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; an attachment directory is flat, so only a bare name counts, and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
+- **In a file attached to a yak**, a bare file name is another attachment of the same yak (`![crop](shot.png)` in `yaks-1a2b/evidence.md` is `yaks-1a2b/shot.png`), because that is where any other markdown viewer looks for it too; only a bare name counts (a link down into an attached directory names it from the yak: `<id>/<dir>/<path>`), and `<id>/<file>`, `/farm/path`, `code:` and URLs mean what they do anywhere. `doctor` checks the links inside markdown attachments, and `rename-attachment` and `promote` keep them right.
 - A relative link never climbs with `../`: link from the farm root instead. In yaks the older code forms stay valid: `../src/foo.rs` and the pinned `../blob/<sha>/src/foo.rs`.
 - `code:` links resolve in the code checkout: the git top-level of the directory yaks runs in, else the repository's main checkout.
 

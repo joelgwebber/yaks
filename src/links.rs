@@ -48,7 +48,10 @@ pub enum Link {
         rev: Option<String>,
         anchor: Option<Anchor>,
     },
-    /// A yak's attachment, `<id>/<name>`.
+    /// A yak's attachment, `<id>/<name>`. `name` may have directories in it
+    /// (`proj/src/main.rs`, a file of an attached directory) or name a
+    /// directory itself (`proj`, written `<id>/proj/`); never `.`, `..` or an
+    /// empty segment.
     Attachment {
         id: String,
         name: String,
@@ -173,12 +176,14 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         };
     }
     if let Some((id, name)) = path.split_once('/') {
-        if is_yak(id) && !name.is_empty() && !name.contains('/') {
-            return Link::Attachment {
-                id: id.to_string(),
-                name: name.to_string(),
-                anchor,
-            };
+        if is_yak(id) {
+            if let Some(name) = clean_attachment(name) {
+                return Link::Attachment {
+                    id: id.to_string(),
+                    name,
+                    anchor,
+                };
+            }
         }
     }
     if let From::Attachment(id) = from {
@@ -219,9 +224,16 @@ fn yak_file_parts(path: &str) -> Option<(&str, Option<&str>)> {
     let rest: Vec<&str> = parts.collect();
     let (id, tail) = match (third.strip_suffix(".md"), rest.as_slice()) {
         (Some(id), []) => (id, None),
-        (None, [name]) if !name.is_empty() => (third, Some(*name)),
+        // An attachment, or a file or directory inside an attached directory.
+        (None, [first, ..]) if !first.is_empty() => {
+            let start = herd.len() + dir.len() + third.len() + 3;
+            (third, Some(path.get(start..)?.trim_end_matches('/')))
+        }
         _ => return None,
     };
+    if tail.is_some_and(|t| clean_attachment(t).is_none()) {
+        return None;
+    }
     (crate::store::herd_of(id) == herd).then_some((id, tail))
 }
 
@@ -379,6 +391,15 @@ pub fn parse_anchor(frag: &str) -> Option<Anchor> {
 }
 
 /// Drop `.` and empty segments; `None` for `..`, a trailing `/` or nothing.
+/// An attachment name as a link writes it after `<id>/`: one or more
+/// segments, a trailing `/` allowed (a directory, dropped here), and no
+/// empty, `.` or `..` segment. `None` when it is not one.
+fn clean_attachment(name: &str) -> Option<String> {
+    let name = name.strip_suffix('/').unwrap_or(name);
+    (!name.is_empty() && name.split('/').all(|s| !matches!(s, "" | "." | "..")))
+        .then(|| name.to_string())
+}
+
 fn clean(p: &str) -> Option<String> {
     if p.ends_with('/') {
         return None;
@@ -727,8 +748,9 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
             root.join(&*crate::locate::farm_file_in(root, path))
                 .exists(),
         ),
+        // A file, or an attached directory (`<id>/proj/`, yaks-a57c).
         Link::Attachment { id, name, .. } => {
-            Some(crate::farm::locate_attachment(root, id, name).is_some())
+            Some(crate::farm::attachment_path(root, id, name).is_some_and(|p| p.exists()))
         }
         Link::Upward(_) => Some(false),
         // A note link is checked for its note; a plain yak id is `refs`' business.
@@ -976,10 +998,30 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             span(path, &text, anchor, context)?
         }
         Link::Attachment { id, name, anchor } => {
+            let dir = crate::farm::attachment_path(bases.farm, id, name).filter(|p| p.is_dir());
+            if let Some(dir) = dir {
+                // An attached directory: its entries, one per line.
+                let mut names: Vec<String> = std::fs::read_dir(&dir)?
+                    .flatten()
+                    .map(|e| {
+                        let n = e.file_name().to_string_lossy().into_owned();
+                        if e.path().is_dir() {
+                            format!("{n}/")
+                        } else {
+                            n
+                        }
+                    })
+                    .collect();
+                names.sort();
+                return Ok(Peek {
+                    label,
+                    text: names.iter().map(|n| format!("{n}\n")).collect(),
+                });
+            }
             let Some(found) = crate::farm::locate_attachment(bases.farm, id, name) else {
                 bail!("{id}/{name}: no such attachment");
             };
-            let text = read_at(found.path.parent().unwrap_or(bases.farm), name, None)?;
+            let text = read_at(&crate::store::artifact_dir(bases.farm, id), name, None)?;
             span(name, &text, anchor, context)?
         }
         Link::Code { path, rev, anchor } => {
@@ -1080,8 +1122,17 @@ mod tests {
             parse("/yaks/yaks/yaks-1a2b/shot.png", f, yak),
             parse("yaks-1a2b/shot.png", f, yak)
         );
-        // Not a yak: another herd's directory, an unknown id, a deeper path, a
-        // pin, and a dok that happens to sit under a `yaks/` directory.
+        // A deeper path is a file of an attached directory (yaks-a57c).
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b/sub/x.png", f, yak),
+            Link::Attachment {
+                id: "yaks-1a2b".into(),
+                name: "sub/x.png".into(),
+                anchor: None
+            }
+        );
+        // Not a yak: another herd's directory, an unknown id, a pin, and a
+        // dok that happens to sit under a `yaks/` directory.
         assert_eq!(
             parse("/other/yaks/yaks-1a2b.md", f, yak),
             farm("other/yaks/yaks-1a2b.md", None, None)
@@ -1089,10 +1140,6 @@ mod tests {
         assert_eq!(
             parse("/yaks/yaks/yaks-nope.md", f, |s| s == "yaks-1a2b"),
             farm("yaks/yaks/yaks-nope.md", None, None)
-        );
-        assert_eq!(
-            parse("/yaks/yaks/yaks-1a2b/sub/x.png", f, yak),
-            farm("yaks/yaks/yaks-1a2b/sub/x.png", None, None)
         );
         assert_eq!(
             parse("/yaks/yaks/yaks-1a2b.md@3f2a9c1", f, yak),
@@ -1206,6 +1253,42 @@ mod tests {
                 anchor: None
             }
         );
+    }
+
+    /// An attached directory (yaks-a57c): `<id>/proj/` names the directory
+    /// and `<id>/proj/src/a.rs` a file in it, as the bare id form and the
+    /// farm-root path form; nothing climbs out or hides.
+    #[test]
+    fn a_directory_attachment_and_its_files_are_attachments() {
+        let yak = |s: &str| s == "yaks-1a2b";
+        let att = |name: &str| Link::Attachment {
+            id: "yaks-1a2b".into(),
+            name: name.into(),
+            anchor: None,
+        };
+        assert_eq!(parse("yaks-1a2b/proj/", From::Yak, yak), att("proj"));
+        assert_eq!(
+            parse("yaks-1a2b/proj/src/a.rs", From::Yak, yak),
+            att("proj/src/a.rs")
+        );
+        assert_eq!(
+            parse(
+                "/yaks/yaks/yaks-1a2b/proj/src/a.rs",
+                From::Dok("doks/x.md"),
+                yak
+            ),
+            att("proj/src/a.rs")
+        );
+        assert_eq!(
+            parse("/yaks/yaks/yaks-1a2b/proj/", From::Dok("doks/x.md"), yak),
+            att("proj")
+        );
+        for bad in ["yaks-1a2b/proj/../x", "yaks-1a2b//x", "yaks-1a2b/./x"] {
+            assert!(
+                !matches!(parse(bad, From::Yak, yak), Link::Attachment { .. }),
+                "{bad}"
+            );
+        }
     }
 
     /// In a file attached to a yak, a bare name is a sibling attachment of

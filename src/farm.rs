@@ -52,17 +52,31 @@ pub struct FoundAttachment {
 /// is a file there. The one resolution rule behind the TUI's open and `yaks
 /// attachment`. A name that could leave the yak's directory is refused.
 pub fn locate_attachment(root: &Path, id: &str, name: &str) -> Option<FoundAttachment> {
-    if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
-        return None;
-    }
-    let path = store::artifact_dir(root, id).join(name);
+    let path = attachment_path(root, id, name)?;
     path.is_file().then(|| FoundAttachment {
         name: name.to_string(),
         path,
     })
 }
 
+/// Where attachment `name` of yak `id` lives, file or directory, whether or
+/// not it exists: `<herd>/yaks/<id>/<name>`. `name` may go down into an
+/// attached directory (`proj/src/main.rs`, yaks-a57c), never up or into a
+/// hidden entry. `None` for a name that is not a safe path.
+pub fn attachment_path(root: &Path, id: &str, name: &str) -> Option<PathBuf> {
+    let name = name.strip_suffix('/').unwrap_or(name);
+    if name.is_empty()
+        || name.contains('\\')
+        || name.split('/').any(|s| s.is_empty() || s.starts_with('.'))
+    {
+        return None;
+    }
+    Some(store::artifact_dir(root, id).join(name))
+}
+
 /// Every attachment of yak `id` in the farm at `root`, sorted by name.
+/// Only the files directly in its directory: an attached directory is one
+/// link, and its files are reached through it.
 pub fn list_attachments(root: &Path, id: &str) -> Vec<FoundAttachment> {
     let Ok(rd) = std::fs::read_dir(store::artifact_dir(root, id)) else {
         return Vec::new();
@@ -4799,6 +4813,18 @@ mod tests {
         assert_eq!(found("b.txt"), Some(dir.join("b.txt")));
         assert_eq!(found("missing.txt"), None);
         assert_eq!(found("../y-1/b.txt"), None);
+        // A file inside an attached directory (yaks-a57c); the directory
+        // itself is a path, not a file.
+        std::fs::create_dir_all(dir.join("proj/src")).unwrap();
+        std::fs::write(dir.join("proj/src/m.rs"), "m").unwrap();
+        assert_eq!(found("proj/src/m.rs"), Some(dir.join("proj/src/m.rs")));
+        assert_eq!(found("proj"), None);
+        assert_eq!(
+            attachment_path(&root, "y-1", "proj/"),
+            Some(dir.join("proj"))
+        );
+        assert_eq!(attachment_path(&root, "y-1", "proj/../b.txt"), None);
+        assert_eq!(attachment_path(&root, "y-1", "proj/.git/x"), None);
         let names: Vec<String> = list_attachments(&root, "y-1")
             .into_iter()
             .map(|a| a.name)
