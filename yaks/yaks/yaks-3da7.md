@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T21:42:57Z'
+updated: '2026-11-17T21:44:20Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -40,3 +40,9 @@ Claim (yakherd `sources-triage`). Owner: worker `srccli-1`, who also owns yaks-4
 - Scope: `sources::add_on`'s directory walk. Keep dot-files and dot-directories, skip only `.git`, `.DS_Store` and the existing skip names, and report what was skipped (the stdout line and one line in `source.md`'s body).
 - Out of scope: the source layout (yaks-e83f is deciding a schema-10 format). Change nothing about `files/`, `extracted.md` or the `files:` list.
 - Evidence: a test with a dot-dir in the tree that fails before and passes after; the gate; a real `source add` of a tree with `.github/` in a scratch farm.
+
+#### 2026-11-17T21:44:20Z
+
+*srccli-1*
+
+Start: Tue Nov 17 21:44:19 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3da7.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/erg296cj3wps/yaks
