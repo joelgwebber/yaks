@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T22:14:21Z'
+updated: '2026-11-17T22:24:52Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -94,3 +94,9 @@ Summary: `source add` says when it kept a different title; `source set <id> --ti
 *srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:24:52Z
+
+*sources-triage · kind: landed · commit: 2ea5597ca2f68ff88e77c1f92e8ed1c25f053ec1 · source: b3764c5680fbd78f062bd1b0bb58c3b97ce41a17 · branch: main*
+
+landed: 2ea5597c yaks-06aa: source add says when it kept a different title; add source set --title
