@@ -1,11 +1,11 @@
 ---
 id: yaks-03c8
 title: 'Schema 10: update existing tests to the one-file source layout'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-17T23:31:25Z'
+updated: '2026-11-17T23:31:29Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -23,3 +23,9 @@ Update each test to the new layout. Keep what it was testing, not its old assert
 Snapshots: review each `.snap.new` and accept it only when the change is the layout's.
 
 Do **not** change non-test code. If a test shows a real bug in the new code, `yaks ask` with the failing case.
+
+#### 2026-11-17T23:31:29Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
