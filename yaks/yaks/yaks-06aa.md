@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T22:14:13Z'
+updated: '2026-11-17T22:14:20Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -82,3 +82,9 @@ Test: `same_bytes_with_another_title_says_so_and_set_title_changes_it` (plain ad
 *srccli-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-17T22:14:20Z
+
+*srccli-1*
+
+Summary: `source add` says when it kept a different title; `source set <id> --title` rewrites it (directory unchanged), with docs, help and skill. Gate PASS (`yaks verify`), fmt clean, scratch-farm run above.
