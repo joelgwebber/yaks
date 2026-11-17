@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:06:11Z'
+updated: '2026-11-17T22:06:12Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -69,3 +69,20 @@ Decision: `attachment_rows()` now returns `Rc<Vec<DLine>>` (derefs like the Vec,
 Decision: under `cfg(test)` every cache hit is asserted equal to a fresh build ("stale viewer rows cache"), as yaks-bc30 did, so all 1200+ existing viewer tests double as an invalidation check.
 
 Decision: no cap or paging of the extracted text. After the cache, the remaining cost per key is the ~6 ms `render_nav_rows` pass over all rows. Capping would change what a user sees (docs/tui.md); the description says "then cap or page", a layout call that belongs to yaks-4cfe. Left as a follow-up: paint only the visible window in `render_nav_rows` (find_matches scans every row too).
+
+#### 2026-11-17T22:06:12Z
+
+*srcperf-1*
+
+Summary. Cause: temporary timers (removed) on the YASS source showed `AttachView::rows` (md_rows over the 842 KiB extracted.md, 11k rows) at about 50 ms per call, called 3 times per `j` (once by `render_attachment`, twice by `attachment_rows()` from the key handler and the status/find line), plus 6 ms in `render_nav_rows`. Nothing was cached, so each key re-parsed and re-wrapped the whole document.
+
+Fix: `App::viewer_rows` (src/tui/memo.rs) memoizes the rows on the `AttachView` per (data_gen, width, image layout); `set_text` invalidates. `render_attachment` and `attachment_rows` use it. Output unchanged: `--diff` headless output for 30 j is byte-identical (`cmp`) between the before binary and after. No docs: no user-visible change.
+
+Test: `a_viewer_keypress_builds_its_rows_once_per_width_and_text` (doks_tab.rs, counter `VIEWER_ROWS_CALLS`): 1 build on first frame, 0 across j/j/k/j/G/g with a draw and two `attachment_rows()` calls each, 1 on a resize, 0 on a redraw, 1 after `set_text`.
+
+Timing (scratch farm holding the real YASS source, release build, `tui --headless --size 120x40 --diff`, wall clock `time -p`; the machine was noisy, runs vary +-20%):
+- before: 0 keys 0.72-0.85 s; 30 keys 5.86, 5.96 s; 100 keys 18.5, 21.1 s => about 170-190 ms per key (matches the 5.03 s of the first, quieter, run).
+- after: 0 keys 0.41-0.43 s; 30 keys 0.57, 0.72 s; 100 keys 1.09, 1.17 s => about 6-7 ms per key.
+That is roughly 25-30x per key; the rest is `render_nav_rows` over 11k rows.
+
+Gate: `cargo fmt --check` clean; `cargo test -p yaks`: no failures (1239 passed, 18 ignored in the unit tests); `yaks verify yaks-760a` PASS from the checkout root.
