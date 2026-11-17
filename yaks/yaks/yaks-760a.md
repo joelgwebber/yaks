@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:43:00Z'
+updated: '2026-11-17T21:44:51Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -45,3 +45,9 @@ Claim (yakherd `sources-triage`). Owner: worker `srcperf-1`. Scope: the text vie
 
 - Out of scope: the source layout, and the new directory view (yaks-3329, worker `browse-1`, which adds a `DocView` variant). Don't restructure `DocView`.
 - Evidence: the headless timing in the description, before and after, on a scratch farm holding the YASS text (copy `sources/2026-11-05-04642f1f-*/extracted.md` from the real farm read-only), plus a test that pins the renders per keypress.
+
+#### 2026-11-17T21:44:51Z
+
+*srcperf-1*
+
+Start: worker srcperf-1. `date -u`: Tue Nov 17 21:44:47 UTC 2026. `yaks path yaks-760a`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-760a.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/y0m0g7nb9wf6/yaks
