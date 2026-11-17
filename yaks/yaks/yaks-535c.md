@@ -5,14 +5,13 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T21:33:26Z'
+updated: '2026-11-17T21:37:51Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
 tags:
 - doks
 - cli
-needs: agent
 ---
 
 Found while ingesting sources in yaks-3610 (0.0.33).
@@ -54,3 +53,11 @@ Existing sources would be migrated in the same pass as yaks-e83f.
 
 1. Agreed, as mentioned in yaks-e83f as well.
 2. Yeah, I think that would be very helpfully simplifying.
+
+#### 2026-11-17T21:37:51Z
+
+*sources-triage · kind: pickup*
+
+picked up
+
+Decision recorded: drop the joined extracted.md and the files: list (Joel's answer). Folded into the same format change as yaks-e83f; done with it.
