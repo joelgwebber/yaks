@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T22:10:46Z'
+updated: '2026-11-17T22:14:13Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -76,3 +76,9 @@ Evidence, scratch farm, my release build:
       sources/2026-11-17-87428fc5-wrong-title  text/markdown  Right title  (https://example.com/a)
 
 Test: `same_bytes_with_another_title_says_so_and_set_title_changes_it` (plain add, `--refresh`, same/no title says nothing, set, no-op, directory unchanged, refused forms). Docs: `source add` and `source set` `--help`, `docs/cli.md`, README, `yaks-research` skill.
+
+#### 2026-11-17T22:14:13Z
+
+*srccli-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
