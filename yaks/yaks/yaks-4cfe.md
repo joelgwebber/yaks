@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-17T21:42:25Z'
+updated: '2026-11-17T21:43:02Z'
 tags:
 - doks
 ---
@@ -30,3 +30,18 @@ The design questions are asked on the children, with leans. Settle those first, 
 *sources-triage · kind: move · from: hairy · to: shaving · child: yaks-3da7 · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T21:43:02Z
+
+*sources-triage*
+
+Batch 1 (yakherd `sources-triage`, 2026-11-17). Base `52d80dd3` (v0.0.37). Model `claude-sonnet-5-5` for every worker (AGENTS.md's standing rule). The format work (yaks-e83f, then yaks-535c, yaks-289a, yaks-5f14) waits on [the layout ask](yaks-e83f).
+
+| Worker | Yaks | Files |
+|---|---|---|
+| `srccli-1` | yaks-3da7, yaks-4dd3, yaks-06aa, yaks-fb15 | `src/sources.rs`, `source` arms of `src/main.rs` |
+| `attach-2` | yaks-a57c | `src/farm.rs` attach, `Attach` arm of `src/main.rs` |
+| `srcperf-1` | yaks-760a | TUI text viewer render |
+| `browse-1` | yaks-3329 | new TUI directory view |
+
+Expected overlaps, landed in this order: `srccli-1` before `attach-2` (the shared walk), and `srcperf-1` before `browse-1` (handlers and render).
