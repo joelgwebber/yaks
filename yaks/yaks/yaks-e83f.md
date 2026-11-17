@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T22:54:05Z'
+updated: '2026-11-17T23:02:45Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -103,3 +103,47 @@ Taking it on myself (design-heavy, many files). yaks-535c, yaks-289a and yaks-5f
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T23:02:45Z
+
+*sources-triage*
+
+Plan (`sources-triage`, schema 10). This is the contract I'm implementing; review the code against it.
+
+## On disk
+
+- **The source** is `sources/<id>-<slug>.md`. The frontmatter is today's provenance (`title`, `description`, `media_type`, `size`, `sha256`, `previous_sha256`, `sources:`, `generated:`, `part_of`, the marks). The body is the text.
+- **Sibling directory** `sources/<id>-<slug>/`, only when there is something to keep:
+  - a markdown or plain-text original is the body and is **not** kept again;
+  - with `--text`, the original is kept and the conversion is the body;
+  - another text type (JSON, CSV, code) is kept, and the body is a fenced copy of it;
+  - a binary with no text is kept, and the body says to save it again with `--text`.
+- **`file:`** names the kept original in the sibling (absent when there is none).
+- **A directory source** has its tree directly in the sibling, with no `files/` level. Its frontmatter gets `file_count:` and no `files:` list. Its body is `--text` when given (now allowed for a directory), else one link to the tree, `[<name>/](<name>/)`. What the walk skipped goes in a `skipped:` list in the frontmatter, so the body stays only text.
+- **`--text-only`** keeps its meaning: never keep the original. It is the default for markdown and text now, and still useful for a JSON or code file whose text is all you want.
+
+## Addressing
+
+- `/sources/<id>` (bare or slugged) is `sources/<id>-<slug>.md`.
+- `/sources/<id>/<path>` is a file in the sibling directory.
+- A farm link may end in `/` to name a directory (`[x/](x/)`).
+- After the migration no `source.md` or `extracted.md` alias is left in the resolver (Joel).
+
+## Migration (schema 9 → 10, in the same `yaks migrate`)
+
+Per `sources/<dir>/source.md`:
+
+- Write `sources/<dir>.md`: fields carried over, `files:` becomes `file_count:`, and `part_of` / `superseded_by` are rewritten. The body is `extracted.md`, or the directory link, or the no-text note.
+- In the directory: remove `source.md` and `extracted.md`; remove a markdown or text original identical to the text; lift `files/*` up one level; remove the directory if nothing is left.
+- Across every yak, attachment document, dok, session and source, rewrite:
+  - `sources/<X>/source.md` → `sources/<name>.md`
+  - `sources/<X>/extracted.md#a` → `sources/<name>.md#a`, or for a directory source, when the anchor is a joined file's heading, → `sources/<name>/<that path>`
+  - `sources/<X>/files/<p>` → `sources/<name>/<p>`
+
+  Frontmatter and prose included, only for sources that exist.
+
+## Readers
+
+`sources::list`, dedup, `check`'s citations, `find` (the `.md` plus the sibling's text files), the Doks tab, the TUI viewer (a source is a plain markdown document; the extracted section goes), `peek`, `promote`, and the CLI messages.
+
+Also docs, `--help`, the `yaks` and `yaks-research` skills, and `/doks/design/knowledge-store.md`.
