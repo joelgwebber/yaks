@@ -1,11 +1,11 @@
 ---
 id: yaks-3da7
 title: Directory sources silently skip dot-files and dot-directories
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T22:01:23Z'
+updated: '2026-11-17T22:01:24Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -80,3 +80,9 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 *srccli-1*
 
 Summary: directory sources keep dot files and dot directories, skip only `WALK_SKIP`, and report what was skipped on stdout and in `source.md`. The walk is `sources::walk_dir`, `pub(crate)`, for `attach <dir>`. Gate PASS (`yaks verify`), `cargo fmt --check` clean, scratch-farm run pasted above.
+
+#### 2026-11-17T22:01:24Z
+
+*srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
