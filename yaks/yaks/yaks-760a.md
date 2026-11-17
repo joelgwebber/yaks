@@ -1,11 +1,11 @@
 ---
 id: yaks-760a
 title: 'TUI: a source with a large extracted text is slow to move in (~150 ms per key on YASS)'
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:16:50Z'
+updated: '2026-11-17T21:42:27Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -30,3 +30,9 @@ I built two copies of it in a scratch farm:
 - Then cap or page what is shown. Even after yaks-4cfe's layout decision a big PDF text will be this size.
 
 Evidence: the same headless timing before and after, and a test that pins how many renders a keypress causes.
+
+#### 2026-11-17T21:42:27Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
