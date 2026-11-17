@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T22:08:30Z'
+updated: '2026-11-17T22:24:51Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -60,3 +60,9 @@ Summary: `source.md` records a local file by name only and no `host`; the 20 MiB
 *srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:24:51Z
+
+*sources-triage · kind: landed · commit: e15c8e8d82ee2ad8faf32e1a6a632ba9b0d08499 · source: 6ea78fd099cd5d749dc450e4669743157c7bdef3 · branch: main*
+
+landed: e15c8e8d yaks-4dd3: source add records a local file by name only, no absolute path or host; say the 20 MiB cap
