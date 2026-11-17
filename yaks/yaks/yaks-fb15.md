@@ -33,3 +33,5 @@ moved: hairy -> shaving
 Claim (yakherd `sources-triage`). Owner: `srccli-1`. Scope: `source list` text output indents a part under its parent and marks uncited, `uncited:` and `superseded_by:` sources. Reuse `check`'s citation logic; don't duplicate it. `--json` unchanged unless a field is free to add. Evidence: a test, the gate, and the real listing of this farm pasted in the note.
 
 [yaks-fb15-list](yaks-fb15/yaks-fb15-list.txt)
+
+[yaks-fb15-scratch](yaks-fb15/yaks-fb15-scratch.txt)

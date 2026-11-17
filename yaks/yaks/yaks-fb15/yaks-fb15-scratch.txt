@@ -1,0 +1,4 @@
+  sources/2026-11-17-7427d152-old  text/markdown     Old  (o.md) [superseded by 2026-11-17-a4fb6214]
+  sources/2026-11-17-a4fb6214-new  text/markdown     New  (n.md) [kept uncited: kept as a testbed]
+  sources/2026-11-17-fe8edeeb-tweet  text/markdown     Tweet  (t.md) [uncited]
+  └ sources/2026-11-17-cbc80bb5-shot  text/markdown     Shot  (s.md)
