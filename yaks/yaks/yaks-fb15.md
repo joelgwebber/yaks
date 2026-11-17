@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T21:42:27Z'
+updated: '2026-11-17T21:42:59Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -25,3 +25,9 @@ Small and local: the `source list` arm and its listing function.
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T21:42:59Z
+
+*sources-triage*
+
+Claim (yakherd `sources-triage`). Owner: `srccli-1`. Scope: `source list` text output indents a part under its parent and marks uncited, `uncited:` and `superseded_by:` sources. Reuse `check`'s citation logic; don't duplicate it. `--json` unchanged unless a field is free to add. Evidence: a test, the gate, and the real listing of this farm pasted in the note.
