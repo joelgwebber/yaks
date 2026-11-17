@@ -1,11 +1,11 @@
 ---
 id: yaks-760a
 title: 'TUI: a source with a large extracted text is slow to move in (~150 ms per key on YASS)'
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:06:12Z'
+updated: '2026-11-17T22:06:13Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -86,3 +86,9 @@ Timing (scratch farm holding the real YASS source, release build, `tui --headles
 That is roughly 25-30x per key; the rest is `render_nav_rows` over 11k rows.
 
 Gate: `cargo fmt --check` clean; `cargo test -p yaks`: no failures (1239 passed, 18 ignored in the unit tests); `yaks verify yaks-760a` PASS from the checkout root.
+
+#### 2026-11-17T22:06:13Z
+
+*srcperf-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzOWZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
