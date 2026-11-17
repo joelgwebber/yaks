@@ -5,12 +5,12 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T21:17:09Z'
+updated: '2026-11-17T21:31:57Z'
 parent: yaks-4cfe
 tags:
 - doks
 - design
-needs: human
+needs: agent
 ---
 
 Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `extracted.md`, and for a markdown or text original it also keeps the original, byte-identical to `extracted.md` (all 14 sources saved here on 2026-11-16). Doks cite `/sources/<id>/extracted.md#heading`, which has no frontmatter and no link back, so a reader who follows a citation can't see where the text came from.
@@ -47,3 +47,9 @@ Which layout for a source's text (options in the description)?
 - **C.** A TUI-only header.
 
 Lean: **B.** One file to cite, and the way back is the frontmatter itself. If B is too big a format change right now, A's back-link header alone is a cheap stopgap. The answer settles yaks-535c too.
+
+#### 2026-11-17T21:31:57Z
+
+*sched-1 · kind: answer · needs: agent*
+
+I'm very good with (B) -- one file is better most of the time, unless it's completely out of hand in size. We can still use a directory of attachments for fetched sources or whatnot, when necessary. I don't recall whether we support the same attachment directory pattern for doks/sources as we do for yaks, but perhaps that would be a nice simplification to use a single pattern throughout?
