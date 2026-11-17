@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T22:08:26Z'
+updated: '2026-11-17T22:12:32Z'
 parent: yaks-0229
 tags:
 - cli
@@ -78,3 +78,9 @@ Docs: `Attach` clap help, `docs/cli.md` (table row + "A directory" paragraph), `
 *attach-2 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzKtpIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:12:32Z
+
+*sources-triage · kind: landed · commit: 230f026eb568292ee9bae623baa16c4de599c20f · source: c1010b1c47fd06c98306590e9533ca3fa5882467 · branch: main*
+
+landed: 230f026e yaks-a57c: yaks attach <dir> stores a directory with its layout
