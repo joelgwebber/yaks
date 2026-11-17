@@ -5,7 +5,8 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T22:04:33Z'
-updated: '2026-11-08T22:04:33Z'
+updated: '2026-11-17T21:15:50Z'
+parent: yaks-4cfe
 ---
 
 Found by Hearth's calcifer import (hearth-f0cf). A source saved without text (a scanned PDF before OCR existed) cannot get its text later: saving the same bytes again reports the existing source, and `yaks source add --refresh` needs a `--url`. Hearth will OCR old scans after the fact, and any user may extract text from a source they saved earlier.
