@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:24:53Z'
+updated: '2026-11-17T22:28:08Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -82,3 +82,16 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: 887d7795969849ab3ede8a5cf21c795b6f17c983 · source: 8c0ec5d3d0fddc77e37a76e3f6fd0fa6e3d2f129 · branch: main*
 
 landed: 887d7795 yaks-fb15: source list nests parts and marks uncited, kept-uncited and superseded sources (check's citation rule, shared)
+
+#### 2026-11-17T22:28:08Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed on `main` (3da7 `9f613dee`, 4dd3 `e15c8e8d`, 06aa `2ea5597c`, fb15 `887d7795`). After all four, the full gate passed: 1463 tests, fmt clean.
+
+Re-ran each with my own release build in a fresh scratch farm:
+
+- A tree with `.github/`, `.gitignore`, `.git/`, `target/` and `.DS_Store` keeps the first two and reports `skipped 3: .DS_Store, .git/, target/` on stdout and in `source.md`.
+- A local file records `resource: note.md` and no `host:`.
+- Same bytes under a new title: "kept the title ... ignored" with the `source set` hint. `source set --title` retitles and keeps the slug.
+- `source list` nests a `--part-of` under its parent, and `[uncited]` clears once a dok cites it.
