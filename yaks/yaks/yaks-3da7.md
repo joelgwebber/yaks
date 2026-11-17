@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T22:01:24Z'
+updated: '2026-11-17T22:24:45Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -86,3 +86,9 @@ Summary: directory sources keep dot files and dot directories, skip only `WALK_S
 *srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:24:45Z
+
+*sources-triage · kind: landed · commit: 9f613dee9b447f4832a6d03fef5c76f2fa0f5845 · source: c8990d9517a3016965214868faf27575c82ab25a · branch: main*
+
+landed: 9f613dee yaks-3da7: directory sources keep dot files, skip only .git/.DS_Store/build dirs, and report what was skipped; expose walk_dir
