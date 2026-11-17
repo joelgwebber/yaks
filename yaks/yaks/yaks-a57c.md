@@ -1,11 +1,11 @@
 ---
 id: yaks-a57c
 title: 'yaks attach <dir>: attach a directory with its layout'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T22:08:25Z'
+updated: '2026-11-17T22:08:26Z'
 parent: yaks-0229
 tags:
 - cli
@@ -72,3 +72,9 @@ Evidence: new `tests/attach_dir.rs` (5 tests): nested layout on a yak (one commi
 Real run (release binary, scratch farm): `attached proj/ (3 files) to yak-8164 (.yaks/yak/yaks/yak-8164)`; stored `yak-8164/proj/README.md`, `proj/src/main.rs`, `proj/src/util/m.rs` (node_modules and .git skipped); body ends `[proj/](yak-8164/proj/)`; one commit `yaks: updated yak-8164; artifacts for yak-8164`. Dok: `attached proj/ (2 files) to doks/x.md`, link `[proj/](x/proj/)`. 201 files: `error: .../big holds more than 200 files; save a smaller directory`, exit 1.
 
 Docs: `Attach` clap help, `docs/cli.md` (table row + "A directory" paragraph), `.agents/skills/yaks/SKILL.md` ("Attach a directory, never an archive").
+
+#### 2026-11-17T22:08:26Z
+
+*attach-2 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzKtpIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
