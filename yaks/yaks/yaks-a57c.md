@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T22:12:32Z'
+updated: '2026-11-17T22:20:48Z'
 parent: yaks-0229
 tags:
 - cli
@@ -84,3 +84,14 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: 230f026eb568292ee9bae623baa16c4de599c20f · source: c1010b1c47fd06c98306590e9533ca3fa5882467 · branch: main*
 
 landed: 230f026e yaks-a57c: yaks attach <dir> stores a directory with its layout
+
+#### 2026-11-17T22:20:48Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed as `230f026e`. Running it myself found a bug the worker's tests missed, which I fixed in a follow-up commit.
+
+- **Bug:** the body link it writes, `[proj/](<id>/proj/)`, parsed as `Link::Upward`. An attachment name could not contain `/`, and a trailing `/` was refused. So `yaks doctor` reported every directory attachment as a broken `../` link, and `peek` refused it.
+- **Fix (`yaks-a57c: links name files and directories inside an attached directory`):** `Link::Attachment`'s name may now go down into an attached directory (`<id>/proj/src/a.rs`, and the `/<herd>/yaks/<id>/proj/...` host form) or name it (`<id>/proj/`). [`farm::attachment_path`](code:src/farm.rs) is the one safe-path rule. `doctor` accepts a directory, and `peek` lists its entries. `docs/cli.md`'s link table says so.
+- **Evidence:** in a scratch farm, `attach <id> proj/` then `doctor` reports "All clear". `peek <id>/proj/` lists `notes.txt` and `src/`, and `peek <id>/proj/src/main.rs` prints the file. New tests: `a_directory_attachment_and_its_files_are_attachments`, plus extra cases in `attachments_resolve_in_the_yaks_directory`. One old assertion ("a deeper path is a farm file") is now an attachment, with a comment saying why. The full gate passes with 1459 tests and fmt is clean.
+- `browse-1` was told not to touch `links.rs` and to build on `Link::Attachment` with nested names.
