@@ -1,11 +1,11 @@
 ---
 id: yaks-4cfe
 title: 'Sources: one coherent layout for text, provenance, directories and browsing'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-17T21:15:46Z'
+updated: '2026-11-17T21:42:25Z'
 tags:
 - doks
 ---
@@ -24,3 +24,9 @@ Umbrella for the source-layout problems Joel hit in this farm (2026-11-17). They
 ## Children
 
 The design questions are asked on the children, with leans. Settle those first, since the bugs below them may simply disappear.
+
+#### 2026-11-17T21:42:25Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · child: yaks-3da7 · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving

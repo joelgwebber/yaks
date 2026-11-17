@@ -1,11 +1,11 @@
 ---
 id: yaks-3da7
 title: Directory sources silently skip dot-files and dot-directories
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T21:15:47Z'
+updated: '2026-11-17T21:42:25Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -24,3 +24,9 @@ The source looked complete: the listing shows no count, `source.md` lists only w
 - Decide whether hidden files belong in: `.git` must stay out, but `.agents/`, `.github/` and `.gitignore` are often the point of a repo snapshot. Lean: keep them, skip only `.git`, `.DS_Store` and the existing SKIP names, and keep the 200-file and 5 MiB limits as the guard.
 
 Related: yaks-535c (what a directory source stores).
+
+#### 2026-11-17T21:42:25Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
