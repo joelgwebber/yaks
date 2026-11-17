@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T21:42:58Z'
+updated: '2026-11-17T22:10:46Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -51,3 +51,28 @@ Claim (yakherd `sources-triage`). Owner: `srccli-1`. Scope, the issue's lean:
 - `yaks source set <id> --title <t>` rewrites the title through a command, one per-change commit, following `source mark`'s pattern.
 
 Docs, help and skills in the same change. Evidence: tests for both, and the gate.
+
+#### 2026-11-17T22:10:46Z
+
+*srccli-1*
+
+Decision: both halves of the lean: `source add` of the same bytes (plain or `--refresh`, unchanged content) with a `--title` that differs from the saved one prints `Already saved: <dir>/source.md (kept the title "Old"; --title "New" ignored: `yaks source set <id> --title ...` changes it)`; no `--title`, or the same title, prints as before. Rejected: letting `--refresh` retitle (its spec, yaks-87d3, is "same content writes nothing"; one explicit command is clearer).
+
+Decision: `yaks source set <id> --title T` (new `SourceAction::Set`, `sources::set_title`, `Farm::source_set_title`), not an `--set key=value`: title is the one field to fix, and a generic setter would let people edit `sha256`. The directory and slug are NOT renamed (a rename breaks every link, the same reason `--refresh` keeps them); `source list` reads the title from `source.md`. Empty or multi-line titles are refused. Same title: `No changes`.
+
+Decision: the note is a `Report::kept_title` field filled by `add_reporting` (not a new `Saved` variant), same plumbing as yaks-3da7. The CLI commits the farm change itself after the command (as it does for `source mark`): the scratch run's `git log` shows `yaks: doks sources/.../source.md` after `source set`.
+
+Evidence, scratch farm, my release build:
+
+    $ source add a.md --title "Wrong title" --url https://example.com/a
+    Saved sources/2026-11-17-87428fc5-wrong-title/source.md
+    $ source add a.md --title "Right title" --url https://example.com/a --refresh
+    Already saved: sources/2026-11-17-87428fc5-wrong-title/source.md (kept the title "Wrong title"; --title "Right title" ignored: `yaks source set 2026-11-17-87428fc5 --title ...` changes it)
+    $ source set 2026-11-17-87428fc5 --title "Right title"
+    Retitled sources/2026-11-17-87428fc5-wrong-title/source.md: Right title
+    $ source set ... (again)       -> No changes to sources/.../source.md
+    $ source set ... --title ""    -> Error: --title needs a title: say what this source is
+    $ source list
+      sources/2026-11-17-87428fc5-wrong-title  text/markdown  Right title  (https://example.com/a)
+
+Test: `same_bytes_with_another_title_says_so_and_set_title_changes_it` (plain add, `--refresh`, same/no title says nothing, set, no-op, directory unchanged, refused forms). Docs: `source add` and `source set` `--help`, `docs/cli.md`, README, `yaks-research` skill.
