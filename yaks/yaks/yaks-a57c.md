@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T21:44:32Z'
+updated: '2026-11-17T22:08:04Z'
 parent: yaks-0229
 tags:
 - cli
@@ -46,3 +46,9 @@ Claim (yakherd `sources-triage`). Owner: worker `attach-2`. Scope: `yaks attach`
 *attach-2*
 
 Start: 2026-11-17T21:44:28Z (`date -u`). Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-a57c.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/h4mbnq0px7df/yaks`.
+
+#### 2026-11-17T22:08:04Z
+
+*attach-2 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
