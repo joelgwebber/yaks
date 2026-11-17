@@ -112,13 +112,11 @@ impl App {
             .strip_suffix("/source.md")
             .filter(|d| d.starts_with("sources/"))
             .and_then(|d| links::read_at(&root, &format!("{d}/extracted.md"), rev).ok());
-        Ok(AttachView::farm_doc(
-            path,
-            file,
-            text,
-            rev.map(String::from),
-            extracted,
-        ))
+        let mut v = AttachView::farm_doc(path, file, text, rev.map(String::from), extracted);
+        if rev.is_none() {
+            v.files = self.files_of(path);
+        }
+        Ok(v)
     }
 
     /// The text viewer's document, when the pane shows one.
@@ -202,6 +200,13 @@ impl App {
     /// farm path) and `rev` the farm commit of a pinned one. What
     /// [`super::history`] restores a dok by.
     pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
+        // A directory of the farm, named with its trailing `/`.
+        if let Some(rel) = path.strip_suffix('/') {
+            let root = self
+                .farm_root()
+                .ok_or_else(|| format!("{path}: no farm to read"))?;
+            return super::dirview::DirView::open(&root, rel).map(DocView::Dir);
+        }
         // A code file of the checkout, shown by `open_code`.
         if let Some(rel) = path.strip_prefix("code:") {
             return self.read_code_view(rel, rev, None).map(DocView::Text);
@@ -234,6 +239,12 @@ impl App {
     /// Open farm file `path` in the viewer at `anchor`, a jump. An image
     /// opens in the image viewer.
     pub(crate) fn open_farm_doc(&mut self, path: &str, rev: Option<&str>, anchor: Option<&Anchor>) {
+        // A link to a directory opens the directory view (yaks-3329).
+        if rev.is_none() && self.farm_path_is_dir(path) {
+            if let Some(rel) = self.farm_dir_of(&format!("/{path}")) {
+                return self.open_dir(&rel);
+            }
+        }
         if rev.is_none() {
             if let Some(v) = self.farm_image(path) {
                 self.follow_to_doc(DocView::Image(v));
@@ -324,6 +335,11 @@ impl App {
         target: &Target,
         doc: Option<&AttachView>,
     ) -> Option<(String, Result<String, String>)> {
+        // A directory: its top level, one entry a line.
+        if let Some(rel) = self.target_dir(target, doc) {
+            let dir = self.farm_root()?.join(&rel);
+            return Some((format!("{rel}/"), Ok(super::dirview::listing(&dir))));
+        }
         let link = match (target, doc) {
             (Target::Local(a), Some(v)) if v.doc != DocKind::Attachment => Link::Farm {
                 path: v.target.clone(),

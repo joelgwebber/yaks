@@ -237,6 +237,10 @@ impl App {
                 view: DocView::Image(_),
                 ..
             }) => format!("{base} · doc=image"),
+            Some(DocPane {
+                view: DocView::Dir(_),
+                ..
+            }) => format!("{base} · doc=dir"),
             None => base,
         };
         // A yak shown from outside the list: not the selected row's.

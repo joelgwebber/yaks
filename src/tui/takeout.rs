@@ -127,6 +127,7 @@ impl App {
         let subject = match ctx {
             Ctx::Viewer => self.viewer_subject(&space),
             Ctx::Image => self.image_subject(&space),
+            Ctx::Dir => self.dir_subject(),
             Ctx::Detail => self.pane_subject(&space),
             Ctx::List => self.row_subject(),
         };
@@ -193,6 +194,29 @@ impl App {
         };
         let _ = space;
         Some(Ok(TakeOut { place, line, label }))
+    }
+
+    /// The directory view's selected file. A directory has no file to take
+    /// out: `y` copies its path.
+    fn dir_subject(&self) -> Option<Result<TakeOut, String>> {
+        let v = self.dir()?;
+        let row = v.selected()?;
+        if row.is_dir {
+            return Some(Err(format!(
+                "{}/: a directory; y copies its path",
+                row.name
+            )));
+        }
+        let rel = v.selected_rel()?;
+        Some(Ok(TakeOut {
+            place: Place::FarmFile {
+                rel: rel.clone(),
+                rev: None,
+                anchor: None,
+            },
+            line: None,
+            label: rel,
+        }))
     }
 
     /// The open image's file.

@@ -3221,6 +3221,12 @@ mod live {
             matches!(app.overlay, Overlay::None),
             "no link under cursor -> no prompt"
         );
+        tab(&mut app); // cursor -> the `Attachments:` row (a directory)
+        press(&mut app, "r");
+        assert!(
+            matches!(app.overlay, Overlay::None),
+            "a directory is not renamed"
+        );
         tab(&mut app); // cursor -> the image link
         press(&mut app, "r");
         assert!(draw(&app, 100, 20).contains("Rename paste-20260921-234927.png to"));
@@ -5007,6 +5013,9 @@ fn app_on_attachment(name: &str, data: &[u8]) -> (PathBuf, App) {
     let mut app = App::with_farm(farm).unwrap();
     enter_key(&mut app);
     draw(&app, 100, 24); // measure the pane
+    // The first stop is the `Attachments:` row (yaks-3329); the body's link
+    // is the second.
+    tab_key(&mut app);
     tab_key(&mut app);
     (dir, app)
 }

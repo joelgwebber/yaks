@@ -9,6 +9,13 @@ use super::imageview::ImageView;
 use super::linenav::{LineNav, Viewport};
 use super::*;
 
+#[cfg(test)]
+thread_local! {
+    /// What `App::os_open` was handed on this thread (tests only): the opener
+    /// itself is never launched under `cargo test`.
+    pub(crate) static OS_OPENED: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 /// Largest attachment the in-TUI viewer shows; a bigger file opens externally.
 const VIEW_MAX_BYTES: u64 = 1 << 20;
 
@@ -44,6 +51,11 @@ pub(crate) struct AttachView {
     /// The rows last built, reused until the width, the farm or the text
     /// changes ([`App::viewer_rows`], yaks-760a).
     pub(super) rows_cache: RefCell<Option<memo::ViewerRows>>,
+    /// The directory of files that goes with a dok (its sibling directory) or
+    /// a source (`files/`), when it has any: its label (`Attachments:`,
+    /// `Files:`), its farm-relative path and its file count. The viewer shows
+    /// it as a row that opens the directory view (yaks-3329).
+    pub(crate) files: Option<(&'static str, String, usize)>,
 }
 
 impl AttachView {
@@ -82,6 +94,7 @@ impl AttachView {
             nav: LineNav::default(),
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
+            files: None,
         })
     }
 
@@ -122,6 +135,7 @@ impl AttachView {
             nav: LineNav::default(),
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
+            files: None,
         }
     }
 
@@ -155,6 +169,7 @@ impl AttachView {
             nav: LineNav::default(),
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
+            files: None,
         }
     }
 
@@ -302,6 +317,14 @@ impl AttachView {
         if matches!(self.doc, DocKind::Dok | DocKind::Source { .. }) {
             let blocks = self.blocks();
             let mut out = frontmatter_rows(&self.text);
+            if let Some((label, rel, n)) = &self.files {
+                let target = detail::Target::Farm {
+                    path: format!("{rel}/"),
+                    rev: None,
+                    anchor: None,
+                };
+                out.push(super::dirview::files_row(label, target, *n));
+            }
             if !out.is_empty() {
                 out.push(plain_row(String::new(), detail::Kind::Empty));
             }
@@ -1348,7 +1371,8 @@ impl App {
             let rest = p.strip_prefix(".yaks/").unwrap_or(p);
             let (id, name) = rest.split_once('/')?;
             let name = crate::links::percent_decode(name);
-            (!name.contains('/')).then(|| (id.to_string(), name))
+            // Not a directory (`<id>/` or `<id>/dir/`): those are not renamed.
+            (!name.is_empty() && !name.contains('/')).then(|| (id.to_string(), name))
         });
         let Some((id, old)) = parsed else {
             self.notification = Some("no attachment on this line (Tab to an image link)".into());
@@ -1392,9 +1416,18 @@ impl App {
     pub(crate) fn open_external(&mut self, target: &str) {
         let arg = if target.contains("://") || target.starts_with("mailto:") {
             target.to_string()
+        } else if let Some(rel) = self.farm_dir_of(target) {
+            // A directory of the farm (`<id>/proj/`, `/sources/<id>/files/`).
+            return self.open_dir(&rel);
         } else {
             match self.resolve_attachment(target) {
                 Some(found) => {
+                    // An archive is never opened from here, nor handed to
+                    // the system (it would unpack into the farm).
+                    if super::dirview::is_archive_name(&found.name) {
+                        self.notification = Some(super::dirview::archive_note(&found.name));
+                        return;
+                    }
                     if let Some(v) = ImageView::open(target, &found, &self.picker) {
                         self.notification = Some(format!("viewing {target}"));
                         self.follow_to_doc(DocView::Image(v));
@@ -1435,7 +1468,17 @@ impl App {
     /// Hand `arg` (a URL or file path) to the OS opener, reporting it as
     /// `target`. Under `cargo test` nothing is launched (a test must never
     /// pop up an image viewer); the notification is the same.
+    ///
+    /// An archive (`.tgz .zip ...`) is never handed over: the system's archive
+    /// utility would unpack it into the farm (yaks-3329). It says how to get
+    /// its path instead. A URL is the browser's, whatever it ends in.
     pub(super) fn os_open(&mut self, target: &str, arg: &str) {
+        if !arg.contains("://") && super::dirview::is_archive_name(arg) {
+            self.notification = Some(super::dirview::archive_note(arg));
+            return;
+        }
+        #[cfg(test)]
+        OS_OPENED.with(|o| o.borrow_mut().push(arg.to_string()));
         #[cfg(not(test))]
         let opened = super::source::os_open(arg).map(drop);
         #[cfg(test)]
@@ -1652,7 +1695,13 @@ impl App {
             // Closes the viewer (the yak replaces it) and opens the yak.
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
-            detail::Target::Url(u) | detail::Target::Artifact(u) => self.open_external(&u),
+            detail::Target::Artifact(u) => {
+                match self.target_dir(&detail::Target::Artifact(u.clone()), Some(v)) {
+                    Some(rel) => self.open_dir(&rel),
+                    None => self.open_external(&u),
+                }
+            }
+            detail::Target::Url(u) => self.open_external(&u),
             detail::Target::Source { path, lines, rev } => {
                 self.open_code(&path, lines, rev.as_deref())
             }

@@ -760,13 +760,13 @@ get their own one line too.
 **`O` takes it out**, on every surface that has a file or link under the
 cursor: the text viewer (the cursor's line, or the selected lines), a link on a
 yak pane's line (with no link, the yak itself), a Doks row, a yak row, the image
-viewer. It opens a small menu over the foot of the screen; none of its keys
+viewer, the selected file of a [directory view](#browsing-a-directory). It opens a small menu over the foot of the screen; none of its keys
 changes a yak. `Enter` on a pane link still follows it.
 
 | Key | |
 |---|---|
 | `e` | Open in `$VISUAL`/`$EDITOR` at the line (the TUI suspends while it runs, so a full-screen editor works) |
-| `o` | Open with the system (`open`, `xdg-open`) |
+| `o` | Open with the system (`open`, `xdg-open`); never an archive (`.tgz`, `.zip`, ...), which says to use `p` |
 | `p` | Copy the absolute path. A pinned `code:path@sha` file gives the working-tree path when the file is unchanged since the pin, else a read-only copy of `git show <sha>:<path>` under the temp directory (`yaks-src/<sha>/…`), which the message says |
 | `r` | Copy the farm- or repo-relative path |
 | `g` | Copy the host link, `https://github.com/<owner>/<repo>/blob/<branch or sha>/<path>#L12-L20`: GitHub, GitLab and Gitea/Forgejo, the same link `yaks url` prints. A pin links its commit |
@@ -782,6 +782,53 @@ referenced commit is not in this checkout, `p`, `e` and `o` give the same
 missing-commit message as the viewer; `g` still works, since a link needs
 nothing local, and adds that the remote has not got the commit either when the
 last fetch did not see it there.
+
+## Browsing a directory
+
+Some things in a farm are a *set* of files: a yak's attachment directory
+(`<herd>/yaks/<id>/`, with whatever `yaks attach <dir>` stored in it), a dok's or
+a source's sibling directory (`doks/x.md` + `doks/x/`), a directory source's
+tree. The **directory view** lists one as a tree in the right pane, directories
+first, then files, each sorted by name, with a size beside each file. It is
+part of the pane like the text and image viewers, so the list stays drawn at its
+left, and everything in it is read-only.
+
+It opens from:
+
+- **a link to a directory**: `[proj/](<id>/proj/)` in a yak, `[sketches](sketches/)`
+  in a dok, `/sources/<id>/files/` anywhere; the status bar shows the
+  destination and the peek pane lists the directory's top level;
+- **the `Attachments: 3 files` row** of a yak's detail pane (when its attachment
+  directory holds files) and of a dok in the viewer; **`Files:`** on a source.
+  `Tab` to it and `Enter`. A directory attached with `yaks attach <dir>` keeps
+  its layout, so a nested tree shows as one.
+
+| Key | |
+|---|---|
+| `j`/`k`, `↓`/`↑`, `d`/`u`, `PgDn`/`PgUp`, `g`/`G`, `Home`/`End` | Move the cursor |
+| `Enter` | Open the file in the text or image viewer, the way a followed link opens it, so `o` comes back to this tree with the same folds open and `i` goes forward; on a directory, fold or unfold it |
+| `Space` | Fold or unfold the directory |
+| `l`/`→` · `h`/`←` | Unfold the directory, else go to its first entry · fold it, else go to the directory that holds the row |
+| `y` | Copy the row's farm path (a directory's too) |
+| `O` | Take the file out (the menu below); a directory has none: `y` copies its path |
+| `Esc` | Close the view, back to where it was opened from |
+
+![A yak's detail pane, its cursor on the Attachments row, the peek pane listing the directory](assets/tui-dir-row.svg)
+
+![The directory view on a nested attachment directory: folds open, sizes, an archive marked](assets/tui-dir-view.svg)
+
+Dot files are listed (directory sources and attached directories keep them);
+`.git` and symlinks are not, and a link into the directory cannot climb out of
+the farm (`..` and `.git` components are refused). The view lists at most 2000
+rows, and counts at most 999 files in its header.
+
+**An archive is never opened from the TUI.** `Enter` on a `.tgz`, `.tar`,
+`.tar.gz`, `.zip`, `.7z`, `.gz`, `.bz2` or `.xz` (in the tree, or following a
+link to one) says `<name>: an archive; O → p copies its path` and does nothing
+else: handing one to the system's opener runs its archive utility, which unpacks
+it into the farm. The take-out menu's `o` on one says the same; `p`, `r` and `e`
+still work. (A directory attached with `yaks attach` is the way to keep a set of
+files; `.tgz` stays a plain file.)
 
 ## Following links and peek
 

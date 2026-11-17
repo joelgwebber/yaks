@@ -85,6 +85,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             _ if app.doc.is_some() => match app.doc.as_ref().map(|d| &d.view) {
                 Some(DocView::Text(v)) => render_attachment(app, v, frame, inner),
                 Some(DocView::Image(v)) => super::imageview::render_image(v, frame, inner),
+                Some(DocView::Dir(v)) => super::dirview::render_dir(app, v, frame, inner),
                 None => {}
             },
             _ if app.selected_shed().is_some() => render_shed_detail(app, frame, inner),

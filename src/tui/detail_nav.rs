@@ -98,8 +98,17 @@ impl App {
             width,
             slot.as_ref(),
             env.as_ref(),
+            self.attachment_count(&t.id),
         );
         detail::wrap(lines, width)
+    }
+
+    /// How many files yak `id`'s attachment directory holds (0: none, or no
+    /// farm), for the detail pane's `Attachments:` row.
+    fn attachment_count(&self, id: &str) -> usize {
+        self.farm.as_ref().map_or(0, |f| {
+            super::dirview::count_files(&crate::store::artifact_dir(f.root(), id))
+        })
     }
 
     /// Where and how big inline images are laid out, or `None` when they are

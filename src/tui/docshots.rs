@@ -1117,3 +1117,64 @@ fn docshots_code() {
     write_svg("tui-code-missing", &app, w, h);
     let _ = std::fs::remove_dir_all(proj);
 }
+
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-dir-view*.svg"]
+fn docshots_dir_view() {
+    use crate::tui::test_support::temp_farm;
+
+    let mut y = t(
+        "yak-1a2b",
+        "Try a faster tokenizer",
+        "task",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "The experiment is in [tokenizer/](yak-1a2b/tokenizer/); the first run's \
+              output is [runs.tgz](yak-1a2b/runs.tgz)."
+        .into();
+    let (_dir, farm) = temp_farm(&[y]);
+    let a = crate::store::artifact_dir(farm.root(), "yak-1a2b");
+    for (rel, data) in [
+        ("tokenizer/Cargo.toml", "[package]\nname = \"tokenizer\"\n"),
+        ("tokenizer/README.md", "# tokenizer\n\nA faster one.\n"),
+        ("tokenizer/src/lib.rs", "pub fn split(s: &str) {}\n"),
+        ("tokenizer/src/scan.rs", "pub fn scan() {}\n"),
+        (
+            "tokenizer/src/table/ascii.rs",
+            "pub static T: [u8; 0] = [];\n",
+        ),
+        ("tokenizer/src/table/mod.rs", "pub mod ascii;\n"),
+        ("tokenizer/benches/split.rs", "fn main() {}\n"),
+        ("tokenizer/.gitignore", "target\n"),
+        ("runs.tgz", "not really a tarball, but named like one"),
+        ("notes.md", "# Notes\n"),
+    ] {
+        let p = a.join(rel);
+        std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+        std::fs::write(p, data).unwrap();
+    }
+    let (w, h) = (110u16, 24u16);
+    let mut app = App::with_farm(farm).unwrap();
+    app.farm_sync = None;
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press_key(&mut app, KeyCode::Enter);
+    // The yak's pane, its cursor on the `Attachments:` row.
+    press_key(&mut app, KeyCode::Tab);
+    write_svg("tui-dir-row", &app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    // Unfold `tokenizer/`, then `src/`, and rest on a file under it.
+    press_key(&mut app, KeyCode::Enter);
+    for _ in 0..2 {
+        press(&mut app, 'j');
+    }
+    press_key(&mut app, KeyCode::Enter);
+    press(&mut app, 'j');
+    write_svg("tui-dir-view", &app, w, h);
+    // An archive says what to do instead of opening.
+    press(&mut app, 'G');
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-dir-archive", &app, w, h);
+}

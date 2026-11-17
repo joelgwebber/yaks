@@ -12,6 +12,7 @@ mod content;
 mod create;
 mod detail;
 mod detail_nav;
+mod dirview;
 #[cfg(test)]
 mod docshots;
 mod doks_tab;
@@ -165,6 +166,8 @@ pub(crate) enum DocView {
     Text(handlers::AttachView),
     /// An image attachment in the image viewer (yaks-4305).
     Image(imageview::ImageView),
+    /// A directory of the farm as a tree (yaks-3329): see [`dirview`].
+    Dir(dirview::DirView),
 }
 
 /// What a resolved single-key pick should do (carries the target task id).

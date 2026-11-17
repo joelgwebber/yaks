@@ -301,6 +301,9 @@ impl App {
     /// Wheel over an open document: scroll its viewport by `delta` rows and
     /// drag its line cursor along, as [`App::scroll_detail`] does.
     fn scroll_doc(&mut self, delta: i32) {
+        if self.dir().is_some() {
+            return self.scroll_dir(delta);
+        }
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
         };
@@ -533,7 +536,8 @@ mod tests {
         let mut app = App::with_farm(farm).unwrap();
         enter_key(&mut app);
         draw(&app, 140, 20);
-        tab_key(&mut app);
+        tab_key(&mut app); // the `Attachments:` row
+        tab_key(&mut app); // the body's link
         enter_key(&mut app);
         assert!(app.attach().is_some());
         let frame = draw(&app, 140, 20);

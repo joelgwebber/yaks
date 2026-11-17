@@ -328,10 +328,12 @@ pub(crate) enum Ctx {
     Viewer,
     /// The image viewer in the pane.
     Image,
+    /// The directory view in the pane (yaks-3329).
+    Dir,
 }
 
 impl Ctx {
-    const ALL: [Ctx; 4] = [Ctx::List, Ctx::Detail, Ctx::Viewer, Ctx::Image];
+    const ALL: [Ctx; 5] = [Ctx::List, Ctx::Detail, Ctx::Viewer, Ctx::Image, Ctx::Dir];
 
     /// What a message calls the surface.
     pub(crate) fn title(self) -> &'static str {
@@ -340,6 +342,7 @@ impl Ctx {
             Ctx::Detail => "detail pane",
             Ctx::Viewer => "text viewer",
             Ctx::Image => "image viewer",
+            Ctx::Dir => "directory view",
         }
     }
 }
@@ -353,7 +356,7 @@ struct Section {
 }
 
 /// The `?` overlay's sections, in order. Every binding is in exactly one.
-const SECTIONS: [Section; 7] = [
+const SECTIONS: [Section; 8] = [
     Section {
         ctx: Ctx::List,
         kinds: &[None, Some(RowKind::Yak)],
@@ -373,6 +376,11 @@ const SECTIONS: [Section; 7] = [
         ctx: Ctx::Image,
         kinds: &[None],
         title: "Image viewer",
+    },
+    Section {
+        ctx: Ctx::Dir,
+        kinds: &[None],
+        title: "Directory view (a yak's attachments, a dok's files, a source's files/)",
     },
     Section {
         ctx: Ctx::List,
@@ -813,6 +821,32 @@ static BINDINGS: &[Binding] = &[
     bind(Image, &[c('{')], ViewPrev, VIEW_PANE_PREV, NoHint),
     bind(Image, &[c('?'), k(F(1))], AppHelp, HELP_LINE, NoHint),
 
+    // -- the directory view -----------------------------------------------------
+    bind(Dir, &[k(Esc)], PaneClose, "Close (o goes back to where it was opened from)", hint("Esc:close")),
+    bind(Dir, &[c('j'), k(Down)], MoveDown, "Move the cursor down", hint_family("j/k:move", "↑/↓:move")),
+    bind(Dir, &[c('k'), k(Up)], MoveUp, "Move the cursor up", NoHint),
+    bind(Dir, &[c('d'), ctrl('d')], MoveHalfDown, "Half-page down", NoHint),
+    bind(Dir, &[c('u'), ctrl('u')], MoveHalfUp, "Half-page up", NoHint),
+    bind(Dir, &[k(PageDown)], MovePageDown, "Full-page down", NoHint),
+    bind(Dir, &[k(PageUp)], MovePageUp, "Full-page up", NoHint),
+    bind(Dir, &[c('g'), k(Home)], MoveTop, "Top", NoHint),
+    bind(Dir, &[c('G'), k(End)], MoveBottom, "Bottom", NoHint),
+    bind(Dir, &[k(Enter)], PaneEnter, "Open the file in the viewer (o / i come back); fold or unfold a directory; an archive is never opened, O → p copies its path", hint("Enter:open")),
+    bind(Dir, &[c(' ')], TreeToggle, "Fold / unfold the directory", NoHint),
+    bind(Dir, &[c('l'), k(Right)], TreeRight, "Unfold the directory, else go to its first entry", NoHint),
+    bind(Dir, &[c('h'), k(Left)], TreeLeft, "Fold the directory, else go to the directory that holds the row", NoHint),
+    bind(Dir, &[c('y')], RowCopy, "Copy the row's farm path", hint("y:copy path")),
+    bind(Dir, &[c('O')], TakeOut, TAKE_OUT_FILE, hint("O:take out")),
+    bind(Dir, &[c('o')], NavBack, "History back", NoHint),
+    bind(Dir, &[c('i')], NavForward, "History forward", hint("i/o:fwd/back")),
+    bind(Dir, &[c('#')], NavGoto, "Go to any yak by id / title (closes the view)", NoHint),
+    bind(Dir, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
+    bind(Dir, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
+    bind(Dir, &[c('}')], ViewNext, VIEW_PANE_NEXT, NoHint),
+    bind(Dir, &[c('{')], ViewPrev, VIEW_PANE_PREV, NoHint),
+    bind(Dir, &[c('?'), k(F(1))], AppHelp, HELP_LINE, NoHint),
+    bind(Dir, &[c('q'), ctrl('c')], AppQuit, "Quit", hint("q:quit")),
+
     // -- the list: document rows (the Doks view). Its movement, view and farm
     // -- keys are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
     // -- bottom hint is the Doks's own, not the yak list's.
@@ -1180,7 +1214,10 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
                 "e",
                 "Open in $VISUAL / $EDITOR at the line, the terminal suspended while it runs",
             ),
-            ("o", "Open with the system (the default application)"),
+            (
+                "o",
+                "Open with the system (the default application); never an archive (.tgz .tar .zip .gz ...): p copies its path",
+            ),
             (
                 "p",
                 "Copy the absolute path (a pinned code: file: the working file if unchanged since the pin, else a read-only copy of it)",
@@ -1211,6 +1248,10 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             (
                 "(peek)",
                 "A pane under the dok previews the link under the cursor (section, lines, dok head); p hides it",
+            ),
+            (
+                "(directory)",
+                "A link to a directory, or an Attachments: / Files: row, opens it as a tree in the pane: Enter opens a file or folds a directory; an archive is never opened",
             ),
             (
                 "(image)",
@@ -1331,6 +1372,13 @@ impl App {
                 }),
                 _,
             ) => Ctx::Image,
+            (
+                Some(DocPane {
+                    view: DocView::Dir(_),
+                    ..
+                }),
+                _,
+            ) => Ctx::Dir,
             (None, Focus::List) => Ctx::List,
             (None, Focus::Detail) => Ctx::Detail,
         }
@@ -1354,6 +1402,7 @@ impl App {
         match ctx {
             Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
             Ctx::Image if !global => return self.run_image_cmd(cmd),
+            Ctx::Dir if !global => return self.run_dir_cmd(cmd),
             _ => {}
         }
         match cmd {
@@ -1475,7 +1524,7 @@ impl App {
             Ctx::Detail if cmd == MoveTop => self.detail_line_to(false),
             Ctx::Detail if cmd == MoveBottom => self.detail_line_to(true),
             Ctx::Detail => self.move_detail_line(by),
-            Ctx::Viewer | Ctx::Image => {}
+            Ctx::Viewer | Ctx::Image | Ctx::Dir => {}
         }
     }
 }

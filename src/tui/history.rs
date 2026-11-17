@@ -86,6 +86,9 @@ pub(crate) enum PaneAt {
         under: Option<String>,
         line: usize,
         scroll: u16,
+        /// A directory view's open folds (`path` then ends in `/`, `line` is
+        /// its cursor row); empty for any other document.
+        folds: Vec<String>,
     },
     /// The shed under the cursor, in the pane.
     Shed(String),
@@ -185,6 +188,7 @@ impl App {
                 under: self.pane_yak.clone(),
                 line: v.nav.line,
                 scroll: v.nav.scroll,
+                folds: Vec::new(),
             }),
             Some(DocPane {
                 view: DocView::Image(v),
@@ -196,6 +200,19 @@ impl App {
                 under: self.pane_yak.clone(),
                 line: 0,
                 scroll: 0,
+                folds: Vec::new(),
+            }),
+            Some(DocPane {
+                view: DocView::Dir(v),
+                from,
+            }) => Some(PaneAt::Doc {
+                path: format!("{}/", v.rel),
+                rev: None,
+                from: *from,
+                under: self.pane_yak.clone(),
+                line: v.cursor,
+                scroll: 0,
+                folds: v.open_folds(),
             }),
             None if self.focus == Focus::Detail => {
                 if let Some(s) = self.selected_shed() {
@@ -370,8 +387,12 @@ impl App {
                 under,
                 line,
                 scroll,
+                folds,
             }) => match self.read_doc(path, rev.as_deref()) {
                 Ok(mut view) => {
+                    if let DocView::Dir(d) = &mut view {
+                        d.restore(folds, *line);
+                    }
                     if let (DocView::Text(v), Some(w)) = (&mut view, doc_width) {
                         v.width.set(w);
                     }
@@ -674,6 +695,7 @@ mod tests {
                 under: None,
                 line: 0,
                 scroll: 0,
+                folds: Vec::new(),
             }),
             ..app.current_location()
         });

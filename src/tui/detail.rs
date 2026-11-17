@@ -309,7 +309,7 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
 pub fn build(task: &Task, all: &[Task]) -> Vec<DLine> {
-    build_at(task, all, &Clock::app_default(), 0, None, None)
+    build_at(task, all, &Clock::app_default(), 0, None, None, 0)
 }
 
 /// `clock` renders the Created/Updated timestamps (relative to its "now", in
@@ -321,6 +321,7 @@ pub fn build_at(
     width: usize,
     edit: Option<&EditSlot>,
     images: Option<&ImageEnv>,
+    attachments: usize,
 ) -> Vec<DLine> {
     let by_id: HashMap<&str, &Task> = all.iter().map(|t| (t.id.as_str(), t)).collect();
     let known: HashSet<&str> = by_id.keys().copied().collect();
@@ -510,6 +511,17 @@ pub fn build_at(
                 image: None,
             });
         }
+    }
+
+    // The yak's attachment directory, when it holds files: a row that opens
+    // the directory view (yaks-3329).
+    if attachments > 0 {
+        out.push(empty());
+        out.push(super::dirview::files_row(
+            "Attachments:",
+            Target::Artifact(format!("{}/", task.id)),
+            attachments,
+        ));
     }
 
     // Unmodeled frontmatter (`task.extra`) kept verbatim on parse. Surfaced
