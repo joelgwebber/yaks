@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:06:47Z'
+updated: '2026-11-17T22:08:20Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -98,3 +98,13 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: b5525ac1b89ada13378be9d6f103d065e5da7211 · source: d2bc31b55ceefd9ef855da6236aa93831ea2ab11 · branch: main*
 
 landed: b5525ac1 yaks-760a: memoize the text viewer's rows per width and text
+
+#### 2026-11-17T22:08:20Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed as `b5525ac1` on `main` (squash of the worker's `d2bc31b5`).
+
+- Diff read. `set_text` is now the only writer of `AttachView::text`, so the cache can't go stale through a direct assignment. The `cfg(test)` equality check on every hit covers the rest.
+- Re-ran with my own release build on my scratch copy (same `source.md` with the 842 KiB text): 30 `j` add 0.44 s, against 4.4 s before (under load from a concurrent `cargo test`).
+- `cargo fmt --check` clean. Full gate re-run noted below.
