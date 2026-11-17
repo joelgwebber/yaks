@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:20:34Z'
+updated: '2026-11-17T22:24:53Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -76,3 +76,9 @@ Summary: `source list` indents parts and marks `[uncited]`, `[kept uncited: why]
 *srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:24:53Z
+
+*sources-triage · kind: landed · commit: 887d7795969849ab3ede8a5cf21c795b6f17c983 · source: 8c0ec5d3d0fddc77e37a76e3f6fd0fa6e3d2f129 · branch: main*
+
+landed: 887d7795 yaks-fb15: source list nests parts and marks uncited, kept-uncited and superseded sources (check's citation rule, shared)
