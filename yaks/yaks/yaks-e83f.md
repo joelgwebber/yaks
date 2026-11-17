@@ -5,11 +5,12 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T21:16:47Z'
+updated: '2026-11-17T21:17:09Z'
 parent: yaks-4cfe
 tags:
 - doks
 - design
+needs: human
 ---
 
 Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `extracted.md`, and for a markdown or text original it also keeps the original, byte-identical to `extracted.md` (all 14 sources saved here on 2026-11-16). Doks cite `/sources/<id>/extracted.md#heading`, which has no frontmatter and no link back, so a reader who follows a citation can't see where the text came from.
@@ -32,3 +33,17 @@ Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `ext
 - A new source writes one text-bearing file. Existing sources are migrated, and their links follow.
 - `find`, the TUI viewer, `peek`, `check`'s citation count and the `yaks-research` skill all read the new layout.
 - Docs, `--help` and skills say it in the same change.
+
+#### 2026-11-17T21:17:09Z
+
+*sources-triage · kind: ask · needs: human*
+
+asked: needs human
+
+Which layout for a source's text (options in the description)?
+
+- **A.** Keep `extracted.md`, make `--text-only` the default and add a back-link header.
+- **B.** `source.md` holds the provenance (frontmatter) and the text (body). `extracted.md` is retired, and a migration rewrites links.
+- **C.** A TUI-only header.
+
+Lean: **B.** One file to cite, and the way back is the frontmatter itself. If B is too big a format change right now, A's back-link header alone is a cheap stopgap. The answer settles yaks-535c too.
