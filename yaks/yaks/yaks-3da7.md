@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T21:44:20Z'
+updated: '2026-11-17T21:56:24Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -46,3 +46,25 @@ Claim (yakherd `sources-triage`). Owner: worker `srccli-1`, who also owns yaks-4
 *srccli-1*
 
 Start: Tue Nov 17 21:44:19 UTC 2026. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3da7.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/erg296cj3wps/yaks
+
+#### 2026-11-17T21:56:24Z
+
+*srccli-1*
+
+Decision: keep dot files and dot directories; skip only the names in `WALK_SKIP` (`.git`, `.DS_Store`, `node_modules`, `target`, `__pycache__`, `.venv`, `venv`, `dist`, `build`), at any depth. Rejected: honouring `.gitignore` (not predictable, and a snapshot is not a checkout), and keeping a blanket "skip all dot-names" with only a warning.
+
+Decision: the walk is `pub(crate) fn sources::walk_dir(&Path) -> Result<(Vec<(String, Vec<u8>)>, Vec<String>)>` (files sorted, skipped sorted; a skipped directory is `rel/`, a file `rel`). Limits (200 files, 5 MiB, on what is kept) are checked inside it, so `attach <dir>` gets them for free. Skipped entries are not descended into, so a skipped directory counts once.
+
+Decision: the report is a `sources::Report {dir_files, skipped}` returned by a new `add_reporting` (and `Farm::source_add_reporting`); `add` and `Farm::source_add` keep their signatures so `promote` and every other caller is untouched. Rejected: adding a field to `Saved`, which would break every `Saved::New(dir)` pattern in the tests.
+
+Decision: stdout is `Saved <dir>/source.md (N files; skipped M: a, b, ...)`, five names then `and K more`, only for a directory that skipped something; `source.md` gets a `Skipped M: ...` paragraph in the body (twenty names). The frontmatter and `files:` are unchanged (yaks-e83f owns the layout). Same line on `Already saved:`/`Refreshed`.
+
+Evidence, before: the installed 0.0.37 on a tree with `.github/ci.yml` and `a.md` printed `Saved sources/2026-11-17-596dd9c9-p/source.md` and `files/` held only `a.md`.
+
+Evidence, after: my release build on a tree with `.github/workflows/ci.yml`, `a.md`, `.git/c`, `target/t`, `.DS_Store`:
+
+    Saved sources/2026-11-17-b3ea1126-proj/source.md (2 files; skipped 3: .DS_Store, .git/, target/)
+    files: .github/workflows/ci.yml, a.md
+    source.md body ends: Skipped 3: `.DS_Store`, `.git/`, `target/`.
+
+Tests: `a_directory_keeps_dot_files_and_says_what_it_skipped` and `walk_dir_returns_files_and_skipped_and_checks_the_limits` in `src/sources.rs` (they use the new API, so they cannot compile before the change; the old binary run above is the before). Docs: `docs/cli.md`, `.agents/skills/yaks-research`, `source add --help`.
