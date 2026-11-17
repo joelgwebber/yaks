@@ -1716,7 +1716,12 @@ enum SourceAction {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// List sources: id, media type, title and where each came from.
+    /// List sources: directory, media type, title and where each came from.
+    ///
+    /// A part (saved with `--part-of`) is indented under its source. A marker
+    /// follows a source `yaks check` would flag: `[uncited]` (nothing cites
+    /// it or its parts), or what `source mark` set: `[kept uncited: why]`,
+    /// `[superseded by <id>]`. `--json` is unchanged.
     List {
         #[arg(long)]
         json: bool,
@@ -3325,11 +3330,8 @@ fn main() -> Result<()> {
                 } else if all.is_empty() {
                     println!("No sources.");
                 } else {
-                    for s in &all {
-                        println!(
-                            "  {}  {:<16}  {}  ({})",
-                            s.dir, s.media_type, s.title, s.resource
-                        );
+                    for row in sources::list_rows(farm.root(), &all) {
+                        println!("{row}");
                     }
                 }
             }

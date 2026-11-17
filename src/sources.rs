@@ -1037,6 +1037,86 @@ pub fn set_title(root: &Path, source: &str, title: &str) -> Result<(String, bool
     Ok((dir, true))
 }
 
+/// The text rows of `yaks source list` (yaks-fb15): oldest first, a part
+/// (a source saved with `--part-of`) indented under the source it is part of,
+/// and a marker after the row for what `yaks check` would say of it:
+/// `[uncited]` on the head of a family nothing cites, `[kept uncited: <why>]` and
+/// `[superseded by <id>]` for the marks set with `yaks source mark`. The
+/// citation rule is `check`'s own (see [`crate::check::citations`]), so the
+/// two never disagree.
+pub fn list_rows(root: &Path, all: &[Source]) -> Vec<String> {
+    let c = crate::check::citations(root, all);
+    let mut kids: std::collections::BTreeMap<&str, Vec<&Source>> = Default::default();
+    let mut tops: Vec<&Source> = Vec::new();
+    for s in all {
+        match c.parent.get(s.id()).filter(|p| !p.is_empty()) {
+            Some(p) => kids.entry(p.as_str()).or_default().push(s),
+            None => tops.push(s),
+        }
+    }
+    let mut rows = Vec::new();
+    let mut seen = std::collections::BTreeSet::new();
+    fn walk<'a>(
+        s: &'a Source,
+        depth: usize,
+        kids: &std::collections::BTreeMap<&str, Vec<&'a Source>>,
+        c: &crate::check::Citations,
+        seen: &mut std::collections::BTreeSet<&'a str>,
+        rows: &mut Vec<String>,
+    ) {
+        if !seen.insert(s.dir.as_str()) {
+            return;
+        }
+        let mark = |k: &str| {
+            s.fields
+                .get(k)
+                .and_then(|v| v.as_str().map(String::from))
+                .filter(|v| !v.is_empty())
+        };
+        let mut tags = Vec::new();
+        if depth == 0 && !c.is_cited(s.id()) {
+            tags.push("[uncited]".to_string());
+        }
+        if let Some(why) = mark("uncited") {
+            tags.push(format!("[kept uncited: {why}]"));
+        }
+        if let Some(by) = mark("superseded_by") {
+            let by = by
+                .strip_prefix("sources/")
+                .and_then(|b| b.strip_suffix("/source.md"))
+                .map(|b| id_of(b).to_string())
+                .unwrap_or(by);
+            tags.push(format!("[superseded by {by}]"));
+        }
+        let indent = if depth == 0 {
+            String::new()
+        } else {
+            format!("{}└ ", "  ".repeat(depth - 1))
+        };
+        let mut row = format!(
+            "  {indent}{}  {:<16}  {}  ({})",
+            s.dir, s.media_type, s.title, s.resource
+        );
+        for t in tags {
+            row.push(' ');
+            row.push_str(&t);
+        }
+        rows.push(row);
+        for k in kids.get(s.id()).into_iter().flatten() {
+            walk(k, depth + 1, kids, c, seen, rows);
+        }
+    }
+    for s in &tops {
+        walk(s, 0, &kids, &c, &mut seen, &mut rows);
+    }
+    // A `part_of` loop has no head: list what the walk never reached rather
+    // than drop it.
+    for s in all {
+        walk(s, 0, &kids, &c, &mut seen, &mut rows);
+    }
+    rows
+}
+
 /// How `yaks check` should treat a source nothing cites.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mark {
@@ -1962,6 +2042,85 @@ mod tests {
         assert!(set_title(&root, id, "a\nb").is_err());
         assert!(set_title(&root, "2020-01-01-deadbeef", "T").is_err());
         assert_eq!(list(&root)[0].title, "Right title");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-fb15: `list_rows` indents a part under its source and marks what
+    /// `check` would call uncited, by `check`'s own rule.
+    #[test]
+    fn list_rows_nest_parts_and_mark_uncited_and_superseded() {
+        let base = tmp("rows");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let mk = |name: &str, body: &str, title: &str, part_of: Option<&str>| {
+            let f = base.join(name);
+            std::fs::write(&f, body).unwrap();
+            let req = Request {
+                part_of: part_of.map(String::from),
+                ..titled(&f, title)
+            };
+            let Saved::New(dir) = add(&root, &req).unwrap() else {
+                panic!()
+            };
+            dir
+        };
+        let tweet = mk("tweet.md", "tweet\n", "Tweet", None);
+        let shot = mk(
+            "shot.md",
+            "shot\n",
+            "Shot",
+            Some(&format!("{tweet}/source.md")),
+        );
+        let cited = mk("cited.md", "cited\n", "Cited", None);
+        let old = mk("old.md", "old\n", "Old", None);
+        let kept = mk("kept.md", "kept\n", "Kept", None);
+        let lone = mk("lone.md", "lone\n", "Lone", None);
+        std::fs::create_dir_all(root.join("doks")).unwrap();
+        std::fs::write(
+            root.join("doks/d.md"),
+            format!("---\ntype: note\ntitle: D\n---\n\nSee [it]({cited}/source.md).\n"),
+        )
+        .unwrap();
+        mark(&root, &old, &Mark::SupersededBy(lone.clone())).unwrap();
+        mark(&root, &kept, &Mark::Uncited("a testbed".into())).unwrap();
+
+        let rows = list_rows(&root, &list(&root));
+        let row = |d: &str| rows.iter().find(|r| r.contains(&format!("{d} "))).unwrap();
+        assert_eq!(rows.len(), 6, "{rows:#?}");
+        // The part sits right under its source, one level in; the family is
+        // uncited as a whole, and only its head says so.
+        let at = rows.iter().position(|r| r.contains(&tweet)).unwrap();
+        assert!(rows[at].ends_with("[uncited]"), "{rows:#?}");
+        assert!(
+            rows[at + 1].contains(&shot) && rows[at + 1].contains("└ "),
+            "{rows:#?}"
+        );
+        assert!(!rows[at + 1].contains('['), "{rows:#?}");
+        assert!(!rows[at].contains("└ "));
+        assert!(!row(&cited).contains('['), "cited: no marker");
+        assert!(
+            row(&old).ends_with(&format!(
+                "[superseded by {}]",
+                id_of(lone.strip_prefix("sources/").unwrap())
+            )),
+            "{rows:#?}"
+        );
+        assert!(
+            row(&kept).ends_with("[kept uncited: a testbed]"),
+            "{rows:#?}"
+        );
+        assert!(row(&lone).ends_with("[uncited]"), "{rows:#?}");
+        // Citing the part clears the whole family, as `check` does.
+        std::fs::write(
+            root.join("doks/e.md"),
+            format!("---\ntype: note\ntitle: E\n---\n\n[s]({shot}/source.md)\n"),
+        )
+        .unwrap();
+        let rows = list_rows(&root, &list(&root));
+        assert!(
+            rows.iter().all(|r| !r.contains(&tweet) || !r.contains('[')),
+            "{rows:#?}"
+        );
         let _ = std::fs::remove_dir_all(&base);
     }
 

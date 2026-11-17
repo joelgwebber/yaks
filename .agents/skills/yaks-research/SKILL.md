@@ -24,7 +24,7 @@ A dok is the working knowledge behind the product, and `docs/` is the product's 
 ## Find before you write
 
 1. `yaks dok list` (or `--prefix doks/topics/`) to see what exists, and `yaks dok query --type <kind> --where tags=<t>` to filter (a plain value matches exactly; a list field matches when any item does; operators `~text` contains, `<x` `>=x` compare, `!x` not equal, empty = missing or empty: `--where 'renews=<2026-12-01'`). `yaks dok types` lists the kinds and their fields.
-2. `yaks source list` to see what has been saved.
+2. `yaks source list` to see what has been saved (a part is indented under its source; `[uncited]` marks one `yaks check` would flag).
 3. `yaks find <term>` searches everything at once: yak bodies and notes, doks, sources' text and sessions (`--kind doks`, `--scope doks/topics/`, `--regex`). `yaks search <term>` matches only yak ids and titles; `yaks refs <dok> --incoming` shows what already links a dok.
 4. Read only what you need: `yaks peek /doks/x.md#section` prints one section, and `yaks peek code:src/foo.rs#L10-L40` prints lines of code.
 

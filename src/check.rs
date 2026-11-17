@@ -389,23 +389,56 @@ fn source_refs(text: &str) -> Vec<&str> {
     out
 }
 
-/// Sources that no dok and no yak cites, as `sources/<id>`. A source and
-/// its `part_of` children count as one: if any of them is cited, none is
-/// listed. One whose `source.md` has `superseded_by:` or `uncited:` counts
-/// as cited, with its parts.
-fn uncited(root: &Path) -> Result<Vec<Finding>> {
-    let all = sources::list(root);
-    if all.is_empty() {
-        return Ok(Vec::new());
+/// Which sources are cited, and how they hang together by `part_of`
+/// (`yaks check` and `yaks source list` both read it, so they cannot
+/// disagree).
+pub(crate) struct Citations {
+    /// id -> the id it is `part_of`; empty for a source on its own (a
+    /// `part_of` naming a source that is not there leaves the part on its own).
+    pub parent: BTreeMap<String, String>,
+    /// id -> its directory name (`<id>` or `<id>-<slug>`).
+    dir_of: BTreeMap<String, String>,
+    /// The top source of each family some dok or yak cites, or that is marked
+    /// `superseded_by:` / `uncited:`.
+    cited: BTreeSet<String>,
+}
+
+impl Citations {
+    /// The root of `id`'s `part_of` chain.
+    pub fn top(&self, mut id: String) -> String {
+        for _ in 0..10 {
+            match self.parent.get(&id) {
+                Some(p) if !p.is_empty() => id = p.clone(),
+                _ => break,
+            }
+        }
+        id
     }
+
+    /// Whether the family `id` heads is cited, or marked on purpose.
+    pub fn is_cited(&self, id: &str) -> bool {
+        self.cited.contains(id)
+    }
+
+    /// How many sources are saved with `part_of` somewhere under `id`.
+    fn parts_of(&self, id: &str) -> usize {
+        self.parent
+            .keys()
+            .filter(|c| c.as_str() != id && self.top((*c).clone()) == id)
+            .count()
+    }
+}
+
+/// Read the citations of the farm's sources (`all` is `sources::list`).
+pub(crate) fn citations(root: &Path, all: &[sources::Source]) -> Citations {
     // A source is its `<date>-<sha8>` id; its directory may carry a slug
     // after it (yaks-7729), and a citation may name either, so everything
     // below is keyed by the id and the directory name is kept for display.
     let id_of = |dir: &str| sources::id_of(dir.rsplit('/').next().unwrap_or(dir)).to_string();
-    let mut dir_of: BTreeMap<String, String> = BTreeMap::new(); // id -> its directory name
-    let mut parent: BTreeMap<String, String> = BTreeMap::new(); // id -> the id it is part_of
+    let mut dir_of: BTreeMap<String, String> = BTreeMap::new();
+    let mut parent: BTreeMap<String, String> = BTreeMap::new();
     let mut marked: BTreeSet<String> = BTreeSet::new();
-    for s in &all {
+    for s in all {
         let id = id_of(&s.dir);
         let part_of = s
             .fields
@@ -432,53 +465,58 @@ fn uncited(root: &Path) -> Result<Vec<Finding>> {
             marked.insert(id);
         }
     }
-    // A part_of naming a source that is not there leaves the part on its own.
     let known: BTreeSet<String> = parent.keys().cloned().collect();
     for p in parent.values_mut() {
         if !p.is_empty() && !known.contains(p) {
             p.clear();
         }
     }
-    let top = |mut id: String| {
-        for _ in 0..10 {
-            match parent.get(&id) {
-                Some(p) if !p.is_empty() => id = p.clone(),
-                _ => break,
-            }
-        }
-        id
+    let mut c = Citations {
+        parent,
+        dir_of,
+        cited: BTreeSet::new(),
     };
 
     // Every dok and yak, whole (frontmatter, body and notes). The sources
     // themselves are not read: a source citing itself is no citation.
-    let mut cited: BTreeSet<String> = BTreeSet::new();
     let mut files: Vec<std::path::PathBuf> = doks::dok_paths(root)
         .iter()
         .map(|rel| root.join(rel))
         .collect();
     files.extend(store::yak_files(root));
+    let mut cited = BTreeSet::new();
     for f in files {
         let Ok(text) = std::fs::read_to_string(&f) else {
             continue;
         };
         for id in source_refs(&text) {
-            cited.insert(top(sources::id_of(id).to_string()));
+            cited.insert(c.top(sources::id_of(id).to_string()));
         }
     }
     for id in &marked {
-        cited.insert(top(id.clone()));
+        cited.insert(c.top(id.clone()));
     }
+    c.cited = cited;
+    c
+}
 
+/// Sources that no dok and no yak cites, as `sources/<id>`. A source and
+/// its `part_of` children count as one: if any of them is cited, none is
+/// listed. One whose `source.md` has `superseded_by:` or `uncited:` counts
+/// as cited, with its parts.
+fn uncited(root: &Path) -> Result<Vec<Finding>> {
+    let all = sources::list(root);
+    if all.is_empty() {
+        return Ok(Vec::new());
+    }
+    let c = citations(root, &all);
     let mut out = Vec::new();
-    for (id, p) in &parent {
-        if !p.is_empty() || cited.contains(id) {
+    for (id, p) in &c.parent {
+        if !p.is_empty() || c.is_cited(id) {
             continue;
         }
-        let parts = parent
-            .keys()
-            .filter(|c| *c != id && top((*c).clone()) == *id)
-            .count();
-        let name = dir_of.get(id).unwrap_or(id);
+        let parts = c.parts_of(id);
+        let name = c.dir_of.get(id).unwrap_or(id);
         let mut message = format!("{}/{name} is cited by no dok or yak", sources::SOURCES_DIR);
         if parts > 0 {
             let noun = if parts == 1 { "part" } else { "parts" };
