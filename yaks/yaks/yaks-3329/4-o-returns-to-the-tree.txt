@@ -1,0 +1,22 @@
+=== frame 13 · 100x20 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0a96 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+← Hairy · yak/yaks/yak-0a96/
+◂ 📁 yak/yaks/yak-0a96/  8 files
+│ ▾ proj/
+│   ▸ .config/
+│   ▸ docs/
+│   ▾ src/
+│     ▾ deep/
+│         notes.md                                                                              7 B
+│       lib.rs                                                                                 14 B
+│       main.rs                                                                                13 B
+│     Cargo.toml                                                                                4 B
+│   bundle.tgz                                                                      archive · 682 B
+│   run.log                                                                                     4 B
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
