@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T22:08:22Z'
+updated: '2026-11-17T22:08:29Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -48,3 +48,9 @@ Docs: 20 MiB per-file cap now in `source add --help`, `docs/cli.md` and the `yak
 *srccli-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-17T22:08:29Z
+
+*srccli-1*
+
+Summary: `source.md` records a local file by name only and no `host`; the 20 MiB cap is in help, docs and the research skill. Gate PASS (`yaks verify`), fmt clean.
