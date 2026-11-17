@@ -5,14 +5,14 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T21:17:14Z'
+updated: '2026-11-17T21:33:26Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
 tags:
 - doks
 - cli
-needs: human
+needs: agent
 ---
 
 Found while ingesting sources in yaks-3610 (0.0.33).
@@ -47,3 +47,10 @@ Two related calls for directory sources:
 2. **Drop the `files:` list from `source.md`?** Lean: yes. Keep `file_count:` and `size:`. The `files/` tree is the record, and `sha256` already covers it. A skipped-files line (yaks-3da7) still goes in the body.
 
 Existing sources would be migrated in the same pass as yaks-e83f.
+
+#### 2026-11-17T21:33:26Z
+
+*sched-1 · kind: answer · needs: agent*
+
+1. Agreed, as mentioned in yaks-e83f as well.
+2. Yeah, I think that would be very helpfully simplifying.
