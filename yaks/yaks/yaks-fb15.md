@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:20:32Z'
+updated: '2026-11-17T22:20:33Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -64,3 +64,9 @@ Evidence: the real farm's listing (`yaks source list`, attached as `yaks-fb15-li
 and there `yaks check` says `sources/2026-11-17-fe8edeeb-tweet is cited by no dok or yak (nor are its 1 part saved with part_of)`.
 
 Test: `list_rows_nest_parts_and_mark_uncited_and_superseded` (nesting, family marker on the head only, cited, superseded, kept uncited, a lone uncited, and citing the part clearing the family). Docs: `source list --help`, `docs/cli.md`, `yaks-research` skill.
+
+#### 2026-11-17T22:20:33Z
+
+*srccli-1*
+
+Summary: `source list` indents parts and marks `[uncited]`, `[kept uncited: why]`, `[superseded by id]`, using `check`'s extracted citation rule. Gate PASS (`yaks verify`), fmt clean.
