@@ -1,0 +1,22 @@
+=== frame 11 · 100x20 · focus=detail · view=📖 Doks · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · doks=2 · entry=sources/2026-11-17-abcd1234-yass-snapshot/source.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+◂ 📁 sources/2026-11-17-abcd1234-yass-snapshot/files/  5 files
+│ ▾ lib/
+│   ▸ util/
+│     x.h                                                                                       2 B
+│   .gitignore                                                                                  3 B
+│   main.c                                                                                     13 B
+│   Makefile                                                                                    3 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
