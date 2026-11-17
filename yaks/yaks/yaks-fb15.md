@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:16:45Z'
+updated: '2026-11-17T22:20:18Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -35,3 +35,9 @@ Claim (yakherd `sources-triage`). Owner: `srccli-1`. Scope: `source list` text o
 [yaks-fb15-list](yaks-fb15/yaks-fb15-list.txt)
 
 [yaks-fb15-scratch](yaks-fb15/yaks-fb15-scratch.txt)
+
+#### 2026-11-17T22:20:18Z
+
+*srccli-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
