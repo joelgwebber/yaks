@@ -2295,6 +2295,17 @@ pub fn attachment_link(id: &str, name: &str) -> String {
     attachment_link_titled(id, name, None)
 }
 
+/// The markdown link to a directory attached beside `link_dir` (the yak's id,
+/// or a document's directory name): `[<dir>/](<link_dir>/<dir>/)`, one link for
+/// the whole tree.
+pub fn attachment_dir_link(link_dir: &str, dir: &str) -> String {
+    format!(
+        "[{}/]({link_dir}/{}/)",
+        dir.replace(['[', ']'], ""),
+        crate::links::percent_encode_path(dir)
+    )
+}
+
 /// [`attachment_link`] with a markdown title, `![stem](<id>/<name> "Caption")`:
 /// what the TUI draws as the image's caption and other viewers show as a
 /// tooltip (yaks-0370). Backslashes and quotes in the caption are escaped and

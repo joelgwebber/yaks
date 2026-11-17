@@ -384,7 +384,10 @@ pub enum RenameAttachmentOutcome {
 /// Write `files` into `dir` (created) and return `body` with each file's
 /// markdown link appended when `link` (see [`store::attachment_link_titled`];
 /// `link_dir` is the directory's name as the document's own link spells it).
-/// The one place the yak, dok and session attach paths share.
+/// A name with a `/` is a file of an attached directory (`src/a/b.rs`): it
+/// is stored at that path under `dir`, and the directory is linked once
+/// ([`store::attachment_dir_link`]), not each file. The one place the yak,
+/// dok and session attach paths share.
 fn store_attachments(
     dir: &Path,
     link_dir: &str,
@@ -393,26 +396,65 @@ fn store_attachments(
     caption: Option<&str>,
     body: &str,
 ) -> Result<String> {
+    if let Some((name, _)) = files
+        .iter()
+        .find(|(n, _)| n.split('/').any(|c| c.is_empty() || c == "." || c == ".."))
+    {
+        anyhow::bail!("{name}: not a safe attachment path");
+    }
     std::fs::create_dir_all(dir)?;
     let mut body = body.trim_end().to_string();
+    let mut linked_dirs: Vec<&str> = Vec::new();
     for (name, data) in files {
-        std::fs::write(dir.join(name), data)?;
+        let dest = dir.join(name);
+        if name.contains('/') {
+            if let Some(parent) = dest.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
+        std::fs::write(dest, data)?;
         if link {
+            let text = match name.split_once('/') {
+                None => store::attachment_link_titled(link_dir, name, caption),
+                Some((top, _)) if linked_dirs.contains(&top) => continue,
+                Some((top, _)) => {
+                    linked_dirs.push(top);
+                    store::attachment_dir_link(link_dir, top)
+                }
+            };
             if !body.is_empty() {
                 body.push_str("\n\n");
             }
-            body.push_str(&store::attachment_link_titled(link_dir, name, caption));
+            body.push_str(&text);
         }
     }
     Ok(body)
 }
 
-/// The outcome of attaching `files`: their names, comma-separated.
+/// The outcome of attaching `files`: a plain file by name, a directory (names
+/// with a `/`) as `dir/ (N files)`, comma-separated.
 fn attached(files: &[(String, Vec<u8>)]) -> AttachOutcome {
+    let mut parts: Vec<(String, usize)> = Vec::new();
+    for (n, _) in files {
+        let top = match n.split_once('/') {
+            Some((top, _)) => format!("{top}/"),
+            None => n.clone(),
+        };
+        match parts.iter_mut().find(|(p, _)| *p == top) {
+            Some((_, c)) => *c += 1,
+            None => parts.push((top, 1)),
+        }
+    }
     AttachOutcome::Attached(
-        files
-            .iter()
-            .map(|(n, _)| n.as_str())
+        parts
+            .into_iter()
+            .map(|(p, c)| {
+                if p.ends_with('/') {
+                    format!("{p} ({c} file{})", if c == 1 { "" } else { "s" })
+                } else {
+                    p
+                }
+            })
             .collect::<Vec<_>>()
             .join(", "),
     )

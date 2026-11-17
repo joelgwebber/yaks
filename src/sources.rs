@@ -297,7 +297,7 @@ pub fn rewrite_ref(r: &str, plan: &[(String, String)]) -> Option<String> {
 
 /// A directory's files (relative path, bytes), sorted, skipping `.git`,
 /// dot files and common build and dependency directories.
-fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
+pub(crate) fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
     const SKIP: &[&str] = &[
         ".git",
         "node_modules",

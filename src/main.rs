@@ -285,15 +285,23 @@ enum Command {
     /// files go in its sibling directory (`doks/x/`) and the link appended to
     /// its body goes down into it (`![name](x/<file>)`). `--note` and `.md`
     /// files are refused there; `yaks mv` takes the directory with its dok.
+    ///
+    /// A directory attaches with its layout, under its own name
+    /// (`<id>/<dir>/...`), in one write, and one link names it
+    /// (`[<dir>/](<id>/<dir>/)`). Attach a directory, never an archive. It
+    /// uses a directory source's walk, skip list (`.git`, `node_modules`,
+    /// `target`, dot files, ...) and limits (200 files, 5 MiB), and refuses
+    /// over them, writing nothing. `--name` stores it under another directory
+    /// name; `--caption` is for an image, not a directory.
     Attach {
         /// A yak id, or the farm path of a dok or session note.
         id: String,
-        /// Paths of the local files to attach.
+        /// Paths of the local files or directories to attach.
         #[arg(required = true)]
         paths: Vec<PathBuf>,
         /// Store the attachment under this filename instead of the source's
         /// (sanitized; the source's extension is kept if NAME omits one).
-        /// Only with a single file.
+        /// Only with a single file or directory.
         #[arg(long)]
         name: Option<String>,
         /// Store the files without adding a link to the yak's body.
@@ -2515,8 +2523,57 @@ fn main() -> Result<()> {
                 );
                 std::process::exit(1);
             }
-            let mut files = Vec::new();
+            let mut files: Vec<(String, Vec<u8>)> = Vec::new();
+            let mut any_dir = false;
             for path in &paths {
+                if path.is_dir() {
+                    // A directory keeps its layout under its own name: the
+                    // directory source's walk, skip rules and limits.
+                    any_dir = true;
+                    let abs = match std::fs::canonicalize(path) {
+                        Ok(a) => a,
+                        Err(e) => {
+                            eprintln!("error reading {}: {e}", path.display());
+                            std::process::exit(1);
+                        }
+                    };
+                    let Some(dir_name) = abs.file_name().and_then(|s| s.to_str()) else {
+                        eprintln!("error: attachment path has no name: {}", path.display());
+                        std::process::exit(1);
+                    };
+                    let raw = name.as_deref().unwrap_or(dir_name);
+                    let Some(stored) = farm::attachment_name(raw, "") else {
+                        eprintln!("error: invalid attachment name: {raw:?}");
+                        std::process::exit(1);
+                    };
+                    if files
+                        .iter()
+                        .any(|(n, _)| n.split('/').next() == Some(stored.as_str()))
+                    {
+                        eprintln!("error: two attachments would be stored as {stored}");
+                        std::process::exit(1);
+                    }
+                    let inner = match sources::dir_files(&abs) {
+                        Ok(f) => f,
+                        Err(e) => {
+                            eprintln!("error: {e}");
+                            std::process::exit(1);
+                        }
+                    };
+                    if inner.is_empty() {
+                        eprintln!(
+                            "error: {} holds no files to attach (dot files, .git, node_modules, target and the like are skipped)",
+                            path.display()
+                        );
+                        std::process::exit(1);
+                    }
+                    files.extend(
+                        inner
+                            .into_iter()
+                            .map(|(rel, data)| (format!("{stored}/{rel}"), data)),
+                    );
+                    continue;
+                }
                 let data = match std::fs::read(path) {
                     Ok(d) => d,
                     Err(e) => {
@@ -2539,6 +2596,10 @@ fn main() -> Result<()> {
                     },
                 };
                 files.push((stored, data));
+            }
+            if caption.is_some() && any_dir {
+                eprintln!("error: --caption captions an image; a directory is linked by name");
+                std::process::exit(1);
             }
             // A yak id is flat; a dok or session note is a farm path.
             let is_doc = id.contains('/') || id.ends_with(".md");
