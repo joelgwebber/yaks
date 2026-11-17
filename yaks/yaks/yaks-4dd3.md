@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T21:42:57Z'
+updated: '2026-11-17T22:03:00Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -24,3 +24,21 @@ moved: hairy -> shaving
 *sources-triage*
 
 Claim (yakherd `sources-triage`). Owner: `srccli-1` (see yaks-3da7's claim). Scope: `source.md` never records an absolute path or the `host:` of the machine. A local file's resource is its file name, and `--url` or `--origin` win as now. Say the 20 MiB per-file cap in `source add --help` and the `yaks-research` skill. Out of scope: rewriting existing sources. Evidence: a unit test on the written fields, and the gate.
+
+#### 2026-11-17T22:03:00Z
+
+*srccli-1*
+
+Decision: a local file's `resource` is always its file name (`name`), with or without a scratch directory, and `host:` is dropped from the `sources:` entry. Rejected: a path relative to the repo or home (still machine-specific and needs a guess at a root), and keeping `host` (the issue calls it a leak with no use). `last_modified` stays (it says nothing about the machine). `--url` and `--origin` win as before; `promote` still records `<id>/<file>` and never had a host.
+
+Decision: `in_scratch` is deleted, since the rule no longer branches on it. `sources::host()` stays: `session note` uses it for its own `host:` (out of scope).
+
+Decision: the `--url`/`--origin` branches are unchanged; existing sources are not rewritten (out of scope per the claim); docs say so.
+
+Evidence, before (installed 0.0.37, tree under `$TMPDIR/p`, from the yak-3da7 run): `resource: /private/var/folders/.../tmp.roytq7BL6k/p` and `host: joel` in `source.md`.
+
+Evidence, after (my release build, `source add <abs path>/notes.md` in a scratch farm): `source.md` has `resource: notes.md`, `last_modified`, `retrieved`, and no `host:`.
+
+Test: `a_local_file_records_its_name_never_a_path_or_host` (was `a_scratch_path_is_not_provenance_but_another_path_is`; it asserts no `host:` and no absolute path both for a file under the temp dir and one under `target/`, which the old test required to be recorded as an absolute path).
+
+Docs: 20 MiB per-file cap now in `source add --help`, `docs/cli.md` and the `yaks-research` skill; the resource/host rule in `docs/cli.md`, the skill and the `--url` help.
