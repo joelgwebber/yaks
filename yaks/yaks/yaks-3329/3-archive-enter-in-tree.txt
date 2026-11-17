@@ -1,0 +1,16 @@
+=== frame 6 · 100x14 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0a96 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=9 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+bundle.tgz: an archive; O → p copies its path
+◂ 📁 yak/yaks/yak-0a96/  8 files
+│ ▸ proj/
+│   bundle.tgz                                                                      archive · 682 B
+│   run.log                                                                                     4 B
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
