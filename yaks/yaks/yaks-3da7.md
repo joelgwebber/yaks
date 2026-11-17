@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T22:28:06Z'
+updated: '2026-11-17T22:28:09Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -105,3 +105,15 @@ Re-ran each with my own release build in a fresh scratch farm:
 - A local file records `resource: note.md` and no `host:`.
 - Same bytes under a new title: "kept the title ... ignored" with the `source set` hint. `source set --title` retitles and keeps the slug.
 - `source list` nests a `--part-of` under its parent, and `[uncited]` clears once a dok cites it.
+
+#### 2026-11-17T22:28:09Z
+
+*sources-triage*
+
+Merge note (`sources-triage`): landing 3da7 conflicted with `attach-2`'s yaks-a57c, which had made the old `dir_files` `pub(crate)`. I kept this yak's `walk_dir`, switched `yaks attach <dir>` to it, and adjusted to match:
+
+- `farm::attachment_path` now allows dot files inside an attached directory (`proj/.github/ci.yml`). It still refuses a hidden top-level attachment, `.`, `..` and empty segments.
+- `docs/cli.md`'s attach paragraph names the new skip list.
+- `tests/attach_dir.rs` expects `.github/ci.yml` to be kept and `.DS_Store` skipped.
+
+Folded into the landed commit `9f613dee`.
