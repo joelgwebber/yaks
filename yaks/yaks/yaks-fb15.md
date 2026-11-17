@@ -1,11 +1,11 @@
 ---
 id: yaks-fb15
 title: 'source list: show part-of and citation status'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T21:15:49Z'
+updated: '2026-11-17T21:42:27Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -19,3 +19,9 @@ Found while ingesting sources in yaks-3610 (0.0.33).
 Add to the text output: indent a part under its parent, and mark uncited sources (and `uncited:` / `superseded_by:` marks). `--json` already carries `fields.part_of`.
 
 Small and local: the `source list` arm and its listing function.
+
+#### 2026-11-17T21:42:27Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
