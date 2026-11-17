@@ -29,6 +29,7 @@ mod locate;
 mod markdown_lint;
 mod mergedriver;
 mod migrate;
+mod migrate10;
 mod model;
 mod preflight;
 mod privatefarm;
@@ -3267,25 +3268,28 @@ fn main() -> Result<()> {
                     text_only,
                 })?;
                 match &saved {
-                    sources::Saved::New(d) => println!("Saved {d}/source.md{}", report.summary()),
+                    sources::Saved::New(d) => {
+                        println!("Saved {}{}", sources::source_file(d), report.summary())
+                    }
                     sources::Saved::Already(d) => {
                         println!(
-                            "Already saved: {d}/source.md{}{}",
+                            "Already saved: {}{}{}",
+                            sources::source_file(d),
                             report.summary(),
                             report.title_note(d)
                         )
                     }
                     sources::Saved::Refreshed(d) => {
-                        println!("Refreshed {d}/source.md{}", report.summary())
+                        println!("Refreshed {}{}", sources::source_file(d), report.summary())
                     }
                 }
             }
             SourceAction::Set { source, title } => {
                 let (dir, changed) = farm.source_set_title(&source, &title)?;
                 if changed {
-                    println!("Retitled {dir}/source.md: {title}");
+                    println!("Retitled {}: {title}", sources::source_file(&dir));
                 } else {
-                    println!("No changes to {dir}/source.md");
+                    println!("No changes to {}", sources::source_file(&dir));
                 }
             }
             SourceAction::Mark {
@@ -3304,13 +3308,15 @@ fn main() -> Result<()> {
                 };
                 let (dir, changed) = farm.source_mark(&source, &how)?;
                 match (&how, changed) {
-                    (_, false) => println!("No changes to {dir}/source.md"),
-                    (sources::Mark::Clear, true) => println!("Cleared the mark on {dir}/source.md"),
+                    (_, false) => println!("No changes to {}", sources::source_file(&dir)),
+                    (sources::Mark::Clear, true) => {
+                        println!("Cleared the mark on {}", sources::source_file(&dir))
+                    }
                     (sources::Mark::Uncited(_), true) => {
-                        println!("Marked {dir}/source.md uncited on purpose")
+                        println!("Marked {} uncited on purpose", sources::source_file(&dir))
                     }
                     (sources::Mark::SupersededBy(_), true) => {
-                        println!("Marked {dir}/source.md superseded")
+                        println!("Marked {} superseded", sources::source_file(&dir))
                     }
                 }
             }
@@ -4466,6 +4472,30 @@ fn report_schema9(r: &migrate::Report) {
             s.sources.len(),
             if s.sources.len() == 1 { "y" } else { "ies" },
             if done { "given" } else { "to give" }
+        );
+    }
+    let t = &r.s10;
+    if t.sources > 0 {
+        println!(
+            "  sources: {} source(s) {} one file each (`sources/<name>.md`: provenance and text){}{}",
+            t.sources,
+            if done { "made" } else { "to make" },
+            if t.trees > 0 {
+                format!("; {} directory tree(s) lifted out of `files/`", t.trees)
+            } else {
+                String::new()
+            },
+            if t.duplicates > 0 {
+                format!("; {} duplicate copy(ies) of the text removed", t.duplicates)
+            } else {
+                String::new()
+            }
+        );
+    }
+    if t.links > 0 {
+        println!(
+            "  source references: {} edit(s) in {} file(s) (`.../source.md`, `.../extracted.md`, `.../files/`)",
+            t.links, t.link_files
         );
     }
     if let Some(c) = &s.commit {

@@ -3,7 +3,7 @@
 //! then `sessions/`, yaks-85a6), each group sorted by path, with title, kind
 //! and tags. Enter opens one in the text viewer ([`App::read_farm_doc`]): a
 //! dok's or session note's frontmatter as field rows above its rendered body,
-//! a source's `source.md` then its `extracted.md`.
+//! a source's file (its provenance, then its text).
 //!
 //! The data is the CLI's: [`doks::load_all`], [`sources::list`] and
 //! [`sessions::load_all`]. It is
@@ -39,7 +39,7 @@ pub(crate) enum DocGroup {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct DoksEntry {
     /// Farm-relative path of the file the viewer opens: the dok, a source's
-    /// `source.md`, or the session note.
+    /// file (`sources/<name>.md`), or the session note.
     pub path: String,
     pub title: String,
     /// The dok's kind (`note`, `topic`, a typed kind), `source` or `session`.
@@ -48,19 +48,14 @@ pub(crate) struct DoksEntry {
     pub group: DocGroup,
     /// What the query searches besides the fields above, lowercased once
     /// here (matching is case-insensitive): a dok's file (frontmatter and
-    /// body), a source's `source.md` and extracted text, as `yaks find` reads
-    /// them. Held in memory for every document, so a query costs no reads.
+    /// body), a source's file, as `yaks find` reads it. Held in memory for every document, so a query costs no reads.
     pub text: String,
 }
 
 impl DoksEntry {
-    /// The path shown in the list: a source by its directory.
+    /// The path shown in the list: the file's.
     pub(crate) fn shown_path(&self) -> &str {
-        if self.group == DocGroup::Source {
-            self.path.strip_suffix("/source.md").unwrap_or(&self.path)
-        } else {
-            &self.path
-        }
+        &self.path
     }
 }
 
@@ -89,11 +84,12 @@ pub(crate) fn read_entries(root: &Path) -> Result<Vec<DoksEntry>> {
         })
         .collect();
     out.extend(sources::list(root).into_iter().map(|s| {
-        let read =
-            |name: &str| std::fs::read_to_string(root.join(&s.dir).join(name)).unwrap_or_default();
+        let path = sources::source_file(&s.dir);
         DoksEntry {
-            text: format!("{}\n{}", read("source.md"), read("extracted.md")).to_lowercase(),
-            path: format!("{}/source.md", s.dir),
+            text: std::fs::read_to_string(root.join(&path))
+                .unwrap_or_default()
+                .to_lowercase(),
+            path,
             title: s.title,
             kind: "source".into(),
             tags: Vec::new(),
@@ -1146,7 +1142,7 @@ mod tests {
         fixture::write(&root);
         let rel = "doks/howto/release.md";
         let text = std::fs::read_to_string(root.join(rel)).unwrap();
-        let v = handlers::AttachView::farm_doc(rel, root.join(rel), text, None, None);
+        let v = handlers::AttachView::farm_doc(rel, root.join(rel), text, None);
         app.follow_to_doc(DocView::Text(v));
         let _ = std::fs::remove_dir_all(root);
         assert_eq!(app.surface_ctx(), keymap::Ctx::Viewer);

@@ -850,7 +850,7 @@ static BINDINGS: &[Binding] = &[
     // -- the list: document rows (the Doks view). Its movement, view and farm
     // -- keys are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
     // -- bottom hint is the Doks's own, not the yak list's.
-    bind_row(Doc, &[k(Enter)], PaneOpen, "Open in the viewer: frontmatter above the body; a source with its extracted text", hint("Enter:open")),
+    bind_row(Doc, &[k(Enter)], PaneOpen, "Open in the viewer: frontmatter above the body", hint("Enter:open")),
     bind_row(Doc, &[c('E')], DokEdit, "Edit the dok: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
     bind_row(Doc, &[c('c')], DokNew, "New dok: type its path (doks/... or <herd>/doks/...), then its body", hint("c:new dok")),
     bind_row(Doc, &[c('/'), ctrl('f')], SearchOpen, "Search every view; Esc clears", hint("/:search")),

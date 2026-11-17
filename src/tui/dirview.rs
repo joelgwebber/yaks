@@ -551,9 +551,10 @@ impl App {
         let is_source = path.starts_with("sources/");
         let label = if is_source { "Files:" } else { "Attachments:" };
         let sibling = || path.strip_suffix(".md").map(String::from);
-        let rel = match path.strip_suffix("/source.md") {
-            Some(dir) if is_source => format!("{dir}/files"),
-            _ if is_source
+        // Every document's files are its sibling directory: a dok's, a
+        // session note's, a source's (yaks-e83f).
+        let rel = match () {
+            _ if crate::sources::is_source_path(path)
                 || crate::doks::is_dok_path(path)
                 || path.starts_with(&format!("{}/", crate::sessions::DIR)) =>
             {
@@ -567,7 +568,7 @@ impl App {
 
     /// Whether farm path `path` as written names a directory rather than a
     /// file: it ends in `/`, or there is no file by that name (`sources/<id>`
-    /// is its `source.md`, not the directory).
+    /// is its file, `sources/<id>.md`, not the directory).
     pub(crate) fn farm_path_is_dir(&self, path: &str) -> bool {
         let Some(root) = self.farm.as_ref().map(|f| f.root()) else {
             return false;

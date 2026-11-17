@@ -50,7 +50,7 @@ impl Item<'_> {
 ///
 /// - a yak: its id, title and body (the notes are in the body);
 /// - a document: its title, path, kind and tags, and its text (a dok's file,
-///   a source's `source.md` and extracted text: [`DoksEntry::text`]);
+///   a source's file: [`DoksEntry::text`]);
 /// - a shed: its name. A shed also stays when a yak of it matches; that is the
 ///   tree rule, applied where the shed's rows are built.
 pub fn query_matches(item: Item<'_>, q: &str) -> bool {

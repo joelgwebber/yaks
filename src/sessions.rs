@@ -501,7 +501,9 @@ pub fn touched(root: &Path, actor: &str, since: DateTime<Utc>) -> Result<Touched
                 continue;
             }
             let kept = crate::doks::is_dok_path(&path)
-                || (path.starts_with("sources/") && path.ends_with("/source.md"))
+                || (path.starts_with("sources/")
+                    && path.ends_with(".md")
+                    && path.matches('/').count() == 1)
                 || path.starts_with("schemas/");
             if !kept || files.iter().any(|f| f.path == path) {
                 continue;

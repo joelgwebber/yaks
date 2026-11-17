@@ -382,8 +382,15 @@ fn source_refs(text: &str) -> Vec<&str> {
         let len = rest
             .find(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-')))
             .unwrap_or(rest.len());
-        if len > 0 && rest.as_bytes()[0].is_ascii_alphanumeric() && rest[len..].starts_with('/') {
-            out.push(&rest[..len]);
+        // `sources/<name>/...` (a file beside it, or the layout before schema
+        // 10) or `sources/<name>.md` (its file, yaks-e83f).
+        let name = &rest[..len];
+        if len > 0 && rest.as_bytes()[0].is_ascii_alphanumeric() {
+            if let Some(stem) = name.strip_suffix(".md") {
+                out.push(stem);
+            } else if rest[len..].starts_with('/') {
+                out.push(name);
+            }
         }
     }
     out

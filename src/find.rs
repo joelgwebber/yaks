@@ -98,21 +98,17 @@ fn candidates(root: &Path, opts: &Options) -> Vec<(Kind, String, PathBuf)> {
         }
     }
     if wants(Kind::Sources) {
-        let mut dirs: Vec<PathBuf> = std::fs::read_dir(root.join(sources::SOURCES_DIR))
-            .map(|rd| rd.flatten().map(|e| e.path()).collect())
-            .unwrap_or_default();
-        dirs.sort();
-        for d in dirs {
-            if d.file_name()
-                .is_some_and(|n| n.to_string_lossy().starts_with('.'))
-            {
-                continue;
-            }
-            for f in ["source.md", "extracted.md"] {
-                let p = d.join(f);
-                if p.is_file() {
-                    out.push((Kind::Sources, rel_of(&p), p));
-                }
+        // A source's file (its provenance and its text), then the text files
+        // of the directory beside it: a directory source's tree is searched
+        // where it lies (yaks-e83f), with no joined copy.
+        for s in sources::list(root) {
+            let file = root.join(sources::source_file(&s.dir));
+            out.push((Kind::Sources, rel_of(&file), file));
+            let mut beside = Vec::new();
+            walk_text(&root.join(&s.dir), &mut beside);
+            beside.sort();
+            for p in beside {
+                out.push((Kind::Sources, rel_of(&p), p));
             }
         }
     }
@@ -141,6 +137,26 @@ fn walk_md(dir: &Path, out: &mut Vec<PathBuf>) {
         if p.is_dir() {
             walk_md(&p, out);
         } else if p.extension().and_then(|x| x.to_str()) == Some("md") {
+            out.push(p);
+        }
+    }
+}
+
+/// Every file under `dir` that reads as text by its name (markdown, plain
+/// text, code, data), skipping dot entries. `scan` skips any that turn out
+/// not to be UTF-8.
+fn walk_text(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for e in rd.flatten() {
+        if e.file_name().to_string_lossy().starts_with('.') {
+            continue;
+        }
+        let p = e.path();
+        if p.is_dir() {
+            walk_text(&p, out);
+        } else if sources::is_text_path(&p) {
             out.push(p);
         }
     }
@@ -192,7 +208,7 @@ fn scan(root: &Path, kind: Kind, rel: &str, abs: &Path, pat: &Pattern, hits: &mu
 }
 
 /// The title shown on a file's group: a yak's, a dok's or session's, and for
-/// a source (`source.md` or `extracted.md`) the title in its `source.md`.
+/// a source (its file, or a file beside it) the title in its file.
 fn title_of(root: &Path, kind: Kind, rel: &str, text: &str) -> String {
     match kind {
         Kind::Yaks => store::parse_task(text, Status::Hairy)
@@ -200,8 +216,9 @@ fn title_of(root: &Path, kind: Kind, rel: &str, text: &str) -> String {
             .unwrap_or_default(),
         Kind::Doks | Kind::Sessions => doks::Dok::parse(rel, text).title(),
         Kind::Sources => {
-            let source_md = match rel.rsplit_once('/') {
-                Some((dir, _)) => format!("{dir}/source.md"),
+            // `sources/<name>.md`, or `sources/<name>/<path>` beside it.
+            let source_md = match rel.strip_prefix("sources/").and_then(|r| r.split_once('/')) {
+                Some((name, _)) => sources::source_file(&format!("sources/{name}")),
                 None => rel.to_string(),
             };
             match std::fs::read_to_string(root.join(&source_md)) {

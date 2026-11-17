@@ -29,7 +29,7 @@ const VIEW_MAX_BYTES: u64 = 1 << 20;
 ///
 /// The Doks tab (yaks-ebb2) opens farm doks and sources in the same viewer
 /// ([`DocKind`]): a dok's frontmatter shows as field rows above its rendered
-/// body, and a source shows `source.md` then its `extracted.md`.
+/// body, and a source likewise (its provenance, then its text).
 pub(crate) struct AttachView {
     /// The link target as written (`<id>/<file>`), or a dok's farm-relative
     /// path, shown as the header.
@@ -100,16 +100,10 @@ impl AttachView {
 
     /// The viewer for farm file `rel` holding `text` (read from `path`, or
     /// from farm commit `rev`): a dok (`doks/...md`), a source's
-    /// `source.md` (with its `extracted.md`, when given), or any other farm
-    /// file, rendered when it is markdown.
-    pub(crate) fn farm_doc(
-        rel: &str,
-        path: PathBuf,
-        text: String,
-        rev: Option<String>,
-        extracted: Option<String>,
-    ) -> Self {
-        let is_source = rel.starts_with("sources/") && rel.ends_with("/source.md");
+    /// file (`sources/<name>.md`, yaks-e83f), or any other farm file,
+    /// rendered when it is markdown.
+    pub(crate) fn farm_doc(rel: &str, path: PathBuf, text: String, rev: Option<String>) -> Self {
+        let is_source = crate::sources::is_source_path(rel);
         // A session note is a dok in all but its folder (yaks-85a6): it
         // shows, and saves, the same way.
         let is_session =
@@ -117,7 +111,7 @@ impl AttachView {
         let doc = if crate::doks::is_dok_path(rel) || is_session {
             DocKind::Dok
         } else if is_source {
-            DocKind::Source { extracted }
+            DocKind::Source
         } else {
             DocKind::File
         };
@@ -227,11 +221,7 @@ impl AttachView {
     pub(crate) fn copy_path(&self) -> &str {
         match self.doc {
             DocKind::Attachment => self.target.strip_prefix(".yaks/").unwrap_or(&self.target),
-            DocKind::Source { .. } => self
-                .target
-                .strip_suffix("/source.md")
-                .unwrap_or(&self.target),
-            DocKind::Dok | DocKind::File => &self.target,
+            DocKind::Source | DocKind::Dok | DocKind::File => &self.target,
             DocKind::Code { .. } => self.code_rel().unwrap_or(&self.target),
         }
     }
@@ -243,27 +233,20 @@ impl AttachView {
             DocKind::Attachment | DocKind::File if self.markdown => "markdown".into(),
             DocKind::Attachment | DocKind::File => "text".into(),
             DocKind::Dok => crate::doks::Dok::parse(&self.target, &self.text).kind(),
-            DocKind::Source { .. } => "source".into(),
+            DocKind::Source => "source".into(),
             DocKind::Code { .. } => "code".into(),
         }
     }
 
     /// The markdown each rendered block comes from, indexed like
-    /// [`detail::Src::block`]: the file (an attachment), the body below the
-    /// frontmatter (a dok, a source's note), then a source's extracted text.
+    /// [`detail::Src::block`]: the file (an attachment), or the body below
+    /// the frontmatter (a dok, a source).
     pub(crate) fn blocks(&self) -> Vec<&str> {
         match &self.doc {
             DocKind::Attachment | DocKind::File | DocKind::Code { .. } => {
                 vec![self.text.as_str()]
             }
-            DocKind::Dok => vec![self.body()],
-            DocKind::Source { extracted } => {
-                let mut v = vec![self.body()];
-                if let Some(x) = extracted {
-                    v.push(x.as_str());
-                }
-                v
-            }
+            DocKind::Dok | DocKind::Source => vec![self.body()],
         }
     }
 
@@ -281,8 +264,7 @@ impl AttachView {
     /// scrolls sideways, as in the detail pane.
     ///
     /// A dok or source starts with its frontmatter as `key  value` field
-    /// rows and a blank row; a source's extracted text follows its note
-    /// under an `extracted.md` section row.
+    /// rows and a blank row, then its body.
     pub(crate) fn rows(
         &self,
         width: u16,
@@ -314,7 +296,7 @@ impl AttachView {
         {
             return code_rows(&self.text, *lang, *marked, error.as_deref(), width);
         }
-        if matches!(self.doc, DocKind::Dok | DocKind::Source { .. }) {
+        if matches!(self.doc, DocKind::Dok | DocKind::Source) {
             let blocks = self.blocks();
             let mut out = frontmatter_rows(&self.text);
             if let Some((label, rel, n)) = &self.files {
@@ -330,14 +312,6 @@ impl AttachView {
             }
             out = detail::wrap(out, width);
             out.extend(md_rows(blocks[0], 0));
-            if let Some(x) = blocks.get(1) {
-                out.push(plain_row(String::new(), detail::Kind::Empty));
-                out.push(plain_row(
-                    "\u{2500}\u{2500} extracted.md \u{2500}\u{2500}".into(),
-                    detail::Kind::Section,
-                ));
-                out.extend(md_rows(x, 1));
-            }
             out
         } else if self.markdown {
             md_rows(&self.text, 0)
@@ -352,17 +326,14 @@ impl AttachView {
     }
 }
 
-/// What a viewer shows: a yak attachment, a dok, a saved source with
-/// its extracted text (`None` when it has none), another farm file (a
-/// link to `/sources/<id>/extracted.md`, an image's sibling note, ...), or a
-/// file of the code checkout.
+/// What a viewer shows: a yak attachment, a dok, a saved source (its file,
+/// provenance above its text), another farm file (a file beside a source, an
+/// image's sibling note, ...), or a file of the code checkout.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum DocKind {
     Attachment,
     Dok,
-    Source {
-        extracted: Option<String>,
-    },
+    Source,
     File,
     /// A `code:` file of the code checkout (yaks-c3d0), read-only: shown with
     /// line numbers, coloured by its extension (`lang`), the lines the link
@@ -1735,7 +1706,7 @@ impl App {
             return;
         }
         // A source is a snapshot, written once (yaks-1532).
-        if matches!(v.doc, DocKind::Source { .. }) {
+        if matches!(v.doc, DocKind::Source) {
             self.notification = Some(format!(
                 "{}: a source is a snapshot, written once; cite it from a dok",
                 v.target
@@ -3252,7 +3223,7 @@ mod copy_path_tests {
     use super::*;
 
     fn farm(rel: &str) -> AttachView {
-        AttachView::farm_doc(rel, PathBuf::from(rel), "# x\n".into(), None, None)
+        AttachView::farm_doc(rel, PathBuf::from(rel), "# x\n".into(), None)
     }
 
     // yaks-a036: `y` with nothing selected copies what the Doks list's `y`

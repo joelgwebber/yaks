@@ -3045,7 +3045,10 @@ pub fn reparent(root: &Path, id: &str, new_parent: Option<String>) -> Result<Rep
 /// links to a yak and its attachments are paths from that root, notes are
 /// `#### <timestamp>` headings ([`NEW_NOTES_SCHEMA`]), and a source directory
 /// carries a readable slug. Schema 8 is read and migrated like the older ones.
-pub const SCHEMA: u32 = 9;
+/// Schema 10 makes a source one file, `sources/<name>.md` (its provenance
+/// and its text), with its original or its tree in the directory beside it
+/// (yaks-e83f, [`crate::migrate10`]).
+pub const SCHEMA: u32 = 10;
 
 /// The first schema with the flat layout. Older farms are the old layout.
 pub const FLAT_SCHEMA: u32 = 4;

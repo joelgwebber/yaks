@@ -704,6 +704,8 @@ pub struct Report {
     pub git_tracked: bool,
     /// The schema-9 stage.
     pub s9: Schema9,
+    /// The schema-10 stage: sources become one file each.
+    pub s10: crate::migrate10::Report,
 }
 
 impl Report {
@@ -714,6 +716,7 @@ impl Report {
             && self.doks_roots.is_empty()
             && self.docs.is_empty()
             && self.s9.is_empty()
+            && self.s10.is_empty()
             && self.from.is_none_or(|v| v == store::SCHEMA)
     }
 }
@@ -996,6 +999,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
         files: writes.len(),
         git_tracked: tracked_by_git(root),
         s9: Schema9::default(),
+        s10: crate::migrate10::Report::default(),
     };
     if dry_run {
         // Earlier schemas' steps are not applied, so the farm is read as it
@@ -1006,6 +1010,11 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
             report.s9 = s9;
             describe_layout_stage(root, &mut report.s9);
         }
+        // The schema-10 stage reads sources where the schema-9 stage leaves
+        // them: a farm still under `.yaks/` has them there.
+        if from.is_none_or(|v| v >= 9) {
+            report.s10 = crate::migrate10::dry_run(root)?;
+        }
         return Ok(report);
     }
     if report.is_noop() && from.is_none_or(|v| v >= store::SCHEMA) {
@@ -1014,7 +1023,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
     for (path, text) in writes.iter().chain(&doc_writes) {
         store::write::atomic_write(path, text)?;
     }
-    report.s9 = apply_schema9(root)?;
+    (report.s9, report.s10) = apply_schema9(root)?;
     Ok(report)
 }
 
@@ -1031,7 +1040,7 @@ pub fn run(root: &Path, dry_run: bool) -> Result<Report> {
 /// farm is at the root with its marker still below 9, so a re-run skips the
 /// move and does the rewrite (the stub says 9, so an older yaks says
 /// "upgrade" in either state).
-fn apply_schema9(root: &Path) -> Result<Schema9> {
+fn apply_schema9(root: &Path) -> Result<(Schema9, crate::migrate10::Report)> {
     // Plan against the farm as it is, with the source renames the second
     // commit's links point at. Nothing is written until it is known to apply.
     let (_, mut s9) = plan_schema9(root)?;
@@ -1071,18 +1080,24 @@ fn apply_schema9(root: &Path) -> Result<Schema9> {
     s9.notes = again.notes;
     s9.note_yaks = again.note_yaks;
     s9.old_shape = again.old_shape;
+    // Schema 10, at the farm's final root: each source becomes one file
+    // (yaks-e83f). Before the marker, so an interrupted run is run again.
+    let s10 = crate::migrate10::apply(&now)?;
     store::write::atomic_write(&now.join("schema"), &format!("{}\n", store::SCHEMA))?;
-    if s9.move_to_root {
-        let n = writes.len() + 1;
+    // A farm branch gets the rewrite as a commit of its own: the move commit
+    // above, when there was one, and always when sources were converted, so
+    // the reshaped sources never sit uncommitted.
+    if s9.move_to_root || (s9.on_branch && !s10.is_empty()) {
+        let n = writes.len() + s10.link_files + s10.sources + 1;
         s9.commit = Some(commit_all(
             &now,
             &format!(
-                "yaks: migrate the farm to schema {} (links, notes: {n} file(s))",
+                "yaks: migrate the farm to schema {} (links, notes, sources: {n} file(s))",
                 store::SCHEMA
             ),
         )?);
     }
-    Ok(s9)
+    Ok((s9, s10))
 }
 
 /// Fill in what the layout stage would do and whether it must refuse: whether

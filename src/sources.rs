@@ -1,24 +1,32 @@
-//! Sources (yaks-2c42, design yaks-aae6): snapshots of material from outside
-//! the farm, written once and cited by pages and yaks.
+//! Sources (yaks-2c42, design yaks-aae6; layout yaks-e83f, schema 10):
+//! snapshots of material from outside the farm, written once and cited by
+//! doks and yaks.
 //!
-//! A source is a directory at the farm root, `sources/<id>-<slug>/`: `<id>`
+//! A source is one markdown file at `sources/<id>-<slug>.md`, plus, when
+//! there is something to keep beside its text, the directory of the same name
+//! without `.md` (the pattern a yak's and a dok's attachments follow): `<id>`
 //! is `<YYYY-MM-DD>-<first 8 hex of its sha256>` and is the source's
 //! identity; `<slug>` is a readable suffix from its title (yaks-7729), so a
-//! tree listing says what each one is. Until `yaks migrate` renames them, a
-//! directory may be just `sources/<id>/`: every lookup by id accepts both
-//! (see [`dir_for`]), and nothing but the id is ever compared.
+//! tree listing says what each one is. A file may be just `sources/<id>.md`:
+//! every lookup by id accepts both (see [`dir_for`]), and nothing but the id
+//! is ever compared.
 //!
-//! - the original file (or, for a directory, its files under `files/`);
-//! - `extracted.md`, its text: a markdown or plain-text original is copied,
-//!   and for anything else (HTML, a PDF) the saver's own conversion is passed
-//!   as `Request::text`. yaks extracts nothing itself: fetching and
+//! - the frontmatter says what it is and where and when it came from (Hearth's
+//!   fields);
+//! - the body is its text: a markdown or plain-text original is the body
+//!   itself, and for anything else (HTML, a PDF) the saver's own conversion is
+//!   passed as `Request::text`. yaks extracts nothing itself: fetching and
 //!   conversion belong to an agent or Hearth, which hand yaks the result;
-//! - `source.md`: frontmatter saying what it is and where and when it came
-//!   from (Hearth's format, so a Hearth repo's `raw/sources/` migrates as is).
+//! - the sibling directory holds the original when it is not the text (a PDF,
+//!   a JSON export, screenshots), named by `file:`, and for a directory source
+//!   the saved tree itself, so its relative links keep working.
+//!
+//! Everywhere below, a source's `dir` is that stem, `sources/<id>-<slug>`: the
+//! file is [`source_file`] of it, the directory is the stem itself.
 //!
 //! Saving the same content again (same sha256, on any day, whatever the
 //! title) returns the existing source: dedup reads the `sha256:` in each
-//! `source.md`, never a directory name, so a slug cannot hide a duplicate. `yaks promote` turns a yak's attachment into a source or
+//! source's frontmatter, never a name, so a slug cannot hide a duplicate. `yaks promote` turns a yak's attachment into a source or
 //! a page and rewrites the yak's link to it.
 
 use crate::fields::{Fields, Value};
@@ -29,6 +37,12 @@ use std::path::{Path, PathBuf};
 
 /// The directory of sources at the farm root.
 pub const SOURCES_DIR: &str = "sources";
+
+/// The file of the source whose stem is `dir` (`sources/<name>` ->
+/// `sources/<name>.md`): its provenance and its text.
+pub fn source_file(dir: &str) -> String {
+    format!("{dir}.md")
+}
 
 /// Biggest single file saved (larger is refused: keep it outside, or in LFS
 /// by hand).
@@ -46,12 +60,13 @@ pub struct Request {
     /// The web page this file is a copy of (the resource then is the URL;
     /// the file is recorded as `local_copy`).
     pub url: Option<String>,
-    /// `sources/<id>/source.md` of the source this one is a part of (a
+    /// `sources/<id>.md` of the source this one is a part of (a
     /// screenshot of a page).
     pub part_of: Option<String>,
     /// A file on this machine holding the text of `path` as the saver
     /// converted it (HTML to markdown, a PDF to text): it becomes
-    /// `extracted.md`. Not for a directory.
+    /// the source's body, and the original is kept beside it. For a
+    /// directory, a summary of the tree.
     pub text: Option<PathBuf>,
     /// Who saved it (`generated.by`).
     pub actor: String,
@@ -63,7 +78,7 @@ pub struct Request {
     /// replace its content (same directory and id) instead of saving a second
     /// source. Needs `url`. Saves a new source when none has that URL.
     pub refresh: bool,
-    /// Keep one file, `extracted.md`: for a markdown or plain-text file that
+    /// Keep no original, only the text as the body: for a text file that
     /// is already the text to read, so no second copy is saved as "the
     /// original". Not for a directory, a non-text file, or with `text`.
     pub text_only: bool,
@@ -153,37 +168,57 @@ pub fn title_slug(title: &str) -> String {
     out
 }
 
-/// A new source's directory under the farm: `sources/<id>-<slug>`.
+/// A new source's stem under the farm: `sources/<id>-<slug>`.
 fn slugged_dir(id: &str, title: &str) -> String {
     format!("{SOURCES_DIR}/{id}-{}", title_slug(title))
 }
 
-/// The names of every directory under `sources/` that carries this id
-/// (`<id>` itself and `<id>-<slug>`), sorted. More than one means two
-/// branches saved the same source under different titles.
+/// The stems (file name without `.md`) of every source file under
+/// `sources/`, sorted. A directory there is a source's sibling directory, not
+/// a source.
+fn stems(root: &Path) -> Vec<String> {
+    let mut names: Vec<String> = std::fs::read_dir(root.join(SOURCES_DIR))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.path().is_file())
+        .filter_map(|e| {
+            e.file_name()
+                .to_str()
+                .and_then(|n| n.strip_suffix(".md"))
+                .filter(|n| !n.is_empty() && !n.starts_with('.'))
+                .map(String::from)
+        })
+        .collect();
+    names.sort();
+    names
+}
+
+/// The names of every source under `sources/` that carries this id (`<id>`
+/// itself and `<id>-<slug>`, as stems), sorted, and of any directory of that
+/// id left without its file (so a new save never writes into it). More than
+/// one means two branches saved the same source under different titles.
 fn names_with_id(root: &Path, id: &str) -> Vec<String> {
     let mut names: Vec<String> = std::fs::read_dir(root.join(SOURCES_DIR))
         .into_iter()
         .flatten()
         .flatten()
         .filter_map(|e| e.file_name().to_str().map(String::from))
+        .map(|n| n.strip_suffix(".md").map(String::from).unwrap_or(n))
         .filter(|n| id_of(n) == id)
         .collect();
     names.sort();
+    names.dedup();
     names
 }
 
-/// Every farm-relative source directory (`sources/<name>`, with a
-/// `source.md`) that `id` names: the directory called exactly `id` when there
-/// is one (a legacy, unslugged name, or any name given in full), else, when
+/// Every farm-relative source stem (`sources/<name>`, with a
+/// `sources/<name>.md`) that `id` names: the source called exactly `id` when
+/// there is one (an unslugged name, or any name given in full), else, when
 /// `id` is a source id, every `sources/<id>-<slug>`.
 fn dirs_named(root: &Path, id: &str) -> Vec<String> {
-    let is_source = |name: &str| {
-        root.join(SOURCES_DIR)
-            .join(name)
-            .join("source.md")
-            .is_file()
-    };
+    let is_source = |name: &str| root.join(SOURCES_DIR).join(format!("{name}.md")).is_file();
+    let id = id.strip_suffix(".md").unwrap_or(id);
     if id.is_empty() || id.contains('/') || id.starts_with('.') {
         return Vec::new();
     }
@@ -200,10 +235,10 @@ fn dirs_named(root: &Path, id: &str) -> Vec<String> {
         .collect()
 }
 
-/// The farm-relative directory (`sources/<name>`) of the source `id` names,
-/// where `id` is a directory name as written (`<id>-<slug>`, or a legacy
-/// `<id>`) or the bare id `<date>-<sha8>` of a slugged one. A wrong slug
-/// does not resolve: a link the web would not follow is not one yaks follows.
+/// The farm-relative stem (`sources/<name>`) of the source `id` names, where
+/// `id` is a name as written (`<id>-<slug>`, a bare `<id>`, either with
+/// `.md`) or the bare id `<date>-<sha8>` of a slugged one. A wrong slug does
+/// not resolve: a link the web would not follow is not one yaks follows.
 pub fn dir_for(root: &Path, id: &str) -> Option<String> {
     dirs_named(root, id).into_iter().next()
 }
@@ -219,11 +254,20 @@ pub fn duplicate_ids(root: &Path) -> Vec<Vec<String>> {
         .flatten()
         .flatten()
     {
-        if let Some(n) = e.file_name().to_str().filter(|n| is_id(id_of(n))) {
-            by_id
-                .entry(id_of(n).to_string())
-                .or_default()
-                .push(format!("{SOURCES_DIR}/{n}"));
+        // A source's file and its sibling directory are one name.
+        let Some(n) = e
+            .file_name()
+            .to_str()
+            .map(|n| n.strip_suffix(".md").unwrap_or(n).to_string())
+        else {
+            continue;
+        };
+        if is_id(id_of(&n)) {
+            let v = by_id.entry(id_of(&n).to_string()).or_default();
+            let name = format!("{SOURCES_DIR}/{n}");
+            if !v.contains(&name) {
+                v.push(name);
+            }
         }
     }
     by_id
@@ -248,7 +292,7 @@ pub fn duplicate_ids(root: &Path) -> Vec<Vec<String>> {
 pub fn plan_slugs(root: &Path) -> Vec<(String, String)> {
     let dup: std::collections::BTreeSet<String> =
         duplicate_ids(root).into_iter().flatten().collect();
-    let mut out: Vec<(String, String)> = list(root)
+    let mut out: Vec<(String, String)> = legacy_list(root)
         .into_iter()
         .filter(|s| {
             let name = s.dir.strip_prefix("sources/").unwrap_or(&s.dir);
@@ -366,28 +410,6 @@ pub(crate) fn walk_dir(dir: &Path) -> Result<Walked> {
     Ok((out, skipped))
 }
 
-/// The most skipped entries `source.md` names; the rest are counted.
-const SKIPPED_LISTED: usize = 20;
-
-/// The paragraph in a directory source's `source.md` saying what its walk
-/// left out, or nothing when it left out nothing.
-fn skipped_note(skipped: &[String]) -> String {
-    if skipped.is_empty() {
-        return String::new();
-    }
-    let names = skipped
-        .iter()
-        .take(SKIPPED_LISTED)
-        .map(|s| format!("`{s}`"))
-        .collect::<Vec<_>>()
-        .join(", ");
-    let more = match skipped.len().saturating_sub(SKIPPED_LISTED) {
-        0 => String::new(),
-        n => format!(", and {n} more"),
-    };
-    format!("\nSkipped {}: {names}{more}.\n", skipped.len())
-}
-
 /// The sha256 of a directory's files: each name and contents in order (name,
 /// NUL, length, NUL, data), Hearth's rule, so a renamed file is a different
 /// snapshot.
@@ -432,6 +454,21 @@ fn is_text_name(name: &str) -> bool {
     )
 }
 
+/// Whether farm path `rel` is a source's file, `sources/<name>.md` (not a
+/// file in a source's sibling directory).
+pub fn is_source_path(rel: &str) -> bool {
+    rel.strip_prefix("sources/")
+        .is_some_and(|n| n.ends_with(".md") && !n.contains('/') && !n.starts_with('.'))
+}
+
+/// Whether the file at `p` reads as text by its name (what `yaks find`
+/// searches beside a source).
+pub(crate) fn is_text_path(p: &Path) -> bool {
+    p.file_name()
+        .and_then(|n| n.to_str())
+        .is_some_and(is_text_name)
+}
+
 fn media_type(name: &str) -> &'static str {
     let ext = name
         .rsplit_once('.')
@@ -455,7 +492,8 @@ fn media_type(name: &str) -> &'static str {
 }
 
 /// A file name that is safe in the farm, keeping its extension; never
-/// `source.md` or `extracted.md` (the notes beside it).
+/// `source.md` or `extracted.md` (the files of the layout before schema 10,
+/// which the migration reads).
 fn safe_name(name: &str) -> String {
     // The base: runs of anything but `[A-Za-z0-9._-]` become one `-`, then
     // leading and trailing `-`/`.` go. The extension: lowercase alphanumerics.
@@ -492,23 +530,19 @@ fn safe_name(name: &str) -> String {
     }
 }
 
-/// The farm-relative directory of an already-saved source with this sha256,
-/// on any day. Its `source.md` says: a refreshed source keeps its id, so the
-/// id's `-<sha8>` suffix is only the hash it was first saved with.
+/// The farm-relative stem of an already-saved source with this sha256, on
+/// any day. Its file's frontmatter says: a refreshed source keeps its id, so
+/// the id's `-<sha8>` suffix is only the hash it was first saved with.
 pub fn find(root: &Path, sha: &str) -> Option<String> {
     let dir = root.join(SOURCES_DIR);
-    let want = format!("\nsha256: {sha}\n");
-    let mut hits: Vec<String> = std::fs::read_dir(&dir)
-        .ok()?
-        .flatten()
-        .filter_map(|e| e.file_name().to_str().map(String::from))
-        .filter(|n| {
-            std::fs::read_to_string(dir.join(n).join("source.md")).is_ok_and(|t| t.contains(&want))
+    stems(root)
+        .into_iter()
+        .find(|n| {
+            std::fs::read_to_string(dir.join(format!("{n}.md"))).is_ok_and(|t| {
+                let p = crate::doks::Dok::parse(&format!("{SOURCES_DIR}/{n}.md"), &t);
+                p.str_field("sha256").as_deref() == Some(sha)
+            })
         })
-        .collect();
-    hits.sort();
-    hits.into_iter()
-        .next()
         .map(|n| format!("{SOURCES_DIR}/{n}"))
 }
 
@@ -638,9 +672,7 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             let p = crate::doks::normalize(p);
             let found = crate::locate::farm_file_in(root, &p).into_owned();
             if !root.join(&found).is_file() {
-                bail!(
-                    "--part-of {p}: no such file in the farm (give a source's sources/<id>/source.md)"
-                );
+                bail!("--part-of {p}: no such file in the farm (give a source's sources/<id>.md)");
             }
             Some(found)
         }
@@ -648,7 +680,7 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
     let is_dir = abs.is_dir();
     if req.text_only {
         if is_dir {
-            bail!("--text-only is for a single file; a directory keeps its layout under files/");
+            bail!("--text-only is for a single file; a directory keeps its tree");
         }
         if req.text.is_some() {
             bail!("--text-only and --text together: the file is its own text, or give --text");
@@ -656,9 +688,6 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
     }
     let supplied = match &req.text {
         None => None,
-        Some(_) if is_dir => {
-            bail!("--text is for a file; a directory's text is joined from its own files")
-        }
         Some(t) => {
             let len = std::fs::metadata(t)
                 .with_context(|| format!("--text {}: no such file", t.display()))?
@@ -694,7 +723,7 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             );
         }
         let data = std::fs::read(&abs)?;
-        let saved_as = if req.text_only {
+        if req.text_only {
             if !is_text_name(&name) {
                 bail!(
                     "--text-only: {name} is not a markdown or text file; save it without --text-only (and give --text if it needs converting)"
@@ -703,12 +732,34 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             if std::str::from_utf8(&data).is_err() {
                 bail!("--text-only: {name} is not UTF-8 text");
             }
-            "extracted.md".to_string()
-        } else {
-            safe_name(&name)
-        };
-        (sha_hex(&data), vec![(saved_as, data)], len)
+        }
+        (sha_hex(&data), vec![(safe_name(&name), data)], len)
     };
+    // What the source's body is, and which original (if any) is kept in the
+    // sibling directory beside it (yaks-e83f).
+    let text_of_file = |d: &[u8]| -> Option<String> {
+        std::str::from_utf8(d)
+            .ok()
+            .filter(|t| !t.contains('\0'))
+            .map(String::from)
+    };
+    let (body, keep): (Option<String>, bool) = if is_dir {
+        (supplied.clone(), true)
+    } else if let Some(t) = &supplied {
+        (Some(t.clone()), true)
+    } else {
+        let (fname, data) = &files[0];
+        match text_of_file(data).filter(|_| is_text_name(fname)) {
+            // Markdown and plain text are their own text: kept once, as the body.
+            Some(t) if is_prose_name(fname) || req.text_only => (Some(t), false),
+            // Another text type (JSON, CSV, code): the original is kept, and
+            // the body is a fenced copy so the text is searchable and readable
+            // in place.
+            Some(t) => (Some(fenced(fname, &t)), true),
+            None => (None, true),
+        }
+    };
+    let kept_file: Option<String> = (!is_dir && keep).then(|| files[0].0.clone());
     let mut report = Report {
         dir_files: is_dir.then_some(files.len()),
         skipped,
@@ -737,14 +788,13 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
                 .and_then(|v| v.as_str().map(String::from))
                 .as_deref()
                 == Some(sha.as_str());
-            // The same bytes saved under another name (`--text-only`, after a
-            // save without it) is still a change: the source is rewritten.
+            // The same bytes kept another way (`--text-only` after a save
+            // without it) is still a change: the source is rewritten.
             let same_file = is_dir
                 || s.fields
                     .get("file")
                     .and_then(|v| v.as_str().map(String::from))
-                    .as_deref()
-                    == Some(files[0].0.as_str());
+                    == kept_file;
             if same_content && same_file {
                 report.kept_title = differing_title(req, &s.title);
                 return Ok((Saved::Already(s.dir), report));
@@ -759,8 +809,8 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             return Ok((Saved::Already(dir), report));
         }
     }
-    // A refresh keeps the source's directory, slug and all, whatever its
-    // title is now: a rename would break every link to it.
+    // A refresh keeps the source's name, slug and all, whatever its title is
+    // now: a rename would break every link to it.
     let title = req
         .title
         .clone()
@@ -783,56 +833,21 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
         }
     };
     let dir = root.join(&rel);
-    if prior.is_some() {
-        // Everything but `source.md` (rewritten below) is the old content.
-        for e in std::fs::read_dir(&dir)?.flatten() {
-            if e.file_name() == "source.md" {
-                continue;
-            }
-            let p = e.path();
-            if p.is_dir() {
-                std::fs::remove_dir_all(&p)?;
-            } else {
-                std::fs::remove_file(&p)?;
-            }
-        }
+    // A refresh replaces the old content: the sibling directory goes, and the
+    // file is rewritten below.
+    if prior.is_some() && dir.is_dir() {
+        std::fs::remove_dir_all(&dir)?;
     }
-    std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
-    for (n, data) in &files {
-        let target = if is_dir {
-            dir.join("files").join(n)
-        } else {
-            dir.join(n)
-        };
-        if let Some(parent) = target.parent() {
-            std::fs::create_dir_all(parent)?;
+    std::fs::create_dir_all(root.join(SOURCES_DIR))?;
+    if keep {
+        for (n, data) in &files {
+            let target = dir.join(n);
+            if let Some(parent) = target.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::write(&target, data)
+                .with_context(|| format!("writing {}", target.display()))?;
         }
-        std::fs::write(&target, data).with_context(|| format!("writing {}", target.display()))?;
-    }
-    // Text: the saver's conversion when given; else markdown and plain text
-    // are kept as they are.
-    let text: Vec<(String, String)> = files
-        .iter()
-        .filter(|(n, _)| is_text_name(n))
-        .filter_map(|(n, d)| {
-            std::str::from_utf8(d)
-                .ok()
-                .map(|s| (n.clone(), s.to_string()))
-        })
-        .collect();
-    let has_text = supplied.is_some() || !text.is_empty();
-    if has_text {
-        let body = if let Some(t) = &supplied {
-            t.clone()
-        } else if is_dir {
-            text.iter()
-                .map(|(n, t)| format!("## {n}\n\n{t}\n"))
-                .collect::<Vec<_>>()
-                .join("\n")
-        } else {
-            text[0].1.clone()
-        };
-        std::fs::write(dir.join("extracted.md"), body)?;
     }
 
     let local = req
@@ -860,22 +875,9 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
     };
     f.set("description", &Value::Str(desc));
     if is_dir {
-        f.set(
-            "files",
-            &Value::List(
-                files
-                    .iter()
-                    .map(|(n, d)| {
-                        Value::Map(vec![
-                            ("file".into(), Value::Str(n.clone())),
-                            ("size".into(), Value::Plain(d.len().to_string())),
-                        ])
-                    })
-                    .collect(),
-            ),
-        );
-    } else {
-        f.set("file", &Value::Str(files[0].0.clone()));
+        f.set("file_count", &Value::Plain(files.len().to_string()));
+    } else if let Some(k) = &kept_file {
+        f.set("file", &Value::Str(k.clone()));
     }
     f.set(
         "media_type",
@@ -900,6 +902,18 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
     }
     if let Some(p) = &part_of {
         f.set("part_of", &Value::Str(p.clone()));
+    }
+    if !report.skipped.is_empty() {
+        f.set(
+            "skipped",
+            &Value::List(
+                report
+                    .skipped
+                    .iter()
+                    .map(|s| Value::Str(s.clone()))
+                    .collect(),
+            ),
+        );
     }
     let now = store::now_iso();
     let mut entry = vec![];
@@ -932,26 +946,58 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             ("at".into(), Value::Plain(now)),
         ]),
     );
-    let mut note = if !has_text {
-        "yaks extracts no text from this type; only the original is saved. Convert it and save it again with `--text <file>`.\n"
-            .to_string()
-    } else {
-        "Its text is in [extracted.md](extracted.md).\n".to_string()
+    let stem = rel.rsplit('/').next().unwrap_or(&rel);
+    let body = match body {
+        Some(t) => t,
+        None if is_dir => format!(
+            "The saved tree: [{name}/]({}/).\n",
+            crate::links::percent_encode_path(stem)
+        ),
+        None => format!(
+            "yaks extracts no text from this type; the original is [{k}]({}/{}). \
+             Convert it and save it again with `--text <file>`.\n",
+            crate::links::percent_encode_path(stem),
+            crate::links::percent_encode_path(kept_file.as_deref().unwrap_or_default()),
+            k = kept_file.as_deref().unwrap_or_default()
+        ),
     };
-    note.push_str(&skipped_note(&report.skipped));
     let page = crate::doks::Dok {
-        path: format!("{rel}/source.md"),
+        path: source_file(&rel),
         fields: f,
-        body: note,
+        body,
         has_frontmatter: true,
     };
-    store::write::atomic_write(&dir.join("source.md"), &page.render())?;
+    store::write::atomic_write(&root.join(source_file(&rel)), &page.render())?;
     let saved = if prior.is_some() {
         Saved::Refreshed(rel)
     } else {
         Saved::New(rel)
     };
     Ok((saved, report))
+}
+
+/// Markdown and plain text: a file that is its own readable text, so a
+/// source keeps it once, as its body. Other text types (JSON, code) are kept
+/// as the original with a fenced copy for a body.
+fn is_prose_name(name: &str) -> bool {
+    let ext = name
+        .rsplit_once('.')
+        .map(|(_, e)| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    matches!(ext.as_str(), "md" | "markdown" | "txt" | "text")
+}
+
+/// `text` as a fenced code block, labelled by `name`'s extension, with a fence
+/// longer than any backtick run inside it.
+fn fenced(name: &str, text: &str) -> String {
+    let lang = name
+        .rsplit_once('.')
+        .map(|(_, e)| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    let longest = text.split(|c| c != '`').map(str::len).max().unwrap_or(0);
+    let fence = "`".repeat(longest.max(2) + 1);
+    let nl = if text.ends_with('\n') { "" } else { "\n" };
+    format!("{fence}{lang}\n{text}{nl}{fence}\n")
 }
 
 /// One saved source, for listing.
@@ -973,45 +1019,63 @@ impl Source {
     }
 }
 
-/// Every source of the farm, sorted by directory name (so oldest first: the
-/// id leads). The title is the one in `source.md`, which a refresh may have
-/// changed since the directory was named.
-pub fn list(root: &Path) -> Vec<Source> {
-    let mut out = Vec::new();
-    let Ok(rd) = std::fs::read_dir(root.join(SOURCES_DIR)) else {
-        return out;
-    };
-    for e in rd.flatten() {
-        let Some(id) = e.file_name().to_str().map(String::from) else {
-            continue;
-        };
-        let dir = format!("{SOURCES_DIR}/{id}");
-        let Ok(text) = std::fs::read_to_string(root.join(&dir).join("source.md")) else {
-            continue;
-        };
-        let p = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
-        let resource = p
-            .fields
-            .get("sources")
-            .and_then(|v| {
-                v.as_list()
-                    .first()
-                    .and_then(|e| e.get("resource").and_then(|r| r.as_str().map(String::from)))
-            })
-            .unwrap_or_default();
-        out.push(Source {
-            dir,
-            title: p.title(),
-            media_type: p.str_field("media_type").unwrap_or_default(),
-            resource,
-            fields: p.fields,
-        });
+/// One source read from its file: `dir` is the stem, `text` the whole file.
+fn read_source(dir: String, path_for_parse: &str, text: &str) -> Source {
+    let p = crate::doks::Dok::parse(path_for_parse, text);
+    let resource = p
+        .fields
+        .get("sources")
+        .and_then(|v| {
+            v.as_list()
+                .first()
+                .and_then(|e| e.get("resource").and_then(|r| r.as_str().map(String::from)))
+        })
+        .unwrap_or_default();
+    Source {
+        dir,
+        title: p.title(),
+        media_type: p.str_field("media_type").unwrap_or_default(),
+        resource,
+        fields: p.fields,
     }
+}
+
+/// Every source of the farm, sorted by name (so oldest first: the id leads).
+/// The title is the one in its file, which a refresh may have changed since
+/// it was named.
+pub fn list(root: &Path) -> Vec<Source> {
+    stems(root)
+        .into_iter()
+        .filter_map(|n| {
+            let dir = format!("{SOURCES_DIR}/{n}");
+            let file = source_file(&dir);
+            let text = std::fs::read_to_string(root.join(&file)).ok()?;
+            Some(read_source(dir, &file, &text))
+        })
+        .collect()
+}
+
+/// The sources of a farm still in the layout before schema 10
+/// (`sources/<name>/source.md`, its text in `extracted.md`), for the
+/// migration and its slug plan: `dir` is the directory.
+pub(crate) fn legacy_list(root: &Path) -> Vec<Source> {
+    let mut out: Vec<Source> = std::fs::read_dir(root.join(SOURCES_DIR))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let n = e.file_name().to_str()?.to_string();
+            let dir = format!("{SOURCES_DIR}/{n}");
+            let file = format!("{dir}/source.md");
+            let text = std::fs::read_to_string(root.join(&file)).ok()?;
+            Some(read_source(dir, &file, &text))
+        })
+        .collect();
     out.sort_by(|a, b| a.dir.cmp(&b.dir));
     out
 }
 
-/// Rewrite a source's title in its `source.md` (the caller holds the farm
+/// Rewrite a source's title in its file (the caller holds the farm
 /// lock; yaks-06aa). The directory keeps its name, slug and all: the slug is
 /// only ever the title it was saved with, and a rename would break every link
 /// to it. Returns the source's directory and whether the file changed.
@@ -1024,10 +1088,10 @@ pub fn set_title(root: &Path, source: &str, title: &str) -> Result<(String, bool
         bail!("--title is one line");
     }
     let dir = resolve_dir(root, source)?;
-    let path = root.join(&dir).join("source.md");
+    let path = root.join(source_file(&dir));
     let text =
         std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-    let mut page = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
+    let mut page = crate::doks::Dok::parse(&source_file(&dir), &text);
     page.fields.set("title", &Value::Str(title.to_string()));
     let new = page.render();
     if new == text {
@@ -1083,8 +1147,7 @@ pub fn list_rows(root: &Path, all: &[Source]) -> Vec<String> {
         if let Some(by) = mark("superseded_by") {
             let by = by
                 .strip_prefix("sources/")
-                .and_then(|b| b.strip_suffix("/source.md"))
-                .map(|b| id_of(b).to_string())
+                .map(|b| id_of(b.strip_suffix(".md").unwrap_or(b)).to_string())
                 .unwrap_or(by);
             tags.push(format!("[superseded by {by}]"));
         }
@@ -1122,25 +1185,23 @@ pub fn list_rows(root: &Path, all: &[Source]) -> Vec<String> {
 pub enum Mark {
     /// Kept on purpose: `uncited: <why>`.
     Uncited(String),
-    /// Replaced by another source: `superseded_by: sources/<id>/source.md`.
+    /// Replaced by another source: `superseded_by: sources/<id>.md`.
     SupersededBy(String),
     /// Remove either mark.
     Clear,
 }
 
-/// The farm-relative directory (`sources/<name>`) that `given` names: an id,
-/// with or without its slug, `sources/<id>`, or `sources/<id>/source.md`,
-/// with or without a leading `/`. Refuses one that is not a saved source.
+/// The farm-relative stem (`sources/<name>`) that `given` names: an id, with
+/// or without its slug, `sources/<id>` or `sources/<id>.md`, with or without
+/// a leading `/`. Refuses one that is not a saved source.
 fn resolve_dir(root: &Path, given: &str) -> Result<String> {
     let rel = crate::doks::normalize(given);
     let id = rel.strip_prefix("sources/").unwrap_or(&rel);
-    let id = id
-        .strip_suffix("/source.md")
-        .unwrap_or(id)
-        .trim_end_matches('/');
+    let id = id.trim_end_matches('/');
+    let id = id.strip_suffix(".md").unwrap_or(id);
     if id.is_empty() || id.contains('/') || id.starts_with('.') {
         bail!(
-            "{given}: not a source (give its id or `sources/<id>/source.md`; `yaks source list` shows them)"
+            "{given}: not a source (give its id or `sources/<id>.md`; `yaks source list` shows them)"
         );
     }
     let mut found = dirs_named(root, id);
@@ -1154,7 +1215,7 @@ fn resolve_dir(root: &Path, given: &str) -> Result<String> {
     }
 }
 
-/// Set or clear the mark `yaks check` honours in a source's `source.md`
+/// Set or clear the mark `yaks check` honours in a source's file
 /// (the caller holds the farm lock). One mark at a time: setting one
 /// replaces the other. Returns the source's directory and whether the file
 /// changed.
@@ -1174,14 +1235,14 @@ pub fn mark(root: &Path, source: &str, how: &Mark) -> Result<(String, bool)> {
             if by_dir == dir {
                 bail!("{dir} cannot supersede itself");
             }
-            Some(("superseded_by", Value::Str(format!("{by_dir}/source.md"))))
+            Some(("superseded_by", Value::Str(source_file(&by_dir))))
         }
         Mark::Clear => None,
     };
-    let path = root.join(&dir).join("source.md");
+    let path = root.join(source_file(&dir));
     let text =
         std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
-    let mut page = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
+    let mut page = crate::doks::Dok::parse(&source_file(&dir), &text);
     for key in ["uncited", "superseded_by"] {
         if value.as_ref().is_none_or(|(k, _)| *k != key) {
             page.fields.remove(key);

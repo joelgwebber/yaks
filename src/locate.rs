@@ -3,8 +3,8 @@
 //! to a local file, displayable content and a web URL.
 //!
 //! [`crate::links`] stays the pure grammar. This is the one home of the
-//! aliases (`/sources/<id>` names a directory: it reads as that source's
-//! `source.md`, [`farm_file`]) and of the pinned-link fallback (a pinned file
+//! aliases (`/sources/<id>` names a source: it reads as that source's file,
+//! `sources/<id>.md`, [`farm_file`]) and of the pinned-link fallback (a pinned file
 //! that differs from the working tree gets a read-only copy,
 //! [`pinned_file`]), so `peek`, `doctor`, the TUI viewer and `yaks url` agree.
 //!
@@ -21,24 +21,26 @@ use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
-/// A farm path as it reads: `sources/<id>`, which names a directory, is that
-/// source's `source.md` (a link such as `/sources/2026-11-03-81364278`). Every
-/// other path is as written. Lexical, so it holds for a pinned link too; it
-/// cannot know a source directory's slug: [`farm_file_in`] does.
+/// A farm path as it reads: `sources/<name>`, which names a source, is that
+/// source's file, `sources/<name>.md` (a link such as
+/// `/sources/2026-11-03-81364278`, yaks-e83f). Every other path is as
+/// written. Lexical, so it holds for a pinned link too; it cannot know a
+/// source's slug: [`farm_file_in`] does.
 pub fn farm_file(path: &str) -> Cow<'_, str> {
     match path.strip_prefix("sources/") {
         Some(id) if !id.is_empty() && !id.contains(['/', '.']) => {
-            Cow::Owned(format!("sources/{id}/source.md"))
+            Cow::Owned(format!("sources/{id}.md"))
         }
         _ => Cow::Borrowed(path),
     }
 }
 
-/// [`farm_file`] against the farm at `root`, where a source's directory may be
-/// named `<id>-<slug>` (yaks-7729): a path naming `sources/<id>` or
-/// `sources/<id>/<file>` by the bare `<date>-<sha8>` id finds the one
-/// directory that carries it, so a link written without the slug (all of
-/// today's) keeps resolving. A path that already exists is left as written.
+/// [`farm_file`] against the farm at `root`, where a source may be named
+/// `<id>-<slug>` (yaks-7729): a path naming `sources/<id>`, `sources/<id>.md`
+/// or `sources/<id>/<file>` (a file of its sibling directory) by the bare
+/// `<date>-<sha8>` id finds the one source that carries it, so a link written
+/// without the slug keeps resolving. A path that already exists is left as
+/// written.
 pub fn farm_file_in<'a>(root: &Path, path: &'a str) -> Cow<'a, str> {
     let named = farm_file(path);
     if root.join(&*named).exists() {
@@ -48,8 +50,13 @@ pub fn farm_file_in<'a>(root: &Path, path: &'a str) -> Cow<'a, str> {
         return named;
     };
     let (id, tail) = rest.split_once('/').unwrap_or((rest, ""));
+    let id = if tail.is_empty() {
+        id.strip_suffix(".md").unwrap_or(id)
+    } else {
+        id
+    };
     match crate::sources::dir_for(root, id) {
-        Some(dir) if tail.is_empty() => Cow::Owned(format!("{dir}/source.md")),
+        Some(dir) if tail.is_empty() => Cow::Owned(crate::sources::source_file(&dir)),
         Some(dir) => Cow::Owned(format!("{dir}/{tail}")),
         None => named,
     }
@@ -571,11 +578,11 @@ mod tests {
     fn a_source_directory_reads_as_its_source_file() {
         assert_eq!(
             farm_file("sources/2026-11-03-81364278"),
-            "sources/2026-11-03-81364278/source.md"
+            "sources/2026-11-03-81364278.md"
         );
         for same in [
-            "sources/x/source.md",
-            "sources/x/extracted.md",
+            "sources/x/shot.png",
+            "sources/x.md",
             "sources/",
             "sources",
             "doks/sources/x",
@@ -597,7 +604,7 @@ mod tests {
         assert_eq!(
             sp.resolve(&l),
             Place::FarmFile {
-                rel: "sources/abc/source.md".into(),
+                rel: "sources/abc.md".into(),
                 rev: Some("1234567".into()),
                 anchor: Some(Anchor::Lines(1, 2)),
             }

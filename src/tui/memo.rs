@@ -130,7 +130,7 @@ pub(super) struct ViewerRowsKey {
 }
 
 /// A text viewer's wrapped rows, built once per [`ViewerRowsKey`] (yaks-760a):
-/// a big source's extracted text is 11k rows and 50 ms to render, and a
+/// a big source's text is 11k rows and 50 ms to render, and a
 /// keypress asked for them three times.
 pub(crate) struct ViewerRows {
     pub(super) key: ViewerRowsKey,

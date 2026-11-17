@@ -81,9 +81,8 @@ impl App {
         self.farm.as_ref().map(|f| f.root().to_path_buf())
     }
 
-    /// Read farm file `path` (at farm commit `rev`) into a viewer. A
-    /// `source.md` brings its `extracted.md` along. `Err` is a one-line
-    /// message for the status bar.
+    /// Read farm file `path` (at farm commit `rev`) into a viewer. `Err` is a
+    /// one-line message for the status bar.
     pub(crate) fn read_farm_doc(
         &self,
         path: &str,
@@ -92,8 +91,8 @@ impl App {
         let root = self
             .farm_root()
             .ok_or_else(|| format!("{path}: no farm to read"))?;
-        // `sources/<id>` names a directory (the bare `<date>-<sha8>` of a
-        // slugged one too): it reads as its `source.md`.
+        // `sources/<id>` names a source (the bare `<date>-<sha8>` of a slugged
+        // one too): it reads as its file, `sources/<name>.md`.
         let path = &*crate::locate::farm_file_in(&root, path);
         let file = root.join(path);
         if rev.is_none() {
@@ -108,11 +107,7 @@ impl App {
         if text.contains('\0') || text.starts_with("(binary file") {
             return Err(format!("{path}: not a text file"));
         }
-        let extracted = path
-            .strip_suffix("/source.md")
-            .filter(|d| d.starts_with("sources/"))
-            .and_then(|d| links::read_at(&root, &format!("{d}/extracted.md"), rev).ok());
-        let mut v = AttachView::farm_doc(path, file, text, rev.map(String::from), extracted);
+        let mut v = AttachView::farm_doc(path, file, text, rev.map(String::from));
         if rev.is_none() {
             v.files = self.files_of(path);
         }
@@ -673,14 +668,11 @@ mod tests {
     }
 
     #[test]
-    fn a_source_link_opens_with_extracted_text_and_attachments_join_the_history() {
+    fn a_source_link_opens_the_source_and_attachments_join_the_history() {
         let (proj, mut app) = on_hub();
-        tab_to(&mut app, "sources/2026-10-22-1a2b3c4d/source.md");
+        tab_to(&mut app, "sources/2026-10-22-1a2b3c4d.md");
         enter_key(&mut app);
-        assert!(matches!(
-            viewer(&app).doc,
-            DocKind::Source { extracted: Some(_) }
-        ));
+        assert!(matches!(viewer(&app).doc, DocKind::Source));
         press(&mut app, "o");
         tab_to(&mut app, "yaks-0001/run.log");
         enter_key(&mut app);

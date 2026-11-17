@@ -2653,12 +2653,10 @@ impl Farm {
                 let _ = std::fs::remove_dir_all(&tmp);
                 let saved = saved?;
                 let dir = saved.dir().to_string();
-                // The saved file's own name (made safe on the way in).
-                let file = std::fs::read_to_string(self.root.join(&dir).join("source.md"))
-                    .ok()
-                    .and_then(|t| crate::doks::Dok::parse("x", &t).str_field("file"))
-                    .unwrap_or_else(|| name.to_string());
-                format!("{dir}/{file}")
+                // A link to the attachment now names the source's file: its
+                // text and provenance, with any original kept beside it
+                // (yaks-e83f).
+                crate::sources::source_file(&dir)
             }
             Some(dok) => {
                 let dok = crate::doks::normalize(dok);
