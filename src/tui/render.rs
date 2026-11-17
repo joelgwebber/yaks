@@ -311,8 +311,7 @@ pub(crate) fn render_attachment(
         head,
     );
     v.width.set(body.width);
-    let known: std::collections::HashSet<&str> = app.all.iter().map(|t| t.id.as_str()).collect();
-    let rows = v.rows(body.width, &known, app.image_env().as_ref());
+    let rows = app.viewer_rows(v, body.width);
     // The peek pane under the page (yaks-7395): what the link under the
     // cursor names, read by `links::peek`.
     let body = if app.viewer_has_peek(&rows) && body.height > super::follow::PEEK_ROWS + 2 {

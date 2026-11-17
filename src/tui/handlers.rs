@@ -41,9 +41,19 @@ pub(crate) struct AttachView {
     /// Content width at the last render, so key handling clamps the scroll
     /// to the rows actually on screen.
     pub(crate) width: Cell<u16>,
+    /// The rows last built, reused until the width, the farm or the text
+    /// changes ([`App::viewer_rows`], yaks-760a).
+    pub(super) rows_cache: RefCell<Option<memo::ViewerRows>>,
 }
 
 impl AttachView {
+    /// Replace the file's text (a saved edit, or what changed on disk),
+    /// dropping the rows built from the old one.
+    pub(crate) fn set_text(&mut self, text: String) {
+        self.text = text;
+        *self.rows_cache.borrow_mut() = None;
+    }
+
     /// The viewer for `found`, or `None` when it should open externally: an
     /// image, a file over [`VIEW_MAX_BYTES`], or one that is not UTF-8 text
     /// (invalid UTF-8, or a NUL byte).
@@ -71,6 +81,7 @@ impl AttachView {
             rev: None,
             nav: LineNav::default(),
             width: Cell::new(0),
+            rows_cache: RefCell::new(None),
         })
     }
 
@@ -110,6 +121,7 @@ impl AttachView {
             rev,
             nav: LineNav::default(),
             width: Cell::new(0),
+            rows_cache: RefCell::new(None),
         }
     }
 
@@ -142,6 +154,7 @@ impl AttachView {
             rev,
             nav: LineNav::default(),
             width: Cell::new(0),
+            rows_cache: RefCell::new(None),
         }
     }
 
@@ -1438,10 +1451,9 @@ impl App {
 
     /// The open viewer's rows at the width last rendered, and its viewport
     /// (the pane less the header row).
-    pub(crate) fn attachment_rows(&self) -> Option<(Vec<detail::DLine>, Viewport)> {
+    pub(crate) fn attachment_rows(&self) -> Option<(Rc<Vec<detail::DLine>>, Viewport)> {
         let v = self.attach()?;
-        let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
-        let rows = v.rows(v.width.get(), &known, self.image_env().as_ref());
+        let rows = self.viewer_rows(v, v.width.get());
         // The header row, and the peek pane when it is shown (yaks-7395).
         let peek = if self.viewer_has_peek(&rows) {
             super::follow::PEEK_ROWS
@@ -1747,7 +1759,7 @@ impl App {
         match saved {
             Ok(Ok(written)) => {
                 self.notification = Some(format!("saved {}", v.target));
-                v.text = written;
+                v.set_text(written);
                 self.doc = back(v);
                 if dok {
                     // Its title, kind or tags may have changed (the Doks tab).
@@ -1766,7 +1778,7 @@ impl App {
                     "{} changed on disk: not saved (Ctrl-S again overwrites)",
                     v.target
                 ));
-                v.text = on_disk;
+                v.set_text(on_disk);
                 self.reopen_attachment_edit(v, from, &text);
             }
             Err(e) => {

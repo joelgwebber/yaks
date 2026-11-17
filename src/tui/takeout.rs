@@ -446,7 +446,7 @@ mod tests {
         press(app, keys);
     }
 
-    fn rows_of(app: &App) -> Vec<crate::tui::detail::DLine> {
+    fn rows_of(app: &App) -> std::rc::Rc<Vec<crate::tui::detail::DLine>> {
         app.attachment_rows().expect("the viewer is open").0
     }
 

@@ -682,6 +682,39 @@ mod tests {
         let _ = std::fs::remove_dir_all(proj);
     }
 
+    /// yaks-760a: a viewer's rows are built once per width (and text), not
+    /// per keypress, frame or `attachment_rows()` call; a resize and a new
+    /// text each rebuild them once.
+    #[test]
+    fn a_viewer_keypress_builds_its_rows_once_per_width_and_text() {
+        use crate::tui::memo::VIEWER_ROWS_CALLS;
+        let builds = |f: &mut dyn FnMut()| {
+            let before = VIEWER_ROWS_CALLS.with(|c| c.get());
+            f();
+            VIEWER_ROWS_CALLS.with(|c| c.get()) - before
+        };
+        let (proj, mut app) = on_doks();
+        press(&mut app, "G");
+        press(&mut app, "k");
+        enter_key(&mut app);
+        assert_eq!(builds(&mut || drop(draw(&app, 140, 30))), 1, "first frame");
+        let n = builds(&mut || {
+            for k in ["j", "j", "k", "j", "G", "g"] {
+                press(&mut app, k);
+                let _ = draw(&app, 140, 30);
+                let _ = app.attachment_rows();
+                let _ = app.attachment_rows();
+            }
+        });
+        assert_eq!(n, 0, "movement and redraws rebuilt the rows");
+        assert_eq!(builds(&mut || drop(draw(&app, 100, 30))), 1, "a resize");
+        assert_eq!(builds(&mut || drop(draw(&app, 100, 30))), 0);
+        let text = app.attach().unwrap().text.clone() + "\nMore.\n";
+        app.attach_mut().unwrap().set_text(text);
+        assert_eq!(builds(&mut || drop(draw(&app, 100, 30))), 1, "a new text");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
     /// yaks-85a6: a session note is a row of its own kind, opens like a dok
     /// (frontmatter rows above the rendered body), and a dok's link to one
     /// opens it.

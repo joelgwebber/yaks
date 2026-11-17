@@ -117,7 +117,69 @@ pub(super) struct DlinesCache {
     pub lines: Rc<Vec<detail::DLine>>,
 }
 
+/// What [`AttachView::rows`] reads besides the viewer's own text: the pane
+/// width, the farm's yak ids (which links are known), and the inline-image
+/// layout. The text itself is not in the key: the cache lives on the
+/// [`AttachView`] and is dropped when its text changes
+/// ([`AttachView::set_text`]).
+#[derive(PartialEq)]
+pub(super) struct ViewerRowsKey {
+    pub data_gen: u64,
+    pub width: u16,
+    pub images: Option<((u16, u16), u16)>,
+}
+
+/// A text viewer's wrapped rows, built once per [`ViewerRowsKey`] (yaks-760a):
+/// a big source's extracted text is 11k rows and 50 ms to render, and a
+/// keypress asked for them three times.
+pub(crate) struct ViewerRows {
+    pub(super) key: ViewerRowsKey,
+    pub(super) rows: Rc<Vec<detail::DLine>>,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How many times a text viewer's rows were actually built on this thread
+    /// (cache misses), so tests can pin the rebuild count of a keypress.
+    pub(crate) static VIEWER_ROWS_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 impl App {
+    /// The memoized rows of text viewer `v` at `width` ([`AttachView::rows`]
+    /// behind a cache, see [`ViewerRows`]). Under `cfg(test)` every hit is
+    /// checked against a fresh build.
+    pub(crate) fn viewer_rows(
+        &self,
+        v: &handlers::AttachView,
+        width: u16,
+    ) -> Rc<Vec<detail::DLine>> {
+        let width = width.max(1);
+        let key = ViewerRowsKey {
+            data_gen: self.data_gen,
+            width,
+            images: self.image_env().map(|e| (e.cell_px, e.max_rows)),
+        };
+        let build = || {
+            let known: HashSet<&str> = self.all.iter().map(|t| t.id.as_str()).collect();
+            v.rows(width, &known, self.image_env().as_ref())
+        };
+        if let Some(c) = &*v.rows_cache.borrow() {
+            if c.key == key {
+                #[cfg(test)]
+                assert_eq!(*c.rows, build(), "stale viewer rows cache");
+                return c.rows.clone();
+            }
+        }
+        #[cfg(test)]
+        VIEWER_ROWS_CALLS.with(|c| c.set(c.get() + 1));
+        let rows = Rc::new(build());
+        *v.rows_cache.borrow_mut() = Some(ViewerRows {
+            key,
+            rows: rows.clone(),
+        });
+        rows
+    }
+
     /// Record that `all`, the doks entries (or the sheds snapshot) were replaced, so the memoized
     /// rows and detail lines are rebuilt. See the module docs.
     pub(crate) fn touch(&mut self) {
