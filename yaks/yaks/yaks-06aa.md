@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T22:24:52Z'
+updated: '2026-11-17T22:28:08Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -100,3 +100,16 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: 2ea5597ca2f68ff88e77c1f92e8ed1c25f053ec1 · source: b3764c5680fbd78f062bd1b0bb58c3b97ce41a17 · branch: main*
 
 landed: 2ea5597c yaks-06aa: source add says when it kept a different title; add source set --title
+
+#### 2026-11-17T22:28:08Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed on `main` (3da7 `9f613dee`, 4dd3 `e15c8e8d`, 06aa `2ea5597c`, fb15 `887d7795`). After all four, the full gate passed: 1463 tests, fmt clean.
+
+Re-ran each with my own release build in a fresh scratch farm:
+
+- A tree with `.github/`, `.gitignore`, `.git/`, `target/` and `.DS_Store` keeps the first two and reports `skipped 3: .DS_Store, .git/, target/` on stdout and in `source.md`.
+- A local file records `resource: note.md` and no `host:`.
+- Same bytes under a new title: "kept the title ... ignored" with the `source set` hint. `source set --title` retitles and keeps the slug.
+- `source list` nests a `--part-of` under its parent, and `[uncited]` clears once a dok cites it.
