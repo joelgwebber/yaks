@@ -5,7 +5,8 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-07T15:59:10Z'
+updated: '2026-11-17T21:15:47Z'
+parent: yaks-4cfe
 tags:
 - cli
 - doks
