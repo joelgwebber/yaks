@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-07T15:58:16Z'
+updated: '2026-11-17T21:15:46Z'
+parent: yaks-4cfe
 tags:
 - doks
 - cli
