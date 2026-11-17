@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T21:42:27Z'
+updated: '2026-11-17T21:43:00Z'
 parent: yaks-0229
 tags:
 - cli
@@ -31,3 +31,12 @@ Tests: a nested directory attached to a yak and to a dok keeps its layout. Over-
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T21:43:00Z
+
+*sources-triage*
+
+Claim (yakherd `sources-triage`). Owner: worker `attach-2`. Scope: `yaks attach` of a directory, for yaks and for doks and session notes (`Farm::attach_many`, `attach_doc_many`, the `Attach` arm in `src/main.rs`), reusing the directory walk and limits from `src/sources.rs`. Expose that walk as a function; don't copy it.
+
+- Out of scope: the TUI (yaks-3329), the source layout, and the skip rules themselves, which `srccli-1` is changing in yaks-3da7. Call the walk; don't edit its skip list.
+- Evidence: the tests in the description, the gate, and a real run.
