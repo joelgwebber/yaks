@@ -536,15 +536,6 @@ fn mtime(p: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// Whether `abs` is under a scratch directory (the system temp dir, `/tmp`,
-/// `/var/tmp`): such a path says nothing about where the material came from.
-fn in_scratch(abs: &Path) -> bool {
-    [std::env::temp_dir(), "/tmp".into(), "/var/tmp".into()]
-        .iter()
-        .filter_map(|d| std::fs::canonicalize(d).ok())
-        .any(|d| abs.starts_with(d))
-}
-
 /// Save `req.path` as a source of the farm at `root` (the caller holds the
 /// farm lock). A path inside the farm is refused: cite it directly.
 pub fn add(root: &Path, req: &Request) -> Result<Saved> {
@@ -893,18 +884,15 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
             entry.push(("id".to_string(), Value::Plain("attachment".into())));
             entry.push(("resource".to_string(), Value::Str(local.clone())));
         }
+        // A local file's resource is its name: an absolute path (and the
+        // machine's host name) is nothing a reader of a shared farm can use
+        // (yaks-4dd3). `--url` or `--origin` say where it really came from.
         None => {
-            let resource = if in_scratch(&abs) {
-                name.clone()
-            } else {
-                local.clone()
-            };
             entry.push(("id".to_string(), Value::Plain("file".into())));
-            entry.push(("resource".to_string(), Value::Str(resource)));
+            entry.push(("resource".to_string(), Value::Str(name.clone())));
         }
     }
     if req.origin.is_none() {
-        entry.push(("host".to_string(), Value::Str(host())));
         entry.push(("last_modified".to_string(), Value::Plain(mtime(&abs))));
     }
     entry.push(("retrieved".to_string(), Value::Plain(now.clone())));
@@ -1383,7 +1371,7 @@ mod tests {
     }
 
     #[test]
-    fn a_scratch_path_is_not_provenance_but_another_path_is() {
+    fn a_local_file_records_its_name_never_a_path_or_host() {
         let scratch = tmp("scratch");
         let root = scratch.join("farm");
         std::fs::create_dir_all(&root).unwrap();
@@ -1405,6 +1393,7 @@ mod tests {
             "{note}"
         );
         assert!(note.contains("resource: notes.md\n"), "{note}");
+        assert!(!note.contains("host:"), "{note}");
         let _ = std::fs::remove_dir_all(&scratch);
 
         let base = home_tmp("kept");
@@ -1423,9 +1412,12 @@ mod tests {
             panic!()
         };
         let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
-        let want = std::fs::canonicalize(&f).unwrap();
+        // Not under the system temp dir, and still only the name.
+        assert!(note.contains("resource: notes.md\n"), "{note}");
+        assert!(!note.contains("host:"), "{note}");
         assert!(
-            note.contains(&format!("resource: {}\n", want.display())),
+            !note.contains(&base.display().to_string())
+                && !note.contains(&std::fs::canonicalize(&base).unwrap().display().to_string()),
             "{note}"
         );
         assert!(

@@ -1673,7 +1673,8 @@ enum SessionAction {
 
 #[derive(Subcommand)]
 enum SourceAction {
-    /// Save a file or a small directory (at most 200 files, 5 MiB) as a
+    /// Save a file (at most 20 MiB) or a small directory (at most 200 files,
+    /// 5 MiB in all) as a
     /// source. A directory keeps its dot files and leaves out `.git`,
     /// `.DS_Store`, `node_modules`, `target` and similar build directories,
     /// and says what it left out. Saving the same content again reports the existing source,
@@ -1687,7 +1688,8 @@ enum SourceAction {
         #[arg(long)]
         title: Option<String>,
         /// The web page this file is a saved copy of: where it came from, in
-        /// place of the path of your download.
+        /// place of the file's name (a local file is recorded by its name
+        /// alone, never its path or this machine's host name).
         #[arg(long)]
         url: Option<String>,
         /// Your conversion of the file to text (a dok's HTML to markdown, a
