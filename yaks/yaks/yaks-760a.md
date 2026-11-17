@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:44:51Z'
+updated: '2026-11-17T22:04:54Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -51,3 +51,9 @@ Claim (yakherd `sources-triage`). Owner: worker `srcperf-1`. Scope: the text vie
 *srcperf-1*
 
 Start: worker srcperf-1. `date -u`: Tue Nov 17 21:44:47 UTC 2026. `yaks path yaks-760a`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-760a.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/y0m0g7nb9wf6/yaks
+
+#### 2026-11-17T22:04:54Z
+
+*srcperf-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
