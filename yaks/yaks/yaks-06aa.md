@@ -1,11 +1,11 @@
 ---
 id: yaks-06aa
 title: source add --refresh ignores a new --title when the content is unchanged (no way to retitle or fix a source)
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T22:14:20Z'
+updated: '2026-11-17T22:14:21Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -88,3 +88,9 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 *srccli-1*
 
 Summary: `source add` says when it kept a different title; `source set <id> --title` rewrites it (directory unchanged), with docs, help and skill. Gate PASS (`yaks verify`), fmt clean, scratch-farm run above.
+
+#### 2026-11-17T22:14:21Z
+
+*srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
