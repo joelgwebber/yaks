@@ -5,8 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-08T22:04:33Z'
-updated: '2026-11-17T21:15:51Z'
+updated: '2026-11-17T21:42:05Z'
 parent: yaks-4cfe
+depends_on:
+- yaks-e83f
 tags:
 - doks
 ---
