@@ -1,7 +1,7 @@
 ---
 id: yaks-e83f
 title: 'Design: one file holds a source''s text and its provenance (retire the duplicate extracted.md)'
-status: hairy
+status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
@@ -97,3 +97,9 @@ Decision (Joel's answers to the layout ask, recorded by `sources-triage`):
 - **Schema 10:** one migration step does both, and old link forms are rewritten by it. No permanent `source.md` redirect in the resolver once the farm is migrated. Joel: "scratch my comment about a semi-permanent redirect".
 
 Taking it on myself (design-heavy, many files). yaks-535c, yaks-289a and yaks-5f14 fold into it or follow it.
+
+#### 2026-11-17T22:54:05Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
