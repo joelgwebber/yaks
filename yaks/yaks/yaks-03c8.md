@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-17T23:31:29Z'
+updated: '2026-11-17T23:31:54Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -29,3 +29,9 @@ Do **not** change non-test code. If a test shows a real bug in the new code, `ya
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T23:31:54Z
+
+*s10tests-1*
+
+Start Tue Nov 17 23:31:54 UTC 2026; checkout /Users/joel/src/yaks/.delta/worktrees/1sq2j5ffch5b/yaks. Running the failing tests first.
