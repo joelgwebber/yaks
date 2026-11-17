@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T21:43:00Z'
+updated: '2026-11-17T21:44:32Z'
 parent: yaks-0229
 tags:
 - cli
@@ -40,3 +40,9 @@ Claim (yakherd `sources-triage`). Owner: worker `attach-2`. Scope: `yaks attach`
 
 - Out of scope: the TUI (yaks-3329), the source layout, and the skip rules themselves, which `srccli-1` is changing in yaks-3da7. Call the walk; don't edit its skip list.
 - Evidence: the tests in the description, the gate, and a real run.
+
+#### 2026-11-17T21:44:32Z
+
+*attach-2*
+
+Start: 2026-11-17T21:44:28Z (`date -u`). Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-a57c.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/h4mbnq0px7df/yaks`.
