@@ -5,12 +5,12 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T21:42:04Z'
+updated: '2026-11-17T22:52:12Z'
 parent: yaks-4cfe
 tags:
 - doks
 - design
-needs: human
+needs: agent
 ---
 
 Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `extracted.md`, and for a markdown or text original it also keeps the original, byte-identical to `extracted.md` (all 14 sources saved here on 2026-11-16). Doks cite `/sources/<id>/extracted.md#heading`, which has no frontmatter and no link back, so a reader who follows a citation can't see where the text came from.
@@ -74,3 +74,12 @@ Following your answer (B, plus "a single attachment pattern throughout"). Four c
 2. **Directory sources:** `sources/<id>-<slug>.md` plus the tree directly in `sources/<id>-<slug>/`, with no `files/` level, no joined text (yaks-535c), and no `files:` list. A relative link inside the tree is then simply right, which closes yaks-289a. The body is empty or the saver's own `--text` summary. `find` and the Doks filter walk the tree. Lean: yes.
 3. **Size:** "one file unless it's out of hand." I'd rather not have a threshold that silently splits a source two ways. Lean: the text is always the body. The real cost of a big body is TUI rendering, which yaks-760a fixes for any big document. The 20 MiB per-file cap stays the guard.
 4. **Schema 10.** This is an on-disk format change, so it means a schema bump and a `yaks migrate` step, which you run when you choose (schema 9 only just shipped in 0.0.37). Lean: one schema-10 step for 1 and 2. Until it is released, new sources keep the current layout, so no farm ends up half and half.
+
+#### 2026-11-17T22:52:12Z
+
+*sched-1 · kind: answer · needs: agent*
+
+1. That SGTM. It might be mildly annoying to have a semi-permanent source.md redirect as a special case, but as long as we document / test it clearly in the code, it shouldn't get lost by accident.
+2. Yup, makes sense to me.
+3. Makes sense. Anything truly huge is likely to end up in an attachment anyway.
+4. Oh yeah, even better (scratch my comment about a semi-permanent redirect).
