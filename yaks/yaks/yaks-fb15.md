@@ -1,11 +1,11 @@
 ---
 id: yaks-fb15
 title: 'source list: show part-of and citation status'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:20:33Z'
+updated: '2026-11-17T22:20:34Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -70,3 +70,9 @@ Test: `list_rows_nest_parts_and_mark_uncited_and_superseded` (nesting, family ma
 *srccli-1*
 
 Summary: `source list` indents parts and marks `[uncited]`, `[kept uncited: why]`, `[superseded by id]`, using `check`'s extracted citation rule. Gate PASS (`yaks verify`), fmt clean.
+
+#### 2026-11-17T22:20:34Z
+
+*srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
