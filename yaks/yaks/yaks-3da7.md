@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T22:01:16Z'
+updated: '2026-11-17T22:01:23Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -74,3 +74,9 @@ Tests: `a_directory_keeps_dot_files_and_says_what_it_skipped` and `walk_dir_retu
 *srccli-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-17T22:01:23Z
+
+*srccli-1*
+
+Summary: directory sources keep dot files and dot directories, skip only `WALK_SKIP`, and report what was skipped on stdout and in `source.md`. The walk is `sources::walk_dir`, `pub(crate)`, for `attach <dir>`. Gate PASS (`yaks verify`), `cargo fmt --check` clean, scratch-farm run pasted above.
