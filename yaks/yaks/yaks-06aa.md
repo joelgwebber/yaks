@@ -1,11 +1,11 @@
 ---
 id: yaks-06aa
 title: source add --refresh ignores a new --title when the content is unchanged (no way to retitle or fix a source)
-status: hairy
+status: shaving
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T21:15:48Z'
+updated: '2026-11-17T21:42:26Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -34,3 +34,9 @@ Without `--refresh` the same bytes also return the existing source and ignore th
 - Or `source add` says it ignored a different `--title` instead of reporting "Already saved".
 
 Lean: the second at minimum (silence is the bug), plus `source set --title`, since a title is the one field a human would correct and `source mark` already shows the pattern for editing a `source.md` field through a command.
+
+#### 2026-11-17T21:42:26Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
