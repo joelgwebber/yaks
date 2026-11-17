@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T21:56:24Z'
+updated: '2026-11-17T22:01:16Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -68,3 +68,9 @@ Evidence, after: my release build on a tree with `.github/workflows/ci.yml`, `a.
     source.md body ends: Skipped 3: `.DS_Store`, `.git/`, `target/`.
 
 Tests: `a_directory_keeps_dot_files_and_says_what_it_skipped` and `walk_dir_returns_files_and_skipped_and_checks_the_limits` in `src/sources.rs` (they use the new API, so they cannot compile before the change; the old binary run above is the before). Docs: `docs/cli.md`, `.agents/skills/yaks-research`, `source add --help`.
+
+#### 2026-11-17T22:01:16Z
+
+*srccli-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
