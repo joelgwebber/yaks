@@ -5,12 +5,11 @@ status: hairy
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T22:52:12Z'
+updated: '2026-11-17T22:54:05Z'
 parent: yaks-4cfe
 tags:
 - doks
 - design
-needs: agent
 ---
 
 Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `extracted.md`, and for a markdown or text original it also keeps the original, byte-identical to `extracted.md` (all 14 sources saved here on 2026-11-16). Doks cite `/sources/<id>/extracted.md#heading`, which has no frontmatter and no link back, so a reader who follows a citation can't see where the text came from.
@@ -83,3 +82,18 @@ Following your answer (B, plus "a single attachment pattern throughout"). Four c
 2. Yup, makes sense to me.
 3. Makes sense. Anything truly huge is likely to end up in an attachment anyway.
 4. Oh yeah, even better (scratch my comment about a semi-permanent redirect).
+
+#### 2026-11-17T22:54:05Z
+
+*sources-triage · kind: pickup*
+
+picked up
+
+Decision (Joel's answers to the layout ask, recorded by `sources-triage`):
+
+- **Layout:** a source is `sources/<id>-<slug>.md`. Its frontmatter is the provenance and its body is the text. The sibling `sources/<id>-<slug>/` holds the original only when one is worth keeping.
+- **Directory sources:** the tree goes directly in the sibling directory. No `files/` level, no joined text, no `files:` list.
+- **Size:** the text is always the body. A truly huge thing goes in as an attachment.
+- **Schema 10:** one migration step does both, and old link forms are rewritten by it. No permanent `source.md` redirect in the resolver once the farm is migrated. Joel: "scratch my comment about a semi-permanent redirect".
+
+Taking it on myself (design-heavy, many files). yaks-535c, yaks-289a and yaks-5f14 fold into it or follow it.
