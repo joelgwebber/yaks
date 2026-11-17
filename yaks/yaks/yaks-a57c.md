@@ -1,11 +1,11 @@
 ---
 id: yaks-a57c
 title: 'yaks attach <dir>: attach a directory with its layout'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-17T21:41:18Z'
-updated: '2026-11-17T21:41:18Z'
+updated: '2026-11-17T21:42:27Z'
 parent: yaks-0229
 tags:
 - cli
@@ -25,3 +25,9 @@ Part of yaks-0229 (scope agreed by Joel). `yaks attach <id> <dir>` fails with `e
 ## Evidence
 
 Tests: a nested directory attached to a yak and to a dok keeps its layout. Over-limit refuses and writes nothing. Skip names are skipped. A real run of the built binary, shown in the note.
+
+#### 2026-11-17T21:42:27Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
