@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-07T15:59:10Z'
-updated: '2026-11-17T22:24:45Z'
+updated: '2026-11-17T22:28:06Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -92,3 +92,16 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: 9f613dee9b447f4832a6d03fef5c76f2fa0f5845 · source: c8990d9517a3016965214868faf27575c82ab25a · branch: main*
 
 landed: 9f613dee yaks-3da7: directory sources keep dot files, skip only .git/.DS_Store/build dirs, and report what was skipped; expose walk_dir
+
+#### 2026-11-17T22:28:06Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed on `main` (3da7 `9f613dee`, 4dd3 `e15c8e8d`, 06aa `2ea5597c`, fb15 `887d7795`). After all four, the full gate passed: 1463 tests, fmt clean.
+
+Re-ran each with my own release build in a fresh scratch farm:
+
+- A tree with `.github/`, `.gitignore`, `.git/`, `target/` and `.DS_Store` keeps the first two and reports `skipped 3: .DS_Store, .git/, target/` on stdout and in `source.md`.
+- A local file records `resource: note.md` and no `host:`.
+- Same bytes under a new title: "kept the title ... ignored" with the `source set` hint. `source set --title` retitles and keeps the slug.
+- `source list` nests a `--part-of` under its parent, and `[uncited]` clears once a dok cites it.
