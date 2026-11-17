@@ -1,11 +1,11 @@
 ---
 id: yaks-4dd3
 title: 'source add: do not record the absolute path and host of the machine'
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T22:08:29Z'
+updated: '2026-11-17T22:08:30Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -54,3 +54,9 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 *srccli-1*
 
 Summary: `source.md` records a local file by name only and no `host`; the 20 MiB cap is in help, docs and the research skill. Gate PASS (`yaks verify`), fmt clean.
+
+#### 2026-11-17T22:08:30Z
+
+*srccli-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
