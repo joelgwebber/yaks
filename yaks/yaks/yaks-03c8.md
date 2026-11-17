@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-17T23:31:54Z'
+updated: '2026-11-17T23:36:08Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -35,3 +35,9 @@ moved: hairy -> shaving
 *s10tests-1*
 
 Start Tue Nov 17 23:31:54 UTC 2026; checkout /Users/joel/src/yaks/.delta/worktrees/1sq2j5ffch5b/yaks. Running the failing tests first.
+
+#### 2026-11-17T23:36:08Z
+
+*s10tests-1*
+
+src/sources.rs tests done (38 pass). Replaced: directory-joins-its-text -> tree-in-sibling/file_count/link body; text-refused-for-directory -> text-on-a-directory-is-its-body (+ json fenced test); collapse test uses a JSON original; added duplicated-id test. Next: links, migrate, store, tui.
