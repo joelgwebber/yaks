@@ -74,9 +74,10 @@ impl Farm {
         let p = self.dir.join("proj");
         for (rel, text) in [
             ("README.md", "# proj"),
+            (".github/ci.yml", "on: push"),
             ("src/main.rs", "fn main() {}"),
             ("src/util/mod.rs", "pub fn f() {}"),
-            (".hidden", "x"),
+            (".DS_Store", "x"),
             (".git/config", "x"),
             ("node_modules/dep/index.js", "x"),
             ("target/debug/out", "x"),
@@ -123,15 +124,20 @@ fn a_directory_keeps_its_layout_on_a_yak_and_is_linked_once() {
     let proj = f.project();
     let before = f.commits();
     let out = f.run(&["attach", &id, proj.to_str().unwrap()]);
-    assert!(out.contains("proj/ (3 files)"), "{out}");
+    assert!(out.contains("proj/ (4 files)"), "{out}");
     assert_eq!(f.commits(), before + 1, "one write, one commit");
 
     let yak_file = PathBuf::from(f.run(&["path", &id]).trim());
     let dir = yak_file.with_extension("").join("proj");
     assert_eq!(
         tree(&dir),
-        ["README.md", "src/main.rs", "src/util/mod.rs"],
-        "layout kept, skip names skipped"
+        [
+            ".github/ci.yml",
+            "README.md",
+            "src/main.rs",
+            "src/util/mod.rs"
+        ],
+        "layout kept, dot dirs kept, skip names skipped"
     );
     assert_eq!(
         std::fs::read_to_string(dir.join("src/util/mod.rs")).unwrap(),
@@ -162,7 +168,7 @@ fn a_directory_on_a_dok_goes_in_the_doks_directory() {
     let root = f.root();
     assert_eq!(
         tree(&root.join("doks/topics/x/proj")),
-        ["src/main.rs", "src/util/mod.rs"]
+        [".github/ci.yml", "src/main.rs", "src/util/mod.rs"]
     );
     let text = std::fs::read_to_string(root.join("doks/topics/x.md")).unwrap();
     assert!(text.contains("[proj/](x/proj/)"), "{text}");

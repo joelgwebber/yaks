@@ -1674,7 +1674,9 @@ enum SessionAction {
 #[derive(Subcommand)]
 enum SourceAction {
     /// Save a file or a small directory (at most 200 files, 5 MiB) as a
-    /// source. Saving the same content again reports the existing source,
+    /// source. A directory keeps its dot files and leaves out `.git`,
+    /// `.DS_Store`, `node_modules`, `target` and similar build directories,
+    /// and says what it left out. Saving the same content again reports the existing source,
     /// whatever `--title` says (it never renames or adds a second one);
     /// `--refresh` updates one in place and keeps its directory name, slug
     /// included; `--text-only` keeps a markdown file as its text alone.
@@ -2553,8 +2555,8 @@ fn main() -> Result<()> {
                         eprintln!("error: two attachments would be stored as {stored}");
                         std::process::exit(1);
                     }
-                    let inner = match sources::dir_files(&abs) {
-                        Ok(f) => f,
+                    let inner = match sources::walk_dir(&abs) {
+                        Ok((f, _skipped)) => f,
                         Err(e) => {
                             eprintln!("error: {e}");
                             std::process::exit(1);
@@ -2562,7 +2564,7 @@ fn main() -> Result<()> {
                     };
                     if inner.is_empty() {
                         eprintln!(
-                            "error: {} holds no files to attach (dot files, .git, node_modules, target and the like are skipped)",
+                            "error: {} holds no files to attach (.git, .DS_Store, node_modules, target and the like are skipped)",
                             path.display()
                         );
                         std::process::exit(1);
@@ -3233,7 +3235,7 @@ fn main() -> Result<()> {
                 as_actor,
             } => {
                 let actor = actor::resolve(as_actor.as_deref()).unwrap_or_default();
-                let saved = farm.source_add(&sources::Request {
+                let (saved, report) = farm.source_add_reporting(&sources::Request {
                     path,
                     title,
                     url,
@@ -3245,9 +3247,13 @@ fn main() -> Result<()> {
                     text_only,
                 })?;
                 match &saved {
-                    sources::Saved::New(d) => println!("Saved {d}/source.md"),
-                    sources::Saved::Already(d) => println!("Already saved: {d}/source.md"),
-                    sources::Saved::Refreshed(d) => println!("Refreshed {d}/source.md"),
+                    sources::Saved::New(d) => println!("Saved {d}/source.md{}", report.summary()),
+                    sources::Saved::Already(d) => {
+                        println!("Already saved: {d}/source.md{}", report.summary())
+                    }
+                    sources::Saved::Refreshed(d) => {
+                        println!("Refreshed {d}/source.md{}", report.summary())
+                    }
                 }
             }
             SourceAction::Mark {

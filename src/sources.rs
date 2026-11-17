@@ -295,20 +295,35 @@ pub fn rewrite_ref(r: &str, plan: &[(String, String)]) -> Option<String> {
     Some(format!("{lead}{new}{tail}"))
 }
 
-/// A directory's files (relative path, bytes), sorted, skipping `.git`,
-/// dot files and common build and dependency directories.
-pub(crate) fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
-    const SKIP: &[&str] = &[
-        ".git",
-        "node_modules",
-        "target",
-        "__pycache__",
-        ".venv",
-        "venv",
-        "dist",
-        "build",
-    ];
+/// Names a directory walk leaves out wherever they occur: version-control
+/// metadata, OS litter, and build and dependency directories. Everything
+/// else is kept, dot files and dot directories included (`.github/`,
+/// `.agents/` and `.gitignore` are often the point of a repo snapshot).
+const WALK_SKIP: &[&str] = &[
+    ".git",
+    ".DS_Store",
+    "node_modules",
+    "target",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+];
+
+/// What a directory walk found: the files kept (relative path with `/`
+/// separators, bytes), sorted by path, and the entries left out (a skipped
+/// directory as `<rel>/`, a file as `<rel>`), sorted.
+pub(crate) type Walked = (Vec<(String, Vec<u8>)>, Vec<String>);
+
+/// Walk the directory `dir` for a directory source (yaks-3da7), skipping
+/// only [`WALK_SKIP`] and reporting each entry skipped, so what was left out
+/// is never silent. The limits apply to what is kept: more than
+/// [`MAX_DIR_FILES`] files, or more than [`MAX_DIR_BYTES`] bytes in all, is an
+/// error. `yaks source add <dir>` and `yaks attach <dir>` share this walk.
+pub(crate) fn walk_dir(dir: &Path) -> Result<Walked> {
     let mut out = Vec::new();
+    let mut skipped = Vec::new();
     let mut stack = vec![(String::new(), dir.to_path_buf())];
     while let Some((rel, d)) = stack.pop() {
         for e in std::fs::read_dir(&d)
@@ -316,15 +331,16 @@ pub(crate) fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
             .flatten()
         {
             let name = e.file_name().to_string_lossy().into_owned();
-            if name.starts_with('.') || SKIP.contains(&name.as_str()) {
-                continue;
-            }
             let r = if rel.is_empty() {
                 name.clone()
             } else {
                 format!("{rel}/{name}")
             };
             let p = e.path();
+            if WALK_SKIP.contains(&name.as_str()) {
+                skipped.push(if p.is_dir() { format!("{r}/") } else { r });
+                continue;
+            }
             if p.is_dir() {
                 stack.push((r, p));
             } else if p.is_file() {
@@ -339,6 +355,7 @@ pub(crate) fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
         }
     }
     out.sort();
+    skipped.sort();
     let total: u64 = out.iter().map(|(_, d)| d.len() as u64).sum();
     if total > MAX_DIR_BYTES {
         bail!(
@@ -346,7 +363,29 @@ pub(crate) fn dir_files(dir: &Path) -> Result<Vec<(String, Vec<u8>)>> {
             dir.display()
         );
     }
-    Ok(out)
+    Ok((out, skipped))
+}
+
+/// The most skipped entries `source.md` names; the rest are counted.
+const SKIPPED_LISTED: usize = 20;
+
+/// The paragraph in a directory source's `source.md` saying what its walk
+/// left out, or nothing when it left out nothing.
+fn skipped_note(skipped: &[String]) -> String {
+    if skipped.is_empty() {
+        return String::new();
+    }
+    let names = skipped
+        .iter()
+        .take(SKIPPED_LISTED)
+        .map(|s| format!("`{s}`"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let more = match skipped.len().saturating_sub(SKIPPED_LISTED) {
+        0 => String::new(),
+        n => format!(", and {n} more"),
+    };
+    format!("\nSkipped {}: {names}{more}.\n", skipped.len())
 }
 
 /// The sha256 of a directory's files: each name and contents in order (name,
@@ -509,7 +548,48 @@ fn in_scratch(abs: &Path) -> bool {
 /// Save `req.path` as a source of the farm at `root` (the caller holds the
 /// farm lock). A path inside the farm is refused: cite it directly.
 pub fn add(root: &Path, req: &Request) -> Result<Saved> {
-    add_on(
+    Ok(add_reporting(root, req)?.0)
+}
+
+/// What a save has to tell the person who ran it, beyond which source it
+/// is: for a directory, what its walk left out (yaks-3da7).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Report {
+    /// The number of files a directory source kept; `None` for a file.
+    pub dir_files: Option<usize>,
+    /// The entries a directory walk left out (see [`walk_dir`]).
+    pub skipped: Vec<String>,
+}
+
+impl Report {
+    /// ` (N files; skipped M: a, b, ...)` for a directory that left
+    /// something out, else nothing.
+    pub fn summary(&self) -> String {
+        let (Some(n), false) = (self.dir_files, self.skipped.is_empty()) else {
+            return String::new();
+        };
+        const SHOWN: usize = 5;
+        let names = self
+            .skipped
+            .iter()
+            .take(SHOWN)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
+        let more = match self.skipped.len().saturating_sub(SHOWN) {
+            0 => String::new(),
+            m => format!(", and {m} more"),
+        };
+        format!(
+            " ({n} files; skipped {}: {names}{more})",
+            self.skipped.len()
+        )
+    }
+}
+
+/// [`add`], and the [`Report`] on it.
+pub fn add_reporting(root: &Path, req: &Request) -> Result<(Saved, Report)> {
+    add_report_on(
         root,
         req,
         &chrono::Utc::now().format("%Y-%m-%d").to_string(),
@@ -518,6 +598,10 @@ pub fn add(root: &Path, req: &Request) -> Result<Saved> {
 
 /// [`add`] as of the date `today` (`YYYY-MM-DD`), the day in a new source's id.
 fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
+    Ok(add_report_on(root, req, today)?.0)
+}
+
+fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Report)> {
     if req.refresh && req.url.is_none() {
         bail!("--refresh needs --url: the URL is what names the source to update");
     }
@@ -580,8 +664,10 @@ fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| "file".into());
+    let mut skipped = Vec::new();
     let (sha, files, size): (String, Vec<(String, Vec<u8>)>, u64) = if is_dir {
-        let files = dir_files(&abs)?;
+        let (files, left_out) = walk_dir(&abs)?;
+        skipped = left_out;
         let size = files.iter().map(|(_, d)| d.len() as u64).sum();
         (dir_sha(&files), files, size)
     } else {
@@ -607,6 +693,10 @@ fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
             safe_name(&name)
         };
         (sha_hex(&data), vec![(saved_as, data)], len)
+    };
+    let report = Report {
+        dir_files: is_dir.then_some(files.len()),
+        skipped,
     };
     // `--refresh`: the source that already names this URL, if any.
     let mut prior: Option<Source> = None;
@@ -640,14 +730,14 @@ fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
                     .as_deref()
                     == Some(files[0].0.as_str());
             if same_content && same_file {
-                return Ok(Saved::Already(s.dir));
+                return Ok((Saved::Already(s.dir), report));
             }
             prior = Some(s);
         }
     }
     if prior.is_none() {
         if let Some(dir) = find(root, &sha) {
-            return Ok(Saved::Already(dir));
+            return Ok((Saved::Already(dir), report));
         }
     }
     // A refresh keeps the source's directory, slug and all, whatever its
@@ -826,12 +916,13 @@ fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
             ("at".into(), Value::Plain(now)),
         ]),
     );
-    let note = if !has_text {
+    let mut note = if !has_text {
         "yaks extracts no text from this type; only the original is saved. Convert it and save it again with `--text <file>`.\n"
             .to_string()
     } else {
         "Its text is in [extracted.md](extracted.md).\n".to_string()
     };
+    note.push_str(&skipped_note(&report.skipped));
     let page = crate::doks::Dok {
         path: format!("{rel}/source.md"),
         fields: f,
@@ -839,11 +930,12 @@ fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
         has_frontmatter: true,
     };
     store::write::atomic_write(&dir.join("source.md"), &page.render())?;
-    Ok(if prior.is_some() {
+    let saved = if prior.is_some() {
         Saved::Refreshed(rel)
     } else {
         Saved::New(rel)
-    })
+    };
+    Ok((saved, report))
 }
 
 /// One saved source, for listing.
@@ -1091,6 +1183,85 @@ mod tests {
             note.contains("  - id: web\n") && note.contains("resource: https://example.test/p"),
             "{note}"
         );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-3da7: dot files and dot directories (`.github/`, `.agents/`,
+    /// `.gitignore`) are kept; only `.git`, `.DS_Store` and the build and
+    /// dependency directories are left out, and the save says so.
+    #[test]
+    fn a_directory_keeps_dot_files_and_says_what_it_skipped() {
+        let base = tmp("dotdir");
+        let (root, proj) = (base.join("farm"), base.join("proj"));
+        std::fs::create_dir_all(proj.join(".github/workflows")).unwrap();
+        std::fs::create_dir_all(proj.join("kit/.agents/skills")).unwrap();
+        std::fs::create_dir_all(proj.join(".git")).unwrap();
+        std::fs::create_dir_all(proj.join("node_modules/x")).unwrap();
+        std::fs::write(proj.join(".github/workflows/ci.yml"), "on: push").unwrap();
+        std::fs::write(proj.join("kit/.agents/skills/s.md"), "skill").unwrap();
+        std::fs::write(proj.join(".gitignore"), "target\n").unwrap();
+        std::fs::write(proj.join(".DS_Store"), "junk").unwrap();
+        std::fs::write(proj.join(".git/config"), "[core]").unwrap();
+        std::fs::write(proj.join("node_modules/x/i.js"), "skip").unwrap();
+        std::fs::write(proj.join("README.md"), "readme").unwrap();
+        std::fs::create_dir_all(&root).unwrap();
+        let (saved, report) = add_reporting(
+            &root,
+            &Request {
+                path: proj,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let Saved::New(dir) = saved else { panic!() };
+        let d = root.join(&dir).join("files");
+        for kept in [
+            ".github/workflows/ci.yml",
+            "kit/.agents/skills/s.md",
+            ".gitignore",
+            "README.md",
+        ] {
+            assert!(d.join(kept).is_file(), "{kept} is kept");
+        }
+        for left in [".git", ".DS_Store", "node_modules"] {
+            assert!(!d.join(left).exists(), "{left} is left out");
+        }
+        assert_eq!(report.dir_files, Some(4));
+        assert_eq!(report.skipped, [".DS_Store", ".git/", "node_modules/"]);
+        assert_eq!(
+            report.summary(),
+            " (4 files; skipped 3: .DS_Store, .git/, node_modules/)"
+        );
+        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        assert!(
+            note.contains("Skipped 3: `.DS_Store`, `.git/`, `node_modules/`."),
+            "{note}"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[test]
+    fn walk_dir_returns_files_and_skipped_and_checks_the_limits() {
+        let base = tmp("walk");
+        let proj = base.join("proj");
+        std::fs::create_dir_all(proj.join("a/.hid")).unwrap();
+        std::fs::write(proj.join("a/.hid/x"), "1").unwrap();
+        std::fs::write(proj.join("b"), "22").unwrap();
+        std::fs::create_dir_all(proj.join("target")).unwrap();
+        let (files, skipped) = walk_dir(&proj).unwrap();
+        assert_eq!(
+            files,
+            [
+                ("a/.hid/x".to_string(), b"1".to_vec()),
+                ("b".to_string(), b"22".to_vec())
+            ]
+        );
+        assert_eq!(skipped, ["target/"]);
+        for i in 0..=MAX_DIR_FILES {
+            std::fs::write(proj.join(format!("f{i}")), "x").unwrap();
+        }
+        let e = walk_dir(&proj).unwrap_err().to_string();
+        assert!(e.contains("more than 200 files"), "{e}");
         let _ = std::fs::remove_dir_all(&base);
     }
 

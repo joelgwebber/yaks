@@ -61,13 +61,17 @@ pub fn locate_attachment(root: &Path, id: &str, name: &str) -> Option<FoundAttac
 
 /// Where attachment `name` of yak `id` lives, file or directory, whether or
 /// not it exists: `<herd>/yaks/<id>/<name>`. `name` may go down into an
-/// attached directory (`proj/src/main.rs`, yaks-a57c), never up or into a
-/// hidden entry. `None` for a name that is not a safe path.
+/// attached directory (`proj/src/main.rs`, yaks-a57c), never up. The
+/// attachment itself is never hidden (`.lock` and the like live beside the
+/// yak); inside an attached directory, dot files are kept as a directory
+/// source keeps them (`proj/.github/ci.yml`). `None` for a name that is not
+/// a safe path.
 pub fn attachment_path(root: &Path, id: &str, name: &str) -> Option<PathBuf> {
     let name = name.strip_suffix('/').unwrap_or(name);
     if name.is_empty()
         || name.contains('\\')
-        || name.split('/').any(|s| s.is_empty() || s.starts_with('.'))
+        || name.starts_with('.')
+        || name.split('/').any(|s| matches!(s, "" | "." | ".."))
     {
         return None;
     }
@@ -2575,6 +2579,16 @@ impl Farm {
         crate::sources::add(&self.root, req)
     }
 
+    /// [`Farm::source_add`], with the [`crate::sources::Report`] on what a
+    /// directory save left out.
+    pub fn source_add_reporting(
+        &self,
+        req: &crate::sources::Request,
+    ) -> Result<(crate::sources::Saved, crate::sources::Report)> {
+        let _lock = store::lock(&self.root)?;
+        crate::sources::add_reporting(&self.root, req)
+    }
+
     /// Set or clear the mark `yaks check` honours in a source's `source.md`
     /// (see [`crate::sources::mark`]), under the farm lock. Returns the
     /// source's directory and whether the file changed.
@@ -4824,7 +4838,8 @@ mod tests {
             Some(dir.join("proj"))
         );
         assert_eq!(attachment_path(&root, "y-1", "proj/../b.txt"), None);
-        assert_eq!(attachment_path(&root, "y-1", "proj/.git/x"), None);
+        assert_eq!(attachment_path(&root, "y-1", ".lock"), None);
+        assert!(attachment_path(&root, "y-1", "proj/.github/ci.yml").is_some());
         let names: Vec<String> = list_attachments(&root, "y-1")
             .into_iter()
             .map(|a| a.name)
