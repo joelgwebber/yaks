@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-08T22:23:02Z'
-updated: '2026-11-17T22:24:51Z'
+updated: '2026-11-17T22:28:07Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -66,3 +66,16 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: e15c8e8d82ee2ad8faf32e1a6a632ba9b0d08499 · source: 6ea78fd099cd5d749dc450e4669743157c7bdef3 · branch: main*
 
 landed: e15c8e8d yaks-4dd3: source add records a local file by name only, no absolute path or host; say the 20 MiB cap
+
+#### 2026-11-17T22:28:07Z
+
+*sources-triage*
+
+Coordinator review (`sources-triage`): landed on `main` (3da7 `9f613dee`, 4dd3 `e15c8e8d`, 06aa `2ea5597c`, fb15 `887d7795`). After all four, the full gate passed: 1463 tests, fmt clean.
+
+Re-ran each with my own release build in a fresh scratch farm:
+
+- A tree with `.github/`, `.gitignore`, `.git/`, `target/` and `.DS_Store` keeps the first two and reports `skipped 3: .DS_Store, .git/, target/` on stdout and in `source.md`.
+- A local file records `resource: note.md` and no `host:`.
+- Same bytes under a new title: "kept the title ... ignored" with the `source set` hint. `source set --title` retitles and keeps the slug.
+- `source list` nests a `--part-of` under its parent, and `[uncited]` clears once a dok cites it.
