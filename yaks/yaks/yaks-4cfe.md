@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-17T21:43:02Z'
+updated: '2026-11-17T21:45:02Z'
 tags:
 - doks
 ---
@@ -45,3 +45,16 @@ Batch 1 (yakherd `sources-triage`, 2026-11-17). Base `52d80dd3` (v0.0.37). Model
 | `browse-1` | yaks-3329 | new TUI directory view |
 
 Expected overlaps, landed in this order: `srccli-1` before `attach-2` (the shared walk), and `srcperf-1` before `browse-1` (handlers and render).
+
+#### 2026-11-17T21:45:02Z
+
+*sources-triage*
+
+Batch 1 spawned (Delta subthreads, `claude-sonnet-5-5`, base `52d80dd3`):
+
+- `srccli-1`: thread `ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzJXZIBxBCA0aLJyrhJPreUvVwLftHG`
+- `attach-2`: thread `ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzKtpIBxBCA0aLJyrhJPreUvVwLftHG`
+- `srcperf-1`: thread `ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzOWZIBxBCA0aLJyrhJPreUvVwLftHG`
+- `browse-1`: thread `ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzP4JIBxBCA0aLJyrhJPreUvVwLftHG`
+
+Held for the human: yaks-e83f's second ask (layout, schema 10). yaks-535c, yaks-289a and yaks-5f14 wait on it. yaks-93ee (archive browsing) is filed top-level for later.
