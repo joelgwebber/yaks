@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:06:13Z'
+updated: '2026-11-17T22:06:47Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -92,3 +92,9 @@ Gate: `cargo fmt --check` clean; `cargo test -p yaks`: no failures (1239 passed,
 *srcperf-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzOWZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-17T22:06:47Z
+
+*sources-triage · kind: landed · commit: b5525ac1b89ada13378be9d6f103d065e5da7211 · source: d2bc31b55ceefd9ef855da6236aa93831ea2ab11 · branch: main*
+
+landed: b5525ac1 yaks-760a: memoize the text viewer's rows per width and text
