@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-07T15:58:15Z'
-updated: '2026-11-17T21:42:26Z'
+updated: '2026-11-17T21:42:58Z'
 parent: yaks-4cfe
 tags:
 - cli
@@ -40,3 +40,14 @@ Lean: the second at minimum (silence is the bug), plus `source set --title`, sin
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T21:42:58Z
+
+*sources-triage*
+
+Claim (yakherd `sources-triage`). Owner: `srccli-1`. Scope, the issue's lean:
+
+- `source add` that finds the same bytes with a different `--title` says it kept the old title, instead of a bare "Already saved".
+- `yaks source set <id> --title <t>` rewrites the title through a command, one per-change commit, following `source mark`'s pattern.
+
+Docs, help and skills in the same change. Evidence: tests for both, and the gate.
