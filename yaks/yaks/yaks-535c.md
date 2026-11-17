@@ -1,11 +1,11 @@
 ---
 id: yaks-535c
 title: Directory sources store their text twice (files/ plus a joined extracted.md)
-status: hairy
+status: shaving
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T21:37:51Z'
+updated: '2026-11-17T22:54:06Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
@@ -61,3 +61,9 @@ Existing sources would be migrated in the same pass as yaks-e83f.
 picked up
 
 Decision recorded: drop the joined extracted.md and the files: list (Joel's answer). Folded into the same format change as yaks-e83f; done with it.
+
+#### 2026-11-17T22:54:06Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
