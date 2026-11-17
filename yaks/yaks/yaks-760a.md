@@ -5,11 +5,12 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:16:48Z'
+updated: '2026-11-17T21:16:50Z'
 parent: yaks-4cfe
 tags:
 - tui
 - perf
+- doks
 ---
 
 Part of yaks-4cfe. In the Doks tab, opening `sources/2026-11-05-04642f1f-yass-...` (YASS) and holding `j` costs about **150 ms per key** (headless, 120x40, 30 × `j`: 5.7 s against 1.1 s for 0).
