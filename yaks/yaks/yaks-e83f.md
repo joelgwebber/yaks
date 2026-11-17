@@ -10,6 +10,7 @@ parent: yaks-4cfe
 tags:
 - doks
 - design
+needs: human
 ---
 
 Part of yaks-4cfe. A source keeps provenance in `source.md` and its text in `extracted.md`, and for a markdown or text original it also keeps the original, byte-identical to `extracted.md` (all 14 sources saved here on 2026-11-16). Doks cite `/sources/<id>/extracted.md#heading`, which has no frontmatter and no link back, so a reader who follows a citation can't see where the text came from.
@@ -60,3 +61,16 @@ I'm very good with (B) -- one file is better most of the time, unless it's compl
 picked up
 
 Decision: option B (Joel). One file holds a source's provenance (frontmatter) and its text (body); extracted.md is retired. Follow-up layout question asked below before any format work.
+
+#### 2026-11-17T21:42:04Z
+
+*sources-triage · kind: ask · needs: human*
+
+asked: needs human
+
+Following your answer (B, plus "a single attachment pattern throughout"). Four calls before I write the format change. Each one has a lean.
+
+1. **Layout: a source becomes a file plus a sibling directory, as yaks and doks already are.** `sources/<id>-<slug>.md` holds the provenance in its frontmatter and the text in its body. `sources/<id>-<slug>/` holds the original only when there is one worth keeping (a PDF, the fxtwitter JSON, screenshots). A markdown or text source is the one file. Links: `/sources/<id>` resolves to the `.md` as it does today. The migration rewrites `/sources/<id>/source.md` and `.../extracted.md` (28 doks and yaks here link `extracted.md`, and 84 links name `source.md`), and the resolver keeps accepting the old forms for text written elsewhere. Lean: yes. Doks and yaks already work this way, so it is one pattern everywhere, and the attach and browse work (yaks-a57c, yaks-3329) covers sources for free.
+2. **Directory sources:** `sources/<id>-<slug>.md` plus the tree directly in `sources/<id>-<slug>/`, with no `files/` level, no joined text (yaks-535c), and no `files:` list. A relative link inside the tree is then simply right, which closes yaks-289a. The body is empty or the saver's own `--text` summary. `find` and the Doks filter walk the tree. Lean: yes.
+3. **Size:** "one file unless it's out of hand." I'd rather not have a threshold that silently splits a source two ways. Lean: the text is always the body. The real cost of a big body is TUI rendering, which yaks-760a fixes for any big document. The 20 MiB per-file cap stays the guard.
+4. **Schema 10.** This is an on-disk format change, so it means a schema bump and a `yaks migrate` step, which you run when you choose (schema 9 only just shipped in 0.0.37). Lean: one schema-10 step for 1 and 2. Until it is released, new sources keep the current layout, so no farm ends up half and half.
