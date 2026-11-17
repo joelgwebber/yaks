@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:42:27Z'
+updated: '2026-11-17T21:43:00Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -36,3 +36,12 @@ Evidence: the same headless timing before and after, and a test that pins how ma
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-17T21:43:00Z
+
+*sources-triage*
+
+Claim (yakherd `sources-triage`). Owner: worker `srcperf-1`. Scope: the text viewer's per-keypress cost on a big document (`AttachView` in `src/tui/handlers.rs`, its rendering in `src/tui/render.rs`, `read_farm_doc` in `src/tui/follow.rs`). Render and wrap once per (text, width) and reuse it across cursor moves, as yaks-bc30 did for the detail pane.
+
+- Out of scope: the source layout, and the new directory view (yaks-3329, worker `browse-1`, which adds a `DocView` variant). Don't restructure `DocView`.
+- Evidence: the headless timing in the description, before and after, on a scratch farm holding the YASS text (copy `sources/2026-11-05-04642f1f-*/extracted.md` from the real farm read-only), plus a test that pins the renders per keypress.
