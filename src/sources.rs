@@ -550,9 +550,24 @@ pub struct Report {
     pub dir_files: Option<usize>,
     /// The entries a directory walk left out (see [`walk_dir`]).
     pub skipped: Vec<String>,
+    /// `(existing, given)`: the save found these bytes already saved under
+    /// `existing` title and ignored a different `--title` (yaks-06aa).
+    pub kept_title: Option<(String, String)>,
 }
 
 impl Report {
+    /// ` (kept the title "X"; --title "Y" ignored; ...)` when a save found the
+    /// same content under another title, else nothing.
+    pub fn title_note(&self, dir: &str) -> String {
+        let Some((kept, given)) = &self.kept_title else {
+            return String::new();
+        };
+        let id = id_of(dir.strip_prefix("sources/").unwrap_or(dir));
+        format!(
+            " (kept the title {kept:?}; --title {given:?} ignored: `yaks source set {id} --title ...` changes it)"
+        )
+    }
+
     /// ` (N files; skipped M: a, b, ...)` for a directory that left
     /// something out, else nothing.
     pub fn summary(&self) -> String {
@@ -576,6 +591,15 @@ impl Report {
             self.skipped.len()
         )
     }
+}
+
+/// `(existing, given)` when the request names a title other than the saved
+/// one: a save of the same bytes keeps the old title, and says so.
+fn differing_title(req: &Request, existing: &str) -> Option<(String, String)> {
+    req.title
+        .as_ref()
+        .filter(|t| t.as_str() != existing)
+        .map(|t| (existing.to_string(), t.clone()))
 }
 
 /// [`add`], and the [`Report`] on it.
@@ -685,9 +709,10 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
         };
         (sha_hex(&data), vec![(saved_as, data)], len)
     };
-    let report = Report {
+    let mut report = Report {
         dir_files: is_dir.then_some(files.len()),
         skipped,
+        kept_title: None,
     };
     // `--refresh`: the source that already names this URL, if any.
     let mut prior: Option<Source> = None;
@@ -721,6 +746,7 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
                     .as_deref()
                     == Some(files[0].0.as_str());
             if same_content && same_file {
+                report.kept_title = differing_title(req, &s.title);
                 return Ok((Saved::Already(s.dir), report));
             }
             prior = Some(s);
@@ -728,6 +754,8 @@ fn add_report_on(root: &Path, req: &Request, today: &str) -> Result<(Saved, Repo
     }
     if prior.is_none() {
         if let Some(dir) = find(root, &sha) {
+            let kept = list(root).into_iter().find(|s| s.dir == dir);
+            report.kept_title = kept.and_then(|s| differing_title(req, &s.title));
             return Ok((Saved::Already(dir), report));
         }
     }
@@ -981,6 +1009,32 @@ pub fn list(root: &Path) -> Vec<Source> {
     }
     out.sort_by(|a, b| a.dir.cmp(&b.dir));
     out
+}
+
+/// Rewrite a source's title in its `source.md` (the caller holds the farm
+/// lock; yaks-06aa). The directory keeps its name, slug and all: the slug is
+/// only ever the title it was saved with, and a rename would break every link
+/// to it. Returns the source's directory and whether the file changed.
+pub fn set_title(root: &Path, source: &str, title: &str) -> Result<(String, bool)> {
+    let title = title.trim();
+    if title.is_empty() {
+        bail!("--title needs a title: say what this source is");
+    }
+    if title.contains('\n') {
+        bail!("--title is one line");
+    }
+    let dir = resolve_dir(root, source)?;
+    let path = root.join(&dir).join("source.md");
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
+    let mut page = crate::doks::Dok::parse(&format!("{dir}/source.md"), &text);
+    page.fields.set("title", &Value::Str(title.to_string()));
+    let new = page.render();
+    if new == text {
+        return Ok((dir, false));
+    }
+    store::write::atomic_write(&path, &new)?;
+    Ok((dir, true))
 }
 
 /// How `yaks check` should treat a source nothing cites.
@@ -1828,6 +1882,86 @@ mod tests {
             before,
             "source.md is untouched, so is its title"
         );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-06aa: a save of the same bytes under another `--title` says it
+    /// kept the old one, and `set_title` is how to change it.
+    #[test]
+    fn same_bytes_with_another_title_says_so_and_set_title_changes_it() {
+        let (base, root, f) = farm_with("retitle", "same\n");
+        let (saved, report) = add_reporting(&root, &titled(&f, "Wrong title")).unwrap();
+        let Saved::New(dir) = saved else { panic!() };
+        assert_eq!(report.kept_title, None);
+        assert_eq!(report.title_note(&dir), "");
+
+        let (saved, report) = add_reporting(&root, &titled(&f, "Right title")).unwrap();
+        assert_eq!(saved, Saved::Already(dir.clone()));
+        assert_eq!(
+            report.kept_title,
+            Some(("Wrong title".to_string(), "Right title".to_string()))
+        );
+        let id = id_of(dir.strip_prefix("sources/").unwrap());
+        assert_eq!(
+            report.title_note(&dir),
+            format!(
+                " (kept the title \"Wrong title\"; --title \"Right title\" ignored: `yaks source set {id} --title ...` changes it)"
+            )
+        );
+        // The same title, or none, says nothing.
+        for req in [
+            titled(&f, "Wrong title"),
+            Request {
+                path: f.clone(),
+                ..Default::default()
+            },
+        ] {
+            assert_eq!(add_reporting(&root, &req).unwrap().1.kept_title, None);
+        }
+        // `--refresh` on unchanged content says it too (and writes nothing).
+        let (base2, root2, f2) = farm_with("retitle2", "page\n");
+        let url = Some("https://example.test/a".to_string());
+        let first = Request {
+            url: url.clone(),
+            ..titled(&f2, "Wrong title")
+        };
+        let Saved::New(d2) = add(&root2, &first).unwrap() else {
+            panic!()
+        };
+        let again = Request {
+            refresh: true,
+            ..titled(&f2, "Right title")
+        };
+        let again = Request { url, ..again };
+        let (saved, report) = add_reporting(&root2, &again).unwrap();
+        assert_eq!(saved, Saved::Already(d2));
+        assert_eq!(report.kept_title.map(|t| t.0), Some("Wrong title".into()));
+        let _ = std::fs::remove_dir_all(&base2);
+
+        let before = source_dirs(&root);
+        assert_eq!(
+            set_title(&root, id, "Right title").unwrap(),
+            (dir.clone(), true)
+        );
+        assert_eq!(
+            set_title(&root, id, "Right title").unwrap(),
+            (dir.clone(), false)
+        );
+        let listed = list(&root);
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].title, "Right title");
+        assert_eq!(source_dirs(&root), before, "the directory keeps its name");
+        let text = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        assert!(text.contains("title: Right title\n"), "{text}");
+        assert!(
+            text.contains("sha256:"),
+            "the rest of source.md is untouched: {text}"
+        );
+        // Refused, with nothing written.
+        assert!(set_title(&root, id, "  ").is_err());
+        assert!(set_title(&root, id, "a\nb").is_err());
+        assert!(set_title(&root, "2020-01-01-deadbeef", "T").is_err());
+        assert_eq!(list(&root)[0].title, "Right title");
         let _ = std::fs::remove_dir_all(&base);
     }
 

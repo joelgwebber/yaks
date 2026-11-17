@@ -1678,7 +1678,8 @@ enum SourceAction {
     /// source. A directory keeps its dot files and leaves out `.git`,
     /// `.DS_Store`, `node_modules`, `target` and similar build directories,
     /// and says what it left out. Saving the same content again reports the existing source,
-    /// whatever `--title` says (it never renames or adds a second one);
+    /// whatever `--title` says (it never renames or adds a second one, and
+    /// says when it kept a different title: `source set` changes it);
     /// `--refresh` updates one in place and keeps its directory name, slug
     /// included; `--text-only` keeps a markdown file as its text alone.
     Add {
@@ -1719,6 +1720,18 @@ enum SourceAction {
     List {
         #[arg(long)]
         json: bool,
+    },
+    /// Correct a source's title, as one commit. The directory keeps its name
+    /// (the slug is from the title it was saved with: a rename would break
+    /// every link), and `source add` of the same bytes keeps the old title,
+    /// so this is the way to change it.
+    Set {
+        /// The source: its id (`<date>-<sha8>`, slug or not), `sources/<id>`,
+        /// or `sources/<id>/source.md`.
+        source: String,
+        /// The new title: what the thing is, not the file.
+        #[arg(long)]
+        title: String,
     },
     /// Mark a source on purpose for `yaks check`: kept without a citation
     /// (`--uncited WHY`), replaced by a newer source (`--superseded-by`), or
@@ -3251,11 +3264,23 @@ fn main() -> Result<()> {
                 match &saved {
                     sources::Saved::New(d) => println!("Saved {d}/source.md{}", report.summary()),
                     sources::Saved::Already(d) => {
-                        println!("Already saved: {d}/source.md{}", report.summary())
+                        println!(
+                            "Already saved: {d}/source.md{}{}",
+                            report.summary(),
+                            report.title_note(d)
+                        )
                     }
                     sources::Saved::Refreshed(d) => {
                         println!("Refreshed {d}/source.md{}", report.summary())
                     }
+                }
+            }
+            SourceAction::Set { source, title } => {
+                let (dir, changed) = farm.source_set_title(&source, &title)?;
+                if changed {
+                    println!("Retitled {dir}/source.md: {title}");
+                } else {
+                    println!("No changes to {dir}/source.md");
                 }
             }
             SourceAction::Mark {
