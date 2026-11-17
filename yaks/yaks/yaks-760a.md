@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:04:54Z'
+updated: '2026-11-17T22:06:11Z'
 parent: yaks-4cfe
 tags:
 - tui
@@ -57,3 +57,15 @@ Start: worker srcperf-1. `date -u`: Tue Nov 17 21:44:47 UTC 2026. `yaks path yak
 *srcperf-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-17T22:06:11Z
+
+*srcperf-1*
+
+Decision: cache the viewer's wrapped rows on the `AttachView` itself (`rows_cache`, filled by `App::viewer_rows` in `src/tui/memo.rs`), keyed on (`data_gen`, width, inline-image layout); the text is not in the key because every text change goes through the new `AttachView::set_text`, which drops the cache. Rejected: a cache on `App` keyed on a hash or copy of the text (hashing 842 KiB per call is a cost of its own, and one cache would serve only one viewer); a key holding the text length (a same-length edit would go stale).
+
+Decision: `attachment_rows()` now returns `Rc<Vec<DLine>>` (derefs like the Vec, as `detail_dlines` did in yaks-bc30), so its 20-odd callers did not change. The one test helper that named the type changed.
+
+Decision: under `cfg(test)` every cache hit is asserted equal to a fresh build ("stale viewer rows cache"), as yaks-bc30 did, so all 1200+ existing viewer tests double as an invalidation check.
+
+Decision: no cap or paging of the extracted text. After the cache, the remaining cost per key is the ~6 ms `render_nav_rows` pass over all rows. Capping would change what a user sees (docs/tui.md); the description says "then cap or page", a layout call that belongs to yaks-4cfe. Left as a follow-up: paint only the visible window in `render_nav_rows` (find_matches scans every row too).
