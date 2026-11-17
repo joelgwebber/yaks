@@ -5,8 +5,10 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T21:16:48Z'
+updated: '2026-11-17T21:17:10Z'
 parent: yaks-4cfe
+depends_on:
+- yaks-535c
 tags:
 - doks
 - links
