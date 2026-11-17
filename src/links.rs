@@ -1021,7 +1021,11 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             let Some(found) = crate::farm::locate_attachment(bases.farm, id, name) else {
                 bail!("{id}/{name}: no such attachment");
             };
-            let text = read_at(&crate::store::artifact_dir(bases.farm, id), name, None)?;
+            let text = read_at(
+                found.path.parent().unwrap_or(bases.farm),
+                &found.name.rsplit('/').next().unwrap_or(name),
+                None,
+            )?;
             span(name, &text, anchor, context)?
         }
         Link::Code { path, rev, anchor } => {
