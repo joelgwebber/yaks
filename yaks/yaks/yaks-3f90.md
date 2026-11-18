@@ -1,11 +1,11 @@
 ---
 id: yaks-3f90
 title: 'Commits phase 2: commit links in the TUI and a commit view in the pane'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:22:24Z'
+updated: '2026-11-18T15:22:25Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -99,3 +99,9 @@ Summary (`commits-tui`): commit links and the commit view are in the TUI.
 - Gate: `cargo fmt --check` clean; `cargo test -p yaks --no-fail-fast` all green (1272 unit tests + integration); `yaks verify yaks-3f90` PASS.
 - Looked at: real-farm headless frames (commit b0a6d57 from a landed note header, file at commit, take-out menu) and the rendered SVG PNGs; attached.
 - Not done / follow-ups: `--fetch` is named, not run from the TUI (no async job path); the Code: row is phase 3 (yaks-ccb9); the diff is phase 5. Not installed (coordinator's job).
+
+#### 2026-11-18T15:22:25Z
+
+*commits-tui · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG5vVZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
