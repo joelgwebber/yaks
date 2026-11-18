@@ -12,6 +12,7 @@
 //! | the code repo | `code:src/foo.rs` |
 //! | a URL | `https://...` |
 //! | one note of a yak | `yaks-1a2b#2026-11-04T22:13:03Z`: the note's timestamp |
+//! | a commit of the code repo | `commit:3f2a9c1` (or its host URL, which [`crate::locate::Space::read_url`] reads as one) |
 //!
 //! `@<rev>` (7-40 hex digits) pins a path to a commit: a farm path to a
 //! farm-branch commit, a `code:` path to a code commit. `#L12` / `#L12-L40`
@@ -62,6 +63,13 @@ pub enum Link {
         path: String,
         rev: Option<String>,
         anchor: Option<Anchor>,
+    },
+    /// A commit of the code repository (yaks-274c): `commit:<sha>`, 7 to 40
+    /// hex digits, lowercased. The code repo's host commit URL means the same
+    /// once [`crate::locate::Space::read_url`] has read it; parsing alone
+    /// cannot know the remote, so that URL parses as [`Link::Url`].
+    Commit {
+        sha: String,
     },
     /// A `../` link that is not one of the legacy code forms: it climbs out
     /// of its directory, which the grammar refuses (link from the farm root
@@ -119,6 +127,14 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         };
     }
     let body = percent_decode(body);
+    if let Some(sha) = body.strip_prefix("commit:") {
+        return match is_rev(sha) {
+            true => Link::Commit {
+                sha: sha.to_ascii_lowercase(),
+            },
+            false => Link::Upward(dest.to_string()),
+        };
+    }
     if let Some(rest) = body.strip_prefix("code:") {
         let (path, rev) = split_rev(rest);
         return match clean(path.trim_start_matches('/')) {
@@ -500,6 +516,7 @@ pub fn label(link: &Link) -> String {
             name,
             anchor: a,
         } => format!("{id}/{name}{}", anchor(a)),
+        Link::Commit { sha } => format!("commit:{}", &sha[..sha.len().min(7)]),
         Link::Upward(s) => s.clone(),
         Link::Local(a) => anchor(&Some(a.clone())),
         Link::Yak { id, note: None } => id.clone(),
@@ -760,7 +777,13 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
                 .flatten()
                 .is_some_and(|t| find_note(&crate::store::parse_notes(&t.body), n).is_some()),
         ),
-        Link::Url(_) | Link::Code { .. } | Link::Local(_) | Link::Yak { .. } => None,
+        // A commit lives in the code repository, which may simply not have
+        // fetched it: that is unknown here, never broken.
+        Link::Url(_)
+        | Link::Code { .. }
+        | Link::Commit { .. }
+        | Link::Local(_)
+        | Link::Yak { .. } => None,
     }
 }
 
@@ -1035,8 +1058,50 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             let text = read_at(code, path, rev.as_deref())?;
             span(path, &text, anchor, context)?
         }
+        Link::Commit { sha } => {
+            let Some(code) = bases.code else {
+                bail!("commit:{sha}: no code checkout to read it from (run from one)");
+            };
+            let Some(c) = crate::gitrepo::commit_info(code, sha) else {
+                bail!(
+                    "{}",
+                    crate::locate::missing_commit(code, sha)
+                        .unwrap_or_else(|| format!("commit:{sha}: not in this repository"))
+                );
+            };
+            commit_text(&c)
+        }
     };
     Ok(Peek { label, text })
+}
+
+/// A commit as `peek` prints it: hash, author and date, the message, then
+/// one line per changed file with its `+added -deleted` counts.
+pub fn commit_text(c: &crate::gitrepo::CommitInfo) -> String {
+    let mut out = format!(
+        "{}  {}  {}\n\n{}\n",
+        &c.sha[..c.sha.len().min(12)],
+        c.author,
+        c.date,
+        c.subject
+    );
+    if !c.body.is_empty() {
+        out.push('\n');
+        out.push_str(&c.body);
+        out.push('\n');
+    }
+    if !c.files.is_empty() {
+        out.push('\n');
+        for (a, d, path) in &c.files {
+            let n = |v: &Option<u32>| v.map_or("-".to_string(), |v| v.to_string());
+            out.push_str(&format!(
+                "{:>6} {:>6}  {path}\n",
+                format!("+{}", n(a)),
+                format!("-{}", n(d))
+            ));
+        }
+    }
+    out
 }
 
 /// The checkout `code:` links (and legacy `../` ones) resolve in. For a farm
@@ -1722,5 +1787,23 @@ mod tests {
         assert_eq!(check("doks/path"), None);
         assert_eq!(check("<id>/<file>"), None);
         let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn commit_links() {
+        let pg = From::Dok("doks/x.md");
+        assert_eq!(
+            parse("commit:3F2A9C1", pg, yak),
+            Link::Commit {
+                sha: "3f2a9c1".into()
+            }
+        );
+        assert!(matches!(parse("commit:nothex", pg, yak), Link::Upward(_)));
+        assert_eq!(
+            label(&Link::Commit {
+                sha: "3f2a9c1d00".into()
+            }),
+            "commit:3f2a9c1"
+        );
     }
 }

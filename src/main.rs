@@ -1014,8 +1014,10 @@ enum Command {
     /// code checkout yaks was started in), `code:src/foo.rs@3f2a9c1#L12` (as
     /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment),
     /// `yaks-1a2b#2026-11-04T22:13:03Z` (one note of a yak, by its timestamp;
-    /// `-1`, `-2` for later notes of the same second). Cheaper context than
-    /// reading the whole file.
+    /// `-1`, `-2` for later notes of the same second), `commit:3f2a9c1` (a code
+    /// commit: author, date, message and changed files). A host URL of the
+    /// code repository's own commit or pinned file reads as that commit or
+    /// file. Cheaper context than reading the whole file.
     Peek {
         link: String,
         /// Widen a line range by this many lines either side.
@@ -1026,8 +1028,8 @@ enum Command {
     /// repository (GitHub and GHES, GitLab, Gitea/Forgejo).
     ///
     /// `<target>` is a link as written in a yak or dok (`yaks-1a2b`,
-    /// `yaks-1a2b/log.txt`, `/doks/x.md#setup`, `code:src/foo.rs@3f2a9c1#L12-L20`)
-    /// or a path to a file in the farm or the code checkout. A farm file is
+    /// `yaks-1a2b/log.txt`, `/doks/x.md#setup`, `code:src/foo.rs@3f2a9c1#L12-L20`,
+    /// `commit:3f2a9c1`: the host's commit page) or a path to a file in the farm or the code checkout. A farm file is
     /// linked on the farm branch's remote, a `code:` file on the code
     /// repository's (they differ when `yaks.farm` shares another repo's
     /// farm). Without `--pin` a link names the branch; with it, the commit
@@ -2334,6 +2336,8 @@ fn main() -> Result<()> {
             let code = links::code_base(farm.root(), Some(&cwd));
             let ids = store::all_ids(farm.root());
             let parsed = links::parse(&link, links::From::Cli, |s| ids.contains(s));
+            // The code repo's own host URLs read as the commit or file they name.
+            let parsed = locate::Space::new(farm.root(), code.clone()).read_url(parsed);
             let bases = links::Bases {
                 farm: farm.root(),
                 code: code.as_deref(),

@@ -1029,6 +1029,9 @@ pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<
         }
         Link::Farm { path, rev, anchor } => Target::Farm { path, rev, anchor },
         Link::Local(a) => Target::Local(a),
+        // Until the TUI's commit view (yaks-3f90), a `commit:<sha>` link reads
+        // as the text it is: no target here knows the code repo's host.
+        Link::Commit { .. } => Target::Artifact(dest.to_string()),
         Link::Upward(_) => Target::Artifact(dest.to_string()),
         Link::Yak { id, note: None } => Target::Task(id),
         Link::Yak {

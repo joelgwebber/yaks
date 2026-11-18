@@ -658,7 +658,8 @@ fn code_refs(space: &Space, dok: &doks::Dok) -> Vec<CodeRef> {
     }
     let mut out: Vec<CodeRef> = Vec::new();
     for d in dests {
-        let link = links::parse(&d, links::From::Dok(&dok.path), |_| false);
+        // A host URL to a pinned file of the code repo counts as its `code:` link.
+        let link = space.read_url(links::parse(&d, links::From::Dok(&dok.path), |_| false));
         if !matches!(link, Link::Code { .. }) {
             continue;
         }

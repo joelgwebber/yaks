@@ -163,6 +163,105 @@ impl Repo {
     }
 }
 
+/// What a URL on a repository's host names (yaks-274c): a commit, or a file
+/// at a commit with its line fragment. A file at a *branch* is not here: it
+/// moves, so it stays a plain URL.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HostRef {
+    Commit(String),
+    File {
+        commit: String,
+        path: String,
+        lines: Option<(u32, u32)>,
+    },
+}
+
+impl Repo {
+    /// The URL of commit `sha` on this host.
+    pub fn commit_url(&self, sha: &str) -> String {
+        let base = format!("https://{}/{}", self.host, self.path);
+        match self.forge {
+            Forge::GitHub | Forge::Gitea => format!("{base}/commit/{sha}"),
+            Forge::GitLab => format!("{base}/-/commit/{sha}"),
+        }
+    }
+
+    /// What `url` names when it is a commit, or a file pinned to a commit, of
+    /// *this* repository: the inverse of [`Repo::commit_url`] and of
+    /// [`Repo::file_url`] with [`Ref::Commit`]. `None` for any other URL
+    /// (another repository or host, a branch, a page that is neither).
+    /// The host and path compare without case, as hosts serve them.
+    pub fn parse_url(&self, url: &str) -> Option<HostRef> {
+        let rest = url
+            .strip_prefix("https://")
+            .or_else(|| url.strip_prefix("http://"))?;
+        let (rest, frag) = match rest.split_once('#') {
+            Some((r, f)) => (r, Some(f)),
+            None => (rest, None),
+        };
+        // `?plain=1` (GitHub's source view of a markdown file) and the like.
+        let rest = rest.split('?').next().unwrap_or(rest);
+        let prefix = format!("{}/{}/", self.host, self.path);
+        if rest.len() < prefix.len() || !rest[..prefix.len()].eq_ignore_ascii_case(&prefix) {
+            return None;
+        }
+        let tail = rest[prefix.len()..].trim_end_matches('/');
+        let tail = match self.forge {
+            Forge::GitLab => tail.strip_prefix("-/")?,
+            _ => tail,
+        };
+        let is_sha =
+            |s: &str| (7..=40).contains(&s.len()) && s.bytes().all(|b| b.is_ascii_hexdigit());
+        if let Some(sha) = tail.strip_prefix("commit/") {
+            return is_sha(sha).then(|| HostRef::Commit(sha.to_ascii_lowercase()));
+        }
+        let file = match self.forge {
+            Forge::GitHub | Forge::GitLab => tail.strip_prefix("blob/"),
+            Forge::Gitea => tail.strip_prefix("src/commit/"),
+        }?;
+        let (commit, path) = file.split_once('/')?;
+        if !is_sha(commit) || path.is_empty() {
+            return None;
+        }
+        let lines = frag.and_then(|f| {
+            let r = f.strip_prefix('L')?;
+            let (a, b) = match r.split_once('-') {
+                Some((a, b)) => (a, b.trim_start_matches('L')),
+                None => (r, r),
+            };
+            let (a, b): (u32, u32) = (a.parse().ok()?, b.parse().ok()?);
+            (a > 0 && b > 0).then(|| (a.min(b), a.max(b)))
+        });
+        Some(HostRef::File {
+            commit: commit.to_ascii_lowercase(),
+            path: decode(path),
+            lines,
+        })
+    }
+}
+
+/// The inverse of [`encode`] for a path: `%XX` back to its byte.
+fn decode(s: &str) -> String {
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let Some(v) = std::str::from_utf8(&b[i + 1..i + 3])
+                .ok()
+                .and_then(|h| u8::from_str_radix(h, 16).ok())
+            {
+                out.push(v);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 fn ref_name(r: Ref) -> String {
     match r {
         Ref::Branch(b) => encode(b, false),
@@ -333,6 +432,67 @@ mod tests {
         assert_eq!(
             r.file_url(Ref::Commit("abc1234"), "src/a.rs", &Frag::Lines(100, 120)),
             "https://codeberg.org/o/r/src/commit/abc1234/src/a.rs#L100-L120"
+        );
+    }
+
+    #[test]
+    fn host_urls_read_back_as_commits_and_pinned_files() {
+        let gh = repo("git@github.com:o/r.git");
+        assert_eq!(
+            gh.parse_url("https://github.com/o/r/commit/ABC1234"),
+            Some(HostRef::Commit("abc1234".into()))
+        );
+        assert_eq!(
+            gh.parse_url(&gh.file_url(Ref::Commit("abc1234"), "src/a b.rs", &Frag::Lines(3, 9))),
+            Some(HostRef::File {
+                commit: "abc1234".into(),
+                path: "src/a b.rs".into(),
+                lines: Some((3, 9)),
+            })
+        );
+        assert_eq!(
+            gh.parse_url("https://github.com/o/r/blob/abc1234/README.md?plain=1#L5"),
+            Some(HostRef::File {
+                commit: "abc1234".into(),
+                path: "README.md".into(),
+                lines: Some((5, 5)),
+            })
+        );
+        // A branch moves, another repository is not ours, and a page is not a commit.
+        assert_eq!(
+            gh.parse_url("https://github.com/o/r/blob/main/README.md"),
+            None
+        );
+        assert_eq!(
+            gh.parse_url("https://github.com/o/other/commit/abc1234"),
+            None
+        );
+        assert_eq!(gh.parse_url("https://github.com/o/r/pulls"), None);
+        let gl = repo("https://gitlab.com/g/s/r.git");
+        assert_eq!(
+            gl.parse_url("https://gitlab.com/g/s/r/-/commit/abc1234"),
+            Some(HostRef::Commit("abc1234".into()))
+        );
+        assert_eq!(
+            gl.parse_url(&gl.file_url(Ref::Commit("abc1234"), "a.rs", &Frag::Lines(1, 2))),
+            Some(HostRef::File {
+                commit: "abc1234".into(),
+                path: "a.rs".into(),
+                lines: Some((1, 2)),
+            })
+        );
+        let gt = repo("https://codeberg.org/o/r.git");
+        assert_eq!(
+            gt.parse_url(&gt.file_url(Ref::Commit("abc1234"), "a.rs", &Frag::None)),
+            Some(HostRef::File {
+                commit: "abc1234".into(),
+                path: "a.rs".into(),
+                lines: None,
+            })
+        );
+        assert_eq!(
+            gt.parse_url(&gt.commit_url("abc1234")),
+            Some(HostRef::Commit("abc1234".into()))
         );
     }
 }

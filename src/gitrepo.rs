@@ -197,6 +197,70 @@ pub(crate) fn commit_of(dir: &Path, rev: &str) -> Option<String> {
     .filter(|s| !s.is_empty())
 }
 
+/// One commit, as the commit link's peek and view show it (yaks-274c).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommitInfo {
+    /// The full hash.
+    pub sha: String,
+    pub author: String,
+    /// The author date, RFC 3339.
+    pub date: String,
+    pub subject: String,
+    /// The message after the subject (may be empty).
+    pub body: String,
+    /// `(added, deleted, path)` per file; a binary file's counts are `None`.
+    pub files: Vec<(Option<u32>, Option<u32>, String)>,
+}
+
+/// The commit `rev` names in the repository at `dir`, or `None` when this
+/// checkout does not have it. A merge's files are against its first parent.
+pub(crate) fn commit_info(dir: &Path, rev: &str) -> Option<CommitInfo> {
+    let sha = commit_of(dir, rev)?;
+    // Unit and record separators cannot appear in these fields.
+    let head = git_raw(
+        dir,
+        &["show", "-s", "--format=%H%x1f%an%x1f%aI%x1f%s%x1f%b", &sha],
+    )
+    .ok()?;
+    let mut f = head.splitn(5, '\u{1f}');
+    let (_, author, date, subject, body) = (
+        f.next()?,
+        f.next()?,
+        f.next()?,
+        f.next()?,
+        f.next().unwrap_or(""),
+    );
+    let stat = git_raw(
+        dir,
+        &[
+            "show",
+            "--numstat",
+            "--first-parent",
+            "-m",
+            "--format=",
+            "--no-renames",
+            &sha,
+        ],
+    )
+    .unwrap_or_default();
+    let files = stat
+        .lines()
+        .filter_map(|l| {
+            let mut p = l.splitn(3, '\t');
+            let (a, d, path) = (p.next()?, p.next()?, p.next()?);
+            Some((a.parse().ok(), d.parse().ok(), path.to_string()))
+        })
+        .collect();
+    Some(CommitInfo {
+        sha,
+        author: author.to_string(),
+        date: date.to_string(),
+        subject: subject.to_string(),
+        body: body.trim_end().to_string(),
+        files,
+    })
+}
+
 /// Whether some branch of `remote` that this checkout knows contains `sha`:
 /// the remote has the commit (as of the last fetch or push).
 pub(crate) fn remote_has(dir: &Path, remote: &str, sha: &str) -> bool {

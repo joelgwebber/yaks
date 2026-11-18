@@ -89,6 +89,10 @@ pub enum Place {
         rev: Option<String>,
         anchor: Option<Anchor>,
     },
+    /// A commit of the code repository (yaks-274c).
+    Commit {
+        sha: String,
+    },
     Url(String),
     /// Nothing to point at (an in-document anchor, a `../` link).
     Missing(String),
@@ -137,11 +141,61 @@ impl Space {
                 rev: rev.clone(),
                 anchor: anchor.clone(),
             },
+            Link::Commit { sha } => Place::Commit { sha: sha.clone() },
             Link::Upward(s) => Place::Missing(format!(
                 "{s}: a link may not climb out with ../; link from the farm root (/doks/...)"
             )),
             Link::Local(_) => Place::Missing("an in-document anchor needs its document".into()),
         }
+    }
+
+    /// `link` with a URL on the code repository's own host read for what it
+    /// names (yaks-274c, also yaks-390f): `https://<host>/<o>/<r>/commit/<sha>`
+    /// is a [`Link::Commit`], and a file pinned to a commit
+    /// (`.../blob/<sha>/<path>#L12-L20`, and the GitLab and Gitea forms) is a
+    /// pinned [`Link::Code`]. Every other link comes back as it was: another
+    /// repository's URL, a file at a branch (it moves, so it stays a URL), or
+    /// a farm with no code checkout or no recognised host. Readers that care
+    /// what a URL is call this on what [`links::parse`] gave them.
+    pub fn read_url(&self, link: Link) -> Link {
+        let Link::Url(u) = &link else {
+            return link;
+        };
+        let Some(repo) = self.code_repo() else {
+            return link;
+        };
+        match repo.parse_url(u) {
+            Some(hosting::HostRef::Commit(sha)) => Link::Commit { sha },
+            Some(hosting::HostRef::File {
+                commit,
+                path,
+                lines,
+            }) => Link::Code {
+                path,
+                rev: Some(commit),
+                anchor: lines.map(|(a, b)| Anchor::Lines(a, b)),
+            },
+            None => link,
+        }
+    }
+
+    /// The code checkout's host repository, asked of git once per checkout
+    /// per process (a render reads many links).
+    fn code_repo(&self) -> Option<hosting::Repo> {
+        static KNOWN: std::sync::Mutex<
+            Option<std::collections::HashMap<PathBuf, Option<hosting::Repo>>>,
+        > = std::sync::Mutex::new(None);
+        let code = self.code.as_ref()?;
+        let mut guard = KNOWN.lock().ok()?;
+        let map = guard.get_or_insert_with(Default::default);
+        map.entry(code.clone())
+            .or_insert_with(|| {
+                let branch = gitrepo::current_branch(code);
+                gitrepo::hosting_repo(code, branch.as_deref())
+                    .ok()
+                    .map(|(_, r)| r)
+            })
+            .clone()
     }
 
     /// The link a place came from (what [`links::peek`] reads).
@@ -166,6 +220,7 @@ impl Space {
                 rev: rev.clone(),
                 anchor: anchor.clone(),
             },
+            Place::Commit { sha } => Link::Commit { sha: sha.clone() },
             Place::Url(u) => Link::Url(u.clone()),
             Place::Missing(_) => return None,
         })
@@ -305,6 +360,24 @@ impl Space {
         }
         if let Place::Missing(why) = place {
             bail!("{why}");
+        }
+        if let Place::Commit { sha } = place {
+            let Some(code) = &self.code else {
+                bail!("commit:{sha}: no code checkout to link from (run from one)");
+            };
+            let branch = gitrepo::current_branch(code);
+            let (remote, repo) = gitrepo::hosting_repo(code, branch.as_deref())?;
+            let full = gitrepo::commit_of(code, sha).unwrap_or_else(|| sha.clone());
+            let note = (!gitrepo::remote_has(code, &remote, &full)).then(|| {
+                format!(
+                    "{} is not on {remote} as last fetched: the link leads nowhere until it is pushed",
+                    &full[..full.len().min(7)]
+                )
+            });
+            return Ok(Web {
+                url: repo.commit_url(&full),
+                note,
+            });
         }
         if let Place::CodeFile { rel, rev, anchor } = place {
             let Some(code) = &self.code else {
@@ -543,9 +616,10 @@ pub fn parse_target(space: &Space, cwd: &Path, arg: &str) -> Link {
     };
     if body.contains("://")
         || body.starts_with("code:")
+        || body.starts_with("commit:")
         || body.starts_with('/') && !Path::new(body).exists()
     {
-        return parse(arg);
+        return space.read_url(parse(arg));
     }
     let abs = if Path::new(body).is_absolute() {
         PathBuf::from(body)
@@ -613,5 +687,48 @@ mod tests {
             sp.resolve(&Link::Upward("../x".into())),
             Place::Missing(_)
         ));
+    }
+
+    #[test]
+    fn the_code_repos_own_host_urls_read_as_commits_and_code() {
+        let dir = std::env::temp_dir().join(format!("yaks-readurl-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let git = |args: &[&str]| {
+            assert!(
+                std::process::Command::new("git")
+                    .args(args)
+                    .current_dir(&dir)
+                    .output()
+                    .unwrap()
+                    .status
+                    .success()
+            );
+        };
+        git(&["init", "-q", "-b", "main"]);
+        git(&["remote", "add", "origin", "git@github.com:o/r.git"]);
+        let sp = Space::new(Path::new("/nonexistent-farm"), Some(dir.clone()));
+        let url = |u: &str| sp.read_url(Link::Url(u.into()));
+        assert_eq!(
+            url("https://github.com/o/r/commit/abc1234"),
+            Link::Commit {
+                sha: "abc1234".into()
+            }
+        );
+        assert_eq!(
+            url("https://github.com/o/r/blob/abc1234/src/a.rs#L3-L9"),
+            Link::Code {
+                path: "src/a.rs".into(),
+                rev: Some("abc1234".into()),
+                anchor: Some(Anchor::Lines(3, 9)),
+            }
+        );
+        let other = "https://github.com/o/other/commit/abc1234";
+        assert_eq!(url(other), Link::Url(other.into()));
+        // No code checkout: a URL stays a URL.
+        let bare = Space::new(Path::new("/nonexistent-farm"), None);
+        let u = "https://github.com/o/r/commit/abc1234";
+        assert_eq!(bare.read_url(Link::Url(u.into())), Link::Url(u.into()));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
