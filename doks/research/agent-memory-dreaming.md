@@ -8,7 +8,7 @@ tags:
 - agent
 stale_after: P6M
 sources:
-- sources/2026-11-08-f2310691/source.md
+- sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance.md
 description: What Anthropic's agent-memory article ("dreaming", the transcripts-notes-representations-context stack) suggests for how the farm keeps doks and lessons current; read before changing the upkeep procedures.
 ---
 
@@ -22,7 +22,7 @@ The article describes a stack: **transcripts** (the log of what happened), **not
 
 ## What the article says
 
-From [the saved text](/sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance/extracted.md). Anthropic's own evaluations, so evidence of a claim, not of the truth.
+From [the saved text](/sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance.md). Anthropic's own evaluations, so evidence of a claim, not of the truth.
 
 - **Memory is a prediction about what a future session will need.** Strong models judge salience well on their own: told only that a memory folder exists, they used it well, and fixed rules ("record only failures") cost Opus 5 and 4.7 much of memory's gain. Older models needed steering (read your notes first; test your theories).
 - **Store what isn't readable from the environment.** In Pokémon, Sonnet 3.7 wrote 413 files recording state the screen shows every turn; it went stale and the agent spent its steps tidying. Fable 5 wrote nine files and a `global.md` dashboard (current goal, a plan, its own rules for using memory) and got further.

@@ -10,20 +10,20 @@ tags:
 - crdt
 stale_after: P3M
 sources:
-- sources/2026-11-16-0df8e0eb/source.md
-- sources/2026-11-16-26496fb6/source.md
-- sources/2026-11-16-34edbef8/source.md
-- sources/2026-11-16-59d16db8/source.md
-- sources/2026-11-16-5b177191/source.md
-- sources/2026-11-16-662a0d4c/source.md
-- sources/2026-11-16-737a30ca/source.md
-- sources/2026-11-16-740faeed/source.md
-- sources/2026-11-16-985aa32d/source.md
-- sources/2026-11-16-a35b9190/source.md
-- sources/2026-11-16-b7f89c23/source.md
-- sources/2026-11-16-cea6b808/source.md
-- sources/2026-11-16-e5d7f476/source.md
-- sources/2026-11-16-f2ff0795/source.md
+- sources/2026-11-16-0df8e0eb-delta-cli-product-page-bring-delta-to-the-agent.md
+- sources/2026-11-16-26496fb6-deltadb-the-future-of-version-control-conrad.md
+- sources/2026-11-16-34edbef8-syntax-1029-transcript-the-workflow-of-the.md
+- sources/2026-11-16-59d16db8-delta-docs-data-storage-deletion.md
+- sources/2026-11-16-5b177191-zed-industriesdelta-claude-readme-agpl-30-claude.md
+- sources/2026-11-16-662a0d4c-hacker-news-thread-zed-staff-on-self-hosting.md
+- sources/2026-11-16-737a30ca-delta-public-roadmap-as-of-2026-11.md
+- sources/2026-11-16-740faeed-delta-docs-delta-git.md
+- sources/2026-11-16-985aa32d-delta-docs-build-a-coding-agent-plugin-cli.md
+- sources/2026-11-16-a35b9190-software-is-made-between-commits-sobo-zed-blog.md
+- sources/2026-11-16-b7f89c23-building-fine-grained-version-control-for-agents.md
+- sources/2026-11-16-cea6b808-sequoia-backs-zeds-vision-for-collaborative.md
+- sources/2026-11-16-e5d7f476-deltadb-product-page-deltadev-zed-industries.md
+- sources/2026-11-16-f2ff0795-delta-docs-get-started-with-delta-cli.md
 description: What DeltaDB (the CRDT version control under Zed's Delta) is, what infrastructure it runs on, what is open source (only the AGPL Claude plugin), and why it is not yet a store or sync layer for a farm; read before considering CRDT or live sync for yaks.
 ---
 
@@ -37,18 +37,18 @@ Research for yaks-d741. Question: could DeltaDB, the version-control layer under
 
 All of this comes from Zed's own posts and docs; none of it is independently checked.
 
-- **A causal DAG of CRDT operations ("deltas"), stored locally in SQLite.** Every edit, message, comment and file-tree change is a delta naming the version it builds on: earlier deltas, or a Git blob for a file's starting text. A version is a *frontier* (the tips of the DAG), not a version vector, so short-lived writers (subagents, cloud sandboxes) don't grow it forever. The design follows Gentle and Kleppmann's Eg-walker and is "loosely based on diamond-types" ([Scandurra](/sources/2026-11-16-b7f89c23/extracted.md), [Irwin](/sources/2026-11-16-26496fb6/extracted.md), [product page](/sources/2026-11-16-e5d7f476/extracted.md)).
+- **A causal DAG of CRDT operations ("deltas"), stored locally in SQLite.** Every edit, message, comment and file-tree change is a delta naming the version it builds on: earlier deltas, or a Git blob for a file's starting text. A version is a *frontier* (the tips of the DAG), not a version vector, so short-lived writers (subagents, cloud sandboxes) don't grow it forever. The design follows Gentle and Kleppmann's Eg-walker and is "loosely based on diamond-types" ([Scandurra](/sources/2026-11-16-b7f89c23-building-fine-grained-version-control-for-agents.md), [Irwin](/sources/2026-11-16-26496fb6-deltadb-the-future-of-version-control-conrad.md), [product page](/sources/2026-11-16-e5d7f476-deltadb-product-page-deltadev-zed-industries.md)).
 - **Text** is a rope plus a fragment index (which delta made each character); versions share structure through copy-on-write B+ trees, so any past version can be rebuilt cheaply.
-- **Git stays.** A Delta worktree starts at a commit; each file is either pinned to its committed blob or carries the deltas written since, and making a commit is itself a delta. Commits, branches and remotes stay in Git; DeltaDB keeps "everything in between" ([Delta & Git](/sources/2026-11-16-740faeed/extracted.md)).
+- **Git stays.** A Delta worktree starts at a commit; each file is either pinned to its committed blob or carries the deltas written since, and making a commit is itself a delta. Commits, branches and remotes stay in Git; DeltaDB keeps "everything in between" ([Delta & Git](/sources/2026-11-16-740faeed-delta-docs-delta-git.md)).
 - **Timelines** are named frontiers in one DAG: forking a subagent's worktree is a new timeline, merging is a merge of frontiers. No Git branch or commit is involved.
 - **Client API** (Rust, internal): `Register<T>` (last writer wins), `Map<K, V>` (add wins), `Buffer` (collaborative text), `Worktree` (files over Git), composed with `#[derive(Replicate)]` into structs such as a thread with a transcript, a name and a map of comments. The post shows `deltadb::Client`, but no such crate is published (crates.io has nothing named deltadb).
 
 ## What the infrastructure is
 
 - **Client:** SQLite per machine, one writer thread and several readers.
-- **Server:** one Cloudflare Durable Object per thread (its own SQLite), WebSockets per thread, catch-up sync by exchanging logarithmically spaced ancestors to find a common one. File contents, Git objects, history packs and checkpoints go to Cloudflare R2; metadata to KV and D1 ([Data storage](/sources/2026-11-16-59d16db8/extracted.md)).
+- **Server:** one Cloudflare Durable Object per thread (its own SQLite), WebSockets per thread, catch-up sync by exchanging logarithmically spaced ancestors to find a common one. File contents, Git objects, history packs and checkpoints go to Cloudflare R2; metadata to KV and D1 ([Data storage](/sources/2026-11-16-59d16db8-delta-docs-data-storage-deletion.md)).
 - **Deployments:** Zed's multi-tenant service, plus single-tenant "bring your own Cloudflare" for customers. Zed says it is portable to any platform with an object store, a fault-tolerant Postgres for authentication, and addressable single-threaded processes with transactional storage. That describes their code, which only they can deploy.
-- Sobo, on Syntax: the algorithms "don't depend on a central synchronization coordinator in a critical way", but launch is centralized at delta.dev, partly because that is how Zed makes money ([Syntax #1029](/sources/2026-11-16-34edbef8/extracted.md)).
+- Sobo, on Syntax: the algorithms "don't depend on a central synchronization coordinator in a critical way", but launch is centralized at delta.dev, partly because that is how Zed makes money ([Syntax #1029](/sources/2026-11-16-34edbef8-syntax-1029-transcript-the-workflow-of-the.md)).
 
 ## Is it open source?
 
@@ -56,14 +56,14 @@ All of this comes from Zed's own posts and docs; none of it is independently che
 |---|---|
 | DeltaDB engine, server, `deltadb::Client` | **Closed.** No repository, no crate. |
 | Delta app and `delta` CLI | **Closed** binaries; free Personal plan. |
-| `zed-industries/delta-claude` (the Claude Code plugin) | **Open**, AGPL-3.0-only. It shells out to the closed `delta` CLI ([README](/sources/2026-11-16-5b177191/extracted.md)). |
+| `zed-industries/delta-claude` (the Claude Code plugin) | **Open**, AGPL-3.0-only. It shells out to the closed `delta` CLI ([README](/sources/2026-11-16-5b177191-zed-industriesdelta-claude-readme-agpl-30-claude.md)). |
 | Zed editor | Open (GPL-3.0, Apache-2.0 parts), but has no DeltaDB in it yet. |
 
-**Stated intent.** In August 2025: "Zed is open-source with an optional paid offering, and we plan to do the same with DeltaDB: build it, open-source it, and offer an optional paid service" ([Sequoia post](/sources/2026-11-16-cea6b808/extracted.md)). Nothing I found since repeats or withdraws that; the 2026 posts don't mention licensing. On self-hosting, Zed staff said in November 2025 that self-hosted collab had been dropped and would be revisited "once we have a few more features settled", with collab to be rebuilt on DeltaDB ([HN](/sources/2026-11-16-662a0d4c/extracted.md)). The public [roadmap](/sources/2026-11-16-737a30ca/extracted.md) lists neither open-sourcing nor self-hosting; its nearest item is a Delta MCP server ("up next").
+**Stated intent.** In August 2025: "Zed is open-source with an optional paid offering, and we plan to do the same with DeltaDB: build it, open-source it, and offer an optional paid service" ([Sequoia post](/sources/2026-11-16-cea6b808-sequoia-backs-zeds-vision-for-collaborative.md)). Nothing I found since repeats or withdraws that; the 2026 posts don't mention licensing. On self-hosting, Zed staff said in November 2025 that self-hosted collab had been dropped and would be revisited "once we have a few more features settled", with collab to be rebuilt on DeltaDB ([HN](/sources/2026-11-16-662a0d4c-hacker-news-thread-zed-staff-on-self-hosting.md)). The public [roadmap](/sources/2026-11-16-737a30ca-delta-public-roadmap-as-of-2026-11.md) lists neither open-sourcing nor self-hosting; its nearest item is a Delta MCP server ("up next").
 
 ## Using it outside Delta today
 
-The only door is the beta `delta` CLI ([get started](/sources/2026-11-16-f2ff0795/extracted.md), [plugin guide](/sources/2026-11-16-985aa32d/extracted.md)):
+The only door is the beta `delta` CLI ([get started](/sources/2026-11-16-f2ff0795-delta-docs-get-started-with-delta-cli.md), [plugin guide](/sources/2026-11-16-985aa32d-delta-docs-build-a-coding-agent-plugin-cli.md)):
 
 - **Install:** a script installs the whole Delta app into your home folder; the CLI starts it in the background when needed. `delta auth login` signs in to a Zed account, and threads belong to a Delta organization.
 - **Files:** `delta worktree create <checkout>` then `delta worktree mount <ref> <checkout> --existing-checkout` uploads the checkout (uncommitted and untracked-but-not-ignored files included) and syncs it both ways for as long as the command runs. The checkout must be a Git repository with a remote; Delta identifies the repository by that remote.

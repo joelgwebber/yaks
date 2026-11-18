@@ -7,10 +7,10 @@ tags:
 - agent
 stale_after: P3M
 sources:
-- sources/2026-11-05-04642f1f/source.md
-- sources/2026-11-07-611eab26/source.md
-- sources/2026-11-05-ab6fc4f7/source.md
-- sources/2026-11-05-9bfc1964/source.md
+- sources/2026-11-05-04642f1f-yass-yet-another-spec-system-donjaimeyass-repo.md
+- sources/2026-11-07-611eab26-yass-playbooks-the-six-yass-agent-skills.md
+- sources/2026-11-05-ab6fc4f7-youtube-metadata-deeplearningai-spec-driven.md
+- sources/2026-11-05-9bfc1964-geminis-summary-of-the-spec-driven-development.md
 ---
 
 # Spec-driven development: YASS and the DeepLearning.AI course
@@ -23,9 +23,9 @@ The course argues for writing a spec before the agent writes code. YASS is one c
 
 ## The course
 
-*Full Course: Spec-Driven Development with Coding Agents*, DeepLearning.AI with JetBrains, taught by Paul Everitt, 61 minutes ([metadata](/sources/2026-11-05-ab6fc4f7-youtube-metadata-deeplearningai-spec-driven/source.md)).
+*Full Course: Spec-Driven Development with Coding Agents*, DeepLearning.AI with JetBrains, taught by Paul Everitt, 61 minutes ([metadata](/sources/2026-11-05-ab6fc4f7-youtube-metadata-deeplearningai-spec-driven.md)).
 
-**I did not watch it and have no transcript** (YouTube refused the caption download). Everything below comes from [Gemini's summary](/sources/2026-11-05-9bfc1964-geminis-summary-of-the-spec-driven-development/source.md) that Joel pasted, which is a model's reading, with Gemini's own timestamps. Check a claim against the video before relying on it.
+**I did not watch it and have no transcript** (YouTube refused the caption download). Everything below comes from [Gemini's summary](/sources/2026-11-05-9bfc1964-geminis-summary-of-the-spec-driven-development.md) that Joel pasted, which is a model's reading, with Gemini's own timestamps. Check a claim against the video before relying on it.
 
 Per that summary:
 
@@ -38,7 +38,7 @@ Per that summary:
 
 ## YASS
 
-By Jaime Yap, snapshot at `1516c8d`, 11 October 2026, version 0.5.0 ([repo](/sources/2026-11-05-04642f1f-yass-yet-another-spec-system-donjaimeyass-repo/source.md), with [the six playbooks](/sources/2026-11-07-611eab26-yass-playbooks-the-six-yass-agent-skills/source.md)). A Go binary, plain markdown, an optional git hook. The author's own account of itself; the comparison table in `docs/comparison.md` is his view of other tools.
+By Jaime Yap, snapshot at `1516c8d`, 11 October 2026, version 0.5.0 ([repo](/sources/2026-11-05-04642f1f-yass-yet-another-spec-system-donjaimeyass-repo.md), with [the six playbooks](/sources/2026-11-07-611eab26-yass-playbooks-the-six-yass-agent-skills.md)). A Go binary, plain markdown, an optional git hook. The author's own account of itself; the comparison table in `docs/comparison.md` is his view of other tools.
 
 ### The shape
 

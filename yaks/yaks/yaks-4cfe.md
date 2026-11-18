@@ -35,7 +35,7 @@ moved: hairy -> shaving
 
 *sources-triage*
 
-Batch 1 (yakherd `sources-triage`, 2026-11-17). Base `52d80dd3` (v0.0.37). Model `claude-sonnet-5-5` for every worker (AGENTS.md's standing rule). The format work (yaks-e83f, then yaks-535c, yaks-289a, yaks-5f14) waits on [the layout ask](yaks-e83f).
+Batch 1 (yakherd `sources-triage`, 2026-11-17). Base `52d80dd3` (v0.0.37). Model `claude-sonnet-5-5` for every worker (AGENTS.md's standing rule). The format work (yaks-e83f, then yaks-535c, yaks-289a, yaks-5f14) waits on [the layout ask](/yaks/yaks/yaks-e83f.md).
 
 | Worker | Yaks | Files |
 |---|---|---|

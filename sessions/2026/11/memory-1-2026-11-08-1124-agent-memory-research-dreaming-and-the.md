@@ -32,7 +32,7 @@ The finding that shaped the rest: the upkeep loop is built but not running (thre
 - yaks-6cf2: check: flag doks whose cited code has changed since the pin or last verification (created)
 - yaks-e4f5: Research: Anthropic's agent-memory 'dreaming' and what it means for doks and lessons (created, hairy -> shorn)
   - [Done. Findings in /doks/research/agent-memory-dreaming.md; the article is sav...](/yaks/yaks/yaks-e4f5.md#2026-11-08t162417z)
-- created [/sources/2026-11-08-f2310691/source.md](/sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance/source.md): Anthropic, 'The components of agent memory' (Lance Martin, 2026-11-06), text only; figures not read
+- created [/sources/2026-11-08-f2310691/source.md](/sources/2026-11-08-f2310691-anthropic-the-components-of-agent-memory-lance.md): Anthropic, 'The components of agent memory' (Lance Martin, 2026-11-06), text only; figures not read
 - created [/doks/research/agent-memory-dreaming.md](/doks/research/agent-memory-dreaming.md): Agent memory and "dreaming": what to take for doks and lessons
 
 ## Lessons
