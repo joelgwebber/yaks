@@ -1,0 +1,46 @@
+=== frame 26 · 110x44 · focus=detail · view=🧺 All · cursor=2 · rows=5 · sel=yaks-ab81 · blocked=[yaks-323b,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=0 · pinned=no ===
+ 🧺 All (5)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (1)   🪒 Shaving (1)   📖 Doks (0)   🛖 Sheds (3)   /"y
+
+◂ ◆ commit:65fa57e  commit
+│ yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)
+│ Author    Joel Webber
+│ Date      2026-11-18T09:53:50-05:00
+│ Commit    65fa57e4ab9db0590d17167ea13e8db902d5bca4
+│
+│ Squashed-from: a82a78a14f08c244967d4ace8e85cadf4c7ec776
+│
+│ 11 files changed, +209 -14
+│ ▸    +1      -1  .agents/skills/yaks-coordinating/SKILL.md
+│ ▸    +1      -1  .agents/skills/yaks-working/SKILL.md
+│ ▸    +2      -2  .agents/skills/yaks/SKILL.md
+│ ▸    +1      -1  README.md
+│ ▸    +5      -3  docs/cli.md
+│ ▸    +1      -1  src/brief.rs
+│ ▸    +1      -1  src/farm.rs
+│ ▸   +22      -0  src/gitrepo.rs
+│ ▾   +10      -2  src/land.rs
+│   @@ -922,11 +922,19 @@ fn record(
+│            return Ok(());
+│        }
+│        let short = g.must(&["rev-parse", "--short", landed])?;
+│   +    let branch = g.text(&["symbolic-ref", "--short", "-q", "HEAD"]);
+│   +    // The commit as a link (yaks-f009): the host's commit page when the code
+│   +    // repo has a known host, so it is a link on GitHub too; else `commit:`,
+│   +    // which yaks itself reads.
+│   +    let dest = match crate::gitrepo::hosting_repo(top, branch.as_deref()) {
+│   +        Ok((_, repo)) => repo.commit_url(landed),
+│   +        Err(_) => format!("commit:{landed}"),
+│   +    };
+│        let note = Landed {
+│            commit: landed.to_string(),
+│            source: source.map(str::to_string),
+│   -        branch: g.text(&["symbolic-ref", "--short", "-q", "HEAD"]),
+│   -        text: format!("landed: {short} {subject}"),
+│   +        branch,
+│   +        text: format!("landed: [{short}]({dest}) {subject}"),
+│        };
+│        let actor = crate::actor::resolve(None);
+│        match farm.record_landed(&ids, &note, actor.as_deref(), opts.dry_run) {
+│ ▸   +70      -1  src/main.rs
+Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit
+=== end ===
