@@ -1,7 +1,7 @@
 ---
 id: yaks-f009
 title: 'Commits phase 4: writers emit host commit links; yaks update --commit'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:03:10Z'
@@ -80,3 +80,9 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 *commits-cli*
 
 Summary: `yaks land` writes `landed: [short](host commit URL | commit:<full>) subject`; `yaks update <id> --commit [<rev>]` records the full sha, refuses unresolvable revs and (with a remote) unpushed commits, warns with no remote. Docs/skills/brief/README updated. Gate: `cargo fmt --check` clean; `cargo test -p yaks --no-fail-fast` all green (1263 unit + integration, incl. 2 new tests in tests/commits.rs); `yaks verify yaks-f009` PASS.
+
+#### 2026-11-18T14:53:46Z
+
+*commits-cli · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG5xW5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
