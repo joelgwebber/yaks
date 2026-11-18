@@ -1,11 +1,11 @@
 ---
 id: yaks-4cfe
 title: 'Sources: one coherent layout for text, provenance, directories and browsing'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-18T00:54:24Z'
+updated: '2026-11-18T00:54:25Z'
 tags:
 - doks
 ---
@@ -82,3 +82,9 @@ Left under this umbrella: yaks-5f14 (set a source's text later), now simpler and
 *sources-triage*
 
 Every child is shorn (`sources-triage`): yaks-5f14 closed with `source set --text`. Joel migrated his farms to schema 10 without a hitch. Closing the umbrella.
+
+#### 2026-11-18T00:54:25Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
