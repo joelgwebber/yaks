@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-15T05:31:38Z'
-updated: '2026-11-18T01:15:37Z'
+updated: '2026-11-18T03:02:47Z'
 parent: yaks-1151
 tags:
 - links
@@ -29,3 +29,9 @@ Open questions for whoever picks it up: where the remote lives for a pure caller
 ## Not in the schema-9 migration
 
 Until this lands, the migration leaves `code:` links, pinned or not, exactly as written, and the legacy `../src/x` and `../blob/<sha>/x` forms as they are. They stay plain text on GitHub, as they are today; nothing in yaks changes for them.
+
+#### 2026-11-18T03:02:47Z
+
+*sources-triage*
+
+The URL-to-code-link reader is now built in yaks-274c (phase 1 of yaks-3515), together with commit links.
