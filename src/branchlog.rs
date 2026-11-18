@@ -85,26 +85,7 @@ fn matches_sha(c: &CommitRef, recorded: &str) -> bool {
 /// `landed` notes `yaks land` writes, whose branch is where the work landed),
 /// each looked up in the code repository at `top`.
 pub fn gather(top: &Path, notes: &[NoteEntry], fetch: bool) -> Vec<BranchCommits> {
-    let mut groups: Vec<((String, String), Vec<&NoteEntry>)> = Vec::new();
-    for n in notes {
-        if n.kind() == Some("landed") {
-            continue;
-        }
-        let Some(branch) = n.get("branch").map(str::trim).filter(|b| !b.is_empty()) else {
-            continue;
-        };
-        let remote = n
-            .get("remote")
-            .map(str::trim)
-            .filter(|r| !r.is_empty())
-            .unwrap_or("origin");
-        let key = (remote.to_string(), branch.to_string());
-        match groups.iter_mut().find(|(k, _)| *k == key) {
-            Some((_, v)) => v.push(n),
-            None => groups.push((key, vec![n])),
-        }
-    }
-    groups
+    crate::yakcommits::branches(notes)
         .into_iter()
         .map(|((remote, branch), notes)| one(top, &remote, &branch, &notes, fetch))
         .collect()

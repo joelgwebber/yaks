@@ -737,7 +737,8 @@ pub struct CommitRef {
 /// yaks-735a), with what the code repository says about it when it can.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordedCommit {
-    /// The note's `kind:` (`landed`, ...); `commit` when it has none.
+    /// The note's `kind:` (`landed`, ...); `commit` when it has none; `link`
+    /// for a commit linked in the note's text.
     pub kind: String,
     /// The recorded sha, as written.
     pub commit: String,
@@ -1854,22 +1855,23 @@ impl Farm {
             Some(top) => crate::branchlog::gather(top, &notes, fetch),
             None => Vec::new(),
         };
-        let recorded = notes
+        // The one collection the TUI's `Code:` rows use too (yaks-ccb9).
+        let space = crate::locate::Space::new(&self.root, code_repo.clone());
+        let recorded = crate::yakcommits::collect(&notes, &|l| space.read_url(l))
             .into_iter()
-            .filter_map(|n| {
-                let commit = n.get("commit")?.to_string();
+            .map(|r| {
                 let found = code_repo
                     .as_deref()
-                    .and_then(|top| git_commit_ref(top, &commit));
-                Some(RecordedCommit {
-                    kind: n.kind().unwrap_or("commit").to_string(),
-                    source: n.get("source").map(str::to_string),
-                    branch: n.get("branch").map(str::to_string),
-                    commit,
-                    ts: n.ts,
-                    actor: n.actor,
+                    .and_then(|top| git_commit_ref(top, &r.commit));
+                RecordedCommit {
+                    kind: r.kind,
+                    source: r.source,
+                    branch: r.branch,
+                    commit: r.commit,
+                    ts: r.ts,
+                    actor: r.actor,
                     found,
-                })
+                }
             })
             .collect();
         let by_message = match &code_repo {

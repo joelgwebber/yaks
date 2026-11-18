@@ -8458,7 +8458,7 @@ mod commit_view {
     #[test]
     fn a_notes_commit_and_source_are_short_links_that_keep_the_full_hash() {
         let (proj, worker, landed, mut app) = fixture();
-        let frame = draw(&app, 100, 24);
+        let frame = draw(&app, 100, 40);
         assert!(
             frame.contains(&format!("commit {}", &landed[..7])),
             "{frame}"
@@ -8480,11 +8480,18 @@ mod commit_view {
                 _ => None,
             })
             .collect();
+        // The `Code:` row (yaks-ccb9), the description's link, then the header's.
         assert_eq!(
             shas,
-            [landed[..7].to_string(), landed.clone(), worker.clone()]
+            [
+                landed.clone(),
+                landed[..7].to_string(),
+                landed.clone(),
+                worker.clone()
+            ]
         );
-        // Tab, Tab: the header's `commit` link; Enter opens the view.
+        // Tab x3: the header's `commit` link; Enter opens the view.
+        tab_key(&mut app);
         tab_key(&mut app);
         tab_key(&mut app);
         draw(&app, 100, 24);

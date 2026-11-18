@@ -50,6 +50,7 @@ mod tick;
 mod tui;
 mod wait;
 mod weight;
+mod yakcommits;
 mod zone;
 
 use anyhow::{Context, Result};
@@ -222,8 +223,10 @@ enum Command {
     },
     /// Show the git commits linked to a yak.
     ///
-    /// Sections. "Recorded" lists the notes that carry a `commit:` key
-    /// (what `yaks land` writes): kind, short sha, branch, the subject from the
+    /// Sections. "Recorded" lists the commits the yak's notes name: a
+    /// `commit:` key (what `yaks land` and `update --commit` write) or a
+    /// commit link in the text (`commit:<sha>`, the host's commit URL; kind
+    /// `link`), once each: kind, short sha, branch, the subject from the
     /// code repository (or "(not in this repository)"), and the note's time and
     /// actor. "Commits naming" greps commit messages for the id in the code
     /// repository: the git top-level of the directory yaks was started from

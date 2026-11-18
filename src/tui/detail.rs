@@ -313,6 +313,54 @@ fn ref_line(prefix: String, glyph: &str, id: &str, title: &str, exists: bool) ->
     }
 }
 
+/// The `Code:` rows of a yak's detail: one per commit its notes record
+/// (`kind short-sha · when`, the sha a [`Target::Commit`] link), newest first,
+/// then one per checkpoint branch. Read without git, so a host commit URL in a
+/// note's text is not counted here (it still opens when followed); `yaks land`
+/// and `update --commit` also write the `commit:` field, which is.
+fn code_rows(task: &Task, clock: &Clock, out: &mut Vec<DLine>) {
+    let notes = crate::store::parse_notes(&task.body);
+    let commits = crate::yakcommits::collect(&notes, &|l| l);
+    let branches = crate::yakcommits::branches(&notes);
+    if commits.is_empty() && branches.is_empty() {
+        return;
+    }
+    out.push(empty());
+    let mut first = true;
+    let mut head = || {
+        let h = format!("{:<13}", if first { "Code:" } else { "" });
+        first = false;
+        h
+    };
+    for r in commits.iter().rev() {
+        let h = head();
+        let short: String = r.commit.chars().take(7).collect();
+        let lead = format!("{h}{} ", r.kind);
+        let col = lead.chars().count();
+        let when = clock.format(&r.ts);
+        out.push(DLine {
+            text: format!("{lead}{short} · {when}"),
+            kind: Kind::Field,
+            links: vec![(
+                col,
+                short.chars().count(),
+                Target::Commit {
+                    sha: r.commit.to_ascii_lowercase(),
+                },
+            )],
+            md: vec![],
+            cont: false,
+            src: None,
+            nowrap: None,
+            image: None,
+        });
+    }
+    for ((remote, branch), _) in &branches {
+        let h = head();
+        out.push(field(&h, &format!("branch {remote}/{branch}")));
+    }
+}
+
 /// [`build_at`] against the pinned test clock (see [`Clock::app_default`]).
 #[cfg(test)]
 pub fn build(task: &Task, all: &[Task]) -> Vec<DLine> {
@@ -519,6 +567,11 @@ pub fn build_at(
             });
         }
     }
+
+    // The yak's code (yaks-ccb9): the commits and branches its notes name,
+    // derived on read like `yaks commits` (the same collection), newest first.
+    // Each commit is a link to its commit view; a branch is named.
+    code_rows(task, clock, &mut out);
 
     // The yak's attachment directory, when it holds files: a row that opens
     // the directory view (yaks-3329).
@@ -1343,6 +1396,46 @@ mod tests {
                 Target::Task("yak-0003".into()), // body ref
                 Target::Task("yak-0002".into()), // body ref (brackets stripped)
             ]
+        );
+    }
+
+    #[test]
+    fn the_code_rows_list_a_yaks_commits_newest_first_and_its_branches() {
+        let body = "#### 2026-01-01T00:00:00Z\n\n*w · kind: checkpoint · commit: abc1234 · branch: wip/x*\n\npushed\n\n#### 2026-01-02T00:00:00Z\n\n*w · kind: landed · commit: def5678 · branch: main*\n\nlanded\n";
+        let all = vec![task("yak-0001", None, &[], body)];
+        let lines = build(&all[0], &all);
+        let at = lines
+            .iter()
+            .position(|l| l.text.starts_with("Code:"))
+            .expect("a Code: row");
+        assert!(
+            lines[at].text.starts_with("Code:        landed def5678"),
+            "{}",
+            lines[at].text
+        );
+        assert!(
+            lines[at + 1]
+                .text
+                .trim_start()
+                .starts_with("checkpoint abc1234")
+        );
+        assert_eq!(lines[at + 2].text.trim_start(), "branch origin/wip/x");
+        assert_eq!(
+            lines[at].links,
+            vec![(
+                20,
+                7,
+                Target::Commit {
+                    sha: "def5678".into()
+                }
+            )]
+        );
+        // No commits, no row.
+        let plain = vec![task("yak-0002", None, &[], "just text")];
+        assert!(
+            !build(&plain[0], &plain)
+                .iter()
+                .any(|l| l.text.starts_with("Code:"))
         );
     }
 

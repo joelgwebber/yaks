@@ -18,8 +18,8 @@ interchangeable.
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
   each one touched (see [Sheds tab](#sheds-tab)).
 - **Detail pane** — the selected yak: fields, parent/deps/children, source and
-  pull requests (`PRs:`, one row per URL; set with `yaks update --pr`), a
-  `Needs:` line when blocked, and the body + timestamped notes. Task-id
+  pull requests (`PRs:`, one row per URL; set with `yaks update --pr`), the
+  yak's code (`Code:`, see [Commits](#commits)), a `Needs:` line when blocked, and the body + timestamped notes. Task-id
   references and URLs in the body, the `Source:` URL and the `PRs:` URLs are
   followable links. It (and every
   right-side overlay) takes ~⅔ of the width, clamped to 48–120 columns; the
@@ -805,7 +805,12 @@ It opens from:
   one (`yaks land` writes both) shows the hash as a short link,
   `coord · 31m ago · landed · commit b0a6d57 · source 37529dc · branch main`,
   and the link keeps the full hash. They are links like any other: `Tab` to
-  one, the peek pane under the yak shows the commit's head, `Enter` opens it.
+  one, the peek pane under the yak shows the commit's head, `Enter` opens it;
+- **the `Code:` rows** of a yak's detail pane, below its fields: every commit
+  its notes name (`landed 7687ed7 · 2h ago`, newest first; a note's `commit:`
+  field or a `commit:<sha>` link in its text), then each checkpoint branch
+  (`branch origin/wip/x`). Derived from the notes on every read, never stored;
+  `yaks commits <id>` is the same list with the code repository's view of it.
 
 | Key | |
 |---|---|

@@ -14,6 +14,8 @@ expression: frame
 │ Updated:     -
 │ Tags:        -
 │
+│ Code:        checkpoint 47076b0 · Jan 1, 2026 00:00 UTC
+│
 │ The description.
 │
 │ Plan
@@ -22,8 +24,6 @@ expression: frame
 │ • two
 │
 │ ▸ tex-1 · Jan 1, 2026 00:00 UTC · checkpoint · commit 47076b0 ─────────────────────────
-│ Atlas and UVs done.
-│
 │ ── peek ───────────────────────────────────────────────────────────────────────────────
 │
 │
