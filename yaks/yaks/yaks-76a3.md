@@ -3,7 +3,7 @@ id: yaks-76a3
 title: Not-in-a-repo error should name -C
 status: hairy
 type: chore
-priority: 4
+priority: 3
 created: '2026-11-07T15:58:17Z'
 updated: '2026-11-18T14:43:00Z'
 tags:
