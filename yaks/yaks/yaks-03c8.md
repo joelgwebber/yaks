@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-18T00:01:10Z'
+updated: '2026-11-18T00:01:24Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -47,3 +47,28 @@ src/sources.rs tests done (38 pass). Replaced: directory-joins-its-text -> tree-
 *s10tests-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-18T00:01:24Z
+
+*s10tests-1*
+
+Summary (s10tests-1). Gate: fmt clean; `cargo test -p yaks --no-fail-fast` 1478 passed, 0 failed, 19 ignored (all targets). `yaks verify` PASS.
+
+Per file:
+- src/sources.rs: fixtures and assertions moved to `sources/<name>.md` (+ sibling). `part_of`/`superseded_by`/citations use `<stem>.md`; `source_dirs` now lists the `.md` files; the sha8-collision test stages a file plus sibling and an unslugged file. Plan_slugs tests read via `legacy_list`.
+- src/links.rs: `exists` test (file, `.md`, sibling file, missing sibling file).
+- src/migrate.rs: schema-9 branch test now expects one run to do 9 and 10: still two commits (move, rewrite); the rewrite commit also converts the sources (modifications plus `sources/` changes, `s10.sources == 1`, one `.md`, no directory, marker 10).
+- src/store.rs: schema gate: 10 current, 9 older and refused ("yaks migrate"), 11 newer.
+- src/tui/dirview.rs, doks_tab.rs, follow.rs, handlers.rs: new layout. doks_tab fixture source is one file; viewer test asserts no `extracted.md` section.
+- tests/check.rs, find.rs, sources.rs, url.rs, cli.rs, merge_driver.rs, root_layout.rs, sync.rs: the integration fixtures; the cli/merge_driver/root_layout/sync ones were only the schema number (tests/fixtures/farm/.yaks/schema is now 10).
+
+Replaced (purpose gone), not updated:
+- a_directory_keeps_its_layout_and_joins_its_text -> a_directory_keeps_its_tree_in_the_sibling_and_links_it (tree directly in sibling, `file_count`, no `files:`/`files/`, body is the tree link, `skipped:` in frontmatter).
+- text_is_refused_for_a_directory_and_for_binary -> text_is_refused_for_binary_and_a_missing_file, plus new text_on_a_directory_is_its_body.
+- refresh_with_text_only_collapses_an_existing_two_file_source -> refresh_with_text_only_drops_a_kept_original (JSON original).
+- plan_slugs "exact name wins" half -> a_duplicated_id_resolves_by_the_exact_name_only.
+- New: a_json_original_is_kept_and_its_body_is_fenced, find: a_directory_sources_tree_is_searched_in_place.
+
+Snapshots accepted (diff was only the path): doks_tab_list.snap (`sources/<id>.md`), doks_tab_dok.snap (`sources:` row). Both .snap.new deleted after moving (assertion_line header stripped). No snapshot rejected.
+
+Notes for the coordinator: a doc comment in doks_tab.rs (`DocKind::Source`, line 32) still says `sources/<id>/source.md`; non-test, left alone. `source_refs` in check.rs does not count `sources/<id>.md.` (sentence-ending dot) as a citation: a prose citation "See /sources/<id>.md." is missed (the name run swallows the trailing dot); I wrote the test with a link instead. Probably worth a follow-up yak, not a blocker.
