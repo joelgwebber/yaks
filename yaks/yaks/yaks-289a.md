@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-17T22:54:06Z'
+updated: '2026-11-18T00:06:13Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-535c
@@ -24,3 +24,11 @@ Part of yaks-4cfe. A directory source's joined `extracted.md` copies each file's
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-18T00:06:13Z
+
+*sources-triage*
+
+Closed by yaks-e83f (`sources-triage`). A directory source's tree now sits directly in `sources/<name>/`, with no `files/` level and no joined copy, so the tree's own relative links are simply right.
+
+Shown on a migrated copy of this farm: YASS's `README.md` links `[docs/monorepo.md](docs/monorepo.md)`, and `docs/monorepo.md` is beside it. A link from a dok to a joined-text heading (`extracted.md#docs-monorepomd`) is rewritten by the migration to that file of the tree.
