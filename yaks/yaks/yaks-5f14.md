@@ -1,11 +1,11 @@
 ---
 id: yaks-5f14
 title: 'source: add or replace extracted text for an existing source'
-status: hairy
+status: shaving
 type: feature
 priority: 3
 created: '2026-11-08T22:04:33Z'
-updated: '2026-11-18T00:06:12Z'
+updated: '2026-11-18T00:48:47Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
@@ -22,3 +22,9 @@ Want: a way to set or replace a source's `extracted.md` by id (for example `yaks
 *sources-triage*
 
 Unblocked by yaks-e83f (schema 10). The want is now simpler: set or replace a source's **body** (its text) by id, keeping its frontmatter. E.g. `yaks source text <id> FILE`, or `source add --text` on bytes already saved updating the body and saying so. Still to do.
+
+#### 2026-11-18T00:48:47Z
+
+*sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
