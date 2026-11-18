@@ -58,3 +58,5 @@ Plan (`commits-tui`):
 ![tui-commit-landed](yaks-3f90/tui-commit-landed.svg)
 
 ![tui-commit-missing](yaks-3f90/tui-commit-missing.svg)
+
+![tui-commit-header](yaks-3f90/tui-commit-header.svg)
