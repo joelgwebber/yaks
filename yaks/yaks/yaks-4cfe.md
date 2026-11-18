@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-17T21:45:02Z'
+updated: '2026-11-18T00:06:32Z'
 tags:
 - doks
 ---
@@ -58,3 +58,21 @@ Batch 1 spawned (Delta subthreads, `claude-sonnet-5-5`, base `52d80dd3`):
 - `browse-1`: thread `ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGzP4JIBxBCA0aLJyrhJPreUvVwLftHG`
 
 Held for the human: yaks-e83f's second ask (layout, schema 10). yaks-535c, yaks-289a and yaks-5f14 wait on it. yaks-93ee (archive browsing) is filed top-level for later.
+
+#### 2026-11-18T00:06:32Z
+
+*sources-triage*
+
+Batch 2 (`sources-triage`): schema 10.
+
+- I wrote the code, docs and migration myself.
+- `s10tests-1` (`claude-sonnet-5-5`, base `14cf78d5`) updated the tests (yaks-03c8): it landed cleanly, and it found one real bug (prose citations at the end of a sentence), fixed in `06e0ebe9`.
+
+Results so far, by model:
+
+- **Sonnet workers:** 5 batches, 9 yaks. All landed. Two needed coordinator follow-ups that their tests had missed:
+  - `attach-2`: the directory link didn't parse;
+  - `srccli-1` ↔ `attach-2`: a merge over the shared walk.
+- **Opus (coordinator):** design, landings, schema 10.
+
+Left under this umbrella: yaks-5f14 (set a source's text later), now simpler and unblocked, but not part of this pass. The real farm's `yaks migrate` waits for Joel.
