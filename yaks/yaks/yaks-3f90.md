@@ -113,3 +113,9 @@ moved: shaving -> shorn
 landed: 7687ed7d yaks-3f90: commit links in the TUI and a commit view in the pane (note commit:/source: fields as short links, Landed as, missing-commit view, O take-out)
 
 [commit-view-real-farm](yaks-3f90/commit-view-real-farm.txt)
+
+#### 2026-11-18T15:34:23Z
+
+*sources-triage*
+
+Coordinator check after landing (7687ed7d): headless 130x34 against the real farm; yaks-274c's landed header link opened the commit view for b0a6d57 (9 files); Enter on src/check.rs opened it @b0a6d57; o came back. Gate green on main.
