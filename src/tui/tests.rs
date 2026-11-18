@@ -8551,7 +8551,7 @@ mod commit_view {
     }
 
     #[test]
-    fn enter_on_a_file_opens_the_code_viewer_at_that_commit_and_o_comes_back() {
+    fn enter_on_a_file_unfolds_its_diff_and_on_a_diff_line_opens_the_file_at_that_commit() {
         let (proj, _, landed, mut app) = fixture();
         tab_key(&mut app);
         draw(&app, 100, 24);
@@ -8560,8 +8560,22 @@ mod commit_view {
         // The first file is README.md (git lists paths sorted).
         press(&mut app, "j");
         draw(&app, 100, 24);
+        // Enter on the file unfolds its diff (yaks-5df7), and folds it again.
+        enter_key(&mut app);
+        assert!(draw(&app, 100, 24).contains("+fn b() {}"));
+        assert!(
+            app.attach().is_none(),
+            "the file row stays in the commit view"
+        );
+        enter_key(&mut app);
+        assert!(!draw(&app, 100, 24).contains("+fn b() {}"));
+        enter_key(&mut app);
+        draw(&app, 100, 24);
         // Change the working file: the viewer must show the commit's text.
         std::fs::write(proj.join("src/a.rs"), "changed\n").unwrap();
+        // The hunk header's row, then Enter: the file at the commit.
+        press(&mut app, "j");
+        draw(&app, 100, 24);
         enter_key(&mut app);
         let v = app.attach().expect("the code viewer");
         assert_eq!(v.rev.as_deref(), Some(landed.as_str()));
@@ -8649,12 +8663,16 @@ mod commit_view {
         enter_key(&mut app);
         draw(&app, 100, 24);
         press(&mut app, "j"); // the second file
+        enter_key(&mut app); // unfold its diff
+        draw(&app, 100, 24);
+        press(&mut app, "j"); // its hunk header
         let at = app.commit_view().unwrap().cursor();
         enter_key(&mut app); // into the code viewer
         assert!(app.attach().is_some());
         press(&mut app, "o");
         let v = app.commit_view().expect("o re-reads the commit view");
         assert_eq!((v.sha.as_str(), v.cursor()), (landed.as_str(), at));
+        assert_eq!(v.open_folds(), ["src/a.rs"], "and its open diff");
         press(&mut app, "o");
         assert!(app.commit_view().is_none(), "o again: the yak");
         press(&mut app, "i");

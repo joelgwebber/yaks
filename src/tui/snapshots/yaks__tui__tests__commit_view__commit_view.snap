@@ -25,4 +25,4 @@ viewing commit:634a3fe
 │
 │
 │
-Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit
+Esc:close  j/k:move  Enter:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit

@@ -42,6 +42,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="383.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="401.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="419.5"><tspan x="10.0" class="s3">│</tspan></text>
-<text xml:space="preserve" y="437.5"><tspan x="10.0" class="s5">Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit</tspan></text>
+<text xml:space="preserve" y="437.5"><tspan x="10.0" class="s5">Esc:close  j/k:move  Enter:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit</tspan></text>
 </g>
 </svg>

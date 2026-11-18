@@ -790,8 +790,8 @@ A commit of the code repository is a link, and **`Enter` on one opens the
 commit view** in the right pane, beside the text, image and directory views.
 It shows what `git show --stat` would, from the code checkout: the subject, the
 author and date, the full hash, the message, then the changed files with their
-`+added -deleted` counts (a binary file's are `-`). `Space` on a file unfolds
-its diff inline, under its row.
+`+added -deleted` counts (a binary file's are `-`). `Enter` on a file unfolds
+its diff inline, under its row; `Enter` on a diff line opens the file there.
 
 It opens from:
 
@@ -816,8 +816,8 @@ It opens from:
 | Key | |
 |---|---|
 | `j`/`k`, `↓`/`↑`, `d`/`u`, `PgDn`/`PgUp`, `g`/`G`, `Home`/`End` | Move the cursor (it rests on the first thing `Enter` can open) |
-| `Enter` | On a file: open it in the code viewer **as it was at that commit** (the path a pinned `code:path@sha` link takes), whatever the working tree holds; on a diff line, at that line (a deleted line: where it was); `o` comes back here with the cursor where it was, `i` goes forward. On `Landed as`: open that commit |
-| `Space` | Unfold the file's diff under its row, or fold it back (from a diff line, its file's): hunk headers cyan, added lines green, deleted red, three lines of context, against the first parent for a merge. Read from git when first unfolded. `l`/`→` unfold, `h`/`←` fold and put the cursor back on the file. The open diffs come back with `o`/`i` |
+| `Enter` | On a file: **unfold its diff** under its row, or fold it back (as `Enter` folds a directory in the directory view). On a diff line: open the file in the code viewer **as it was at that commit**, at that line (a deleted line: where it was), whatever the working tree holds; `o` comes back here with the cursor and the open diffs as they were, `i` goes forward. On `Landed as`: open that commit |
+| `Space` | Unfold or fold the diff, as `Enter` on a file does, but from a diff line too (its file's). A diff shows hunk headers cyan, added lines green, deleted red, three lines of context, against the first parent for a merge, read from git when first unfolded. `l`/`→` unfold, `h`/`←` fold and put the cursor back on the file |
 | `y` | Copy the full hash |
 | `O` | Take the commit out: `g` copies the host commit URL (the same one `yaks url commit:<sha>` prints), `p` copies the full hash. A commit is no file, so the menu has no `e`, `o` or `r` |
 | `Esc` | Close the view, back to where it was opened from |

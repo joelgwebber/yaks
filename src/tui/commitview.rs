@@ -7,14 +7,14 @@
 //!   the `commit:` / `source:` hash in a note's header. A jump of the app's
 //!   one history ([`super::history`]).
 //! - **Keys** are the table's ([`super::keymap`], `Ctx::Commit`): `j`/`k` move,
-//!   `Enter` opens the file under the cursor in the code viewer *at this
-//!   commit* (the path a pinned `code:path@sha` link takes), or the commit a
-//!   `Landed as` row names; `y` copies the hash; `O` takes the commit out
+//!   `Enter` on a file unfolds its diff (below), on a diff line opens the file
+//!   in the code viewer *at this commit* at that line (the path a pinned
+//!   `code:path@sha#L` link takes), on a `Landed as` row the commit it names; `y` copies the hash; `O` takes the commit out
 //!   (`g` the host URL, `p` the hash); `Esc` closes. Nothing here writes.
 //! - **A squashed worker commit** (the `source:` of a landed note) says
 //!   `Landed as <sha>` and links to it.
-//! - **A file's diff unfolds inline** (yaks-bdab): `Space` (or `l`/`→`) on a
-//!   file row shows its patch under it, hunk headers cyan, `+` green, `-` red;
+//! - **A file's diff unfolds inline** (yaks-bdab): `Enter`, `Space` or `l`/`→`
+//!   on a file row shows its patch under it, hunk headers cyan, `+` green, `-` red;
 //!   `h`/`←` folds it back (from a patch line, the cursor goes to its file).
 //!   `Enter` on a patch line opens the file at this commit at that line. The
 //!   patch is read from git once, when first unfolded; the open folds are part
@@ -627,13 +627,15 @@ impl App {
         }
     }
 
-    /// `Enter`: a file opens in the code viewer at this commit (a jump, so `o`
-    /// comes back here); `Landed as` opens the landed commit.
+    /// `Enter`: a file unfolds or folds its diff, as `Enter` folds a
+    /// directory in the directory view (yaks-5df7: the diff is what a commit
+    /// view is for); a diff line opens the file at this commit at that line (a
+    /// jump, so `o` comes back here); `Landed as` opens the landed commit.
     fn commit_enter(&mut self) {
         let Some(v) = self.commit_view() else { return };
         let sha = v.sha.clone();
         match v.selected() {
-            Some(Item::File(path)) => self.open_code(&path, None, Some(&sha)),
+            Some(Item::File(_)) => v.toggle(),
             Some(Item::Patch(path, line)) => self.open_code(&path, Some((line, line)), Some(&sha)),
             Some(Item::Commit(to)) => self.open_commit(&to),
             None => {}
