@@ -401,7 +401,8 @@ impl App {
         match j.target {
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
-            detail::Target::Url(u) => self.open_external(&u),
+            detail::Target::Url(u) => self.follow_url(&u),
+            detail::Target::Commit { sha } => self.open_commit(&sha),
             detail::Target::Artifact(p) => self.open_external(&p),
             detail::Target::Source { path, lines, rev } => {
                 self.open_code(&path, lines, rev.as_deref())

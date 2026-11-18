@@ -241,6 +241,10 @@ impl App {
                 view: DocView::Dir(_),
                 ..
             }) => format!("{base} · doc=dir"),
+            Some(DocPane {
+                view: DocView::Commit(_),
+                ..
+            }) => format!("{base} · doc=commit"),
             None => base,
         };
         // A yak shown from outside the list: not the selected row's.

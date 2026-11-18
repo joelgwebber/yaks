@@ -202,6 +202,10 @@ impl App {
                 .ok_or_else(|| format!("{path}: no farm to read"))?;
             return super::dirview::DirView::open(&root, rel).map(DocView::Dir);
         }
+        // A commit of the code repository, shown by `open_commit`.
+        if let Some(sha) = path.strip_prefix("commit:") {
+            return self.read_commit_view(sha).map(DocView::Commit);
+        }
         // A code file of the checkout, shown by `open_code`.
         if let Some(rel) = path.strip_prefix("code:") {
             return self.read_code_view(rel, rev, None).map(DocView::Text);

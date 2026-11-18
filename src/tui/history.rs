@@ -214,6 +214,18 @@ impl App {
                 scroll: 0,
                 folds: v.open_folds(),
             }),
+            Some(DocPane {
+                view: DocView::Commit(v),
+                from,
+            }) => Some(PaneAt::Doc {
+                path: format!("commit:{}", v.sha),
+                rev: None,
+                from: *from,
+                under: self.pane_yak.clone(),
+                line: v.cursor(),
+                scroll: 0,
+                folds: Vec::new(),
+            }),
             None if self.focus == Focus::Detail => {
                 if let Some(s) = self.selected_shed() {
                     Some(PaneAt::Shed(s.name.clone()))
@@ -392,6 +404,9 @@ impl App {
                 Ok(mut view) => {
                     if let DocView::Dir(d) = &mut view {
                         d.restore(folds, *line);
+                    }
+                    if let DocView::Commit(c) = &view {
+                        c.restore(*line);
                     }
                     if let (DocView::Text(v), Some(w)) = (&mut view, doc_width) {
                         v.width.set(w);

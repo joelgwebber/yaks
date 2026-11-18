@@ -304,6 +304,9 @@ impl App {
         if self.dir().is_some() {
             return self.scroll_dir(delta);
         }
+        if self.commit_view().is_some() {
+            return self.scroll_commit(delta);
+        }
         let Some((lines, vp)) = self.attachment_rows() else {
             return;
         };

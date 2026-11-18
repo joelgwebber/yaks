@@ -496,6 +496,7 @@ pub(crate) fn link_dest(target: Target) -> Option<String> {
         }
         Target::Farm { path, rev, anchor } => Some(label(&Link::Farm { path, rev, anchor })),
         Target::Local(a) => Some(label(&Link::Local(a))),
+        Target::Commit { sha } => Some(label(&Link::Commit { sha })),
         Target::Note { id, anchor } => Some(label(&Link::Yak {
             id,
             note: Some(anchor),

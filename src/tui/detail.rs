@@ -49,6 +49,12 @@ pub enum Target {
     },
     /// An anchor in the same document (`#section`, `#L12`).
     Local(crate::links::Anchor),
+    /// A commit of the code repository (`commit:<sha>`, a note's `commit:` and
+    /// `source:` fields, yaks-3f90): opens the commit view. `sha` is kept as
+    /// written (full in a note field); only the display is short.
+    Commit {
+        sha: String,
+    },
 }
 
 impl Target {
@@ -77,6 +83,7 @@ impl Target {
                     anchor: None,
                 }
             }
+            Target::Commit { sha } => Link::Commit { sha: sha.clone() },
             Target::Task(_)
             | Target::Note { .. }
             | Target::Url(_)
@@ -816,38 +823,73 @@ fn editor_rows(n: usize) -> impl Iterator<Item = DLine> {
 /// The label of a comment block: `actor · when`, then its metadata compactly
 /// (`· checkpoint · commit 47076b0`: the `kind` first, bare, then each other
 /// key as `key value`), or just `when` without an actor. One design for the
-/// detail pane's comment headers.
+/// detail pane's comment headers. A `commit:` or `source:` value that is a
+/// hash shows its first 7 characters ([`comment_label_links`] keeps the rest).
 pub fn comment_label(kind: &content::BlockKind, clock: &Clock) -> String {
-    match kind {
-        content::BlockKind::Description => "description".into(),
-        content::BlockKind::Comment {
-            timestamp,
-            actor,
-            meta,
-        } => {
-            let when = clock.format(timestamp);
-            let mut label = match actor {
-                Some(a) => format!("{a} · {when}"),
-                None => when,
-            };
-            let kind = meta.iter().find(|(k, _)| k == "kind");
-            let rest = meta.iter().filter(|(k, _)| k != "kind");
-            for part in kind
-                .map(|(_, v)| v.clone())
-                .into_iter()
-                .chain(rest.map(|(k, v)| format!("{k} {v}")))
-            {
-                label.push_str(" · ");
-                label.push_str(&part);
+    comment_label_links(kind, clock).0
+}
+
+/// [`comment_label`], and the commit links in it as `(char col, len, target)`
+/// into the label: a note's `commit:` and `source:` fields hold full hashes,
+/// shown short and opening the commit view with the full hash (yaks-3f90).
+fn comment_label_links(
+    kind: &content::BlockKind,
+    clock: &Clock,
+) -> (String, Vec<(usize, usize, Target)>) {
+    let content::BlockKind::Comment {
+        timestamp,
+        actor,
+        meta,
+    } = kind
+    else {
+        return ("description".into(), vec![]);
+    };
+    let when = clock.format(timestamp);
+    let mut label = match actor {
+        Some(a) => format!("{a} \u{b7} {when}"),
+        None => when,
+    };
+    let mut links = Vec::new();
+    let kind_first = meta.iter().find(|(k, _)| k == "kind");
+    if let Some((_, v)) = kind_first {
+        label.push_str(" \u{b7} ");
+        label.push_str(v);
+    }
+    for (k, v) in meta.iter().filter(|(k, _)| k != "kind") {
+        label.push_str(&format!(" \u{b7} {k} "));
+        let hash = matches!(k.as_str(), "commit" | "source")
+            .then(|| {
+                match crate::links::parse(&format!("commit:{v}"), crate::links::From::Yak, |_| {
+                    false
+                }) {
+                    crate::links::Link::Commit { sha } => Some(sha),
+                    _ => None,
+                }
+            })
+            .flatten();
+        match hash {
+            Some(sha) => {
+                let short = &v[..v.len().min(7)];
+                links.push((
+                    label.chars().count(),
+                    short.chars().count(),
+                    Target::Commit { sha },
+                ));
+                label.push_str(short);
             }
-            label
+            None => label.push_str(v),
         }
     }
+    (label, links)
 }
 
 /// A comment's header row in the detail pane: `▸ actor · when ────`.
 fn comment_header(kind: &content::BlockKind, clock: &Clock, width: usize, block: usize) -> DLine {
-    header_row(&comment_label(kind, clock), width, block, None)
+    let (label, links) = comment_label_links(kind, clock);
+    let mut row = header_row(&label, width, block, None);
+    // The row is `▸ <label> ───`: the label starts after the 2-char marker.
+    row.links = links.into_iter().map(|(c, l, t)| (c + 2, l, t)).collect();
+    row
 }
 
 /// A block header row: `▸ label ────` to the pane width. For the block under
@@ -932,7 +974,7 @@ fn char_disp(c: char) -> usize {
 /// `[start, end)` char ranges of each visual row. Breaks at the last space that
 /// fits (consuming it); hard-breaks a single word longer than `width`. Leading
 /// whitespace of the first row is preserved.
-fn wrap_ranges(chars: &[char], width: usize) -> Vec<(usize, usize)> {
+pub(crate) fn wrap_ranges(chars: &[char], width: usize) -> Vec<(usize, usize)> {
     let n = chars.len();
     let mut rows = Vec::new();
     let mut start = 0;

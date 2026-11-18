@@ -760,7 +760,8 @@ get their own one line too.
 **`O` takes it out**, on every surface that has a file or link under the
 cursor: the text viewer (the cursor's line, or the selected lines), a link on a
 yak pane's line (with no link, the yak itself), a Doks row, a yak row, the image
-viewer, the selected file of a [directory view](#browsing-a-directory). It opens a small menu over the foot of the screen; none of its keys
+viewer, the selected file of a [directory view](#browsing-a-directory), a
+[commit](#commits) (a menu of just `p` and `g`). It opens a small menu over the foot of the screen; none of its keys
 changes a yak. `Enter` on a pane link still follows it.
 
 | Key | |
@@ -782,6 +783,62 @@ referenced commit is not in this checkout, `p`, `e` and `o` give the same
 missing-commit message as the viewer; `g` still works, since a link needs
 nothing local, and adds that the remote has not got the commit either when the
 last fetch did not see it there.
+
+## Commits
+
+A commit of the code repository is a link, and **`Enter` on one opens the
+commit view** in the right pane, beside the text, image and directory views.
+It shows what `git show --stat` would, from the code checkout: the subject, the
+author and date, the full hash, the message, then the changed files with their
+`+added -deleted` counts (a binary file's are `-`).
+
+It opens from:
+
+- **a `commit:<sha>` link** (`[the fix](commit:3f2a9c1)`, 7 to 40 hex digits)
+  in a yak, a dok or a note;
+- **the code repository's own host commit URL** (`https://github.com/o/r/commit/<sha>`;
+  GitLab and Gitea forms too), written as a plain link or a bare URL. `Enter`
+  reads it back as the commit it names, and a file URL pinned to a commit opens
+  the code viewer at that commit; another repository's URL still goes to the
+  system opener;
+- **a note's `commit:` and `source:` fields**: the header of a note that carries
+  one (`yaks land` writes both) shows the hash as a short link,
+  `coord · 31m ago · landed · commit b0a6d57 · source 37529dc · branch main`,
+  and the link keeps the full hash. They are links like any other: `Tab` to
+  one, the peek pane under the yak shows the commit's head, `Enter` opens it.
+
+| Key | |
+|---|---|
+| `j`/`k`, `↓`/`↑`, `d`/`u`, `PgDn`/`PgUp`, `g`/`G`, `Home`/`End` | Move the cursor (it rests on the first thing `Enter` can open) |
+| `Enter` | On a file: open it in the code viewer **as it was at that commit** (the path a pinned `code:path@sha` link takes), whatever the working tree holds; `o` comes back here with the cursor where it was, `i` goes forward. On `Landed as`: open that commit |
+| `y` | Copy the full hash |
+| `O` | Take the commit out: `g` copies the host commit URL (the same one `yaks url commit:<sha>` prints), `p` copies the full hash. A commit is no file, so the menu has no `e`, `o` or `r` |
+| `Esc` | Close the view, back to where it was opened from |
+
+![A commit link on a note header, the peek pane showing the commit's head](assets/tui-commit-header.svg)
+
+![The commit view: subject, author, date, message, and the files with their counts](assets/tui-commit-view.svg)
+
+**A squashed worker commit says where it landed.** `yaks land` squashes a
+worker's commits, and its `landed` note records the worker's hash as `source:`
+and the commit it landed as `commit:`. The view of a hash that is the `source:`
+of a landed note has a `Landed as 342c099` row, link-styled and under the
+cursor: `Enter` opens the landed commit, `o` comes back. Only landed notes are
+read for this, and only in yaks that mention the hash.
+
+![A worker commit's view, the Landed as row under the cursor](assets/tui-commit-landed.svg)
+
+**A commit this checkout lacks** (an agent on another machine never pushed it,
+or it was dropped) is not an error. The view says `commit abc1234 is not in this
+checkout; fetch it or open on the host`, then gives the host commit URL (or why
+there is none: no remote, a domain yaks does not recognise) and
+`yaks commits <yak> --fetch`, which fetches the branch its note recorded. `O`
+still works: `g` needs nothing local.
+
+![A commit missing from this checkout: the reason, the host link, and the fetch command](assets/tui-commit-missing.svg)
+
+With no code checkout to look in, `Enter` says so in the status bar and nothing
+opens. Nothing here writes to the farm or the repository.
 
 ## Browsing a directory
 
@@ -858,7 +915,7 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
   shows. It is the one history of the TUI (see *History* below); `Esc` closes
   the viewer and forgets nothing.
 - **Peek**: while the line cursor is on a link it can read (a farm document, an
-  in-page anchor, an attachment, a source, a `code:` file), a pane at the bottom
+  in-page anchor, an attachment, a source, a `code:` file, a `commit:` link), a pane at the bottom
   shows `yaks peek` of it: the section a `#heading` names, the lines of a
   `#L12-L40`, or a document's fields and first paragraph, cut to fit. It is the
   same pane under a dok in the viewer and under a yak's lines in the detail

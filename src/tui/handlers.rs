@@ -1672,7 +1672,8 @@ impl App {
                     None => self.open_external(&u),
                 }
             }
-            detail::Target::Url(u) => self.open_external(&u),
+            detail::Target::Url(u) => self.follow_url(&u),
+            detail::Target::Commit { sha } => self.open_commit(&sha),
             detail::Target::Source { path, lines, rev } => {
                 self.open_code(&path, lines, rev.as_deref())
             }

@@ -8380,3 +8380,260 @@ fn tab_in_the_viewer_scrolls_a_wide_table_link_into_view() {
     shift_tab_key(&mut app);
     assert!(draw(&app, 50, 24).contains("one"));
 }
+
+// -- the commit view (yaks-3f90) ---------------------------------------------
+
+mod commit_view {
+    use super::*;
+    use std::path::Path;
+    use std::process::Command;
+
+    fn git(dir: &Path, args: &[&str]) -> String {
+        let out = Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
+            .args(args)
+            .env("GIT_AUTHOR_DATE", "2026-09-09T10:00:00+00:00")
+            .env("GIT_COMMITTER_DATE", "2026-09-09T10:00:00+00:00")
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {out:?}");
+        String::from_utf8(out.stdout).unwrap().trim().to_string()
+    }
+
+    /// A code checkout with a worker commit and the commit it landed as, a
+    /// yak `t0` whose description links the landed commit and whose `landed`
+    /// note carries both hashes. Returns (checkout, worker, landed, app) with
+    /// the yak's pane open and measured.
+    fn fixture() -> (PathBuf, String, String, App) {
+        let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        std::fs::create_dir_all(proj.join("src")).unwrap();
+        git(&proj, &["init", "-q", "-b", "main"]);
+        std::fs::write(proj.join("src/a.rs"), "fn a() {}\n").unwrap();
+        git(&proj, &["add", "src"]);
+        git(&proj, &["commit", "-q", "-m", "worker: add a.rs"]);
+        let worker = git(&proj, &["rev-parse", "HEAD"]);
+        std::fs::write(proj.join("src/a.rs"), "fn a() {}\nfn b() {}\n").unwrap();
+        std::fs::write(proj.join("README.md"), "# hi\n").unwrap();
+        git(&proj, &["add", "src", "README.md"]);
+        git(
+            &proj,
+            &[
+                "commit",
+                "-q",
+                "-m",
+                "Add b and a readme",
+                "-m",
+                "A second line of the message,\nwith a break.",
+            ],
+        );
+        let landed = git(&proj, &["rev-parse", "HEAD"]);
+        git(
+            &proj,
+            &["remote", "add", "origin", "https://github.com/o/r.git"],
+        );
+        let body = format!("The fix is [the commit](commit:{}).", &landed[..7]);
+        let body = crate::store::append_note_meta(
+            &body,
+            "2026-09-10T11:00:00Z",
+            Some("joel"),
+            &[
+                ("kind", "landed"),
+                ("commit", &landed),
+                ("source", &worker),
+                ("branch", "main"),
+            ],
+            "Landed.",
+        );
+        let mut t = task("t0", "solo", Status::Hairy, 3, None);
+        t.body = body;
+        crate::store::write::save(farm.root(), &t).unwrap();
+        let mut app = App::with_farm(farm).unwrap();
+        enter_key(&mut app);
+        draw(&app, 100, 24);
+        (proj, worker, landed, app)
+    }
+
+    #[test]
+    fn a_notes_commit_and_source_are_short_links_that_keep_the_full_hash() {
+        let (proj, worker, landed, mut app) = fixture();
+        let frame = draw(&app, 100, 24);
+        assert!(
+            frame.contains(&format!("commit {}", &landed[..7])),
+            "{frame}"
+        );
+        assert!(
+            frame.contains(&format!("source {}", &worker[..7])),
+            "{frame}"
+        );
+        assert!(
+            !frame.contains(&landed),
+            "only the short hash shows:\n{frame}"
+        );
+        let shas: Vec<String> = app
+            .detail_dlines()
+            .iter()
+            .flat_map(|l| l.links.iter())
+            .filter_map(|(_, _, t)| match t {
+                crate::tui::detail::Target::Commit { sha } => Some(sha.clone()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            shas,
+            [landed[..7].to_string(), landed.clone(), worker.clone()]
+        );
+        // Tab, Tab: the header's `commit` link; Enter opens the view.
+        tab_key(&mut app);
+        tab_key(&mut app);
+        draw(&app, 100, 24);
+        enter_key(&mut app);
+        assert_eq!(app.commit_view().unwrap().sha, landed);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn enter_on_a_commit_link_shows_the_commit() {
+        let (proj, _, landed, mut app) = fixture();
+        tab_key(&mut app); // the description's link
+        draw(&app, 100, 24);
+        enter_key(&mut app);
+        assert_eq!(app.surface_ctx(), keymap::Ctx::Commit);
+        let frame = draw(&app, 100, 24).replace(&landed, "<sha>");
+        insta::assert_snapshot!("commit_view", frame);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn enter_on_a_file_opens_the_code_viewer_at_that_commit_and_o_comes_back() {
+        let (proj, _, landed, mut app) = fixture();
+        tab_key(&mut app);
+        draw(&app, 100, 24);
+        enter_key(&mut app);
+        draw(&app, 100, 24);
+        // The first file is README.md (git lists paths sorted).
+        press(&mut app, "j");
+        draw(&app, 100, 24);
+        // Change the working file: the viewer must show the commit's text.
+        std::fs::write(proj.join("src/a.rs"), "changed\n").unwrap();
+        enter_key(&mut app);
+        let v = app.attach().expect("the code viewer");
+        assert_eq!(v.rev.as_deref(), Some(landed.as_str()));
+        let (rows, _) = app.attachment_rows().unwrap();
+        assert!(rows.iter().any(|r| r.text.contains("fn b()")), "{rows:?}");
+        press(&mut app, "o");
+        assert_eq!(app.commit_view().unwrap().sha, landed, "o comes back");
+        press(&mut app, "i");
+        assert!(app.attach().is_some(), "i goes forward");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_squashed_worker_commit_says_landed_as_and_links_to_it() {
+        let (proj, worker, landed, mut app) = fixture();
+        app.open_commit(&worker);
+        let frame = draw(&app, 100, 24).replace(&landed, "<sha>");
+        assert!(
+            frame.contains(&format!("Landed as {}", &landed[..7])),
+            "{frame}"
+        );
+        // The cursor starts on that row: Enter follows it.
+        enter_key(&mut app);
+        assert_eq!(app.commit_view().unwrap().sha, landed);
+        press(&mut app, "o");
+        assert_eq!(app.commit_view().unwrap().sha, worker);
+        insta::assert_snapshot!("commit_view_landed_as", {
+            let f = draw(&app, 100, 24);
+            f.replace(&landed, "<landed>").replace(&worker, "<worker>")
+        });
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_missing_commit_says_so_and_offers_the_host_link_and_fetch() {
+        let (proj, _, _, mut app) = fixture();
+        let ghost = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+        app.open_commit(ghost);
+        let frame = draw(&app, 100, 24);
+        assert!(frame.contains("is not in this checkout"), "{frame}");
+        assert!(
+            frame.contains(&format!("https://github.com/o/r/commit/{ghost}")),
+            "{frame}"
+        );
+        assert!(frame.contains("yaks commits t0 --fetch"), "{frame}");
+        insta::assert_snapshot!("commit_view_missing", frame);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn o_takes_the_commit_out_g_the_host_url_p_the_hash() {
+        let (proj, _, landed, mut app) = fixture();
+        app.open_commit(&landed);
+        draw(&app, 100, 24);
+        press(&mut app, "Og");
+        assert_eq!(
+            crate::tui::takeout::copied().as_deref(),
+            Some(format!("https://github.com/o/r/commit/{landed}").as_str())
+        );
+        press(&mut app, "Op");
+        assert_eq!(
+            crate::tui::takeout::copied().as_deref(),
+            Some(landed.as_str())
+        );
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_pasted_host_commit_url_opens_the_commit_view() {
+        let (proj, _, landed, mut app) = fixture();
+        app.follow_url(&format!("https://github.com/o/r/commit/{landed}"));
+        assert_eq!(app.commit_view().unwrap().sha, landed);
+        // Another repository's URL is not read as ours.
+        app.close_doc();
+        app.follow_url("https://github.com/other/repo/commit/abcdef1234567");
+        assert!(app.commit_view().is_none());
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn history_re_reads_the_commit_view_with_its_cursor() {
+        let (proj, _, landed, mut app) = fixture();
+        tab_key(&mut app);
+        draw(&app, 100, 24);
+        enter_key(&mut app);
+        draw(&app, 100, 24);
+        press(&mut app, "j"); // the second file
+        let at = app.commit_view().unwrap().cursor();
+        enter_key(&mut app); // into the code viewer
+        assert!(app.attach().is_some());
+        press(&mut app, "o");
+        let v = app.commit_view().expect("o re-reads the commit view");
+        assert_eq!((v.sha.as_str(), v.cursor()), (landed.as_str(), at));
+        press(&mut app, "o");
+        assert!(app.commit_view().is_none(), "o again: the yak");
+        press(&mut app, "i");
+        assert_eq!(app.commit_view().unwrap().sha, landed);
+        press(&mut app, "i");
+        assert!(app.attach().is_some(), "i goes forward to the file");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_commits_menu_offers_only_the_hash_and_the_host_link() {
+        let (proj, _, landed, mut app) = fixture();
+        app.open_commit(&landed);
+        draw(&app, 100, 24);
+        press(&mut app, "O");
+        let frame = draw(&app, 100, 24);
+        assert!(frame.contains("Take out \u{b7} commit:"), "{frame}");
+        assert!(frame.contains("p  copy the commit hash"), "{frame}");
+        assert!(!frame.contains("editor at the line"), "{frame}");
+        assert!(frame.contains("p hash \u{b7} g host link"), "{frame}");
+        // `e`, `o` and `r` are not keys of this menu: it stays up.
+        press(&mut app, "e");
+        assert!(matches!(app.overlay, Overlay::TakeOut(_)));
+        esc_key(&mut app);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+}

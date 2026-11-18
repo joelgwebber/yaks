@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: frame
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
+viewing commit:deadbee
+◂ ◆ commit:deadbee  commit
+│ commit deadbee is not in this checkout; fetch it or open on the host
+│
+│ Host      https://github.com/o/r/commit/deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+│ Fetch     yaks commits t0 --fetch
+│
+│ O then g copies the host link; O then p copies the hash
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit

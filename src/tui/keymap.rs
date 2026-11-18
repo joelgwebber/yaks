@@ -330,10 +330,19 @@ pub(crate) enum Ctx {
     Image,
     /// The directory view in the pane (yaks-3329).
     Dir,
+    /// The commit view in the pane (yaks-3f90).
+    Commit,
 }
 
 impl Ctx {
-    const ALL: [Ctx; 5] = [Ctx::List, Ctx::Detail, Ctx::Viewer, Ctx::Image, Ctx::Dir];
+    const ALL: [Ctx; 6] = [
+        Ctx::List,
+        Ctx::Detail,
+        Ctx::Viewer,
+        Ctx::Image,
+        Ctx::Dir,
+        Ctx::Commit,
+    ];
 
     /// What a message calls the surface.
     pub(crate) fn title(self) -> &'static str {
@@ -343,6 +352,7 @@ impl Ctx {
             Ctx::Viewer => "text viewer",
             Ctx::Image => "image viewer",
             Ctx::Dir => "directory view",
+            Ctx::Commit => "commit view",
         }
     }
 }
@@ -356,7 +366,7 @@ struct Section {
 }
 
 /// The `?` overlay's sections, in order. Every binding is in exactly one.
-const SECTIONS: [Section; 8] = [
+const SECTIONS: [Section; 9] = [
     Section {
         ctx: Ctx::List,
         kinds: &[None, Some(RowKind::Yak)],
@@ -381,6 +391,11 @@ const SECTIONS: [Section; 8] = [
         ctx: Ctx::Dir,
         kinds: &[None],
         title: "Directory view (a yak's attachments, a dok's files, a source's files/)",
+    },
+    Section {
+        ctx: Ctx::Commit,
+        kinds: &[None],
+        title: "Commit view (a commit link, a note's commit: or source: hash)",
     },
     Section {
         ctx: Ctx::List,
@@ -847,6 +862,29 @@ static BINDINGS: &[Binding] = &[
     bind(Dir, &[c('?'), k(F(1))], AppHelp, HELP_LINE, NoHint),
     bind(Dir, &[c('q'), ctrl('c')], AppQuit, "Quit", hint("q:quit")),
 
+    // -- the commit view ------------------------------------------------------
+    bind(Commit, &[k(Esc)], PaneClose, "Close (o goes back to where it was opened from)", hint("Esc:close")),
+    bind(Commit, &[c('j'), k(Down)], MoveDown, "Move the cursor down", hint_family("j/k:move", "↑/↓:move")),
+    bind(Commit, &[c('k'), k(Up)], MoveUp, "Move the cursor up", NoHint),
+    bind(Commit, &[c('d'), ctrl('d')], MoveHalfDown, "Half-page down", NoHint),
+    bind(Commit, &[c('u'), ctrl('u')], MoveHalfUp, "Half-page up", NoHint),
+    bind(Commit, &[k(PageDown)], MovePageDown, "Full-page down", NoHint),
+    bind(Commit, &[k(PageUp)], MovePageUp, "Full-page up", NoHint),
+    bind(Commit, &[c('g'), k(Home)], MoveTop, "Top", NoHint),
+    bind(Commit, &[c('G'), k(End)], MoveBottom, "Bottom", NoHint),
+    bind(Commit, &[k(Enter)], PaneEnter, "Open the file in the code viewer as it was at this commit (o / i come back); on Landed as, open the landed commit", hint("Enter:open")),
+    bind(Commit, &[c('y')], RowCopy, "Copy the commit hash", hint("y:copy hash")),
+    bind(Commit, &[c('O')], TakeOut, TAKE_OUT_COMMIT, hint("O:take out")),
+    bind(Commit, &[c('o')], NavBack, "History back", NoHint),
+    bind(Commit, &[c('i')], NavForward, "History forward", hint("i/o:fwd/back")),
+    bind(Commit, &[c('#')], NavGoto, "Go to any yak by id / title (closes the view)", NoHint),
+    bind(Commit, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
+    bind(Commit, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
+    bind(Commit, &[c('}')], ViewNext, VIEW_PANE_NEXT, NoHint),
+    bind(Commit, &[c('{')], ViewPrev, VIEW_PANE_PREV, NoHint),
+    bind(Commit, &[c('?'), k(F(1))], AppHelp, HELP_LINE, NoHint),
+    bind(Commit, &[c('q'), ctrl('c')], AppQuit, "Quit", hint("q:quit")),
+
     // -- the list: document rows (the Doks view). Its movement, view and farm
     // -- keys are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
     // -- bottom hint is the Doks's own, not the yak list's.
@@ -885,6 +923,8 @@ const VIEW_PANE_PREV: &str = "Previous view; the pane stays open on the new view
 /// menu's own keys are in the [`EXTRAS`].
 const TAKE_OUT_LINE: &str = "Take out the link on the line (or the yak): a menu to open it in your editor, with the system, or copy its path or host link";
 const TAKE_OUT_FILE: &str = "Take out the file: a menu to open it in your editor at the cursor's line, with the system, or copy its path or host link";
+const TAKE_OUT_COMMIT: &str =
+    "Take out the commit: a menu to copy its host link (g) or its hash (p)";
 const TAKE_OUT_ROW: &str = "Take out the row's file (the yak's file): a menu to open it in your editor, with the system, or copy its path or host link";
 
 /// The `?` line of the help command: the popup first, the reference on a second press.
@@ -1208,7 +1248,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
         ],
     ),
     (
-        "Take out (O: the menu over the foot of the screen; none of it changes a yak)",
+        "Take out (O: the menu over the foot of the screen; none of it changes a yak; a commit's has only p and g)",
         &[
             (
                 "e",
@@ -1379,6 +1419,13 @@ impl App {
                 }),
                 _,
             ) => Ctx::Dir,
+            (
+                Some(DocPane {
+                    view: DocView::Commit(_),
+                    ..
+                }),
+                _,
+            ) => Ctx::Commit,
             (None, Focus::List) => Ctx::List,
             (None, Focus::Detail) => Ctx::Detail,
         }
@@ -1403,6 +1450,7 @@ impl App {
             Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
             Ctx::Image if !global => return self.run_image_cmd(cmd),
             Ctx::Dir if !global => return self.run_dir_cmd(cmd),
+            Ctx::Commit if !global => return self.run_commit_cmd(cmd),
             _ => {}
         }
         match cmd {
@@ -1524,7 +1572,7 @@ impl App {
             Ctx::Detail if cmd == MoveTop => self.detail_line_to(false),
             Ctx::Detail if cmd == MoveBottom => self.detail_line_to(true),
             Ctx::Detail => self.move_detail_line(by),
-            Ctx::Viewer | Ctx::Image | Ctx::Dir => {}
+            Ctx::Viewer | Ctx::Image | Ctx::Dir | Ctx::Commit => {}
         }
     }
 }

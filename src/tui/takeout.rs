@@ -8,6 +8,9 @@
 //! - `r` copy the farm- or repo-relative path;
 //! - `g` copy the host link (GitHub, GitLab, Gitea/Forgejo).
 //!
+//! A commit ([`Place::Commit`], from the commit view) is no file: its menu has
+//! only `p` (the full hash) and `g` (the host's commit page); see [`TakeOut::rows`].
+//!
 //! What it acts on is a [`Place`] ([`crate::locate`]): the same resolver
 //! `yaks peek` and `yaks url` use, so a pinned `code:path@sha` file gives the
 //! working-tree path when it is unchanged since the pin and a read-only temp
@@ -42,9 +45,6 @@ pub(crate) struct TakeOut {
     pub(crate) label: String,
 }
 
-/// The keys of the menu, in the order it lists them.
-pub(crate) const KEYS: &str = "eopgr";
-
 /// The menu's rows: key, then what it does.
 pub(crate) const ROWS: [(char, &str); 5] = [
     ('e', "editor at the line ($VISUAL / $EDITOR)"),
@@ -53,6 +53,32 @@ pub(crate) const ROWS: [(char, &str); 5] = [
     ('r', "copy the farm- or repo-relative path"),
     ('g', "copy the host link (GitHub, GitLab, Gitea)"),
 ];
+
+/// What a commit's menu offers (a commit is no file): `p` and `g` only.
+pub(crate) const COMMIT_ROWS: [(char, &str); 2] = [
+    ('p', "copy the commit hash"),
+    ('g', "copy the host link (GitHub, GitLab, Gitea)"),
+];
+
+impl TakeOut {
+    /// The rows the menu lists for this subject.
+    pub(crate) fn rows(&self) -> &'static [(char, &'static str)] {
+        match self.place {
+            Place::Commit { .. } => &COMMIT_ROWS,
+            _ => &ROWS,
+        }
+    }
+
+    /// The one-line key summary at the foot of the screen.
+    pub(crate) fn hint(&self) -> &'static str {
+        match self.place {
+            Place::Commit { .. } => "p hash · g host link · Esc cancel",
+            _ => {
+                "e editor · o system open · p absolute path · r relative path · g host link · Esc cancel"
+            }
+        }
+    }
+}
 
 #[cfg(test)]
 thread_local! {
@@ -128,6 +154,14 @@ impl App {
             Ctx::Viewer => self.viewer_subject(&space),
             Ctx::Image => self.image_subject(&space),
             Ctx::Dir => self.dir_subject(),
+            Ctx::Commit => self.commit_view().map(|v| {
+                let (place, label) = v.place();
+                Ok(TakeOut {
+                    place,
+                    line: None,
+                    label,
+                })
+            }),
             Ctx::Detail => self.pane_subject(&space),
             Ctx::List => self.row_subject(),
         };
@@ -286,7 +320,7 @@ impl App {
     pub(crate) fn take_out_key(&mut self, t: TakeOut, k: KeyEvent) {
         match k.code {
             KeyCode::Esc | KeyCode::Char('q') => self.notification = Some("cancelled".into()),
-            KeyCode::Char(c) if KEYS.contains(c) => {
+            KeyCode::Char(c) if t.rows().iter().any(|(k, _)| *k == c) => {
                 self.take_out_with(editor_from_env().as_deref(), &t, c)
             }
             _ => self.overlay = Overlay::TakeOut(t),
@@ -301,6 +335,19 @@ impl App {
             return;
         };
         let place = &t.place;
+        // A commit is no file: `p` copies its hash, `g` its host page.
+        if let Place::Commit { sha } = place {
+            let full =
+                crate::gitrepo::commit_of(space.code.as_deref().unwrap_or(Path::new(".")), sha)
+                    .unwrap_or_else(|| sha.clone());
+            match c {
+                'p' => {
+                    self.notification = Some(copied_note(copy(&full), &full, ""));
+                    return;
+                }
+                _ => {}
+            }
+        }
         self.notification = Some(match c {
             'e' => {
                 let Some(editor) = editor else {
@@ -389,7 +436,7 @@ fn host_problem(why: &str) -> String {
 
 /// The menu, over the foot of the main area like the `?` popup.
 pub(crate) fn render(t: &TakeOut, frame: &mut Frame, mid: Rect) {
-    let height = (ROWS.len() as u16 + 2).min(mid.height);
+    let height = (t.rows().len() as u16 + 2).min(mid.height);
     let area = Rect {
         y: mid.y + mid.height - height,
         height,
@@ -410,7 +457,8 @@ pub(crate) fn render(t: &TakeOut, frame: &mut Frame, mid: Rect) {
     let inner = block.inner(area);
     frame.render_widget(Clear, area);
     frame.render_widget(block, area);
-    let lines: Vec<Line> = ROWS
+    let lines: Vec<Line> = t
+        .rows()
         .iter()
         .map(|(key, what)| {
             Line::from(vec![

@@ -1178,3 +1178,103 @@ fn docshots_dir_view() {
     press_key(&mut app, KeyCode::Enter);
     write_svg("tui-dir-archive", &app, w, h);
 }
+
+/// A commit link opened in the commit view, the squashed worker commit that
+/// says where it landed, and a commit this checkout lacks (yaks-3f90), into
+/// `docs/assets/tui-commit-view.svg`, `tui-commit-landed.svg` and
+/// `tui-commit-missing.svg`. A scratch checkout with fixed dates, so the
+/// frames are stable apart from the hashes. Ignored by default; run
+/// explicitly: `cargo test -p yaks docshots_commit -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-commit-*.svg"]
+fn docshots_commit() {
+    use crate::model::Status;
+    let git = |dir: &std::path::Path, args: &[&str]| {
+        let out = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
+            .args(args)
+            .env("GIT_AUTHOR_DATE", "2026-09-09T10:00:00+00:00")
+            .env("GIT_COMMITTER_DATE", "2026-09-09T10:00:00+00:00")
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {out:?}");
+        String::from_utf8(out.stdout).unwrap().trim().to_string()
+    };
+    let (proj, farm) = crate::tui::test_support::temp_farm(&[]);
+    std::fs::create_dir_all(proj.join("src")).unwrap();
+    git(&proj, &["init", "-q", "-b", "main"]);
+    std::fs::write(proj.join("src/links.rs"), "pub fn parse() {}\n").unwrap();
+    git(&proj, &["add", "src"]);
+    git(&proj, &["commit", "-q", "-m", "worker: parse links"]);
+    let worker = git(&proj, &["rev-parse", "HEAD"]);
+    std::fs::write(
+        proj.join("src/links.rs"),
+        "pub fn parse() {}\npub fn label() {}\n",
+    )
+    .unwrap();
+    std::fs::write(proj.join("src/locate.rs"), "pub fn resolve() {}\n").unwrap();
+    git(&proj, &["add", "src"]);
+    git(
+        &proj,
+        &[
+            "commit",
+            "-q",
+            "-m",
+            "yaks-274c: commit: links and reading host URLs back",
+            "-m",
+            "A commit is a link form of its own, and the code repo's host URLs\nread back as commits.",
+        ],
+    );
+    let landed = git(&proj, &["rev-parse", "HEAD"]);
+    git(
+        &proj,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/joelgwebber/yaks.git",
+        ],
+    );
+    let ghost = "9f3c2a1d0b8e7f6a5c4d3e2f1a0b9c8d7e6f5a4b";
+    let mut t = t(
+        "yak-1a2b",
+        "Commits as links",
+        "feature",
+        2,
+        Status::Shorn,
+        None,
+    );
+    t.body = crate::store::append_note_meta(
+        "The work landed; a second try is [on an agent's machine](commit:9f3c2a1).",
+        "2026-09-10T11:00:00Z",
+        Some("coord"),
+        &[
+            ("kind", "landed"),
+            ("commit", &landed),
+            ("source", &worker),
+            ("branch", "main"),
+        ],
+        "Landed.",
+    );
+    crate::store::write::save(farm.root(), &t).unwrap();
+    let (w, h) = (110u16, 24u16);
+    let mut app = App::with_farm(farm).unwrap();
+    app.farm_sync = None;
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shorn");
+    press_key(&mut app, KeyCode::Enter);
+    let _ = toque::render_to_svg(&app, w, h);
+    // The note header's `commit` link, then the squashed worker hash.
+    press_key(&mut app, KeyCode::BackTab);
+    press_key(&mut app, KeyCode::BackTab);
+    write_svg("tui-commit-header", &app, w, h);
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-commit-view", &app, w, h);
+    app.open_commit(&worker);
+    write_svg("tui-commit-landed", &app, w, h);
+    app.open_commit(ghost);
+    write_svg("tui-commit-missing", &app, w, h);
+    let _ = std::fs::remove_dir_all(proj);
+}

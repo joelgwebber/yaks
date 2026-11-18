@@ -8,6 +8,7 @@
 mod actions;
 mod blockedit;
 mod cache;
+mod commitview;
 mod content;
 mod create;
 mod detail;
@@ -168,6 +169,8 @@ pub(crate) enum DocView {
     Image(imageview::ImageView),
     /// A directory of the farm as a tree (yaks-3329): see [`dirview`].
     Dir(dirview::DirView),
+    /// A commit of the code repository (yaks-3f90): see [`commitview`].
+    Commit(commitview::CommitView),
 }
 
 /// What a resolved single-key pick should do (carries the target task id).

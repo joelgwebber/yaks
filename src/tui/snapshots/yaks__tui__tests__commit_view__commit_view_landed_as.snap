@@ -1,0 +1,28 @@
+---
+source: src/tui/tests.rs
+expression: "{\n    let f = draw(&app, 100, 24);\n    f.replace(&landed, \"<landed>\").replace(&worker, \"<worker>\")\n}"
+---
+ 🦬  Hairy (1)   🪒  Shaving (0)   🐑  Shorn (0)   🕒  Recent (1)   ⭐  Starred (0)   📖  Doks (0)   🛖  Sh
+← Hairy · commit:<worker>
+◂ ◆ commit:68ca897  commit
+│ worker: add a.rs
+│ Author    Ada
+│ Date      2026-09-09T10:00:00Z
+│ Commit    <worker>
+│ Landed as 634a3fe  (squashed into the landed commit)
+│
+│ 1 file changed, +1 -0
+│      +1      -0  src/a.rs
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit

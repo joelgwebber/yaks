@@ -86,6 +86,7 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
                 Some(DocView::Text(v)) => render_attachment(app, v, frame, inner),
                 Some(DocView::Image(v)) => super::imageview::render_image(v, frame, inner),
                 Some(DocView::Dir(v)) => super::dirview::render_dir(app, v, frame, inner),
+                Some(DocView::Commit(v)) => super::commitview::render_commit(app, v, frame, inner),
                 None => {}
             },
             _ if app.selected_shed().is_some() => render_shed_detail(app, frame, inner),
@@ -1655,10 +1656,10 @@ pub(crate) fn render_status(app: &App, frame: &mut Frame, area: Rect) {
         );
         return;
     }
-    if matches!(&app.overlay, Overlay::TakeOut(_)) {
+    if let Overlay::TakeOut(t) = &app.overlay {
         frame.render_widget(
             Paragraph::new(Span::styled(
-                "e editor · o system open · p absolute path · r relative path · g host link · Esc cancel",
+                t.hint(),
                 Style::new()
                     .fg(Color::Black)
                     .bg(Color::Yellow)
