@@ -5,12 +5,13 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-18T14:44:16Z'
-updated: '2026-11-18T14:44:16Z'
+updated: '2026-11-18T14:44:37Z'
 parent: yaks-1c89
 tags:
 - skills
 - design
 - meta
+needs: human
 ---
 
 Joel, 2026-11-18: "I also don't see an explicit pattern for acknowledging feedback and ensuring we don't waste time revisiting already-triaged feedback ... just editing the upstream feedback notes with a yak reference? Or just creating a simple local 'database' in a dok / doks that keeps the acknowledgement in this repo, in the event we don't have write access to the source."
@@ -57,3 +58,11 @@ Also, found in this round, for the same change to yaks-feaf's description:
 - The skill's entry format could ask for one line on what was run (the command line itself): the as_of report would have been caught by its author.
 
 Evidence when done: yaks-feaf's description and the `yaks-upkeep` "Yaks feedback" section say the ledger rule; the ledger holds the 2026-11-18 round's eight rows; a second collector pass over cowpaths/joel triages nothing.
+
+#### 2026-11-18T14:44:37Z
+
+*feedback-triage · kind: ask · needs: human*
+
+asked: needs human
+
+Acknowledgement: A (write back to the source entry), B (a ledger table dok here, my lean), or C (a yak for every entry)? The description has the tradeoffs. Answer B and I'll write the ledger with this round's 8 rows and update yaks-feaf and the skill.
