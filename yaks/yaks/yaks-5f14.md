@@ -1,7 +1,7 @@
 ---
 id: yaks-5f14
 title: 'source: add or replace extracted text for an existing source'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-08T22:04:33Z'
@@ -45,3 +45,9 @@ Evidence:
 - **Test:** `set_text_gives_a_saved_source_its_text_later` covers a binary saved without text getting its text, the hash, title and original kept, a repeat being a no-op, dedup still finding it, title and text in one write, and the refusals.
 - **Real run (release build, scratch farm):** a PNG saved, then `--text -` from stdin replaced the body and printed `Updated ... (text replaced)`. The same text from a file printed `No changes`, and `set` with neither flag exited 1. Each change is one farm commit.
 - **Full gate:** 1480 passed, 0 failed; fmt clean.
+
+#### 2026-11-18T00:54:23Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
