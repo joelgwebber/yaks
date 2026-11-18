@@ -73,7 +73,7 @@ The grammar change is the same one the trailing-slash bug needs anyway: a farm p
 
 Recommended: **the path just goes through the archive**, `<id>/code.zip/src/main.rs#L12`, and `<id>/code.zip/` for its top. Resolution finds the archive by walking segments (`container_at`), which is what the TUI already does for directories.
 
-- For: no new syntax; `#L12` and headings keep working on the member; and a link written into `code.zip/` keeps working if the archive is later replaced by an attached directory `code/`... only if the name matches. More importantly, readers learn one rule: archives behave like directories.
+- For: no new syntax; `#L12` and headings keep working on the member; readers learn one rule (an archive behaves like a directory); and resolution reuses the segment walk the TUI already does for directories.
 - Rejected: `code.zip!/src/main.rs` (the jar-URL convention). Lexical and explicit, but a second path syntax, and `!` is legal in file names.
 - Rejected: `code.zip#src/main.rs`. `#` is already the anchor.
 - Neither form works on a markdown host (GitHub shows the archive, not the member). That is the same for both, so it does not decide.
