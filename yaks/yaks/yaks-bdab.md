@@ -1,0 +1,15 @@
+---
+id: yaks-bdab
+title: 'Commits phase 5: an inline diff in the commit view'
+status: hairy
+type: feature
+priority: 3
+created: '2026-11-18T03:03:10Z'
+updated: '2026-11-18T03:03:10Z'
+parent: yaks-3515
+tags:
+- tui
+- git
+---
+
+Phase 5 of yaks-3515; needs phase 2. In the commit view, a file's diff shown inline (coloured `+`/`-`, the hunks foldable), as well as opening the file at that commit. Later; plan it once phases 1 to 3 are in use.
