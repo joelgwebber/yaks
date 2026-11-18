@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:18:57Z'
+updated: '2026-11-18T15:18:58Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -56,3 +56,5 @@ Plan (`commits-tui`):
 ![tui-commit-view](yaks-3f90/tui-commit-view.svg)
 
 ![tui-commit-landed](yaks-3f90/tui-commit-landed.svg)
+
+![tui-commit-missing](yaks-3f90/tui-commit-missing.svg)
