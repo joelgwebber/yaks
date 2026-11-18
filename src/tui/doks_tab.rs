@@ -29,7 +29,7 @@ use ratatui::widgets::{ListItem, Paragraph};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DocGroup {
     Dok,
-    /// A saved source (`sources/<id>/source.md`).
+    /// A saved source (`sources/<id>.md`).
     Source,
     /// A session note (`sessions/YYYY/MM/...md`).
     Session,

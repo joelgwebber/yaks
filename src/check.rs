@@ -360,8 +360,8 @@ fn stale(
 
 // ---- uncited sources -----------------------------------------------------
 
-/// The ids in every `sources/<id>/` written in `text`, in a link, a
-/// `sources:` entry or plain prose.
+/// The names in every `sources/<name>/` or `sources/<name>.md` written in
+/// `text`, in a link, a `sources:` entry or plain prose.
 fn source_refs(text: &str) -> Vec<&str> {
     const MARK: &str = "sources/";
     let mut out = Vec::new();
@@ -384,7 +384,10 @@ fn source_refs(text: &str) -> Vec<&str> {
             .unwrap_or(rest.len());
         // `sources/<name>/...` (a file beside it, or the layout before schema
         // 10) or `sources/<name>.md` (its file, yaks-e83f).
-        let name = &rest[..len];
+        // Dots that end the run are a sentence's, never a name's
+        // (`... see sources/<id>.md.`).
+        let name = rest[..len].trim_end_matches('.');
+        let len = name.len();
         if len > 0 && rest.as_bytes()[0].is_ascii_alphanumeric() {
             if let Some(stem) = name.strip_suffix(".md") {
                 out.push(stem);
@@ -899,6 +902,15 @@ mod tests {
         let t = "see [x](../sources/2026-01-02-abcd1234/shot.png), sources/b-1/ and \
                  resources/nope/ and sources/no-slash and `sources/c.d_e/source.md`";
         assert_eq!(source_refs(t), ["2026-01-02-abcd1234", "b-1", "c.d_e"]);
+    }
+
+    /// A source's file named in prose at the end of a sentence still counts:
+    /// the full stop is not part of the name (yaks-03c8 found it).
+    #[test]
+    fn source_refs_find_a_file_named_at_the_end_of_a_sentence() {
+        let t = "As sources/2026-01-02-abcd1234.md says. See /sources/b-1-slug.md... \
+                 and sources/c-2.md, then sources/d-3.mdx (not a source file).";
+        assert_eq!(source_refs(t), ["2026-01-02-abcd1234", "b-1-slug", "c-2"]);
     }
 
     // ---- cited code ----
