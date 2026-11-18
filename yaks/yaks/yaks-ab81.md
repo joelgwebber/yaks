@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T22:53:27Z'
-updated: '2026-11-18T03:02:47Z'
+updated: '2026-11-18T03:03:15Z'
 tags:
 - agent
 - cli
@@ -26,3 +26,9 @@ Open: how to handle no network or no remote (warn rather than refuse?).
 *sources-triage*
 
 Folded into  (`yaks update --commit` checks the commit is pushed), per Joel's answer on yaks-3515.
+
+#### 2026-11-18T03:03:15Z
+
+*sources-triage*
+
+Folded into yaks-f009 (`yaks update --commit` checks the commit is pushed), per Joel's answer on yaks-3515.
