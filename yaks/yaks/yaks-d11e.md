@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T21:36:38Z'
-updated: '2026-11-06T21:36:38Z'
+updated: '2026-11-18T14:43:01Z'
 parent: yaks-3f35
 tags:
 - cli
@@ -26,3 +26,9 @@ From yaks-3f35, item 8. When a note has no `## Saved`, `yaks session note` write
 ## Evidence
 
 Tests for thread selection and two interleaved sessions under one actor; the `yaks-upkeep` skill's Saved paragraph updated.
+
+#### 2026-11-18T14:43:01Z
+
+*feedback-triage*
+
+Seen again in cowpaths/joel: its feedback dok's entry `2026-11-10: \`session touched\` missed sources committed under the harness actor`. Six sources were committed as `delta:PAP` (the agent's `whoami --set` had not taken, yaks-5250) and the note's actor was `claude`, so `touched` (by actor) missed them. Thread selection, this yak's lean, would have caught them: every write in that session carried the same thread.
