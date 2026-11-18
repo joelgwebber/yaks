@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:02:45Z'
-updated: '2026-11-18T14:26:23Z'
+updated: '2026-11-18T14:40:13Z'
 parent: yaks-3515
 tags:
 - links
@@ -24,3 +24,9 @@ Phase 1 of yaks-3515; read its decision note first.
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-18T14:40:13Z
+
+*sources-triage · kind: landed · commit: b0a6d579b17168590399b8aad5193821946e6660 · branch: main*
+
+Landed b0a6d579b17168590399b8aad5193821946e6660 on main: commit:<sha> link form (Link::Commit, code commits only); locate::Space::read_url reads the code repo's own host commit URLs as commit links and pinned blob URLs as pinned code: links (GitHub, GitLab, Gitea). Wired into peek, url (commit:<sha> -> host commit page, with the pushed check) and check's cited-code refs. peek commit: prints hash/author/date/message/files (links::commit_text, gitrepo::commit_info), reused by phase 2. Gate green; checked against this repo: peek commit:1091a53, peek/url of github commit and blob URLs, unknown sha exits 1 with a reason. TUI still shows commit links as artifacts: phase 2 (yaks-3f90).
