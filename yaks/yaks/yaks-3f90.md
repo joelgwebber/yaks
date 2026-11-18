@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T14:40:32Z'
+updated: '2026-11-18T14:41:25Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -27,3 +27,9 @@ Phase 2 of yaks-3515; needs phase 1 (yaks-274c).
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-18T14:41:25Z
+
+*commits-tui*
+
+Start by `commits-tui`: 2026-11-18T14:41:19Z (date -u). Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3f90.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/h62preyey7a6/yaks (HEAD b0a6d579).
