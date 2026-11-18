@@ -699,7 +699,6 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
-    /// Block a yak on a human decision
     /// Block a yak on a human decision and record the question.
     ///
     /// Sets the `needs`
