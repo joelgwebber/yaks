@@ -1,11 +1,11 @@
 ---
 id: yaks-bdab
 title: 'Commits phase 5: an inline diff in the commit view'
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T16:26:20Z'
+updated: '2026-11-18T16:26:21Z'
 parent: yaks-3515
 depends_on:
 - yaks-3f90
@@ -33,3 +33,9 @@ Landed on main.
 - The patch is read from git once, when first unfolded. The open folds are part of the history location, so `o` comes back to the same unfolded diff.
 - Keys in `BINDINGS` (`Ctx::Commit`); `docs/tui.md` key table and intro; new docshot `docs/assets/tui-commit-diff.svg` (the other commit docshots refreshed: they predated the `Space:diff` hint and the `Code:` row).
 - Evidence: gate green; tests `space_unfolds_a_files_diff_inline_and_enter_on_a_line_opens_it_there` (+ snapshot `commit_view_diff`), `patch_lines_number_each_line_on_the_new_side`; headless on the real farm, 65fa57e with `src/land.rs` unfolded: [frame](yaks-bdab/commit-diff-real-farm.txt); [docshot](yaks-bdab/tui-commit-diff.svg).
+
+#### 2026-11-18T16:26:21Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
