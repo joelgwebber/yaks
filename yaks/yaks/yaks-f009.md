@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T14:56:45Z'
+updated: '2026-11-18T15:00:28Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -92,3 +92,9 @@ moved: shaving -> shorn
 *sources-triage · kind: landed · commit: 65fa57e4ab9db0590d17167ea13e8db902d5bca4 · source: a82a78a14f08c244967d4ace8e85cadf4c7ec776 · branch: main*
 
 landed: 65fa57e4 yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)
+
+#### 2026-11-18T15:00:28Z
+
+*sources-triage · commit: d6ffc1ad7ac18d7de24cc41180db41c4d00d7a48*
+
+Coordinator check: update --commit accepted HEAD after push.
