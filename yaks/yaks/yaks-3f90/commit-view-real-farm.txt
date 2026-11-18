@@ -1,5 +1,5 @@
-=== frame 7 · 120x40 · focus=detail · view=🧺 All · cursor=13 · rows=841 · sel=yaks-274c · blocked=[yaks-323b,yaks-bdab,yaks-ccb9,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=15 · pinned=yes ===
- 🧺 All (841)   ⭐ Starred (7)   📥 Inbox (2)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (16)   🛖 Sheds (10)        ⏰3
+=== frame 18 · 130x34 · focus=detail · view=🧺 All · cursor=13 · rows=841 · sel=yaks-274c · blocked=[yaks-323b,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=20 · pinned=yes ===
+ 🧺 All (841)   ⭐ Starred (7)   📥 Inbox (2)   🦬 Hairy (74)   🪒 Shaving (8)   📖 Doks (16)   🛖 Sheds (10)         ⏰ 3 overdue
 viewing commit:b0a6d57
 ◂ ◆ commit:b0a6d57  commit
 │ yaks-274c: commit: links and reading the code repo's host URLs back (also yaks-390f)
@@ -17,12 +17,6 @@ viewing commit:b0a6d57
 │    +118      -1  src/locate.rs
 │      +8      -4  src/main.rs
 │      +3      -0  src/tui/mdrender.rs
-│
-│
-│
-│
-│
-│
 │
 │
 │
