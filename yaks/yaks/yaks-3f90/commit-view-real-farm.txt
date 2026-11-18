@@ -1,0 +1,42 @@
+=== frame 7 · 120x40 · focus=detail · view=🧺 All · cursor=13 · rows=841 · sel=yaks-274c · blocked=[yaks-323b,yaks-bdab,yaks-ccb9,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=15 · pinned=yes ===
+ 🧺 All (841)   ⭐ Starred (7)   📥 Inbox (2)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (16)   🛖 Sheds (10)        ⏰3
+viewing commit:b0a6d57
+◂ ◆ commit:b0a6d57  commit
+│ yaks-274c: commit: links and reading the code repo's host URLs back (also yaks-390f)
+│ Author    Joel Webber
+│ Date      2026-11-18T09:40:11-05:00
+│ Commit    b0a6d579b17168590399b8aad5193821946e6660
+│
+│ 9 files changed, +444 -9
+│      +1      -0  .agents/skills/yaks/SKILL.md
+│      +4      -2  docs/cli.md
+│      +2      -1  src/check.rs
+│     +64      -0  src/gitrepo.rs
+│    +160      -0  src/hosting.rs
+│     +84      -1  src/links.rs
+│    +118      -1  src/locate.rs
+│      +8      -4  src/main.rs
+│      +3      -0  src/tui/mdrender.rs
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit
+=== end ===

@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T14:58:13Z'
+updated: '2026-11-18T15:18:54Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -46,3 +46,5 @@ Plan (`commits-tui`):
 - "landed as": scan the farm's notes once at open for a `landed` note whose `source:` is this hash.
 - Missing commit: a view with `missing_commit`'s reason, the host URL row, and the `yaks commits <yak> --fetch` line.
 - History: `PaneAt::Doc` with path `commit:<sha>`, `read_doc` re-reads it.
+
+[commit-view-real-farm](yaks-3f90/commit-view-real-farm.txt)
