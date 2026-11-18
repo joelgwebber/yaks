@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T14:41:25Z'
+updated: '2026-11-18T14:58:13Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -33,3 +33,16 @@ moved: hairy -> shaving
 *commits-tui*
 
 Start by `commits-tui`: 2026-11-18T14:41:19Z (date -u). Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3f90.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/h62preyey7a6/yaks (HEAD b0a6d579).
+
+#### 2026-11-18T14:58:13Z
+
+*commits-tui*
+
+Plan (`commits-tui`):
+
+- `Target::Commit { sha }` in `src/tui/detail.rs`, produced by `mdrender::link_target` (replacing the `Artifact` placeholder). A `Target::Url` stays a URL while rendering (no git call per frame); when it is *followed* it goes through `Space::read_url`, so a pasted host commit URL opens the commit view and a pinned blob URL opens the code viewer.
+- Note headers: `commit:`/`source:` meta values (when they read as a hash through the `commit:` grammar) become 7-char `Target::Commit` links in the header row; the full sha is kept in the target.
+- New `DocView::Commit(commitview::CommitView)` + `Ctx::Commit` (new `src/tui/commitview.rs`): rows built once at open (subject, body, author, date, files), wrapped at render; cursor starts on the first actionable row (landed-as, else first file). Keys reuse existing `Cmd`s through `BINDINGS`; `Enter` on a file = `open_code(path, None, Some(sha))`; `O` = take-out of the commit.
+- "landed as": scan the farm's notes once at open for a `landed` note whose `source:` is this hash.
+- Missing commit: a view with `missing_commit`'s reason, the host URL row, and the `yaks commits <yak> --fetch` line.
+- History: `PaneAt::Doc` with path `commit:<sha>`, `read_doc` re-reads it.
