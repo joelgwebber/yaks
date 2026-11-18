@@ -9,6 +9,7 @@ updated: '2026-11-18T23:29:26Z'
 tags:
 - tui
 - doks
+needs: human
 ---
 
 Filed at Joel's request from yaks-0229 (not for now). Browse inside an archive attachment (`.zip`, `.tar.gz`) read-only in the TUI's directory view, and link into one (`<id>/code.zip#path/in/archive`, or a `!/` form). That needs a decision on the link form, and the `zip`/`tar`/`flate2` crates. Low priority while `yaks attach <dir>` (the sibling yak) removes the reason to attach an archive.
@@ -36,3 +37,15 @@ Design read, no code yet. Full write-up: [files, directories and archives](/doks
 - **Link form:** the path goes through the archive, `<id>/code.zip/src/main.rs#L12`. Rejected `code.zip!/...` and `code.zip#...`.
 - **Crates:** `zip` 2.x (no default features, `deflate-flate2`), `tar`, `flate2` (already in the tree).
 - **Bugs filed:** yaks-1d2b (a dok's directory link is `../` to doctor and peek), yaks-8218 (`walk_dir` follows symlinks).
+
+#### 2026-11-18T23:29:26Z
+
+*delta:ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA · kind: ask · needs: human*
+
+asked: needs human
+
+Three decisions before any code:
+
+1. **Refactor first?** Do the no-visible-change seam (one lister, `Place` knows directories, one TUI `open_place`) as its own yak before archives. Lean: yes; it also fixes yaks-1d2b.
+2. **Link form:** `<id>/code.zip/src/main.rs` (path goes through the archive). Lean: this one.
+3. **Archives at all, now?** The yak is p4 and `attach <dir>` removed the reason. Lean: do step 1 now (it pays for itself), leave archives at p4 until a farm actually has one.
