@@ -1,0 +1,23 @@
+=== frame 15 · 120x30 · focus=detail · view=🧺 All · cursor=0 · rows=4 · sel=yaks-ab81 · blocked=[yaks-323b,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=0 · pinned=no ===
+ 🧺 All (4)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (0)   🪒 Shaving (1)   📖 Doks (1)   🛖 Sheds (2)   /"yaks-f009"
+viewing commit:65fa57e
+◂ ◆ commit:65fa57e  commit
+│ yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)
+│ Author    Joel Webber
+│ Date      2026-11-18T09:53:50-05:00
+│ Commit    65fa57e4ab9db0590d17167ea13e8db902d5bca4
+│
+│ Squashed-from: a82a78a14f08c244967d4ace8e85cadf4c7ec776
+│
+│ 11 files changed, +209 -14
+│      +1      -1  .agents/skills/yaks-coordinating/SKILL.md
+│      +1      -1  .agents/skills/yaks-working/SKILL.md
+│      +2      -2  .agents/skills/yaks/SKILL.md
+│      +1      -1  README.md
+│      +5      -3  docs/cli.md
+│      +1      -1  src/brief.rs
+│      +1      -1  src/farm.rs
+│     +22      -0  src/gitrepo.rs
+│     +10      -2  src/land.rs
+│     +70      -1  src/main.rs
+│     +95      -1  tests/commits.rs
