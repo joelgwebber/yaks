@@ -1,0 +1,26 @@
+=== frame 25 · 110x30 · focus=detail · view=🧺 All · cursor=2 · rows=3 · sel=yaks-bdab · blocked=[yaks-323b,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=commit · detail_scroll=0 · pinned=no ===
+ 🧺 All (3)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (0)   🪒 Shaving (1)   📖 Doks (0)   🛖 Sheds (2)   /"y
+
+◂ ◆ commit:a9e9430  commit
+│ yaks-bdab: a file's diff unfolds inline in the commit view (Space, l/h; Enter on a diff line opens the file
+│ Author    Joel Webber
+│ Date      2026-11-18T11:26:17-05:00
+│ Commit    a9e94302333defc9cac6e8a6698ccc07b54c60e2
+│
+│ 16 files changed, +396 -41
+│ ▸   +44      -0  docs/assets/tui-commit-diff.svg
+│ ▸   +27     -22  docs/assets/tui-commit-header.svg
+│ ▸    +2      -2  docs/assets/tui-commit-landed.svg
+│ ▸    +1      -1  docs/assets/tui-commit-missing.svg
+│ ▸    +3      -3  docs/assets/tui-commit-view.svg
+│ ▸    +6      -2  docs/tui.md
+│ ▾   +32      -0  src/gitrepo.rs
+│   @@ -212,6 +212,38 @@ pub struct CommitInfo {
+│        pub files: Vec<(Option<u32>, Option<u32>, String)>,
+│    }
+│
+│   +/// The patch commit `sha` makes to `path` (repo-relative), against its first
+│   +/// parent like [`commit_info`]'s counts, with three lines of context: the
+│   +/// unified diff text from the first `@@` on (`None` when git fails). A binary
+│   +/// file's patch has no hunks, only git's `Binary files ... differ` line.
+│   +pub(crate) fn commit_file_diff(dir: &Path, sha: &str, path: &str) -> Option<String> {
