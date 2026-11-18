@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:18:58Z'
+updated: '2026-11-18T15:18:59Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -60,3 +60,23 @@ Plan (`commits-tui`):
 ![tui-commit-missing](yaks-3f90/tui-commit-missing.svg)
 
 ![tui-commit-header](yaks-3f90/tui-commit-header.svg)
+
+#### 2026-11-18T15:18:59Z
+
+*commits-tui*
+
+Decision: a new `DocView::Commit` + `Ctx::Commit` (own key section in `BINDINGS`, `commitview.rs`), not a `DocView::Text` of preformatted text. Rejected: a read-only text document (no per-row Enter target for files / `Landed as`, no cursor-on-file, and the history would have to re-read it through the farm-file path). Mirrors how `Dir` was added.
+
+Decision: a note's `commit:`/`source:` header links are `Target::Commit { sha }` with the *full* value; `comment_label` (public, used by tests) keeps returning the same text, now with the hash cut to 7. Only a value that parses as `commit:<hash>` (7-40 hex) becomes a link, so a `source: sources/2026-...` of a dok source stays plain text. Rejected: linking every `source:` (would mislink saved sources) and detecting bare hashes in prose (Joel's decision 3).
+
+Decision: host commit URLs stay `Target::Url` while rendering and are read back by `Space::read_url` only when *followed* (`App::follow_url`, both pane and viewer). Rejected: reading in `link_target` (a git remote lookup per link per render; `code_repo()` caches per process, but the target would then differ from what `links::parse` gives peek and take-out). A pinned blob URL opens the code viewer at that commit as a bonus of calling the same reader.
+
+Decision: `Landed as` is computed in the TUI (`App::landed_as`) from landed notes' `source:` -> `commit:` when the view opens, scanning only yaks whose body mentions the short hash. Rejected: a derived index (AGENTS.md: any index is derived and per-user; the scan is a substring filter first), and a new `farm.rs` method (owned by the other worker).
+
+Decision: `O` in the commit view takes out the *commit* on every row (even with the cursor on a file), and its menu lists only `p` (full hash) and `g` (host commit URL, same as `yaks url commit:<sha>`). Rejected: `e`/`o`/`r` for a commit (no file; it would repeat 'no file' errors) and file-under-cursor take-out (the file is one `Enter` away and then `O` works there with a pin).
+
+Decision: the missing-commit view names `yaks commits <yak> --fetch` using the yak the view was opened from (selected yak), else `<yak>`. It does not run the fetch: a network call from a key press would block the UI, and the TUI has no async job path for it yet (follow-up). Rejected: running `--fetch` inline.
+
+Decision: no edits to `links.rs`, `locate.rs` or `gitrepo.rs`. Everything needed was already public (`commit_info`, `commit_of`, `missing_commit`, `Space::web_url/read_url`).
+
+Decision: the `comment_header_with_metadata` snapshot changed (peek pane now reserved) because a `commit 47076b0` header value is a peekable link; that is the intended consequence of 'commit fields render as links'. Accepted rather than excluding it from peek.
