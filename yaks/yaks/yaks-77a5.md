@@ -1,11 +1,11 @@
 ---
 id: yaks-77a5
 title: 'Case study: reconstruct the 2026-09-23 UI lightning round (11 lanes + 3 scouts)'
-status: hairy
+status: dead
 type: task
 priority: 3
 created: '2026-09-24T01:30:48Z'
-updated: '2026-10-18T05:46:33Z'
+updated: '2026-11-18T22:42:45Z'
 parent: yaks-64c4
 tags:
 - tui
@@ -34,3 +34,9 @@ Steps 1–3 done. (1) Conversation-only context captured in lightning-2026-09-23
 *Joel Webber*
 
 moved: shaving -> hairy
+
+#### 2026-11-18T22:42:45Z
+
+*sched-1 · kind: move · from: hairy · to: dead*
+
+moved: hairy -> dead
