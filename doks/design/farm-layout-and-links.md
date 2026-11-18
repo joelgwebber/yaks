@@ -69,6 +69,7 @@ Lean: a **pinned** `code:path@sha#L12` is written as the host URL (`https://gith
 - Why pinned only: the pin makes the URL stable, and it is exactly the case where the reader on GitHub cannot be pointed at a local checkout.
 - Cost: the stored text names the host, so a repo rename or host move needs a rewrite.
 - Not chosen: `/../<sha>/path` (works on GitHub only) and translating on display (no display on GitHub).
+- Shipped, read side (yaks-274c): yaks reads its code repo's host URLs back. A pinned file URL is a pinned `code:` link and a commit URL a `commit:<sha>` link (a new form, code commits only), in `peek`, `url` and the cited-code check (`locate::Space::read_url`). Writing the URL form is still to come: `yaks land` (yaks-f009) first.
 
 ### 5. Sessions and sources: the `/doks/sessions/...` bug (yaks-bede)
 
