@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:22:09Z'
+updated: '2026-11-18T15:22:24Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -86,3 +86,16 @@ Decision: the `comment_header_with_metadata` snapshot changed (peek pane now res
 *commits-tui · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-18T15:22:24Z
+
+*commits-tui*
+
+Summary (`commits-tui`): commit links and the commit view are in the TUI.
+
+- Note headers: `commit:`/`source:` hash values are 7-char links keeping the full hash (`Target::Commit`); `commit:<sha>` links and followed host commit URLs open the new `DocView::Commit`.
+- View: subject, author, date, full hash, message, files with +/- counts; Enter on a file opens the code viewer pinned at that commit; `Landed as <sha>` row for a landed note's `source:`; a missing commit says why, with the host URL and `yaks commits <yak> --fetch`; `O` gives `p` (hash) / `g` (host URL); `y` copies the hash; `o`/`i` history re-reads the view with its cursor.
+- Keys: `Ctx::Commit` section in `BINDINGS` (`?` help, hint bar generated). Docs: `docs/tui.md` "Commits" section + take-out and peek lines; 4 docshot SVGs from `docshots_commit`.
+- Gate: `cargo fmt --check` clean; `cargo test -p yaks --no-fail-fast` all green (1272 unit tests + integration); `yaks verify yaks-3f90` PASS.
+- Looked at: real-farm headless frames (commit b0a6d57 from a landed note header, file at commit, take-out menu) and the rendered SVG PNGs; attached.
+- Not done / follow-ups: `--fetch` is named, not run from the TUI (no async job path); the Code: row is phase 3 (yaks-ccb9); the diff is phase 5. Not installed (coordinator's job).
