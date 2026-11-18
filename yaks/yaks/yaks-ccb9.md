@@ -1,11 +1,11 @@
 ---
 id: yaks-ccb9
 title: 'Commits phase 3: a derived Code: row in the yak detail pane'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:02:46Z'
-updated: '2026-11-18T15:51:12Z'
+updated: '2026-11-18T15:51:13Z'
 parent: yaks-3515
 depends_on:
 - yaks-3f90
@@ -40,3 +40,9 @@ Landed on main (`yaks update --commit` records the sha in this note's metadata).
 - Detail pane: `Code:` rows below the fields, newest first, `kind short · when`, each a commit link that opens the commit view; then `branch remote/name`. No git call while rendering, so a host URL in prose counts in `yaks commits` but not in the row (it still opens when followed).
 - Evidence: gate green (`cargo fmt --check`, `cargo test -p yaks --no-fail-fast`); new tests `yakcommits::tests::*`, `the_code_rows_list_a_yaks_commits_newest_first_and_its_branches`; headless on the real farm, yaks-ab81 shows `Code: landed 65fa57e · 54m ago` and Tab+Enter opens its commit view: [frame](yaks-ccb9/code-row-to-commit.txt).
 - Docs: `docs/tui.md` (detail pane, Commits), `docs/cli.md` and `--help` for `commits`.
+
+#### 2026-11-18T15:51:13Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
