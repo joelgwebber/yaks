@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T14:53:46Z'
+updated: '2026-11-18T14:56:45Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -86,3 +86,9 @@ Summary: `yaks land` writes `landed: [short](host commit URL | commit:<full>) su
 *commits-cli · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG5xW5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-18T14:56:45Z
+
+*sources-triage · kind: landed · commit: 65fa57e4ab9db0590d17167ea13e8db902d5bca4 · source: a82a78a14f08c244967d4ace8e85cadf4c7ec776 · branch: main*
+
+landed: 65fa57e4 yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)

@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T22:53:27Z'
-updated: '2026-11-18T03:03:15Z'
+updated: '2026-11-18T14:56:45Z'
 tags:
 - agent
 - cli
@@ -32,3 +32,9 @@ Folded into  (`yaks update --commit` checks the commit is pushed), per Joel's an
 *sources-triage*
 
 Folded into yaks-f009 (`yaks update --commit` checks the commit is pushed), per Joel's answer on yaks-3515.
+
+#### 2026-11-18T14:56:45Z
+
+*sources-triage · kind: landed · commit: 65fa57e4ab9db0590d17167ea13e8db902d5bca4 · source: a82a78a14f08c244967d4ace8e85cadf4c7ec776 · branch: main*
+
+landed: 65fa57e4 yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)
