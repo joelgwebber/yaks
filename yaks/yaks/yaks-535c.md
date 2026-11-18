@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-17T22:54:06Z'
+updated: '2026-11-18T00:06:13Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
@@ -67,3 +67,15 @@ Decision recorded: drop the joined extracted.md and the files: list (Joel's answ
 *sources-triage · kind: move · from: hairy · to: shaving · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-18T00:06:13Z
+
+*sources-triage*
+
+Done in yaks-e83f (`sources-triage`):
+
+- no joined `extracted.md` for a directory source;
+- no `files:` list (`file_count:` instead, `skipped:` for what the walk left out);
+- `yaks find` and the Doks tab read the tree in place.
+
+The YASS source file went from 271 lines plus an 842 KiB joined copy to 18 lines.
