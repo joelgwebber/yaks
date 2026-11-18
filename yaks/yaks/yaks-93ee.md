@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-18T23:10:28Z'
+updated: '2026-11-18T23:29:26Z'
 tags:
 - tui
 - doks
@@ -24,3 +24,15 @@ Related: yaks-0229 (where it came from), yaks-a57c (attach a directory, which re
 *delta:ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-18T23:29:26Z
+
+*delta:ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA*
+
+Design read, no code yet. Full write-up: [files, directories and archives](/doks/design/files-directories-archives.md).
+
+- **Finding:** "what does this link name, and how is it shown?" is answered in about ten places (`links::parse`/`exists`/`peek`, `locate::resolve`, and in the TUI `farm_dir_of`, `target_dir`, `farm_path_is_dir`, `open_farm_doc`, `read_doc`, `peek_target`, `open_external`, two follow dispatches). Directories (yaks-a57c, yaks-3329) were added at each call site; archives added the same way would touch every one again.
+- **Proposal:** an archive reads as a read-only directory. First a refactor with no visible change: one container lister (`src/entries.rs`) and `Place` gaining directories, so the TUI has one `open_place`. Then archives are one more container kind plus from-bytes viewer constructors, touching no opener.
+- **Link form:** the path goes through the archive, `<id>/code.zip/src/main.rs#L12`. Rejected `code.zip!/...` and `code.zip#...`.
+- **Crates:** `zip` 2.x (no default features, `deflate-flate2`), `tar`, `flate2` (already in the tree).
+- **Bugs filed:** yaks-1d2b (a dok's directory link is `../` to doctor and peek), yaks-8218 (`walk_dir` follows symlinks).
