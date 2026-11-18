@@ -1,11 +1,11 @@
 ---
 id: yaks-274c
 title: 'Commits phase 1: Link::Commit and the host-URL reader (shared with code links)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:02:45Z'
-updated: '2026-11-18T14:40:13Z'
+updated: '2026-11-18T14:40:18Z'
 parent: yaks-3515
 tags:
 - links
@@ -30,3 +30,9 @@ moved: hairy -> shaving
 *sources-triage · kind: landed · commit: b0a6d579b17168590399b8aad5193821946e6660 · branch: main*
 
 Landed b0a6d579b17168590399b8aad5193821946e6660 on main: commit:<sha> link form (Link::Commit, code commits only); locate::Space::read_url reads the code repo's own host commit URLs as commit links and pinned blob URLs as pinned code: links (GitHub, GitLab, Gitea). Wired into peek, url (commit:<sha> -> host commit page, with the pushed check) and check's cited-code refs. peek commit: prints hash/author/date/message/files (links::commit_text, gitrepo::commit_info), reused by phase 2. Gate green; checked against this repo: peek commit:1091a53, peek/url of github commit and blob URLs, unknown sha exits 1 with a reason. TUI still shows commit links as artifacts: phase 2 (yaks-3f90).
+
+#### 2026-11-18T14:40:18Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
