@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:18:59Z'
+updated: '2026-11-18T15:22:09Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -80,3 +80,9 @@ Decision: the missing-commit view names `yaks commits <yak> --fetch` using the y
 Decision: no edits to `links.rs`, `locate.rs` or `gitrepo.rs`. Everything needed was already public (`commit_info`, `commit_of`, `missing_commit`, `Space::web_url/read_url`).
 
 Decision: the `comment_header_with_metadata` snapshot changed (peek pane now reserved) because a `commit 47076b0` header value is a peekable link; that is the intended consequence of 'commit fields render as links'. Accepted rather than excluding it from peek.
+
+#### 2026-11-18T15:22:09Z
+
+*commits-tui · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
