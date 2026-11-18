@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-01T22:53:27Z'
-updated: '2026-11-18T14:56:45Z'
+updated: '2026-11-18T15:00:34Z'
 tags:
 - agent
 - cli
@@ -38,3 +38,9 @@ Folded into yaks-f009 (`yaks update --commit` checks the commit is pushed), per 
 *sources-triage · kind: landed · commit: 65fa57e4ab9db0590d17167ea13e8db902d5bca4 · source: a82a78a14f08c244967d4ace8e85cadf4c7ec776 · branch: main*
 
 landed: 65fa57e4 yaks-f009: land writes host commit links; update --commit records a pushed commit (also yaks-ab81)
+
+#### 2026-11-18T15:00:34Z
+
+*sources-triage*
+
+Done in yaks-f009 (65fa57e4): `yaks update <id> --commit [<rev>]` refuses a commit the remote lacks as last fetched, naming the push command; warns with no remote. The skills' checkpoint convention now uses --commit.
