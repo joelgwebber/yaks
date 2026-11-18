@@ -1,11 +1,11 @@
 ---
 id: yaks-03c8
 title: 'Schema 10: update existing tests to the one-file source layout'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-18T00:01:24Z'
+updated: '2026-11-18T00:01:25Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -72,3 +72,9 @@ Replaced (purpose gone), not updated:
 Snapshots accepted (diff was only the path): doks_tab_list.snap (`sources/<id>.md`), doks_tab_dok.snap (`sources:` row). Both .snap.new deleted after moving (assertion_line header stripped). No snapshot rejected.
 
 Notes for the coordinator: a doc comment in doks_tab.rs (`DocKind::Source`, line 32) still says `sources/<id>/source.md`; non-test, left alone. `source_refs` in check.rs does not count `sources/<id>.md.` (sentence-ending dot) as a citation: a prose citation "See /sources/<id>.md." is missed (the name run swallows the trailing dot); I wrote the test with a link instead. Probably worth a follow-up yak, not a blocker.
+
+#### 2026-11-18T00:01:25Z
+
+*s10tests-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG2MHZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
