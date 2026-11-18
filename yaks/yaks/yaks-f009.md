@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T14:47:41Z'
+updated: '2026-11-18T14:47:42Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -37,3 +37,9 @@ Start 2026-11-18T14:41:37Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-
 *commits-cli*
 
 Decision: unpushed commit with a remote that lacks it is REFUSED (nothing written), naming `git push <remote> <branch>` and `git fetch <remote>`; a checkout with NO remote only WARNS and records. Rejected: always warn (agents ignore warnings: yaks-ab81's whole complaint); always refuse (a local-only repo could never use `--commit`; and there is nothing to push to). Offline is not special-cased: the check reads the remote-tracking refs as last fetched/pushed and never touches the network, so offline works, and "pushed from elsewhere" needs a `git fetch` first (said in the error). Rejected: a fresh `git fetch` before checking (network in a writer, slow/hangs offline).
+
+#### 2026-11-18T14:47:42Z
+
+*commits-cli*
+
+Decision: "which remote" is the existing rule `gitrepo::remote_of(branch)` (branch.<b>.remote, else origin) via a new helper `gitrepo::pushed` -> `Pushed::{Yes,No,NoRemote}` placed after `remote_has`. Rejected: checking every remote (a checkpoint on a fork nobody reads is not safe); reusing `hosting_repo` (it also errors on unrecognised hosts, which is irrelevant to "is it pushed").
