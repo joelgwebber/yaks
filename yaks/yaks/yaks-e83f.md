@@ -1,11 +1,11 @@
 ---
 id: yaks-e83f
 title: 'Design: one file holds a source''s text and its provenance (retire the duplicate extracted.md)'
-status: shaving
+status: shorn
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-18T00:06:14Z'
+updated: '2026-11-18T00:06:15Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -209,3 +209,9 @@ Evidence:
 - run `yaks migrate --dry-run`, then `yaks migrate`;
 - sync;
 - restart every running `yaks tui`.
+
+#### 2026-11-18T00:06:15Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
