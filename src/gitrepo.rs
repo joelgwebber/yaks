@@ -212,6 +212,38 @@ pub struct CommitInfo {
     pub files: Vec<(Option<u32>, Option<u32>, String)>,
 }
 
+/// The patch commit `sha` makes to `path` (repo-relative), against its first
+/// parent like [`commit_info`]'s counts, with three lines of context: the
+/// unified diff text from the first `@@` on (`None` when git fails). A binary
+/// file's patch has no hunks, only git's `Binary files ... differ` line.
+pub(crate) fn commit_file_diff(dir: &Path, sha: &str, path: &str) -> Option<String> {
+    let out = git_raw(
+        dir,
+        &[
+            "show",
+            "--first-parent",
+            "-m",
+            "--format=",
+            "--no-renames",
+            "--no-color",
+            "--no-ext-diff",
+            "-U3",
+            sha,
+            "--",
+            path,
+        ],
+    )
+    .ok()?;
+    Some(match out.find("\n@@") {
+        Some(i) => out[i + 1..].to_string(),
+        None => out
+            .lines()
+            .filter(|l| l.starts_with("Binary files"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    })
+}
+
 /// The commit `rev` names in the repository at `dir`, or `None` when this
 /// checkout does not have it. A merge's files are against its first parent.
 pub(crate) fn commit_info(dir: &Path, rev: &str) -> Option<CommitInfo> {

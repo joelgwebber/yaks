@@ -1181,7 +1181,7 @@ fn docshots_dir_view() {
 
 /// A commit link opened in the commit view, the squashed worker commit that
 /// says where it landed, and a commit this checkout lacks (yaks-3f90), into
-/// `docs/assets/tui-commit-view.svg`, `tui-commit-landed.svg` and
+/// `docs/assets/tui-commit-view.svg`, `tui-commit-diff.svg`, `tui-commit-landed.svg` and
 /// `tui-commit-missing.svg`. A scratch checkout with fixed dates, so the
 /// frames are stable apart from the hashes. Ignored by default; run
 /// explicitly: `cargo test -p yaks docshots_commit -- --ignored`.
@@ -1272,6 +1272,10 @@ fn docshots_commit() {
     write_svg("tui-commit-header", &app, w, h);
     press_key(&mut app, KeyCode::Enter);
     write_svg("tui-commit-view", &app, w, h);
+    // yaks-bdab: the last file's diff unfolded inline.
+    press_key(&mut app, KeyCode::End);
+    press_key(&mut app, KeyCode::Char(' '));
+    write_svg("tui-commit-diff", &app, w, h);
     app.open_commit(&worker);
     write_svg("tui-commit-landed", &app, w, h);
     app.open_commit(ghost);

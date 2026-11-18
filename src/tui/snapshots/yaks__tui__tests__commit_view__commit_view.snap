@@ -14,8 +14,8 @@ viewing commit:634a3fe
 │ with a break.
 │
 │ 2 files changed, +2 -0
-│      +1      -0  README.md
-│      +1      -0  src/a.rs
+│ ▸    +1      -0  README.md
+│ ▸    +1      -0  src/a.rs
 │
 │
 │
@@ -25,4 +25,4 @@ viewing commit:634a3fe
 │
 │
 │
-Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit
+Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit

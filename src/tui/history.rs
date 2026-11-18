@@ -224,7 +224,7 @@ impl App {
                 under: self.pane_yak.clone(),
                 line: v.cursor(),
                 scroll: 0,
-                folds: Vec::new(),
+                folds: v.open_folds(),
             }),
             None if self.focus == Focus::Detail => {
                 if let Some(s) = self.selected_shed() {
@@ -406,6 +406,7 @@ impl App {
                         d.restore(folds, *line);
                     }
                     if let DocView::Commit(c) = &view {
+                        c.restore_folds(folds);
                         c.restore(*line);
                     }
                     if let (DocView::Text(v), Some(w)) = (&mut view, doc_width) {

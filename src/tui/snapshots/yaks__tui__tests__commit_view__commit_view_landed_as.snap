@@ -12,7 +12,7 @@ expression: "{\n    let f = draw(&app, 100, 24);\n    f.replace(&landed, \"<land
 │ Landed as 634a3fe  (squashed into the landed commit)
 │
 │ 1 file changed, +1 -0
-│      +1      -0  src/a.rs
+│ ▸    +1      -0  src/a.rs
 │
 │
 │
@@ -25,4 +25,4 @@ expression: "{\n    let f = draw(&app, 100, 24);\n    f.replace(&landed, \"<land
 │
 │
 │
-Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit
+Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit

@@ -30,8 +30,8 @@ text{white-space:pre}
 <text xml:space="preserve" y="185.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8">read back as commits.</tspan></text>
 <text xml:space="preserve" y="203.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="221.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">2 files changed, +2 -0</tspan></text>
-<text xml:space="preserve" y="239.5"><tspan x="10.0" class="s3">│</tspan><tspan x="68.8" class="s7">+1</tspan><tspan x="136.0" class="s8">-0</tspan><tspan x="169.6">src/links.rs</tspan></text>
-<text xml:space="preserve" y="257.5"><tspan x="10.0" class="s3">│</tspan><tspan x="68.8" class="s7">+1</tspan><tspan x="136.0" class="s8">-0</tspan><tspan x="169.6">src/locate.rs</tspan></text>
+<text xml:space="preserve" y="239.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">▸</tspan><tspan x="68.8" class="s7">+1</tspan><tspan x="136.0" class="s8">-0</tspan><tspan x="169.6">src/links.rs</tspan></text>
+<text xml:space="preserve" y="257.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">▸</tspan><tspan x="68.8" class="s7">+1</tspan><tspan x="136.0" class="s8">-0</tspan><tspan x="169.6">src/locate.rs</tspan></text>
 <text xml:space="preserve" y="275.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="293.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="311.5"><tspan x="10.0" class="s3">│</tspan></text>
@@ -41,6 +41,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="383.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="401.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="419.5"><tspan x="10.0" class="s3">│</tspan></text>
-<text xml:space="preserve" y="437.5"><tspan x="10.0" class="s5">Esc:close  j/k:move  Enter:open  y:copy hash  O:take out  i/o:fwd/back  q:quit</tspan></text>
+<text xml:space="preserve" y="437.5"><tspan x="10.0" class="s5">Esc:close  j/k:move  Enter:open  Space:diff  y:copy hash  O:take out  i/o:fwd/back  q:quit</tspan></text>
 </g>
 </svg>

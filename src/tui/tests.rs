@@ -8513,6 +8513,44 @@ mod commit_view {
     }
 
     #[test]
+    fn space_unfolds_a_files_diff_inline_and_enter_on_a_line_opens_it_there() {
+        let (proj, _, landed, mut app) = fixture();
+        tab_key(&mut app);
+        draw(&app, 100, 30);
+        enter_key(&mut app);
+        draw(&app, 100, 30);
+        // README.md, then src/a.rs: unfold src/a.rs.
+        press(&mut app, "j");
+        press(&mut app, " ");
+        let frame = draw(&app, 100, 30).replace(&landed, "<sha>");
+        insta::assert_snapshot!("commit_view_diff", frame);
+        assert!(frame.contains("@@ -1 +1,2 @@"), "{frame}");
+        assert!(frame.contains("+fn b() {}"), "{frame}");
+        // Down to the added line (hunk header, context, added), Enter: the
+        // code viewer at the commit, on line 2.
+        press(&mut app, "j");
+        press(&mut app, "j");
+        press(&mut app, "j");
+        draw(&app, 100, 30);
+        enter_key(&mut app);
+        let v = app.attach().expect("the code viewer");
+        assert_eq!(v.rev.as_deref(), Some(landed.as_str()));
+        assert_eq!(v.nav.line, 1, "row 1 is line 2, the added line");
+        // `o` comes back with the diff still unfolded and the cursor on it.
+        press(&mut app, "o");
+        let back = draw(&app, 100, 30);
+        assert!(back.contains("+fn b() {}"), "{back}");
+        // `h` from a diff line folds it and puts the cursor on its file.
+        press(&mut app, "h");
+        let folded = draw(&app, 100, 30);
+        assert!(!folded.contains("+fn b() {}"), "{folded}");
+        // Space on the file row unfolds it again: the cursor is on the file.
+        press(&mut app, " ");
+        assert!(draw(&app, 100, 30).contains("+fn b() {}"));
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
     fn enter_on_a_file_opens_the_code_viewer_at_that_commit_and_o_comes_back() {
         let (proj, _, landed, mut app) = fixture();
         tab_key(&mut app);

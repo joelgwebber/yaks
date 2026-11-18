@@ -13,13 +13,21 @@
 //!   (`g` the host URL, `p` the hash); `Esc` closes. Nothing here writes.
 //! - **A squashed worker commit** (the `source:` of a landed note) says
 //!   `Landed as <sha>` and links to it.
+//! - **A file's diff unfolds inline** (yaks-bdab): `Space` (or `l`/`→`) on a
+//!   file row shows its patch under it, hunk headers cyan, `+` green, `-` red;
+//!   `h`/`←` folds it back (from a patch line, the cursor goes to its file).
+//!   `Enter` on a patch line opens the file at this commit at that line. The
+//!   patch is read from git once, when first unfolded; the open folds are part
+//!   of the history location, like the directory view's.
 //! - **A commit this checkout lacks** says so, with the host link and the
 //!   `yaks commits <yak> --fetch` that would bring its branch in, rather than
 //!   an error.
 //!
 //! The data is read once, when the view opens; `o`/`i` read it again.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::path::PathBuf;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -43,6 +51,52 @@ pub(crate) enum Item {
     Commit(String),
     /// A file changed by the commit, by repo-relative path.
     File(String),
+    /// A line of a file's unfolded patch: the file, and the line in the
+    /// commit's version it is at (a deleted line: the next line there).
+    Patch(String, u32),
+}
+
+/// One line of an unfolded patch.
+#[derive(Clone, PartialEq, Debug)]
+struct PatchLine {
+    text: String,
+    style: Style,
+    /// The line in the commit's version of the file.
+    line: u32,
+}
+
+/// A unified diff as display lines: hunk headers, then `+`/`-`/context lines
+/// with the new side's line number each lands on.
+fn patch_lines(diff: &str) -> Vec<PatchLine> {
+    let mut out = Vec::new();
+    let mut n: u32 = 1;
+    for l in diff.lines() {
+        let (style, line) = if let Some(rest) = l.strip_prefix("@@") {
+            // `@@ -a,b +c,d @@`: the new side starts at c.
+            n = rest
+                .split_whitespace()
+                .find_map(|w| w.strip_prefix('+'))
+                .and_then(|w| w.split(',').next()?.parse().ok())
+                .unwrap_or(n);
+            (Style::new().fg(Color::Cyan), n)
+        } else if l.starts_with('+') {
+            n += 1;
+            (Style::new().fg(Color::Green), n - 1)
+        } else if l.starts_with('-') {
+            (Style::new().fg(Color::Red), n)
+        } else if l.starts_with('\\') || l.starts_with("Binary files") {
+            (dim(), n)
+        } else {
+            n += 1;
+            (Style::new(), n - 1)
+        };
+        out.push(PatchLine {
+            text: l.replace('\t', "    "),
+            style,
+            line: line.max(1),
+        });
+    }
+    out
 }
 
 /// What was read of the commit.
@@ -63,6 +117,12 @@ pub(crate) struct CommitView {
     host: Result<String, String>,
     /// The yak the view was opened from: whose `yaks commits --fetch` is named.
     yak: Option<String>,
+    /// The code checkout the commit was read from (patches are read there).
+    base: PathBuf,
+    /// The files whose patch is unfolded, in the order they were opened.
+    open: RefCell<Vec<String>>,
+    /// Patches read so far, by path.
+    patches: RefCell<HashMap<String, Vec<PatchLine>>>,
     cursor: Cell<usize>,
     /// Whether the cursor has been put on its first stop (needs the width).
     placed: Cell<bool>,
@@ -186,14 +246,35 @@ impl CommitView {
                         None => format!("{sign}-"),
                     };
                     let (a, d) = (num(a, '+'), num(d, '-'));
+                    let open = self.open.borrow().contains(path);
                     out.push(Row {
                         spans: vec![
-                            (format!("{a:>7} "), Style::new().fg(Color::Green)),
+                            (
+                                if open { "\u{25be}" } else { "\u{25b8}" }.to_string(),
+                                dim(),
+                            ),
+                            (format!("{a:>6} "), Style::new().fg(Color::Green)),
                             (format!("{d:>7}  "), Style::new().fg(Color::Red)),
                             (truncate_disp(path, width.saturating_sub(17)), Style::new()),
                         ],
                         item: Some(Item::File(path.clone())),
                     });
+                    if open {
+                        for p in self.patch(path) {
+                            let chars: Vec<char> = p.text.chars().collect();
+                            let indent = "  ";
+                            let room = width.saturating_sub(indent.len()).max(1);
+                            for (s, e) in wrap_ranges(&chars, room) {
+                                out.push(Row {
+                                    spans: vec![
+                                        (indent.to_string(), Style::new()),
+                                        (chars[s..e].iter().collect::<String>(), p.style),
+                                    ],
+                                    item: Some(Item::Patch(path.clone(), p.line)),
+                                });
+                            }
+                        }
+                    }
                 }
             }
             State::Missing(_) => {
@@ -227,6 +308,82 @@ impl CommitView {
             }
         }
         out
+    }
+
+    /// `path`'s patch, read from git the first time it is asked for.
+    fn patch(&self, path: &str) -> Vec<PatchLine> {
+        if let Some(p) = self.patches.borrow().get(path) {
+            return p.clone();
+        }
+        let lines = match crate::gitrepo::commit_file_diff(&self.base, &self.sha, path) {
+            Some(d) if !d.trim().is_empty() => patch_lines(&d),
+            Some(_) => patch_lines("(no textual change: a mode change or an empty file)"),
+            None => patch_lines("(git could not show this file's diff)"),
+        };
+        self.patches
+            .borrow_mut()
+            .insert(path.to_string(), lines.clone());
+        lines
+    }
+
+    /// The file the cursor's row belongs to (a file row or a line of its patch).
+    fn cursor_file(&self) -> Option<String> {
+        match self.selected()? {
+            Item::File(p) | Item::Patch(p, _) => Some(p),
+            Item::Commit(_) => None,
+        }
+    }
+
+    /// Put the cursor on `path`'s file row.
+    fn cursor_to_file(&self, path: &str) {
+        let rows = self.rows(self.width.get() as usize);
+        if let Some(i) = rows
+            .iter()
+            .position(|r| r.item.as_ref() == Some(&Item::File(path.to_string())))
+        {
+            self.cursor.set(i);
+        }
+    }
+
+    /// `Space`: fold or unfold the patch of the cursor's file.
+    fn toggle(&self) {
+        let Some(path) = self.cursor_file() else {
+            return;
+        };
+        if self.open.borrow().contains(&path) {
+            self.fold();
+        } else {
+            self.unfold();
+        }
+    }
+
+    /// `l`/`→`: show the cursor's file's patch under it.
+    fn unfold(&self) {
+        if let Some(Item::File(path)) = self.selected() {
+            let mut open = self.open.borrow_mut();
+            if !open.contains(&path) {
+                open.push(path);
+            }
+        }
+    }
+
+    /// `h`/`←`: fold the cursor's file's patch, the cursor back on the file.
+    fn fold(&self) {
+        let Some(path) = self.cursor_file() else {
+            return;
+        };
+        self.open.borrow_mut().retain(|p| *p != path);
+        self.cursor_to_file(&path);
+    }
+
+    /// The unfolded files, for the history.
+    pub(crate) fn open_folds(&self) -> Vec<String> {
+        self.open.borrow().clone()
+    }
+
+    /// Put back the folds a history location recorded.
+    pub(crate) fn restore_folds(&self, folds: &[String]) {
+        *self.open.borrow_mut() = folds.to_vec();
     }
 
     fn step(&self, by: i32) {
@@ -392,6 +549,9 @@ impl App {
             state,
             host,
             yak: self.selected_id(),
+            base,
+            open: RefCell::new(Vec::new()),
+            patches: RefCell::new(HashMap::new()),
             cursor: Cell::new(0),
             placed: Cell::new(false),
             scroll: Cell::new(0),
@@ -453,6 +613,9 @@ impl App {
             Cmd::MovePageUp => v.step(-page),
             Cmd::MoveTop => v.to(false),
             Cmd::MoveBottom => v.to(true),
+            Cmd::TreeToggle => v.toggle(),
+            Cmd::TreeRight => v.unfold(),
+            Cmd::TreeLeft => v.fold(),
             _ => {}
         }
     }
@@ -471,6 +634,7 @@ impl App {
         let sha = v.sha.clone();
         match v.selected() {
             Some(Item::File(path)) => self.open_code(&path, None, Some(&sha)),
+            Some(Item::Patch(path, line)) => self.open_code(&path, Some((line, line)), Some(&sha)),
             Some(Item::Commit(to)) => self.open_commit(&to),
             None => {}
         }
@@ -485,5 +649,31 @@ impl App {
         } else {
             "clipboard unavailable".into()
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn patch_lines_number_each_line_on_the_new_side() {
+        let d = "@@ -3,4 +5,3 @@ fn x()\n ctx\n-gone\n+new\n ctx2\n\\ No newline at end of file\n@@ -20 +30,0 @@\n-tail";
+        let got: Vec<(String, u32)> = patch_lines(d)
+            .into_iter()
+            .map(|p| (p.text, p.line))
+            .collect();
+        let want: Vec<(&str, u32)> = vec![
+            ("@@ -3,4 +5,3 @@ fn x()", 5),
+            (" ctx", 5),
+            ("-gone", 6),
+            ("+new", 6),
+            (" ctx2", 7),
+            ("\\ No newline at end of file", 8),
+            ("@@ -20 +30,0 @@", 30),
+            ("-tail", 30),
+        ];
+        let want: Vec<(String, u32)> = want.into_iter().map(|(t, n)| (t.to_string(), n)).collect();
+        assert_eq!(got, want);
     }
 }
