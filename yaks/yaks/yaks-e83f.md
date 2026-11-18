@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 2
 created: '2026-11-17T21:16:47Z'
-updated: '2026-11-17T23:36:05Z'
+updated: '2026-11-18T00:06:14Z'
 parent: yaks-4cfe
 tags:
 - doks
@@ -184,3 +184,28 @@ source references: 69 edit(s) in 8 file(s)
 *sources-triage*
 
 Docs, help and skills for the new layout committed on `main` (`docs/cli.md` incl. the schema-10 migrate section, `docs/tui.md`, `README.md`, the `yaks` and `yaks-research` skills, clap help). `cargo test -p yaks skills` green. Waiting on `s10tests-1` (yaks-03c8) for the test updates, then full gate and the design dok.
+
+#### 2026-11-18T00:06:14Z
+
+*sources-triage*
+
+Done (`sources-triage`). Schema 10 is on `main`:
+
+- `14cf78d5`: code (the "wip" label is only the commit's message; it is complete);
+- `7d393e3a`: docs, help and skills;
+- `1091a53e`: tests, by `s10tests-1` (yaks-03c8);
+- `06e0ebe9`: a citation at the end of a sentence counts, a bug yaks-03c8 found.
+
+Evidence:
+
+- **Full gate:** `cargo test -p yaks --no-fail-fast` gives 1479 passed, 0 failed, and fmt is clean.
+- **Migration rehearsal, final binary, fresh copy of this farm:** 28 sources made one file each, 2 trees moved up, 17 duplicate copies removed, 69 references rewritten in 8 files. `doctor` shows only the two dependencies that were already dangling. `check` has 36 findings, one fewer than the real farm. A second run says "nothing to migrate: the farm is on schema 10".
+- **Design dok:** `/doks/design/knowledge-store.md` updated.
+
+**Not done, and a human's call:** running `yaks migrate` on this farm. Once synced, every machine on an older yaks is refused it. Order, per the coordinating skill:
+
+- set `min_version:` to the release that carries schema 10, then sync;
+- upgrade every machine;
+- run `yaks migrate --dry-run`, then `yaks migrate`;
+- sync;
+- restart every running `yaks tui`.
