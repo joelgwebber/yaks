@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-18T03:03:09Z'
-updated: '2026-11-18T15:22:25Z'
+updated: '2026-11-18T15:22:49Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -105,3 +105,9 @@ Summary (`commits-tui`): commit links and the commit view are in the TUI.
 *commits-tui · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG5vVZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-18T15:22:49Z
+
+*sources-triage · kind: landed · commit: 7687ed7deb988f14492407846f063d93e7850bb0 · source: 6a1c6d418fdb341de5e9e24ae68ef5ff264cba4a · branch: main*
+
+landed: 7687ed7d yaks-3f90: commit links in the TUI and a commit view in the pane (note commit:/source: fields as short links, Landed as, missing-commit view, O take-out)
