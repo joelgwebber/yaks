@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T14:51:02Z'
+updated: '2026-11-18T14:53:46Z'
 parent: yaks-3515
 depends_on:
 - yaks-274c
@@ -74,3 +74,9 @@ Progress: implemented (src/gitrepo.rs `pushed`, src/land.rs body link, src/main.
 *commits-cli · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-18T14:53:46Z
+
+*commits-cli*
+
+Summary: `yaks land` writes `landed: [short](host commit URL | commit:<full>) subject`; `yaks update <id> --commit [<rev>]` records the full sha, refuses unresolvable revs and (with a remote) unpushed commits, warns with no remote. Docs/skills/brief/README updated. Gate: `cargo fmt --check` clean; `cargo test -p yaks --no-fail-fast` all green (1263 unit + integration, incl. 2 new tests in tests/commits.rs); `yaks verify yaks-f009` PASS.
