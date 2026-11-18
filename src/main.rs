@@ -676,6 +676,20 @@ enum Command {
         /// lines under its marker, like `kind=checkpoint`. Needs a note.
         #[arg(long, value_name = "KEY=VALUE")]
         meta: Vec<String>,
+        /// Record a code commit on the note as `commit: <full sha>`, checking
+        /// it exists and is pushed: `--commit` is `HEAD`, `--commit <rev>` any
+        /// rev, in the code checkout (the cwd's, else the farm's host). Refuses
+        /// a rev that does not resolve, and one the remote has not got as last
+        /// fetched (it names the push command; a checkout with no remote only
+        /// warns). Needs a note; not with `--meta commit=...`. Give the yak id
+        /// before it (`update <id> --commit`), so the id is not read as a rev.
+        #[arg(
+            long,
+            value_name = "REV",
+            num_args = 0..=1,
+            default_missing_value = "HEAD"
+        )]
+        commit: Option<String>,
         /// Attribute the note to this actor (stamped as `[actor]`). Defaults to
         /// $YAKS_ACTOR, then this checkout's `git config yaks.actor` (`yaks
         /// whoami --set`), then the harness identity (from Delta's environment:
@@ -685,6 +699,7 @@ enum Command {
         #[arg(long = "as")]
         as_actor: Option<String>,
     },
+    /// Block a yak on a human decision
     /// Block a yak on a human decision and record the question.
     ///
     /// Sets the `needs`
@@ -2919,6 +2934,7 @@ fn main() -> Result<()> {
             note,
             note_file,
             meta,
+            commit,
             as_actor,
         } => {
             warn_unknown_tags(farm.root(), &add_tag);
@@ -2929,8 +2945,12 @@ fn main() -> Result<()> {
             let description =
                 resolve_text("--description", description, description_file, &mut stdin)?;
             let note = resolve_text("--note", note, note_file, &mut stdin)?;
-            let meta = parse_meta_args(&meta, note.is_some())?;
+            let mut meta = parse_meta_args(&meta, note.is_some())?;
             warn_branch_under_farm(&meta, farm.root());
+            if let Some(rev) = &commit {
+                let full = resolve_commit_arg(farm.root(), rev, note.is_some(), &meta)?;
+                meta.push(("commit".to_string(), full));
+            }
             let actor = note
                 .as_ref()
                 .and_then(|_| actor::resolve(as_actor.as_deref()));
@@ -4012,6 +4032,55 @@ fn warn_branch_under_farm(meta: &[(String, String)], root: &std::path::Path) {
             );
         }
     }
+}
+
+/// `update --commit <rev>` (yaks-f009): the full sha `rev` names in the code
+/// checkout, for the note's `commit:` field. Refuses without a note, beside
+/// `--meta commit=...`, with no code checkout, for a rev that does not resolve,
+/// and for a commit the remote lacks as last fetched (yaks-ab81: runners lost
+/// work to checkpoints that were never pushed). With no remote at all there is
+/// nothing to have pushed to, so it only warns.
+fn resolve_commit_arg(
+    farm_root: &std::path::Path,
+    rev: &str,
+    has_note: bool,
+    meta: &[(String, String)],
+) -> Result<String> {
+    if !has_note {
+        anyhow::bail!(
+            "--commit needs a note to attach to (give --note, --note-file or `--note -`)"
+        );
+    }
+    if meta.iter().any(|(k, _)| k == "commit") {
+        anyhow::bail!("--commit and `--meta commit=...` both set `commit`; use one");
+    }
+    let cwd = env::current_dir()?;
+    let Some(code) = links::code_base(farm_root, Some(&cwd)) else {
+        anyhow::bail!("--commit: no code checkout to read {rev} from (run from one)");
+    };
+    let Some(full) = gitrepo::commit_of(&code, rev) else {
+        anyhow::bail!("--commit: {rev:?} is not a commit in {}", code.display());
+    };
+    let short = &full[..7];
+    let branch = gitrepo::current_branch(&code);
+    match gitrepo::pushed(&code, branch.as_deref(), &full) {
+        gitrepo::Pushed::Yes(_) => {}
+        gitrepo::Pushed::NoRemote => eprintln!(
+            "warning: {short} cannot be on a remote: {} has none; nobody on another machine can fetch it",
+            code.display()
+        ),
+        gitrepo::Pushed::No(remote) => {
+            let push = match &branch {
+                Some(b) => format!("git push {remote} {b}"),
+                None => format!("git push {remote} HEAD:refs/heads/<branch>"),
+            };
+            anyhow::bail!(
+                "--commit: {short} is on no branch of {remote} as last fetched; push it first \
+                 (`{push}`; `git fetch {remote}` if it was pushed from elsewhere), then record it"
+            );
+        }
+    }
+    Ok(full)
 }
 
 fn parse_meta_args(args: &[String], has_note: bool) -> Result<Vec<(String, String)>> {

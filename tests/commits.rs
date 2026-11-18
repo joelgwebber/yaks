@@ -175,8 +175,12 @@ fn land_records_the_landed_and_worker_shas_and_commits_reads_them() {
     assert!(body.contains(&format!("commit: {landed}")), "{body}");
     assert!(body.contains(&format!("source: {w}")), "{body}");
     assert!(body.contains("branch: main"), "{body}");
+    // No remote, so no host: the body links the commit as `commit:` (yaks-f009).
     assert!(
-        body.contains(&format!("landed: {} {id}: the work", &landed[..7])),
+        body.contains(&format!(
+            "landed: [{}](commit:{landed}) {id}: the work",
+            &landed[..7]
+        )),
         "{body}"
     );
 
@@ -208,6 +212,96 @@ fn land_records_the_landed_and_worker_shas_and_commits_reads_them() {
     let again = ok(&r, &["land", &w]);
     assert!(again.contains("nothing to commit"), "{again}");
     assert_eq!(notes_of(&farm, &id).matches("kind: landed").count(), 1);
+}
+
+#[test]
+fn land_links_the_commit_on_the_code_repos_host() {
+    let (r, farm, id) = branch_farm("land-host");
+    git(&r, &["remote", "add", "origin", "git@github.com:o/r.git"]);
+    let w = worker_commit(&r, "w.txt", &format!("{id}: the work"));
+    ok(&r, &["land", &w]);
+    let landed = git(&r, &["rev-parse", "HEAD"]);
+    let body = notes_of(&farm, &id);
+    assert!(
+        body.contains(&format!(
+            "landed: [{}](https://github.com/o/r/commit/{landed}) {id}: the work",
+            &landed[..7]
+        )),
+        "{body}"
+    );
+    assert!(body.contains(&format!("commit: {landed}")), "{body}");
+    // Read back, the URL is the commit.
+    let peek = ok(
+        &r,
+        &["peek", &format!("https://github.com/o/r/commit/{landed}")],
+    );
+    assert!(peek.contains(&format!("commit:{}", &landed[..7])), "{peek}");
+}
+
+#[test]
+fn update_commit_records_the_full_sha_and_checks_it_is_pushed() {
+    let (r, farm, id) = branch_farm("upd-commit");
+    let head = code_commit(&r, "a.txt", "work");
+    let sha = |rev: &str| git(&r, &["rev-parse", rev]);
+    let upd = |extra: &[&str]| {
+        let mut a = vec!["update", id.as_str()];
+        a.extend_from_slice(extra);
+        yaks(&r, &a)
+    };
+
+    // No remote: recorded, with a warning.
+    let o = upd(&["--commit", "--note", "cp"]);
+    assert!(o.status.success(), "{}", text(&o));
+    assert!(text(&o).contains("has none"), "{}", text(&o));
+    assert!(notes_of(&farm, &id).contains(&format!("commit: {head}")));
+
+    // A remote that lacks it: refused, naming the push; nothing written.
+    let bare = temp("upd-commit-origin");
+    git(&bare, &["init", "-q", "--bare", "-b", "main", "."]);
+    git(&r, &["remote", "add", "origin", bare.to_str().unwrap()]);
+    let before = notes_of(&farm, &id);
+    let o = upd(&["--commit", "HEAD", "--note", "cp2"]);
+    assert!(!o.status.success());
+    assert!(text(&o).contains("git push origin main"), "{}", text(&o));
+    assert_eq!(notes_of(&farm, &id), before);
+
+    // Pushed (and so fetched): accepted; a short rev is stored in full.
+    git(&r, &["push", "-q", "origin", "main"]);
+    git(&r, &["fetch", "-q", "origin"]);
+    let o = upd(&[
+        "--commit",
+        "HEAD~0",
+        "--note",
+        "cp3",
+        "--meta",
+        "kind=checkpoint",
+    ]);
+    assert!(o.status.success(), "{}", text(&o));
+    let body = notes_of(&farm, &id);
+    assert!(
+        body.contains(&format!("kind: checkpoint \u{b7} commit: {}", sha("HEAD"))),
+        "{body}"
+    );
+
+    // Refusals: an unknown rev, no note, and `--meta commit=`.
+    let o = upd(&["--commit", "nope", "--note", "x"]);
+    assert!(
+        !o.status.success() && text(&o).contains("not a commit"),
+        "{}",
+        text(&o)
+    );
+    let o = upd(&["--commit"]);
+    assert!(
+        !o.status.success() && text(&o).contains("needs a note"),
+        "{}",
+        text(&o)
+    );
+    let o = upd(&["--commit", "--meta", "commit=abc1234", "--note", "x"]);
+    assert!(
+        !o.status.success() && text(&o).contains("use one"),
+        "{}",
+        text(&o)
+    );
 }
 
 #[test]

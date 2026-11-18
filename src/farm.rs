@@ -782,7 +782,7 @@ pub struct Landed {
     pub source: Option<String>,
     /// The branch it landed on, when HEAD is on one.
     pub branch: Option<String>,
-    /// The note body (`landed: <short> <subject>`).
+    /// The note body (`landed: [<short>](<commit link>) <subject>`).
     pub text: String,
 }
 

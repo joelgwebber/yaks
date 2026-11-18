@@ -278,6 +278,28 @@ pub(crate) fn remote_has(dir: &Path, remote: &str, sha: &str) -> bool {
     .is_ok_and(|o| !o.is_empty())
 }
 
+/// Whether a commit is on the remote its checkout pushes to (yaks-ab81).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum Pushed {
+    /// Some branch of `remote` contains it, as of the last fetch or push.
+    Yes(String),
+    /// The remote exists and no branch of it has the commit.
+    No(String),
+    /// The checkout has no remote to have pushed to.
+    NoRemote,
+}
+
+/// Whether `sha` is on the remote `branch` (or, detached, `origin`) syncs
+/// with: [`remote_of`], then [`remote_has`]. Asks nothing of the network, so
+/// "as last fetched or pushed".
+pub(crate) fn pushed(dir: &Path, branch: Option<&str>, sha: &str) -> Pushed {
+    match remote_of(dir, branch.unwrap_or("")) {
+        None => Pushed::NoRemote,
+        Some(r) if remote_has(dir, &r, sha) => Pushed::Yes(r),
+        Some(r) => Pushed::No(r),
+    }
+}
+
 /// Whether `path` (repo-relative) exists at `rev` (a commit or ref).
 pub(crate) fn has_path(dir: &Path, rev: &str, path: &str) -> bool {
     git(dir, &["cat-file", "-e", &format!("{rev}:{path}")]).is_ok()

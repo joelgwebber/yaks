@@ -922,11 +922,19 @@ fn record(
         return Ok(());
     }
     let short = g.must(&["rev-parse", "--short", landed])?;
+    let branch = g.text(&["symbolic-ref", "--short", "-q", "HEAD"]);
+    // The commit as a link (yaks-f009): the host's commit page when the code
+    // repo has a known host, so it is a link on GitHub too; else `commit:`,
+    // which yaks itself reads.
+    let dest = match crate::gitrepo::hosting_repo(top, branch.as_deref()) {
+        Ok((_, repo)) => repo.commit_url(landed),
+        Err(_) => format!("commit:{landed}"),
+    };
     let note = Landed {
         commit: landed.to_string(),
         source: source.map(str::to_string),
-        branch: g.text(&["symbolic-ref", "--short", "-q", "HEAD"]),
-        text: format!("landed: {short} {subject}"),
+        branch,
+        text: format!("landed: [{short}]({dest}) {subject}"),
     };
     let actor = crate::actor::resolve(None);
     match farm.record_landed(&ids, &note, actor.as_deref(), opts.dry_run) {
