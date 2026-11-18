@@ -1,11 +1,11 @@
 ---
 id: yaks-535c
 title: Directory sources store their text twice (files/ plus a joined extracted.md)
-status: shaving
+status: shorn
 type: idea
 priority: 4
 created: '2026-11-07T15:58:16Z'
-updated: '2026-11-18T00:06:13Z'
+updated: '2026-11-18T00:06:14Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-e83f
@@ -79,3 +79,9 @@ Done in yaks-e83f (`sources-triage`):
 - `yaks find` and the Doks tab read the tree in place.
 
 The YASS source file went from 271 lines plus an 842 KiB joined copy to 18 lines.
+
+#### 2026-11-18T00:06:14Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
