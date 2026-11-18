@@ -32,7 +32,7 @@ The farm's files are now reached in three shapes: a single file (attachment, dok
 | `tui/dirview.rs`: `list`, `count_files` | the TUI's lister (skips `.git` and symlinks, dirs first) |
 | `sources::walk_dir` | the write-side walk (skip list, limits; follows symlinks) |
 
-Two disagreements this already causes (filed as [yaks-1d2b](/yaks/yaks/yaks-1d2b.md) and, for the write side, [yaks-8218](/yaks/yaks/yaks-8218.md)):
+Two disagreements this already causes (the first filed as [yaks-1d2b](/yaks/yaks/yaks-1d2b.md); the second goes away with one lister). The write side has its own: [yaks-8218](/yaks/yaks/yaks-8218.md), `walk_dir` follows symlinks.
 
 - A dok's link to its sibling directory (`x/sketches/`, `/doks/x/sketches/`) opens in the TUI but `yaks doctor` calls it a `../` link and `yaks peek` refuses it.
 - `peek` and the directory view list a directory by different rules (`peek` shows symlinks and `.git`, sorts differently).
