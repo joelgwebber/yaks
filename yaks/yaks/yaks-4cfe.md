@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-17T21:15:46Z'
-updated: '2026-11-18T00:06:32Z'
+updated: '2026-11-18T00:54:24Z'
 tags:
 - doks
 ---
@@ -76,3 +76,9 @@ Results so far, by model:
 - **Opus (coordinator):** design, landings, schema 10.
 
 Left under this umbrella: yaks-5f14 (set a source's text later), now simpler and unblocked, but not part of this pass. The real farm's `yaks migrate` waits for Joel.
+
+#### 2026-11-18T00:54:24Z
+
+*sources-triage*
+
+Every child is shorn (`sources-triage`): yaks-5f14 closed with `source set --text`. Joel migrated his farms to schema 10 without a hitch. Closing the umbrella.
