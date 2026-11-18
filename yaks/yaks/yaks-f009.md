@@ -49,3 +49,9 @@ Decision: "which remote" is the existing rule `gitrepo::remote_of(branch)` (bran
 *commits-cli*
 
 Decision: `--commit` is `num_args=0..=1` with default `HEAD`, so `update <id> --commit` works; side effect: `update --commit <id>` would read the id as the rev, so the help and docs say to put the id first. Rejected: `--commit` as a flag plus a separate `--rev`/`--commit-rev` (two flags for one intent). Conflicts with `--meta commit=` are refused in `resolve_commit_arg` (not clap `conflicts_with`, since `--meta` values are key=value strings clap cannot inspect). `--commit` applies to each id given to update (same note on all), consistent with `--meta`.
+
+#### 2026-11-18T14:47:43Z
+
+*commits-cli*
+
+Decision: `yaks land` body is `landed: [<short>](<link>) <subject>`; link = host commit URL when `gitrepo::hosting_repo(top, branch)` resolves (any recognised forge, incl. GitLab/Gitea via `commit_url`), else `commit:<full>`. Any hosting error (no remote, unknown host) falls back silently to `commit:`, because `land` never fails on recording. The pushed-ness of the landed commit is not checked in `land` (it just landed locally; `yaks url` already notes unpushed links). Meta fields commit/source/branch unchanged. Old notes keep their plain-text body.
