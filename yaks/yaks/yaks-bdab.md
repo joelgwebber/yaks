@@ -5,8 +5,10 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-18T03:03:10Z'
-updated: '2026-11-18T03:03:10Z'
+updated: '2026-11-18T03:03:13Z'
 parent: yaks-3515
+depends_on:
+- yaks-3f90
 tags:
 - tui
 - git
