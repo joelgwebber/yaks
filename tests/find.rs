@@ -113,13 +113,10 @@ fn stocked(tag: &str) -> (Farm, String) {
         "web/doks/field-notes.md",
         b"---\ntitle: Field notes\n---\nNothing here but the QUOKKA.\n",
     );
+    // One file: the frontmatter is the provenance (lines 1-4), the body the text.
     f.put(
-        "sources/2026-01-01-aaaaaaaa/source.md",
-        b"---\ntitle: Animal almanac\nmedia_type: text/html\n---\nCaptured dok.\n",
-    );
-    f.put(
-        "sources/2026-01-01-aaaaaaaa/extracted.md",
-        b"Chapter one.\nQuokkas live on Rottnest.\n",
+        "sources/2026-01-01-aaaaaaaa.md",
+        b"---\ntitle: Animal almanac\nmedia_type: text/html\n---\nChapter one.\nQuokkas live on Rottnest.\n",
     );
     f.put(
         "sessions/2026/chat.md",
@@ -158,11 +155,11 @@ fn finds_each_kind_with_path_line_and_title() {
         "{out}"
     );
     assert!(
-        out.contains("sources/2026-01-01-aaaaaaaa/extracted.md  Animal almanac\n"),
+        out.contains("sources/2026-01-01-aaaaaaaa.md  Animal almanac\n"),
         "{out}"
     );
     assert!(
-        out.contains("sources/2026-01-01-aaaaaaaa/extracted.md:2: Quokkas live on Rottnest."),
+        out.contains("sources/2026-01-01-aaaaaaaa.md:6: Quokkas live on Rottnest."),
         "{out}"
     );
     assert!(out.contains("sessions/2026/chat.md  Zoo chat\n"), "{out}");
@@ -262,7 +259,7 @@ fn regex_is_opt_in() {
     assert_eq!(paths(&hits), ["doks/topics/marsupials.md"]);
     let hits = f.find_json(&["^quokkas?\\b", "--regex", "--kind", "sources"]);
     assert_eq!(hits.len(), 1);
-    assert_eq!(hits[0]["line"], 2);
+    assert_eq!(hits[0]["line"], 6);
     let out = f.cmd(&["find", "(", "--regex"]);
     assert_eq!(out.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&out.stderr).contains("invalid pattern"));
@@ -290,12 +287,37 @@ fn binary_files_and_originals_are_skipped() {
         b"%PDF needle-in-original\0\x01\x02",
     );
     f.put(
-        "sources/2026-01-01-bbbbbbbb/extracted.md",
-        b"needle-in-original\0binary",
+        "sources/2026-01-01-bbbbbbbb.md",
+        b"---\ntitle: Blob\n---\nneedle-in-original\0binary",
     );
     f.put("doks/blob.md", b"needle-in-original \xff\xfe not utf-8");
     f.put("sessions/raw.md", b"needle-in-original\0");
     assert_eq!(f.find(&["needle-in-original"]).0, 1);
+}
+
+/// yaks-e83f: a directory source's tree sits beside its file, and `find`
+/// searches the text files in it where they lie (no joined copy), under the
+/// source's own title; a non-text file in the tree is skipped.
+#[test]
+fn a_directory_sources_tree_is_searched_in_place() {
+    let (f, _) = stocked("tree");
+    f.put(
+        "sources/2026-02-02-cccccccc.md",
+        b"---\ntitle: Zoo repo\nfile_count: 2\n---\n\nThe saved tree.\n",
+    );
+    f.put(
+        "sources/2026-02-02-cccccccc/src/zoo.rs",
+        b"// needle-in-tree\nfn main() {}\n",
+    );
+    f.put(
+        "sources/2026-02-02-cccccccc/logo.png",
+        b"\x89PNG needle-in-tree",
+    );
+    let hits = f.find_json(&["needle-in-tree"]);
+    assert_eq!(paths(&hits), ["sources/2026-02-02-cccccccc/src/zoo.rs"]);
+    assert_eq!(hits[0]["kind"], "sources");
+    assert_eq!(hits[0]["title"], "Zoo repo");
+    assert_eq!(hits[0]["line"], 1);
 }
 
 #[test]

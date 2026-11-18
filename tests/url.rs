@@ -252,12 +252,13 @@ fn url_refuses_with_a_reason() {
 }
 
 #[test]
-fn a_source_directory_link_peeks_and_doctor_flags_a_broken_one() {
+fn a_source_link_peeks_and_doctor_flags_a_broken_one() {
     let f = Farm::new("sources");
-    let src = f.root().join("sources/2026-11-03-81364278");
-    std::fs::create_dir_all(&src).unwrap();
+    // A source is its one file, `sources/<name>.md`.
+    let sources = f.root().join("sources");
+    std::fs::create_dir_all(&sources).unwrap();
     std::fs::write(
-        src.join("source.md"),
+        sources.join("2026-11-03-81364278.md"),
         "---\ntitle: A source\n---\n\nThe body.\n",
     )
     .unwrap();

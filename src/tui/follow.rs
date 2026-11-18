@@ -460,7 +460,7 @@ mod tests {
     /// A dok linking every way the grammar allows: dok-relative, from the
     /// farm root at a heading, an in-page anchor, a source, a line range, a
     /// yak, and an attachment.
-    const HUB: &str = "---\ntitle: Hub\n---\n\n# Hub\n\n- See [fts](full-text-search.md).\n- And [indexes](/doks/topics/vector-search.md#indexes).\n- Jump [below](#later).\n- Read [the source](/sources/2026-10-22-1a2b3c4d/source.md).\n- Lines [two](/doks/howto/release.md#L6-L7).\n- Yak yaks-0001.\n- Log [run](yaks-0001/run.log).\n\n## Later\n\nThe end.\n";
+    const HUB: &str = "---\ntitle: Hub\n---\n\n# Hub\n\n- See [fts](full-text-search.md).\n- And [indexes](/doks/topics/vector-search.md#indexes).\n- Jump [below](#later).\n- Read [the source](/sources/2026-10-22-1a2b3c4d.md).\n- Lines [two](/doks/howto/release.md#L6-L7).\n- Yak yaks-0001.\n- Log [run](yaks-0001/run.log).\n\n## Later\n\nThe end.\n";
 
     /// A live app on the fixture doks plus `doks/topics/hub.md`, with the hub
     /// open in the viewer and its pane measured.
@@ -509,42 +509,47 @@ mod tests {
         panic!("no link {want}");
     }
 
-    /// `/sources/<id>` names a directory: the viewer opens its `source.md`
-    /// (yaks-bede), and the history restores it.
+    /// `/sources/<id>` names a source: the viewer opens its file,
+    /// `sources/<id>.md` (yaks-bede, yaks-e83f), and the history restores it.
     #[test]
-    fn a_source_directory_link_opens_its_source_file() {
+    fn a_source_link_opens_its_source_file() {
         let (proj, mut app) = on_hub();
-        let dir = app.farm_root().unwrap().join("sources/2026-11-03-81364278");
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("source.md"), "# A source\n\nText.\n").unwrap();
+        let sources = app.farm_root().unwrap().join("sources");
+        std::fs::create_dir_all(&sources).unwrap();
+        std::fs::write(
+            sources.join("2026-11-03-81364278.md"),
+            "# A source\n\nText.\n",
+        )
+        .unwrap();
         app.open_farm_doc("sources/2026-11-03-81364278", None, None);
         let v = viewer(&app);
-        assert_eq!(v.target, "sources/2026-11-03-81364278/source.md");
+        assert_eq!(v.target, "sources/2026-11-03-81364278.md");
         assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
         app.open_farm_doc("sources/nope", None, None);
         assert_eq!(
             app.notification.as_deref(),
-            Some("sources/nope/source.md: not in this farm")
+            Some("sources/nope.md: not in this farm")
         );
         let _ = std::fs::remove_dir_all(proj);
     }
 
-    /// A source's directory carries a slug (`<date>-<sha8>-<slug>`, yaks-7729)
+    /// A source's file carries a slug (`<date>-<sha8>-<slug>.md`, yaks-7729)
     /// and a link names it by the bare `<date>-<sha8>` id: the viewer finds
-    /// the one directory, and the history re-reads it.
+    /// the one file, and the history re-reads it.
     #[test]
-    fn a_bare_source_id_link_opens_the_slugged_directory() {
+    fn a_bare_source_id_link_opens_the_slugged_file() {
         let (proj, mut app) = on_hub();
-        let dir = app
-            .farm_root()
-            .unwrap()
-            .join("sources/2026-11-03-81364278-a-readable-slug");
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("source.md"), "# A source\n\nText.\n").unwrap();
+        let sources = app.farm_root().unwrap().join("sources");
+        std::fs::create_dir_all(&sources).unwrap();
+        std::fs::write(
+            sources.join("2026-11-03-81364278-a-readable-slug.md"),
+            "# A source\n\nText.\n",
+        )
+        .unwrap();
         app.open_farm_doc("sources/2026-11-03-81364278", None, None);
         assert_eq!(
             viewer(&app).target,
-            "sources/2026-11-03-81364278-a-readable-slug/source.md"
+            "sources/2026-11-03-81364278-a-readable-slug.md"
         );
         assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
         let _ = std::fs::remove_dir_all(proj);
@@ -572,7 +577,7 @@ mod tests {
                     Some(Anchor::Heading("indexes".into()))
                 ),
                 Target::Local(Anchor::Heading("later".into())),
-                farm("sources/2026-10-22-1a2b3c4d/source.md", None),
+                farm("sources/2026-10-22-1a2b3c4d.md", None),
                 farm("doks/howto/release.md", Some(Anchor::Lines(6, 7))),
                 Target::Task("yaks-0001".into()),
                 Target::Artifact("yaks-0001/run.log".into()),

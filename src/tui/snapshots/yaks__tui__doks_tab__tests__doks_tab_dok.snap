@@ -9,7 +9,7 @@ expression: "draw(&app, 150, 26)"
  Vector search in Pos  topic    #databases #  doks/│ title:       Vector search in Postgres
  TUI layout            note     #tui          yaks/│ description: pgvector, indexes and when to use them.
  pgvector README       source                 sourc│ tags:        databases, search
- Pick an index         session                sessi│ sources:     sources/2026-10-22-1a2b3c4d/source.md
+ Pick an index         session                sessi│ sources:     sources/2026-10-22-1a2b3c4d.md
                                                    │
                                                    │ Vector search
                                                    │

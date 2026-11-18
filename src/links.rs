@@ -1703,11 +1703,16 @@ mod tests {
         let root = std::env::temp_dir().join(format!("yaks-exists-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
         std::fs::create_dir_all(root.join("sources/2026-11-03-81364278")).unwrap();
-        std::fs::write(root.join("sources/2026-11-03-81364278/source.md"), "x").unwrap();
+        std::fs::write(root.join("sources/2026-11-03-81364278.md"), "x").unwrap();
+        std::fs::write(root.join("sources/2026-11-03-81364278/shot.png"), "x").unwrap();
         std::fs::create_dir_all(root.join("doks")).unwrap();
         let check = |dest: &str| exists(&root, &parse(dest, From::Cli, yak));
-        // `/sources/<id>` is its source.md; a wrong id or a wrong namespace is broken.
+        // `/sources/<id>` is its `.md` file, `/sources/<id>/<file>` a file of
+        // its sibling directory; a wrong id or a wrong namespace is broken.
         assert_eq!(check("/sources/2026-11-03-81364278"), Some(true));
+        assert_eq!(check("/sources/2026-11-03-81364278.md"), Some(true));
+        assert_eq!(check("/sources/2026-11-03-81364278/shot.png"), Some(true));
+        assert_eq!(check("/sources/2026-11-03-81364278/nope.png"), Some(false));
         assert_eq!(check("/sources/nope"), Some(false));
         assert_eq!(check("/doks/sources/2026-11-03-81364278"), Some(false));
         assert_eq!(check("/doks/sessions/2026/11/x"), Some(false));

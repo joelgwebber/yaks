@@ -106,12 +106,18 @@ fn source_add_dedups_and_lists() {
     assert_eq!(v[0]["title"], "The paper");
     assert_eq!(v[0]["resource"], "https://example.test/paper");
     let dir = f.root().join(v[0]["dir"].as_str().unwrap());
-    assert_eq!(
-        std::fs::read_to_string(dir.join("extracted.md")).unwrap(),
-        "# Paper\n\ntext\n"
+    // One file: the markdown original is the body, and nothing is kept beside it.
+    let file = f
+        .root()
+        .join(format!("{}.md", v[0]["dir"].as_str().unwrap()));
+    let text = std::fs::read_to_string(&file).unwrap();
+    assert!(text.ends_with("---\n\n# Paper\n\ntext\n"), "{text}");
+    assert!(
+        !dir.exists(),
+        "no sibling directory for a markdown original"
     );
     // A path inside the farm is refused.
-    let inside = dir.join("paper.md");
+    let inside = file;
     assert!(
         f.fails(&["source", "add", inside.to_str().unwrap()])
             .contains("already in the farm")
@@ -148,8 +154,19 @@ fn promote_moves_an_attachment_and_rewrites_its_links() {
         "{dok}"
     );
     let out = f.run(&["promote", &format!("{id}/my shot.png")]);
+    // The promoted source is its one file; the png is its kept original,
+    // in the sibling directory.
+    let stem = out
+        .split("-> ")
+        .nth(1)
+        .and_then(|r| r.split(';').next())
+        .and_then(|r| r.trim().strip_suffix(".md"))
+        .unwrap_or_default()
+        .to_string();
+    assert!(stem.starts_with("sources/"), "{out}");
     assert!(
-        out.contains("-> sources/") && out.contains("/my-shot.png"),
+        f.root().join(format!("{stem}.md")).is_file()
+            && f.root().join(&stem).join("my-shot.png").is_file(),
         "{out}"
     );
 

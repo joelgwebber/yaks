@@ -8,7 +8,7 @@ expression: "draw(&app, 120, 12)"
  Full-text search           topic    #search              doks/topics/full-text-search.md
  Vector search in Postgres  topic    #databases #search   doks/topics/vector-search.md
  TUI layout                 note     #tui                 yaks/doks/tui-layout.md
- pgvector README            source                        sources/2026-10-22-1a2b3c4d
+ pgvector README            source                        sources/2026-10-22-1a2b3c4d.md
  Pick an index              session                       sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md
 
 

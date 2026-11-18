@@ -42,7 +42,7 @@ fn repo(tag: &str) -> (PathBuf, PathBuf) {
         ],
     );
     std::fs::write(wt.join("config.yaml"), "herd: yak\ndefault_type: chore\n").unwrap();
-    std::fs::write(wt.join("schema"), "9\n").unwrap();
+    std::fs::write(wt.join("schema"), "10\n").unwrap();
     std::fs::write(wt.join(".gitignore"), ".lock\n").unwrap();
     git(&wt, &["add", "-A"]);
     git(&wt, &["commit", "-q", "-m", "yaks: new farm"]);

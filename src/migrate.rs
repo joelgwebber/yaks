@@ -1972,9 +1972,20 @@ mod tests {
                 .any(|l| l.starts_with('R') && !l.starts_with("R100")),
             "a rename git is unsure of would break --follow: {status}"
         );
-        // The rewrite is modifications only, at the new paths.
+        // One run takes the farm through schema 9 and 10, so the rewrite
+        // commit is also the sources' conversion: modifications at the new
+        // paths, plus each source's `source.md` and `extracted.md` becoming
+        // `sources/<name>.md` (git sees `extracted.md` renamed to it).
         let rw = git(&wt, &["show", "-M", "--name-status", "--format=", &rewrite]);
-        assert!(rw.lines().all(|l| l.starts_with('M')), "{rw}");
+        assert!(
+            rw.lines()
+                .all(|l| l.starts_with('M') || l.contains("\tsources/")),
+            "{rw}"
+        );
+        assert!(
+            rw.lines().any(|l| l.ends_with("a-saved-page.md")),
+            "the source's one file is in the rewrite commit: {rw}"
+        );
         assert!(
             rw.contains("yak/yaks/yak-0001.md") && rw.contains("\tschema"),
             "{rw}"
@@ -2035,12 +2046,16 @@ mod tests {
                 >= 3,
             "--follow reaches back past the move"
         );
-        // The sources were renamed to their slugs; the page is a snapshot.
+        // The sources were renamed to their slugs (schema 9) and became one
+        // file each (schema 10): the page is a snapshot, and nothing of the
+        // old two-file layout is left.
         assert!(
-            wt.join("sources/2026-01-01-abcd1234-a-saved-page/source.md")
+            wt.join("sources/2026-01-01-abcd1234-a-saved-page.md")
                 .is_file()
         );
         assert!(!wt.join("sources/2026-01-01-abcd1234").exists());
+        assert!(!wt.join("sources/2026-01-01-abcd1234-a-saved-page").exists());
+        assert_eq!(done.s10.sources, 1, "{:?}", done.s10);
 
         // The farm is found and read from the new root, and a second run is a no-op.
         assert_eq!(

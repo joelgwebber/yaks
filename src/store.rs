@@ -4026,13 +4026,14 @@ mod schema_tests {
     #[test]
     fn schema_gate() {
         assert_eq!(
-            schema_status(&temp_root(Some("9"))),
+            schema_status(&temp_root(Some("10"))),
             SchemaStatus::Compatible
         );
+        assert_eq!(schema_status(&temp_root(Some("9"))), SchemaStatus::Older(9));
         assert_eq!(schema_status(&temp_root(Some("8"))), SchemaStatus::Older(8));
         assert_eq!(
-            schema_status(&temp_root(Some("10\n"))),
-            SchemaStatus::Newer(10)
+            schema_status(&temp_root(Some("11\n"))),
+            SchemaStatus::Newer(11)
         );
         assert_eq!(schema_status(&temp_root(Some("7"))), SchemaStatus::Older(7));
         assert_eq!(schema_status(&temp_root(Some("6"))), SchemaStatus::Older(6));
@@ -4070,7 +4071,13 @@ mod schema_tests {
                 .unwrap()
                 .contains("yaks migrate")
         );
-        assert!(migration_refusal(&temp_root(Some("9"))).is_none());
+        // Schema 9 is one `yaks migrate` behind now too (sources: one file each).
+        assert!(
+            migration_refusal(&temp_root(Some("9")))
+                .unwrap()
+                .contains("yaks migrate")
+        );
+        assert!(migration_refusal(&temp_root(Some("10"))).is_none());
         assert!(migration_refusal(&temp_root(None)).is_none());
         assert_eq!(schema_status(&temp_root(None)), SchemaStatus::Compatible);
         assert_eq!(

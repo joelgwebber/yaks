@@ -890,32 +890,45 @@ mod tests {
         );
         put(&root, "doks/topics/notes/a.png.txt", "a");
         put(&root, "doks/topics/bare.md", "---\ntitle: B\n---\n\nbare\n");
+        // A directory source: its tree is directly in the sibling directory.
         let src = "sources/2026-11-17-abcd1234-snap";
         put(
             &root,
-            &format!("{src}/source.md"),
-            "---\ntitle: S\n---\n\nsnap\n",
+            &format!("{src}.md"),
+            "---\ntitle: S\nfile_count: 2\n---\n\nsnap\n",
         );
-        put(&root, &format!("{src}/files/lib/x.c"), "x");
-        put(&root, &format!("{src}/files/.gitignore"), "x");
+        put(&root, &format!("{src}/lib/x.c"), "x");
+        put(&root, &format!("{src}/.gitignore"), "x");
         let mut app = App::with_farm(farm).unwrap();
         assert_eq!(
             app.files_of("doks/topics/notes.md"),
             Some(("Attachments:", "doks/topics/notes".to_string(), 1))
         );
         assert_eq!(app.files_of("doks/topics/bare.md"), None);
-        // A source that is one file with a sibling directory (the next layout)
-        // is a dok in this respect.
-        put(&root, "sources/2026-11-18-ffff0000-one/orig/a.c", "x");
+        // A source that keeps an original beside its text is a dok in this
+        // respect.
+        put(
+            &root,
+            "sources/2026-11-18-ffff0000-one.md",
+            "---\ntitle: O\n---\n\none\n",
+        );
+        put(&root, "sources/2026-11-18-ffff0000-one/a.c", "x");
         assert_eq!(
             app.files_of("sources/2026-11-18-ffff0000-one.md"),
             Some(("Files:", "sources/2026-11-18-ffff0000-one".to_string(), 1))
         );
         assert_eq!(
-            app.files_of(&format!("{src}/source.md")),
-            Some(("Files:", format!("{src}/files"), 2)),
+            app.files_of(&format!("{src}.md")),
+            Some(("Files:", src.to_string(), 2)),
             "dot files count"
         );
+        // A source with nothing beside its text has no row.
+        put(
+            &root,
+            "sources/2026-11-19-00000000-bare.md",
+            "---\ntitle: B\n---\n\nbare\n",
+        );
+        assert_eq!(app.files_of("sources/2026-11-19-00000000-bare.md"), None);
         // The row is in the viewer, and a relative link from the dok opens
         // the directory (peek and Enter alike).
         app.detail_page = 20;
@@ -931,9 +944,9 @@ mod tests {
         tab_key(&mut app);
         enter_key(&mut app);
         assert_eq!(app.dir().unwrap().rel, "doks/topics/notes");
-        // `/sources/<bare id>/files/` finds the slugged directory.
-        app.open_farm_doc("sources/2026-11-17-abcd1234/files/", None, None);
-        assert_eq!(app.dir().unwrap().rel, format!("{src}/files"));
+        // `/sources/<bare id>/` finds the slugged directory.
+        app.open_farm_doc("sources/2026-11-17-abcd1234/", None, None);
+        assert_eq!(app.dir().unwrap().rel, src);
         let _ = std::fs::remove_dir_all(dir);
     }
 

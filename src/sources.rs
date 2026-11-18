@@ -1291,20 +1291,19 @@ mod tests {
                 && dir.ends_with("-notesmd"),
             "{dir}"
         );
-        let d = root.join(&dir);
-        assert_eq!(
-            std::fs::read_to_string(d.join("notes.md")).unwrap(),
-            "# Notes\n\nSome text.\n"
+        // One file: its frontmatter is the provenance and its body is the
+        // text. A markdown original is that text, so no copy is kept.
+        let file = root.join(source_file(&dir));
+        let note = std::fs::read_to_string(&file).unwrap();
+        assert!(
+            note.ends_with("---\n\n# Notes\n\nSome text.\n"),
+            "the body is the text: {note}"
         );
-        assert_eq!(
-            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
-            "# Notes\n\nSome text.\n"
-        );
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(!root.join(&dir).exists(), "no sibling directory: {note}");
+        assert!(!note.contains("\nfile:"), "no kept original: {note}");
         for want in [
             "type: source\n",
             "title: notes.md\n",
-            "file: notes.md\n",
             "media_type: text/markdown\n",
             "\nsha256: ",
             "  - id: file\n",
@@ -1321,7 +1320,7 @@ mod tests {
         assert_eq!(list(&root)[0].title, "notes.md");
         // Inside the farm: refused.
         let inside = Request {
-            path: d.join("notes.md"),
+            path: file,
             ..Default::default()
         };
         assert!(
@@ -1334,7 +1333,7 @@ mod tests {
     }
 
     #[test]
-    fn a_directory_keeps_its_layout_and_joins_its_text() {
+    fn a_directory_keeps_its_tree_in_the_sibling_and_links_it() {
         let base = tmp("dir");
         let (root, proj) = (base.join("farm"), base.join("proj"));
         std::fs::create_dir_all(proj.join("src")).unwrap();
@@ -1354,18 +1353,33 @@ mod tests {
         .unwrap() else {
             panic!()
         };
+        // The tree sits directly in the sibling directory: no `files/` level,
+        // and no joined text (yaks-e83f).
         let d = root.join(&dir);
-        assert!(d.join("files/src/main.rs").is_file() && !d.join("files/node_modules").exists());
-        let ex = std::fs::read_to_string(d.join("extracted.md")).unwrap();
-        assert!(
-            ex.contains("## README.md\n\nreadme") && ex.contains("## src/main.rs"),
-            "{ex}"
+        assert!(d.join("src/main.rs").is_file() && !d.join("node_modules").exists());
+        assert_eq!(
+            std::fs::read_to_string(d.join("README.md")).unwrap(),
+            "readme"
         );
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(!d.join("files").exists() && !d.join("extracted.md").exists());
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        for want in [
+            "  - id: web\n",
+            "resource: https://example.test/p",
+            "media_type: inode/directory\n",
+            "file_count: 2\n",
+            "skipped:",
+        ] {
+            assert!(note.contains(want), "{want}\n{note}");
+        }
+        assert!(!note.contains("files:"), "no file list: {note}");
+        // The body is one link to the tree, which is not the text.
+        let stem = dir.rsplit('/').next().unwrap();
         assert!(
-            note.contains("  - id: web\n") && note.contains("resource: https://example.test/p"),
+            note.ends_with(&format!("---\n\nThe saved tree: [proj/]({stem}/).\n")),
             "{note}"
         );
+        assert!(!note.contains("fn main"), "{note}");
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -1397,7 +1411,7 @@ mod tests {
         )
         .unwrap();
         let Saved::New(dir) = saved else { panic!() };
-        let d = root.join(&dir).join("files");
+        let d = root.join(&dir);
         for kept in [
             ".github/workflows/ci.yml",
             "kit/.agents/skills/s.md",
@@ -1415,11 +1429,14 @@ mod tests {
             report.summary(),
             " (4 files; skipped 3: .DS_Store, .git/, node_modules/)"
         );
-        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        // What the walk left out is in the frontmatter, so the body stays text.
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert!(
-            note.contains("Skipped 3: `.DS_Store`, `.git/`, `node_modules/`."),
+            note.contains("skipped:\n- .DS_Store\n- .git/\n- node_modules/\n"),
             "{note}"
         );
+        assert!(note.contains("file_count: 4\n"), "{note}");
+        assert!(!note.contains("Skipped 3"), "{note}");
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -1460,7 +1477,7 @@ mod tests {
     }
 
     #[test]
-    fn an_html_original_takes_the_savers_text_as_its_extraction() {
+    fn an_html_original_is_kept_beside_the_savers_text_as_the_body() {
         let base = tmp("text");
         let root = base.join("farm");
         std::fs::create_dir_all(&root).unwrap();
@@ -1480,14 +1497,14 @@ mod tests {
         .unwrap() else {
             panic!()
         };
-        let d = root.join(&dir);
-        assert_eq!(
-            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
-            "Hello · world\n"
+        // The saver's text is the body; the HTML original is kept beside it.
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(
+            note.ends_with("---\n\nHello · world\n"),
+            "the body is the saver's text: {note}"
         );
-        assert!(d.join("page.storage.html").is_file());
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
-        assert!(note.contains("Its text is in [extracted.md]"), "{note}");
+        assert!(root.join(&dir).join("page.storage.html").is_file());
+        assert!(note.contains("file: page.storage.html\n"), "{note}");
         assert!(
             note.contains("description: Saved copy of https://example.test/page\n"),
             "{note}"
@@ -1529,21 +1546,21 @@ mod tests {
         .unwrap() else {
             panic!()
         };
-        let d = root.join(&dir);
-        assert!(!d.join("extracted.md").exists());
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        // The original is kept and the body says how to give it a text.
+        assert!(root.join(&dir).join("p.html").is_file());
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(note.contains("file: p.html\n"), "{note}");
         assert!(note.contains("--text"), "{note}");
+        assert!(note.contains("](") && note.contains("/p.html)"), "{note}");
         let _ = std::fs::remove_dir_all(&base);
     }
 
     #[test]
-    fn text_is_refused_for_a_directory_and_for_binary() {
+    fn text_is_refused_for_binary_and_a_missing_file() {
         let base = tmp("textbad");
         let root = base.join("farm");
         std::fs::create_dir_all(&root).unwrap();
-        let (dir, file, bin) = (base.join("d"), base.join("f.pdf"), base.join("t.bin"));
-        std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("a.md"), "a").unwrap();
+        let (file, bin) = (base.join("f.pdf"), base.join("t.bin"));
         std::fs::write(&file, "pdf").unwrap();
         std::fs::write(&bin, [0xff, 0xfe, 0x00]).unwrap();
         let err = |path: &PathBuf, text: &PathBuf| {
@@ -1558,10 +1575,72 @@ mod tests {
             .unwrap_err()
             .to_string()
         };
-        assert!(err(&dir, &bin).contains("--text is for a file"));
         assert!(err(&file, &bin).contains("not a UTF-8 text file"));
         assert!(err(&file, &base.join("missing.md")).contains("no such file"));
         assert!(!root.join(SOURCES_DIR).exists(), "nothing saved on refusal");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-e83f: `--text` is allowed for a directory, and is its body
+    /// (a summary of the tree) in place of the link to it.
+    #[test]
+    fn text_on_a_directory_is_its_body() {
+        let base = tmp("textdir");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let (dir, summary) = (base.join("proj"), base.join("summary.md"));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("a.md"), "a").unwrap();
+        std::fs::write(&summary, "A tiny project.\n").unwrap();
+        let Saved::New(saved) = add(
+            &root,
+            &Request {
+                path: dir,
+                text: Some(summary),
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        let note = std::fs::read_to_string(root.join(source_file(&saved))).unwrap();
+        assert!(note.ends_with("---\n\nA tiny project.\n"), "{note}");
+        assert!(note.contains("file_count: 1\n"), "{note}");
+        assert!(!note.contains("The saved tree"), "{note}");
+        assert!(root.join(&saved).join("a.md").is_file());
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-e83f: a JSON (or code) original is kept beside the source, and
+    /// the body is a fenced copy of it.
+    #[test]
+    fn a_json_original_is_kept_and_its_body_is_fenced() {
+        let base = tmp("json");
+        let root = base.join("farm");
+        std::fs::create_dir_all(&root).unwrap();
+        let f = base.join("tweet.json");
+        std::fs::write(&f, "{\"a\": 1}\n").unwrap();
+        let Saved::New(dir) = add(
+            &root,
+            &Request {
+                path: f,
+                ..Default::default()
+            },
+        )
+        .unwrap() else {
+            panic!()
+        };
+        assert_eq!(
+            std::fs::read_to_string(root.join(&dir).join("tweet.json")).unwrap(),
+            "{\"a\": 1}\n"
+        );
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(note.contains("file: tweet.json\n"), "{note}");
+        assert!(note.contains("media_type: application/json\n"), "{note}");
+        assert!(
+            note.ends_with("---\n\n```json\n{\"a\": 1}\n```\n"),
+            "{note}"
+        );
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -1582,7 +1661,7 @@ mod tests {
         .unwrap() else {
             panic!()
         };
-        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert!(
             note.contains("description: Snapshot of notes.md\n"),
             "{note}"
@@ -1606,7 +1685,7 @@ mod tests {
         .unwrap() else {
             panic!()
         };
-        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         // Not under the system temp dir, and still only the name.
         assert!(note.contains("resource: notes.md\n"), "{note}");
         assert!(!note.contains("host:"), "{note}");
@@ -1646,13 +1725,13 @@ mod tests {
         let first_sha = sha_hex(b"one\n");
 
         // Unchanged: nothing is written.
-        let note_before = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let note_before = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert_eq!(
             add(&root, &web(&f, true)).unwrap(),
             Saved::Already(dir.clone())
         );
         assert_eq!(
-            std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap(),
+            std::fs::read_to_string(root.join(source_file(&dir))).unwrap(),
             note_before
         );
 
@@ -1665,13 +1744,11 @@ mod tests {
             Saved::Refreshed(dir.clone()),
             "same id after a refresh"
         );
+        // A markdown original is its own body: nothing else is kept.
         let d = root.join(&dir);
-        assert_eq!(std::fs::read_to_string(d.join("page.md")).unwrap(), "two\n");
-        assert_eq!(
-            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
-            "two\n"
-        );
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert!(!d.exists(), "no sibling directory");
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(note.ends_with("---\n\ntwo\n"), "{note}");
         for want in [
             "title: A living page\n".to_string(),
             format!("sha256: {}\n", sha_hex(b"two\n")),
@@ -1695,14 +1772,35 @@ mod tests {
             Saved::Already(dir.clone())
         );
 
-        // A replaced file of another name leaves no stale original behind.
-        let g = base.join("renamed.md");
-        std::fs::write(&g, "three\n").unwrap();
+        // A refresh to an original that is kept replaces the sibling
+        // directory: no stale original is left behind.
+        let g = base.join("renamed.json");
+        std::fs::write(&g, "{}\n").unwrap();
         assert!(matches!(
             add(&root, &web(&g, true)).unwrap(),
             Saved::Refreshed(_)
         ));
-        assert!(!d.join("page.md").exists() && d.join("renamed.md").is_file());
+        assert!(d.join("renamed.json").is_file());
+        let h = base.join("again.json");
+        std::fs::write(&h, "{\"b\": 2}\n").unwrap();
+        assert!(matches!(
+            add(&root, &web(&h, true)).unwrap(),
+            Saved::Refreshed(_)
+        ));
+        assert!(!d.join("renamed.json").exists() && d.join("again.json").is_file());
+        // And back to a markdown original: the directory goes.
+        let m = base.join("last.md");
+        std::fs::write(&m, "last\n").unwrap();
+        assert!(matches!(
+            add(&root, &web(&m, true)).unwrap(),
+            Saved::Refreshed(_)
+        ));
+        assert!(!d.exists());
+        assert!(
+            !std::fs::read_to_string(root.join(source_file(&dir)))
+                .unwrap()
+                .contains("\nfile:")
+        );
         let _ = std::fs::remove_dir_all(&base);
     }
 
@@ -1776,15 +1874,13 @@ mod tests {
         let Saved::New(dir) = add(&root, &req).unwrap() else {
             panic!()
         };
-        let d = root.join(&dir);
-        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
-        assert_eq!(
-            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
-            "# Doc\n\nbody\n"
-        );
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        // One file, no sibling directory; the text is the body.
+        assert_eq!(files_in(&root.join(SOURCES_DIR)).len(), 1);
+        assert!(!root.join(&dir).exists());
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(note.ends_with("---\n\n# Doc\n\nbody\n"), "{note}");
+        assert!(!note.contains("\nfile:"), "{note}");
         for want in [
-            "file: extracted.md\n".to_string(),
             "media_type: text/markdown\n".to_string(),
             format!("sha256: {}\n", sha_hex(b"# Doc\n\nbody\n")),
             "size: 12\n".to_string(),
@@ -1867,13 +1963,9 @@ mod tests {
         };
         std::fs::write(&f, "two\n").unwrap();
         assert_eq!(add(&root, &req).unwrap(), Saved::Refreshed(dir.clone()));
-        let d = root.join(&dir);
-        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
-        assert_eq!(
-            std::fs::read_to_string(d.join("extracted.md")).unwrap(),
-            "two\n"
-        );
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
+        assert_eq!(files_in(&root.join(SOURCES_DIR)).len(), 1);
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(note.ends_with("---\n\ntwo\n"), "{note}");
         assert!(
             note.contains(&format!("previous_sha256: {}\n", sha_hex(b"one\n"))),
             "{note}"
@@ -1883,26 +1975,33 @@ mod tests {
     }
 
     #[test]
-    fn refresh_with_text_only_collapses_an_existing_two_file_source() {
+    fn refresh_with_text_only_drops_a_kept_original() {
         let base = tmp("collapse");
         let root = base.join("farm");
         std::fs::create_dir_all(&root).unwrap();
         let f = base.join("page.md");
-        std::fs::write(&f, "same\n").unwrap();
+        // A text file that is not markdown or plain text keeps its original
+        // beside a fenced body; `--text-only` leaves just the text.
+        let f = base.join("page.json");
+        std::fs::write(&f, "{}\n").unwrap();
         let Saved::New(dir) = add(&root, &web(&f, false)).unwrap() else {
             panic!()
         };
         let d = root.join(&dir);
-        assert_eq!(files_in(&d), ["extracted.md", "page.md", "source.md"]);
+        assert_eq!(files_in(&d), ["page.json"]);
+        let before = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(before.contains("file: page.json\n"), "{before}");
+        assert!(before.ends_with("```json\n{}\n```\n"), "{before}");
         // Same bytes, but the layout changes: that is a refresh, not "already".
         let req = Request {
             text_only: true,
             ..web(&f, true)
         };
         assert_eq!(add(&root, &req).unwrap(), Saved::Refreshed(dir.clone()));
-        assert_eq!(files_in(&d), ["extracted.md", "source.md"]);
-        let note = std::fs::read_to_string(d.join("source.md")).unwrap();
-        assert!(note.contains("file: extracted.md\n"), "{note}");
+        assert!(!d.exists(), "the original is dropped");
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
+        assert!(!note.contains("\nfile:"), "{note}");
+        assert!(note.ends_with("---\n\n{}\n"), "{note}");
         assert!(
             !note.contains("previous_sha256"),
             "the content did not change: {note}"
@@ -1995,7 +2094,7 @@ mod tests {
         let Saved::New(dir) = add(&root, &titled(&f, "First title")).unwrap() else {
             panic!()
         };
-        let before = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let before = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert_eq!(
             add(&root, &titled(&f, "A completely different title")).unwrap(),
             Saved::Already(dir.clone())
@@ -2015,13 +2114,13 @@ mod tests {
         assert_eq!(source_dirs(&root).len(), 1, "no second directory");
         assert_eq!(
             source_dirs(&root)[0],
-            dir.strip_prefix("sources/").unwrap(),
+            source_file(dir.strip_prefix("sources/").unwrap()),
             "no rename"
         );
         assert_eq!(
-            std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap(),
+            std::fs::read_to_string(root.join(source_file(&dir))).unwrap(),
             before,
-            "source.md is untouched, so is its title"
+            "the source file is untouched, so is its title"
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -2092,11 +2191,11 @@ mod tests {
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].title, "Right title");
         assert_eq!(source_dirs(&root), before, "the directory keeps its name");
-        let text = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let text = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert!(text.contains("title: Right title\n"), "{text}");
         assert!(
             text.contains("sha256:"),
-            "the rest of source.md is untouched: {text}"
+            "the rest of the source file is untouched: {text}"
         );
         // Refused, with nothing written.
         assert!(set_title(&root, id, "  ").is_err());
@@ -2126,12 +2225,7 @@ mod tests {
             dir
         };
         let tweet = mk("tweet.md", "tweet\n", "Tweet", None);
-        let shot = mk(
-            "shot.md",
-            "shot\n",
-            "Shot",
-            Some(&format!("{tweet}/source.md")),
-        );
+        let shot = mk("shot.md", "shot\n", "Shot", Some(&source_file(&tweet)));
         let cited = mk("cited.md", "cited\n", "Cited", None);
         let old = mk("old.md", "old\n", "Old", None);
         let kept = mk("kept.md", "kept\n", "Kept", None);
@@ -2139,7 +2233,7 @@ mod tests {
         std::fs::create_dir_all(root.join("doks")).unwrap();
         std::fs::write(
             root.join("doks/d.md"),
-            format!("---\ntype: note\ntitle: D\n---\n\nSee [it]({cited}/source.md).\n"),
+            format!("---\ntype: note\ntitle: D\n---\n\nSee [it]({cited}.md).\n"),
         )
         .unwrap();
         mark(&root, &old, &Mark::SupersededBy(lone.clone())).unwrap();
@@ -2174,7 +2268,7 @@ mod tests {
         // Citing the part clears the whole family, as `check` does.
         std::fs::write(
             root.join("doks/e.md"),
-            format!("---\ntype: note\ntitle: E\n---\n\n[s]({shot}/source.md)\n"),
+            format!("---\ntype: note\ntitle: E\n---\n\n[s]({shot}.md)\n"),
         )
         .unwrap();
         let rows = list_rows(&root, &list(&root));
@@ -2234,11 +2328,14 @@ mod tests {
         let sha = sha_hex(b"new bytes\n");
         let id = format!("2026-02-02-{}", &sha[..8]);
         let old = root.join(SOURCES_DIR).join(format!("{id}-old-title"));
+        let old_file = root.join(SOURCES_DIR).join(format!("{id}-old-title.md"));
         std::fs::create_dir_all(&old).unwrap();
         let other = format!("{}{}", &sha[..8], "0".repeat(56));
-        let note = format!("---\ntype: source\ntitle: Old title\nsha256: {other}\n---\n\nold\n");
-        std::fs::write(old.join("source.md"), &note).unwrap();
-        std::fs::write(old.join("old.md"), "old bytes\n").unwrap();
+        let note = format!(
+            "---\ntype: source\ntitle: Old title\nfile: old.json\nsha256: {other}\n---\n\nold\n"
+        );
+        std::fs::write(&old_file, &note).unwrap();
+        std::fs::write(old.join("old.json"), "old bytes\n").unwrap();
 
         let err = add_on(&root, &titled(&f, "New title"), "2026-02-02")
             .unwrap_err()
@@ -2249,23 +2346,21 @@ mod tests {
         );
         assert_eq!(
             source_dirs(&root),
-            [format!("{id}-old-title")],
+            [format!("{id}-old-title"), format!("{id}-old-title.md")],
             "nothing created"
         );
+        assert_eq!(std::fs::read_to_string(&old_file).unwrap(), note);
         assert_eq!(
-            std::fs::read_to_string(old.join("source.md")).unwrap(),
-            note
-        );
-        assert_eq!(
-            std::fs::read_to_string(old.join("old.md")).unwrap(),
+            std::fs::read_to_string(old.join("old.json")).unwrap(),
             "old bytes\n",
             "the old source is untouched"
         );
-        // Nor does the unslugged spelling of the old directory go unseen.
+        // Nor does the unslugged spelling of the old source go unseen.
         std::fs::rename(&old, root.join(SOURCES_DIR).join(&id)).unwrap();
+        std::fs::rename(&old_file, root.join(SOURCES_DIR).join(format!("{id}.md"))).unwrap();
         assert!(
             add_on(&root, &titled(&f, "New title"), "2026-02-02").is_err(),
-            "a legacy `<id>` directory collides too"
+            "an unslugged `<id>` source collides too"
         );
         // Another day gives another id: saved.
         assert!(matches!(
@@ -2315,13 +2410,13 @@ mod tests {
         assert_eq!(source_dirs(&root).len(), 1, "no second source, no rename");
         assert_eq!(
             source_dirs(&root)[0],
-            dir.strip_prefix("sources/").unwrap(),
+            source_file(dir.strip_prefix("sources/").unwrap()),
             "the slug stays"
         );
         let all = list(&root);
         assert_eq!(
             all[0].title, "A new title",
-            "source.md has the current title"
+            "the source file has the current title"
         );
         assert_eq!(all[0].id(), id_of(dir.strip_prefix("sources/").unwrap()));
         let _ = std::fs::remove_dir_all(&base);
@@ -2344,11 +2439,11 @@ mod tests {
         assert_ne!(id, name);
         let want = format!("sources/{name}");
         assert_eq!(dir_for(&root, &id), Some(want.clone()));
-        // `source mark` by the bare id, `sources/<id>` and `sources/<id>/source.md`.
+        // `source mark` by the bare id, `sources/<id>` and `sources/<id>.md`.
         for given in [
             id.clone(),
             format!("sources/{id}"),
-            format!("/sources/{id}/source.md"),
+            format!("/sources/{id}.md"),
         ] {
             let (dir, _) = mark(&root, &given, &Mark::Uncited("kept".into())).unwrap();
             assert_eq!(dir, want, "{given}");
@@ -2365,9 +2460,9 @@ mod tests {
             &Mark::SupersededBy(id_of(&newer["sources/".len()..]).into()),
         )
         .unwrap();
-        let note = std::fs::read_to_string(root.join(&want).join("source.md")).unwrap();
+        let note = std::fs::read_to_string(root.join(source_file(&want))).unwrap();
         assert!(
-            note.contains(&format!("superseded_by: {newer}/source.md")),
+            note.contains(&format!("superseded_by: {newer}.md")),
             "{note}"
         );
         assert!(dir_for(&root, "2026-01-01-00000000").is_none());
@@ -2383,7 +2478,7 @@ mod tests {
         for given in [
             name.clone(),
             format!("sources/{name}"),
-            format!("sources/{name}/source.md"),
+            format!("sources/{name}.md"),
         ] {
             let (dir, _) = mark(&root, &given, &Mark::Clear).unwrap();
             assert_eq!(dir, want, "{given}");
@@ -2396,13 +2491,17 @@ mod tests {
     }
 
     #[test]
-    fn a_legacy_directory_still_resolves_by_its_id() {
+    fn an_unslugged_file_still_resolves_by_its_id() {
         let (base, root, f) = farm_with("legacy", "x\n");
         let Saved::New(dir) = add(&root, &titled(&f, "T")).unwrap() else {
             panic!()
         };
         let id = id_of(&dir["sources/".len()..]).to_string();
-        std::fs::rename(root.join(&dir), root.join(SOURCES_DIR).join(&id)).unwrap();
+        std::fs::rename(
+            root.join(source_file(&dir)),
+            root.join(source_file(&format!("sources/{id}"))),
+        )
+        .unwrap();
         assert_eq!(dir_for(&root, &id), Some(format!("sources/{id}")));
         assert_eq!(list(&root)[0].id(), id);
         assert!(mark(&root, &id, &Mark::Clear).is_ok());
@@ -2420,16 +2519,16 @@ mod tests {
         let Saved::New(dir) = add(
             &root,
             &Request {
-                part_of: Some(format!("sources/{id}/source.md")),
+                part_of: Some(format!("sources/{id}.md")),
                 ..titled(&g, "Shot")
             },
         )
         .unwrap() else {
             panic!()
         };
-        let note = std::fs::read_to_string(root.join(&dir).join("source.md")).unwrap();
+        let note = std::fs::read_to_string(root.join(source_file(&dir))).unwrap();
         assert!(
-            note.contains(&format!("part_of: sources/{name}/source.md")),
+            note.contains(&format!("part_of: sources/{name}.md")),
             "{note}"
         );
         let _ = std::fs::remove_dir_all(&base);
@@ -2438,17 +2537,17 @@ mod tests {
     #[test]
     fn farm_paths_by_the_bare_id_resolve_through_the_slug() {
         let (base, root, id, name) = slugged_farm("farmfile");
-        let real = format!("sources/{name}/source.md");
+        let real = format!("sources/{name}.md");
         let f = |p: &str| crate::locate::farm_file_in(&root, p).into_owned();
         assert_eq!(f(&format!("sources/{id}")), real);
-        assert_eq!(f(&format!("sources/{id}/source.md")), real);
+        assert_eq!(f(&format!("sources/{id}.md")), real);
         assert_eq!(
             f(&format!("sources/{id}/a.md")),
             format!("sources/{name}/a.md")
         );
         assert_eq!(f(&format!("sources/{name}")), real);
-        assert_eq!(f(&format!("sources/{name}/source.md")), real);
-        assert_eq!(f("sources/nope"), "sources/nope/source.md");
+        assert_eq!(f(&format!("sources/{name}.md")), real);
+        assert_eq!(f("sources/nope"), "sources/nope.md");
         assert_eq!(f("doks/x.md"), "doks/x.md");
         // The link layer: exists and peek.
         let link = |p: &str| crate::links::Link::Farm {
@@ -2518,13 +2617,16 @@ mod tests {
         // The planned names are all distinct and each keeps its id first.
         let news: std::collections::BTreeSet<_> = plan.iter().map(|(_, n)| n).collect();
         assert_eq!(news.len(), plan.len());
-        // Apply it: nothing is left to plan, and every old id still resolves.
+        // Apply it: nothing is left to plan, and the directory is the one
+        // the plan named (the schema-9 step reads the layout before schema 10).
         for (old, new) in &plan {
             std::fs::rename(root.join(old), root.join(new)).unwrap();
         }
         assert!(plan_slugs(&root).is_empty(), "idempotent");
         assert!(
-            dir_for(&root, "2026-01-01-aaaaaaaa").is_some_and(|d| d.ends_with("first-the-big-one"))
+            legacy_list(&root)
+                .iter()
+                .any(|s| s.id() == "2026-01-01-aaaaaaaa" && s.dir.ends_with("first-the-big-one"))
         );
         let _ = std::fs::remove_dir_all(&base);
     }
@@ -2546,9 +2648,37 @@ mod tests {
         let plan = plan_slugs(&root);
         assert_eq!(plan.len(), 1);
         assert_eq!(plan[0].0, "sources/2026-01-02-bbbbbbbb");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// In the one-file layout, two files that share an id are listed as
+    /// duplicates, and each still resolves by its exact name.
+    #[test]
+    fn a_duplicated_id_resolves_by_the_exact_name_only() {
+        let base = tmp("dupnew");
+        let root = base.join("farm");
+        std::fs::create_dir_all(root.join(SOURCES_DIR)).unwrap();
+        for name in ["2026-01-01-aaaaaaaa", "2026-01-01-aaaaaaaa-new-name"] {
+            std::fs::write(
+                root.join(SOURCES_DIR).join(format!("{name}.md")),
+                format!("---\ntype: source\ntitle: {name}\n---\n\nx\n"),
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            duplicate_ids(&root),
+            [vec![
+                "sources/2026-01-01-aaaaaaaa".to_string(),
+                "sources/2026-01-01-aaaaaaaa-new-name".to_string()
+            ]]
+        );
         assert!(
             mark(&root, "2026-01-01-aaaaaaaa", &Mark::Clear).is_ok(),
             "the exact name wins"
+        );
+        assert!(
+            mark(&root, "2026-01-01-aaaaaaaa-new-name", &Mark::Clear).is_ok(),
+            "so does the other exact name"
         );
         let _ = std::fs::remove_dir_all(&base);
     }

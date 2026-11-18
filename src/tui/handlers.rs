@@ -3234,10 +3234,8 @@ mod copy_path_tests {
             farm("doks/design/keys.md").copy_path(),
             "doks/design/keys.md"
         );
-        assert_eq!(
-            farm("sources/s-1a2b/source.md").copy_path(),
-            "sources/s-1a2b"
-        );
+        // A source is its one file, `sources/<name>.md`, as the list's row.
+        assert_eq!(farm("sources/s-1a2b.md").copy_path(), "sources/s-1a2b.md");
         assert_eq!(
             farm("sessions/2026/11/n.md").copy_path(),
             "sessions/2026/11/n.md"

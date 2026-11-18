@@ -431,7 +431,7 @@ pub(crate) mod fixture {
         let files: &[(&str, &str)] = &[
             (
                 "doks/topics/vector-search.md",
-                "---\ntype: topic\ntitle: Vector search in Postgres\ndescription: pgvector, indexes and when to use them.\ntags: [databases, search]\nsources:\n  - sources/2026-10-22-1a2b3c4d/source.md\n---\n\n# Vector search\n\nStore embeddings in a `vector` column and index them with **HNSW**.\n\n## Indexes\n\n- HNSW: fast queries, slow builds.\n- IVFFlat: quick to build.\n\nSee [full-text search](full-text-search.md) and yaks-0001.\n",
+                "---\ntype: topic\ntitle: Vector search in Postgres\ndescription: pgvector, indexes and when to use them.\ntags: [databases, search]\nsources:\n  - sources/2026-10-22-1a2b3c4d.md\n---\n\n# Vector search\n\nStore embeddings in a `vector` column and index them with **HNSW**.\n\n## Indexes\n\n- HNSW: fast queries, slow builds.\n- IVFFlat: quick to build.\n\nSee [full-text search](full-text-search.md) and yaks-0001.\n",
             ),
             (
                 "doks/topics/full-text-search.md",
@@ -446,12 +446,8 @@ pub(crate) mod fixture {
                 "---\ntitle: TUI layout\ntags: [tui]\n---\n\nThe list on the left, the detail on the right.\n",
             ),
             (
-                "sources/2026-10-22-1a2b3c4d/source.md",
-                "---\ntype: source\ntitle: pgvector README\nmedia_type: text/markdown\nsources:\n  - resource: https://github.com/pgvector/pgvector\n---\n\nIts text is in [extracted.md](extracted.md).\n",
-            ),
-            (
-                "sources/2026-10-22-1a2b3c4d/extracted.md",
-                "# pgvector\n\nOpen-source vector similarity search for Postgres.\n",
+                "sources/2026-10-22-1a2b3c4d.md",
+                "---\ntype: source\ntitle: pgvector README\nmedia_type: text/markdown\nsources:\n  - resource: https://github.com/pgvector/pgvector\n---\n\n# pgvector\n\nOpen-source vector similarity search for Postgres.\n",
             ),
             (
                 "sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md",
@@ -569,7 +565,7 @@ mod tests {
                 "doks/topics/full-text-search.md",
                 "doks/topics/vector-search.md",
                 "yaks/doks/tui-layout.md",
-                "sources/2026-10-22-1a2b3c4d/source.md",
+                "sources/2026-10-22-1a2b3c4d.md",
                 "sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md",
             ]
         );
@@ -600,7 +596,7 @@ mod tests {
         let titles: Vec<&str> = app.doks_rows().iter().map(|e| e.title.as_str()).collect();
         assert_eq!(
             titles,
-            // The source's extracted text says "search" too, and so does the
+            // The source's text says "search" too, and so does the
             // session note (its link to the vector-search dok).
             vec![
                 "Full-text search",
@@ -640,7 +636,7 @@ mod tests {
         );
         assert!(frame.contains("tags:        databases, search"), "{frame}");
         assert!(
-            frame.contains("sources:     sources/2026-10-22-1a2b3c4d/source.md"),
+            frame.contains("sources:     sources/2026-10-22-1a2b3c4d.md"),
             "{frame}"
         );
         // The body is rendered: heading markers hidden, bold drawn.
@@ -660,17 +656,19 @@ mod tests {
     }
 
     #[test]
-    fn a_source_opens_with_its_extracted_text() {
+    fn a_source_opens_as_one_page_with_its_provenance_and_its_text() {
         let (proj, mut app) = on_doks();
         press(&mut app, "G");
         press(&mut app, "k");
         enter_key(&mut app);
         let frame = draw(&app, 140, 30);
         assert!(
-            frame.contains("sources/2026-10-22-1a2b3c4d/source.md  source"),
+            frame.contains("sources/2026-10-22-1a2b3c4d.md  source"),
             "{frame}"
         );
-        assert!(frame.contains("── extracted.md ──"), "{frame}");
+        // The frontmatter and the text are one document: no second section.
+        assert!(frame.contains("media_type:"), "{frame}");
+        assert!(!frame.contains("extracted.md"), "{frame}");
         assert!(
             frame.contains("Open-source vector similarity search"),
             "{frame}"

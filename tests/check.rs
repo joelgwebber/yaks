@@ -62,7 +62,8 @@ impl Farm {
         std::fs::write(p, text).unwrap();
     }
 
-    /// Save `text` as a source and return its `sources/<id>` directory.
+    /// Save `text` as a source and return its `sources/<name>` stem (its file
+    /// is `<stem>.md`, the id `check` reports).
     fn source(&self, name: &str, text: &str, extra: &[&str]) -> String {
         let file = self.dir.join(name);
         std::fs::write(&file, text).unwrap();
@@ -70,7 +71,7 @@ impl Farm {
         a.extend_from_slice(extra);
         let out = self.run(&a);
         let path = out.trim().rsplit(' ').next().unwrap().to_string();
-        path.strip_suffix("/source.md").unwrap().to_string()
+        path.strip_suffix(".md").unwrap().to_string()
     }
 }
 
@@ -143,7 +144,7 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
     let used = f.source("used.md", "# Used\n", &[]);
     f.write(
         "doks/cites.md",
-        &format!("---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {used}/source.md\n---\n\nSee it.\n"),
+        &format!("---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {used}.md\n---\n\nSee it.\n"),
     );
     // similar kinds: `project` and `projects`.
     f.write(
@@ -254,7 +255,7 @@ fn every_kind_of_finding_is_reported_with_exit_one() {
 fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
     let f = Farm::new("parts");
     let whole = f.source("whole.md", "# Whole\n", &[]);
-    let part_of = format!("{whole}/source.md");
+    let part_of = format!("{whole}.md");
     let shot = f.source("shot.md", "# Shot\n", &["--part-of", &part_of]);
     let (_, json) = f.check(&["--json"]);
     let v: Value = serde_json::from_str(&json).unwrap();
@@ -269,7 +270,7 @@ fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
     // Citing only the part cites the whole.
     f.write(
         "doks/c.md",
-        &format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\n![shot](/{shot}/shot.md)\n"),
+        &format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\n![shot](/{shot}.md)\n"),
     );
     let (code, out) = f.check(&[]);
     assert_eq!(
@@ -277,10 +278,10 @@ fn a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list() {
         (0, "All clear: nothing to check up on.\n")
     );
 
-    // A mark in source.md keeps an otherwise uncited source off the list.
+    // A mark in the source's file keeps an otherwise uncited source off the list.
     let marked = f.source("marked.md", "# Marked\n", &[]);
     assert_eq!(f.check(&["--json"]).0, 1);
-    let note = f.root().join(&marked).join("source.md");
+    let note = f.root().join(format!("{marked}.md"));
     let text = std::fs::read_to_string(&note).unwrap();
     std::fs::write(
         &note,
@@ -334,8 +335,7 @@ fn source_mark_sets_and_clears_what_check_honours() {
     let kept = f.source("kept.md", "# Kept\n", &[]);
     let old = f.source("old.md", "# Old\n", &[]);
     let new = f.source("new.md", "# New\n", &[]);
-    let cite =
-        format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\nSee /{new}/source.md.\n");
+    let cite = format!("---\ntype: note\ntitle: C\ndescription: d.\n---\n\nSee [it](/{new}.md).\n");
     f.write("doks/c.md", &cite);
     // `kept` and `old` are listed.
     let v: Value = serde_json::from_str(&f.check(&["--json"]).1).unwrap();
@@ -344,31 +344,31 @@ fn source_mark_sets_and_clears_what_check_honours() {
     // `--uncited` takes the bare id, `--superseded-by` a path.
     let id = kept.strip_prefix("sources/").unwrap();
     let out = f.run(&["source", "mark", id, "--uncited", "kept: a reference"]);
-    assert!(out.contains(&format!("{kept}/source.md")), "{out}");
+    assert!(out.contains(&format!("{kept}.md")), "{out}");
     f.run(&[
         "source",
         "mark",
         &old,
         "--superseded-by",
-        &format!("{new}/source.md"),
+        &format!("{new}.md"),
     ]);
     assert_eq!(f.check(&[]).0, 0);
-    let text = std::fs::read_to_string(f.root().join(&kept).join("source.md")).unwrap();
+    let text = std::fs::read_to_string(f.root().join(format!("{kept}.md"))).unwrap();
     assert!(text.contains("\nuncited: 'kept: a reference'\n"), "{text}");
-    let text = std::fs::read_to_string(f.root().join(&old).join("source.md")).unwrap();
+    let text = std::fs::read_to_string(f.root().join(format!("{old}.md"))).unwrap();
     assert!(
-        text.contains(&format!("superseded_by: {new}/source.md\n")),
+        text.contains(&format!("superseded_by: {new}.md\n")),
         "{text}"
     );
     // The rest of the file is as it was.
     assert!(
-        text.contains("type: source\n") && text.contains("Its text is in"),
+        text.contains("type: source\n") && text.ends_with("---\n\n# Old\n"),
         "{text}"
     );
 
     // One mark at a time: a new one replaces the old; marking again is a no-op.
     f.run(&["source", "mark", &old, "--uncited", "no longer superseded"]);
-    let text = std::fs::read_to_string(f.root().join(&old).join("source.md")).unwrap();
+    let text = std::fs::read_to_string(f.root().join(format!("{old}.md"))).unwrap();
     assert!(!text.contains("superseded_by"), "{text}");
     let out = f.run(&["source", "mark", &old, "--uncited", "no longer superseded"]);
     assert!(out.starts_with("No changes"), "{out}");
@@ -384,7 +384,7 @@ fn source_mark_sets_and_clears_what_check_honours() {
 fn source_mark_refuses_what_it_cannot_honour() {
     let f = Farm::new("markbad");
     let a = f.source("a.md", "# A\n", &[]);
-    let before = std::fs::read_to_string(f.root().join(&a).join("source.md")).unwrap();
+    let before = std::fs::read_to_string(f.root().join(format!("{a}.md"))).unwrap();
     let fails = |args: &[&str]| {
         let out = f.cmd(args).output().unwrap();
         assert!(!out.status.success(), "{args:?} should fail");
@@ -392,20 +392,14 @@ fn source_mark_refuses_what_it_cannot_honour() {
     };
     assert!(fails(&["source", "mark", "sources/nope", "--clear"]).contains("no such source"));
     assert!(
-        fails(&[
-            "source",
-            "mark",
-            &a,
-            "--superseded-by",
-            "sources/nope/source.md"
-        ])
-        .contains("--superseded-by")
+        fails(&["source", "mark", &a, "--superseded-by", "sources/nope.md"])
+            .contains("--superseded-by")
     );
     assert!(fails(&["source", "mark", &a, "--superseded-by", &a]).contains("itself"));
     assert!(fails(&["source", "mark", &a, "--uncited", "  "]).contains("reason"));
     assert!(fails(&["source", "mark", &a]).contains("--uncited"));
     assert!(fails(&["source", "mark", &a, "--clear", "--uncited", "x"]).contains("cannot be used"));
-    let after = std::fs::read_to_string(f.root().join(&a).join("source.md")).unwrap();
+    let after = std::fs::read_to_string(f.root().join(format!("{a}.md"))).unwrap();
     assert_eq!(before, after);
 }
 
@@ -480,7 +474,7 @@ fn a_dok_citing_code_that_moved_since_its_last_commit_is_a_finding() {
     );
 }
 
-/// A source directory carries a readable slug (yaks-7729): `uncited` keys a
+/// A source file carries a readable slug (yaks-7729): `uncited` keys a
 /// source by its `<date>-<sha8>` id, so a citation of the slugged path, of
 /// the bare id, and of a `part_of` parent all count.
 #[test]
@@ -495,7 +489,7 @@ fn uncited_reads_a_slugged_source_by_its_id() {
     f.write(
         "doks/cites.md",
         &format!(
-            "---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {named}/source.md\n---\n\nAlso [it](/sources/{bare_id}/source.md).\n"
+            "---\ntype: note\ntitle: Cites\ndescription: d.\nsources:\n  - {named}.md\n---\n\nAlso [it](/sources/{bare_id}.md).\n"
         ),
     );
     let (_, json) = f.check(&["--json"]);
