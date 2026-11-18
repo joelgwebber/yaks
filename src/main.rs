@@ -1730,17 +1730,25 @@ enum SourceAction {
         #[arg(long)]
         json: bool,
     },
-    /// Correct a source's title, as one commit. The directory keeps its name
-    /// (the slug is from the title it was saved with: a rename would break
-    /// every link), and `source add` of the same bytes keeps the old title,
-    /// so this is the way to change it.
+    /// Correct a source in place, as one commit: its title, its text, or
+    /// both. The file keeps its name (the slug is from the title it was saved
+    /// with: a rename would break every link), and `source add` of the same
+    /// bytes changes nothing, so this is the way to fix either. `--text`
+    /// replaces the body (a scan OCR'd later, a better conversion) and stamps
+    /// `text_updated: {by, at}`; the provenance and `sha256` stay as saved.
     Set {
         /// The source: its id (`<date>-<sha8>`, slug or not), `sources/<id>`,
         /// or `sources/<id>.md`.
         source: String,
         /// The new title: what the thing is, not the file.
         #[arg(long)]
-        title: String,
+        title: Option<String>,
+        /// A file holding the source's text, which becomes its body (`-`
+        /// reads stdin).
+        #[arg(long, value_name = "FILE")]
+        text: Option<String>,
+        #[arg(long = "as")]
+        as_actor: Option<String>,
     },
     /// Mark a source on purpose for `yaks check`: kept without a citation
     /// (`--uncited WHY`), replaced by a newer source (`--superseded-by`), or
@@ -3287,12 +3295,42 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            SourceAction::Set { source, title } => {
-                let (dir, changed) = farm.source_set_title(&source, &title)?;
-                if changed {
-                    println!("Retitled {}: {title}", sources::source_file(&dir));
+            SourceAction::Set {
+                source,
+                title,
+                text,
+                as_actor,
+            } => {
+                let text = match text.as_deref() {
+                    None => None,
+                    Some("-") => {
+                        let mut s = String::new();
+                        std::io::Read::read_to_string(&mut std::io::stdin(), &mut s)?;
+                        Some(s)
+                    }
+                    Some(p) => Some(
+                        std::fs::read_to_string(p)
+                            .with_context(|| format!("--text {p}: not a readable UTF-8 file"))?,
+                    ),
+                };
+                let how = sources::SetFields {
+                    title: title.clone(),
+                    text: text.clone(),
+                    actor: actor::resolve(as_actor.as_deref()).unwrap_or_default(),
+                };
+                let (dir, changed) = farm.source_set(&source, &how)?;
+                let file = sources::source_file(&dir);
+                if !changed {
+                    println!("No changes to {file}");
                 } else {
-                    println!("No changes to {}", sources::source_file(&dir));
+                    let mut what = Vec::new();
+                    if let Some(t) = &title {
+                        what.push(format!("title: {}", t.trim()));
+                    }
+                    if text.is_some() {
+                        what.push("text replaced".to_string());
+                    }
+                    println!("Updated {file} ({})", what.join("; "));
                 }
             }
             SourceAction::Mark {

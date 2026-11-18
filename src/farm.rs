@@ -2589,12 +2589,16 @@ impl Farm {
         crate::sources::add_reporting(&self.root, req)
     }
 
-    /// Rewrite a source's title (see [`crate::sources::set_title`]), under
-    /// the farm lock. Returns the source's directory and whether the file
+    /// Correct a source's title and/or text (see [`crate::sources::set`]),
+    /// under the farm lock. Returns the source's stem and whether the file
     /// changed.
-    pub fn source_set_title(&self, source: &str, title: &str) -> Result<(String, bool)> {
+    pub fn source_set(
+        &self,
+        source: &str,
+        how: &crate::sources::SetFields,
+    ) -> Result<(String, bool)> {
         let _lock = store::lock(&self.root)?;
-        crate::sources::set_title(&self.root, source, title)
+        crate::sources::set(&self.root, source, how)
     }
 
     /// Set or clear the mark `yaks check` honours in a source's `source.md`

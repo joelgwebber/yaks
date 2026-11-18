@@ -1075,24 +1075,68 @@ pub(crate) fn legacy_list(root: &Path) -> Vec<Source> {
     out
 }
 
-/// Rewrite a source's title in its file (the caller holds the farm
-/// lock; yaks-06aa). The directory keeps its name, slug and all: the slug is
+/// What `source set` changes: either or both.
+#[derive(Debug, Default, Clone)]
+pub struct SetFields {
+    /// A new title (yaks-06aa).
+    pub title: Option<String>,
+    /// New text for the body (yaks-5f14): a scan OCR'd after it was saved, a
+    /// better conversion. `actor` is who wrote it.
+    pub text: Option<String>,
+    pub actor: String,
+}
+
+/// Correct a source in place (the caller holds the farm lock): its title,
+/// its text (the body), or both, in one write. Never its name: the slug is
 /// only ever the title it was saved with, and a rename would break every link
-/// to it. Returns the source's directory and whether the file changed.
-pub fn set_title(root: &Path, source: &str, title: &str) -> Result<(String, bool)> {
-    let title = title.trim();
-    if title.is_empty() {
-        bail!("--title needs a title: say what this source is");
+/// to it. The provenance is untouched, except that new text is stamped
+/// `text_updated: {by, at}` so a reader can tell the body from what was first
+/// saved; `sha256` stays the original's, so a save of the same bytes still
+/// finds this source. Returns the source's stem and whether the file changed.
+pub fn set(root: &Path, source: &str, how: &SetFields) -> Result<(String, bool)> {
+    if how.title.is_none() && how.text.is_none() {
+        bail!("nothing to set: give --title or --text");
     }
-    if title.contains('\n') {
-        bail!("--title is one line");
+    let title = match &how.title {
+        Some(t) => {
+            let t = t.trim();
+            if t.is_empty() {
+                bail!("--title needs a title: say what this source is");
+            }
+            if t.contains('\n') {
+                bail!("--title is one line");
+            }
+            Some(t.to_string())
+        }
+        None => None,
+    };
+    if how.text.as_deref().is_some_and(|t| t.trim().is_empty()) {
+        bail!("--text is empty: give the file with the source's text");
     }
     let dir = resolve_dir(root, source)?;
     let path = root.join(source_file(&dir));
     let text =
         std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     let mut page = crate::doks::Dok::parse(&source_file(&dir), &text);
-    page.fields.set("title", &Value::Str(title.to_string()));
+    if let Some(t) = &title {
+        page.fields.set("title", &Value::Str(t.clone()));
+    }
+    if let Some(body) = &how.text {
+        let mut body = body.clone();
+        if !body.ends_with('\n') {
+            body.push('\n');
+        }
+        if body != page.body.trim_start_matches('\n') {
+            page.body = body;
+            page.fields.set(
+                "text_updated",
+                &Value::Map(vec![
+                    ("by".into(), Value::Str(how.actor.clone())),
+                    ("at".into(), Value::Plain(store::now_iso())),
+                ]),
+            );
+        }
+    }
     let new = page.render();
     if new == text {
         return Ok((dir, false));
@@ -2126,9 +2170,19 @@ mod tests {
     }
 
     /// yaks-06aa: a save of the same bytes under another `--title` says it
-    /// kept the old one, and `set_title` is how to change it.
+    /// kept the old one, and `source set --title` is how to change it.
     #[test]
     fn same_bytes_with_another_title_says_so_and_set_title_changes_it() {
+        let set_title = |root: &Path, id: &str, t: &str| {
+            set(
+                root,
+                id,
+                &SetFields {
+                    title: Some(t.into()),
+                    ..Default::default()
+                },
+            )
+        };
         let (base, root, f) = farm_with("retitle", "same\n");
         let (saved, report) = add_reporting(&root, &titled(&f, "Wrong title")).unwrap();
         let Saved::New(dir) = saved else { panic!() };
@@ -2202,6 +2256,73 @@ mod tests {
         assert!(set_title(&root, id, "a\nb").is_err());
         assert!(set_title(&root, "2020-01-01-deadbeef", "T").is_err());
         assert_eq!(list(&root)[0].title, "Right title");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// yaks-5f14: a source saved without text (a scan before OCR) gets its
+    /// text later, by id: the body is replaced, `text_updated` says who and
+    /// when, and the provenance, `sha256` and the kept original stay. A save
+    /// of the same bytes still finds it.
+    #[test]
+    fn set_text_gives_a_saved_source_its_text_later() {
+        let base = tmp("settext");
+        let (root, scan) = (base.join("farm"), base.join("scan.png"));
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::write(&scan, b"\x89PNG\0not text").unwrap();
+        let req = Request {
+            path: scan.clone(),
+            title: Some("A scanned letter".into()),
+            actor: "tester".into(),
+            ..Default::default()
+        };
+        let Saved::New(dir) = add(&root, &req).unwrap() else {
+            panic!("new")
+        };
+        let file = root.join(source_file(&dir));
+        let before = std::fs::read_to_string(&file).unwrap();
+        assert!(before.contains("yaks extracts no text"), "{before}");
+        let sha = crate::doks::Dok::parse("x", &before).str_field("sha256");
+
+        let id = id_of(dir.trim_start_matches("sources/"));
+        let how = SetFields {
+            text: Some("Dear Joel,\n\nThe OCR'd text.".into()),
+            actor: "ocr-bot".into(),
+            ..Default::default()
+        };
+        assert_eq!(set(&root, id, &how).unwrap(), (dir.clone(), true));
+        let after = std::fs::read_to_string(&file).unwrap();
+        let p = crate::doks::Dok::parse("x", &after);
+        assert_eq!(p.body.trim(), "Dear Joel,\n\nThe OCR'd text.");
+        assert!(
+            after.contains("text_updated: {by: ocr-bot, at: "),
+            "{after}"
+        );
+        assert_eq!(p.str_field("sha256"), sha, "the original's hash stays");
+        assert_eq!(p.str_field("title").as_deref(), Some("A scanned letter"));
+        assert!(
+            root.join(&dir).join("scan.png").is_file(),
+            "the original stays"
+        );
+        // The same text again changes nothing; the same bytes still find it.
+        assert_eq!(set(&root, id, &how).unwrap(), (dir.clone(), false));
+        assert!(matches!(add(&root, &req).unwrap(), Saved::Already(d) if d == dir));
+        // Title and text in one write.
+        let both = SetFields {
+            title: Some("A letter from Ann".into()),
+            text: Some("Better OCR.\n".into()),
+            actor: "joel".into(),
+        };
+        assert_eq!(set(&root, id, &both).unwrap().1, true);
+        let p = crate::doks::Dok::parse("x", &std::fs::read_to_string(&file).unwrap());
+        assert_eq!(p.str_field("title").as_deref(), Some("A letter from Ann"));
+        assert_eq!(p.body.trim(), "Better OCR.");
+        // Refused, with nothing written.
+        let empty = SetFields {
+            text: Some("  \n".into()),
+            ..Default::default()
+        };
+        assert!(set(&root, id, &empty).is_err());
+        assert!(set(&root, id, &SetFields::default()).is_err());
         let _ = std::fs::remove_dir_all(&base);
     }
 
