@@ -1,0 +1,42 @@
+=== frame 10 · 120x40 · focus=detail · view=🧺 All · cursor=13 · rows=841 · sel=yaks-274c · blocked=[yaks-323b,yaks-bdab,yaks-ccb9,yaks-d262] · collapsed=73 · filter=(all) · overlay=none · doc=text · detail_scroll=15 · pinned=yes ===
+ 🧺 All (841)   ⭐ Starred (7)   📥 Inbox (2)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (16)   🛖 Sheds (10)        ⏰3
+viewing src/check.rs@b0a6d57
+◂ { } code:src/check.rs@b0a6d57  code
+│    1 │ //! `yaks check` (yaks-c0ac): Hearth's nightly check minus what needs a model.
+│    2 │ //! It reads the farm and reports what a person or an agent should look at,
+│    3 │ //! and never edits.
+│    4 │ //!
+│    5 │ //! Eleven kinds of finding. Four are `doctor`'s own issues, reused as they are
+│    6 │ //! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
+│    7 │ //! are ported from Hearth's `internal/check/scan.go`, and four are yaks's own:
+│    8 │ //!
+│    9 │ //! - `stale`: a dok past its `stale_after` (its own, else its schema's);
+│   10 │ //! - `uncited`: a source nothing in the farm cites;
+│   11 │ //! - `similar-kinds`: dok kinds that differ only by plural or hyphens;
+│   12 │ //! - `no-description` (yaks-2755): a dok with no `description:`, the index
+│   13 │ //!   line `dok list` shows. Only doks: session notes and schemas are not.
+│   14 │ //! - `stray-layout` (yaks-acc0): a file under `.yaks/` of a farm that moved to the
+│   15 │ //!   branch root at schema 9. A writer who had not synced committed it at the old
+│   16 │ //!   path, so no yaks command sees it until it is moved.
+│   17 │ //! - `code-moved` and `code-gone` (yaks-6cf2): a dok cites `code:<path>` and the
+│   18 │ //!   code repo has commits to that path since the dok was written, or the path
+│   19 │ //!   is gone. Evidence, not a verdict: an agent reads the dok against the code
+│   20 │ //!   and sets `verified:`. Needs a code checkout; without one the checks are
+│   21 │ //!   skipped with one note ([`Report::notes`]), which is not a finding.
+│   22 │
+│   23 │ use crate::farm::{Farm, IssueKind};
+│   24 │ use crate::links::{self, Link};
+│   25 │ use crate::locate::{Place, Space};
+│   26 │ use crate::{doks, gitrepo, schemas, sources, store};
+│   27 │ use anyhow::Result;
+│   28 │ use chrono::{DateTime, Days, Months, NaiveDate, Utc};
+│   29 │ use serde_json::{Value, json};
+│   30 │ use std::collections::{BTreeMap, BTreeSet};
+│   31 │ use std::path::{Path, PathBuf};
+│   32 │
+│   33 │ /// The classes of finding, in the order a report lists them.
+│   34 │ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+│   35 │ pub enum Kind {
+│   36 │     DokProblem,
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc close · q quit
+=== end ===

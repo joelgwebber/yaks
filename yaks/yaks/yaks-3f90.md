@@ -48,3 +48,5 @@ Plan (`commits-tui`):
 - History: `PaneAt::Doc` with path `commit:<sha>`, `read_doc` re-reads it.
 
 [commit-view-real-farm](yaks-3f90/commit-view-real-farm.txt)
+
+[commit-file-at-commit](yaks-3f90/commit-file-at-commit.txt)
