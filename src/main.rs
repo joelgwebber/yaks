@@ -2675,11 +2675,12 @@ fn main() -> Result<()> {
                     std::process::exit(1);
                 }
                 AttachOutcome::Attached(n) => {
+                    // Farm-relative (schema 9 dropped the `.yaks/` root).
                     let dir = if is_doc {
                         let rel = doks::normalize(&id);
-                        std::path::Path::new(".yaks").join(rel.strip_suffix(".md").unwrap_or(&rel))
+                        std::path::PathBuf::from(rel.strip_suffix(".md").unwrap_or(&rel))
                     } else {
-                        store::artifact_dir(std::path::Path::new(".yaks"), &id)
+                        store::artifact_dir(std::path::Path::new(""), &id)
                     };
                     let linked = if no_link { ", not linked" } else { "" };
                     println!("attached {n} to {id} ({}{linked})", dir.display());
