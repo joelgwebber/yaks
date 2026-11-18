@@ -1,11 +1,11 @@
 ---
 id: yaks-390f
 title: 'Read a host URL for the code repo as a code link, then store pinned code: links as URLs'
-status: hairy
+status: shorn
 type: feature
 priority: 3
 created: '2026-11-15T05:31:38Z'
-updated: '2026-11-18T14:40:14Z'
+updated: '2026-11-18T14:40:18Z'
 parent: yaks-1151
 tags:
 - links
@@ -41,3 +41,9 @@ The URL-to-code-link reader is now built in yaks-274c (phase 1 of yaks-3515), to
 *sources-triage*
 
 Done in b0a6d579b17168590399b8aad5193821946e6660 (yaks-274c): a GitHub/GitLab/Gitea file URL pinned to a commit on the code repo's host reads as a pinned code: link in peek, url and doctor's cited-code check.
+
+#### 2026-11-18T14:40:18Z
+
+*sources-triage · kind: move · from: hairy · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shorn
