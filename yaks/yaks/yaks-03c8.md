@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-17T23:31:25Z'
-updated: '2026-11-18T00:01:25Z'
+updated: '2026-11-18T00:02:03Z'
 parent: yaks-e83f
 tags:
 - doks
@@ -78,3 +78,9 @@ Notes for the coordinator: a doc comment in doks_tab.rs (`DocKind::Source`, line
 *s10tests-1 · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAG2MHZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-18T00:02:03Z
+
+*sources-triage · kind: landed · commit: 1091a53e642aacfe13b3be09e3e19311611525d1 · source: 43cafca509cc207c6d09df0dba7b79a0c9f709c1 · branch: main*
+
+landed: 1091a53e yaks-03c8: tests for the one-file source layout
