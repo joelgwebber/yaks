@@ -22,7 +22,7 @@ A farm holds working knowledge next to the work: **yaks** (what to do), **doks**
 |---|---|---|
 | Yaks | `<herd>/yaks/<id>.md`, attachments in `<id>/` | `yaks create`, `update`, the state moves |
 | Doks | `doks/**.md`, `<herd>/doks/**.md`, attachments in the sibling directory | `yaks dok new`, `dok set`, `dok row`, the TUI's Doks tab, or any editor |
-| Sources | `sources/<date>-<sha8>/` | `yaks source add`, `yaks promote` |
+| Sources | `sources/<date>-<sha8>-<slug>.md` (provenance and text), any original or tree beside it in `sources/<date>-<sha8>-<slug>/` (schema 10, yaks-e83f) | `yaks source add`, `yaks promote` |
 | Schemas | `schemas/<type>.md`, `schemas/yak.md` (yak fields and known tags) | `yaks dok define`, or by hand |
 | Session notes | `sessions/YYYY/MM/<actor>-<day>-<hhmm>-<slug>.md` | `yaks session note` |
 
