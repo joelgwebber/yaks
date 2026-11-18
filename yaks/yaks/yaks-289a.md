@@ -1,11 +1,11 @@
 ---
 id: yaks-289a
 title: 'Directory sources: relative links in the joined text miss the files/ prefix'
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-17T21:16:48Z'
-updated: '2026-11-18T00:06:13Z'
+updated: '2026-11-18T00:06:15Z'
 parent: yaks-4cfe
 depends_on:
 - yaks-535c
@@ -32,3 +32,9 @@ moved: hairy -> shaving
 Closed by yaks-e83f (`sources-triage`). A directory source's tree now sits directly in `sources/<name>/`, with no `files/` level and no joined copy, so the tree's own relative links are simply right.
 
 Shown on a migrated copy of this farm: YASS's `README.md` links `[docs/monorepo.md](docs/monorepo.md)`, and `docs/monorepo.md` is beside it. A link from a dok to a joined-text heading (`extracted.md#docs-monorepomd`) is rewritten by the migration to that file of the tree.
+
+#### 2026-11-18T00:06:15Z
+
+*sources-triage · kind: move · from: shaving · to: shorn · thread: ksQQgIRwKupoSJu4WL5a-Y3Ss5LOAGwQr5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
