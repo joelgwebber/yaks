@@ -5,7 +5,7 @@ status: shorn
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:36:40Z'
+updated: '2026-11-19T03:42:34Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -160,3 +160,19 @@ moved: shaving -> shorn
 *herd-files · kind: landed · commit: 91d46c73711ce3b3b8c81c40853f77adab94fd59 · source: 30947bb859a597f53b08b559252f853a5b1931fe · branch: main*
 
 landed: [91d46c73](https://github.com/joelgwebber/yaks/commit/91d46c73711ce3b3b8c81c40853f77adab94fd59) yaks-93ee: browse and link into zip/tar/tgz attachments read-only (Container::Zip/Tar, Place::Member, from-bytes viewers, take-out on a member)
+
+#### 2026-11-19T03:42:34Z
+
+*herd-files*
+
+Coordinator review (herd-files): landed as `91d46c73`.
+
+- Gate on the landed tree: `cargo fmt --check` clean; `cargo test -p yaks` 0 failed, exit 0.
+- Re-ran with my own release build in a scratch farm (a `.tgz` and a `.zip` of a small project, attached):
+  - `peek <id>/code.tgz/` lists `proj/`.
+  - `peek <id>/code.zip/src/main.rs#L2` prints line 2.
+  - A missing member exits 1.
+  - `doctor` flags only the broken member link.
+  - `url` on a member refuses, saying why.
+  - Headless TUI: the attachments tree unfolds into both archives, `Enter` opens a member in the viewer, and `o` returns to the same folds. [Frames](yaks-93ee/coord-93ee-frames.txt).
+- Read the diff: safety rules are in `entries` only (`clean_member`, symlink and hardlink members skipped, bounded reads); the index is cached per path, mtime and size; `Place::Member` round-trips to a path through the archive; the temp copy for `e`/`o` is keyed by the archive's identity and read-only. No changes needed.
