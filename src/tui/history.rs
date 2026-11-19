@@ -826,6 +826,10 @@ mod tests {
             .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
             .unwrap();
         put(&format!("{a}/shot.png"), &png);
+        crate::entries::fixtures::zip(
+            &root.join(&a).join("code.zip"),
+            &[("src/lib.rs", b"pub fn f() {}\n"), ("src/deep/n.txt", b"n")],
+        );
         let mut app = App::with_farm(farm).unwrap();
         app.detail_page = 20;
         for (dest, want) in [
@@ -835,6 +839,13 @@ mod tests {
             ("t0/proj/src/main.rs", "t0/proj/src/main.rs"),
             ("t0/shot.png", "t0/shot.png"),
             ("t0/proj/", &format!("/{a}/proj/")),
+            // Archives: the path goes through them (yaks-93ee).
+            (
+                "t0/code.zip/src/lib.rs",
+                &format!("/{a}/code.zip/src/lib.rs"),
+            ),
+            ("t0/code.zip/src/", &format!("/{a}/code.zip/src/")),
+            ("t0/code.zip/", &format!("/{a}/code.zip/")),
         ] {
             app.open_dest(dest);
             let Some(PaneAt::Doc { dest: kept, .. }) = app.current_location().pane else {

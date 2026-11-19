@@ -287,7 +287,7 @@ pub(crate) fn render_attachment(
     let [head, body] = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).areas(area);
     let kind = v.kind_label();
     let icon = match v.doc {
-        super::handlers::DocKind::Attachment => "📎",
+        super::handlers::DocKind::Attachment | super::handlers::DocKind::Member => "📎",
         super::handlers::DocKind::Code { .. } => "{ }",
         _ => "📖",
     };

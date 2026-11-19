@@ -13,9 +13,13 @@
 //!   link takes, so `o`/`i` work) and folds or unfolds a directory, `l`/`h`
 //!   unfold/fold, `y` copies the row's path, `O` takes the file out, `Esc`
 //!   closes. Nothing here writes to the farm.
-//! - **Archives are never system-opened** from the TUI: `Enter` on one, and the
-//!   take-out menu's `o`, say how to get its path instead
-//!   ([`archive_note`], enforced by `App::os_open`).
+//! - **Archives** (`.zip .tar .tar.gz .tgz`, yaks-93ee) read as read-only
+//!   directories: the row has a fold marker and unfolds like one, its members
+//!   open in the viewer, nothing is ever extracted into the farm. Every other
+//!   archive kind (`.7z .bz2 .xz`, a bare `.gz`, or a file that is not
+//!   really one) is a plain row. **No archive is ever system-opened** from the
+//!   TUI: `Enter` on an unsupported one, and the take-out menu's `o`, say how
+//!   to get its path instead ([`archive_note`], enforced by `App::os_open`).
 //!
 //! Only the folds that are open are read from disk, through the farm's one
 //! lister ([`crate::entries`], so `yaks peek` lists a directory the same
@@ -73,6 +77,7 @@ pub(crate) fn archive_note(name: &str) -> String {
 pub(crate) fn count_files(dir: &Path) -> usize {
     crate::entries::count_files(
         &crate::entries::Container::Dir(dir.to_path_buf()),
+        "",
         COUNT_CAP,
     )
 }
@@ -109,7 +114,11 @@ pub(crate) struct DirRow {
     pub(crate) path: String,
     pub(crate) name: String,
     pub(crate) depth: usize,
+    /// A directory, or an archive that unfolds like one.
     pub(crate) is_dir: bool,
+    /// An archive file ([`crate::entries::Entry::archive`]): `is_dir`, with a
+    /// size and no trailing `/`.
+    pub(crate) archive: bool,
     pub(crate) expanded: bool,
     pub(crate) size: u64,
 }
@@ -120,8 +129,10 @@ pub(crate) struct DirView {
     /// The directory's farm-relative path, no trailing `/`: the pane's header
     /// and what the history re-reads it by.
     pub(crate) rel: String,
-    /// What it lists, read through [`crate::entries`].
+    /// What it lists, read through [`crate::entries`], and where in it the
+    /// view starts (`""` unless `rel` is a directory inside an archive).
     container: Container,
+    base: String,
     open: BTreeSet<String>,
     rows: Vec<DirRow>,
     pub(crate) cursor: usize,
@@ -135,13 +146,14 @@ impl DirView {
     /// The view of farm directory `rel` under `root`.
     pub(crate) fn open(root: &Path, rel: &str) -> Result<DirView, String> {
         let rel = rel.trim_matches('/');
-        let Some(container) = crate::entries::container_at(root, rel) else {
+        let Some((container, base)) = crate::entries::dir_at(root, rel) else {
             return Err(format!("{rel}: not a directory of this farm"));
         };
         let mut v = DirView {
             rel: rel.to_string(),
-            total: crate::entries::count_files(&container, COUNT_CAP),
+            total: crate::entries::count_files(&container, &base, COUNT_CAP),
             container,
+            base,
             open: BTreeSet::new(),
             rows: Vec::new(),
             cursor: 0,
@@ -152,38 +164,45 @@ impl DirView {
     }
 
     fn rebuild(&mut self) {
+        /// `prefix` is the path below the view's directory; the container
+        /// is asked for `base/prefix`.
         fn walk(
             c: &Container,
+            base: &str,
             prefix: &str,
             depth: usize,
             open: &BTreeSet<String>,
             out: &mut Vec<DirRow>,
         ) {
-            for e in crate::entries::list(c, prefix) {
+            let join = |a: &str, b: &str| {
+                if a.is_empty() {
+                    b.to_string()
+                } else {
+                    format!("{a}/{b}")
+                }
+            };
+            for e in crate::entries::list(c, &join(base, prefix)) {
                 if out.len() >= MAX_ROWS {
                     return;
                 }
-                let path = if prefix.is_empty() {
-                    e.name.clone()
-                } else {
-                    format!("{prefix}/{}", e.name)
-                };
+                let path = join(prefix, &e.name);
                 let expanded = e.is_dir && open.contains(&path);
                 out.push(DirRow {
                     path: path.clone(),
                     name: e.name,
                     depth,
                     is_dir: e.is_dir,
+                    archive: e.archive,
                     expanded,
                     size: e.size,
                 });
                 if expanded {
-                    walk(c, &path, depth + 1, open, out);
+                    walk(c, base, &path, depth + 1, open, out);
                 }
             }
         }
         let mut rows = Vec::new();
-        walk(&self.container, "", 0, &self.open, &mut rows);
+        walk(&self.container, &self.base, "", 0, &self.open, &mut rows);
         self.rows = rows;
         self.cursor = self.cursor.min(self.rows.len().saturating_sub(1));
     }
@@ -323,13 +342,13 @@ pub(crate) fn render_dir(app: &App, v: &DirView, frame: &mut Frame, area: Rect) 
                 (true, false) => "\u{25b8}",
                 (false, _) => " ",
             };
-            let name = if r.is_dir {
+            let name = if r.is_dir && !r.archive {
                 format!("{}/", r.name)
             } else {
                 r.name.clone()
             };
             let left = format!("{}{marker} {name}", "  ".repeat(r.depth));
-            let right = if r.is_dir {
+            let right = if r.is_dir && !r.archive {
                 String::new()
             } else if is_archive_name(&r.name) {
                 format!("archive \u{b7} {}", size_label(r.size))
@@ -340,7 +359,7 @@ pub(crate) fn render_dir(app: &App, v: &DirView, frame: &mut Frame, area: Rect) 
             let room = w.saturating_sub(right.chars().count() + 2);
             let left = truncate_disp(&left, room.max(1));
             let gap = w.saturating_sub(disp_width(&left) + right.chars().count());
-            let base = if r.is_dir {
+            let base = if r.is_dir && !r.archive {
                 Style::new().fg(Color::Cyan)
             } else {
                 Style::new()
@@ -818,6 +837,168 @@ mod tests {
         app.open_farm_doc("doks/nothing/", None, None);
         assert!(app.dir().is_none());
         assert!(app.attach().is_none());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    /// A farm whose yak `t0` has a real `code.zip` and `pack.tar.gz`
+    /// attached (with a hostile member each) and a `bad.7z`.
+    fn archived() -> (PathBuf, App) {
+        use crate::entries::fixtures;
+        let t0 = task("t0", "solo", Status::Hairy, 3, None);
+        let (dir, farm) = temp_farm(&[t0]);
+        let a = crate::store::artifact_dir(farm.root(), "t0");
+        std::fs::create_dir_all(&a).unwrap();
+        let members: &[(&str, &[u8])] = &[
+            ("src/main.rs", b"fn main() {}\nlet two = 2;\n"),
+            ("src/deep/notes.md", b"# deep\n"),
+            ("README.md", b"# top\n"),
+            ("../evil.txt", b"evil"),
+        ];
+        fixtures::zip(&a.join("code.zip"), members);
+        fixtures::tgz(&a.join("pack.tar.gz"), members, &[]);
+        std::fs::write(a.join("bad.7z"), "7z").unwrap();
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 20;
+        (dir, app)
+    }
+
+    #[test]
+    fn the_tree_unfolds_into_an_archive_and_a_member_opens_read_only() {
+        let (dir, mut app) = archived();
+        enter_key(&mut app);
+        app.open_dest("t0/");
+        // An archive row is a fold row (no trailing `/`), its size column
+        // keeps `archive · <size>`; an unsupported kind is a plain file.
+        // An archive is a directory to the tree, so it sorts with them.
+        assert_eq!(names(&app), ["code.zip", "pack.tar.gz", "bad.7z"]);
+        let shown = draw(&app, 100, 24);
+        assert!(shown.contains("\u{25b8} code.zip "), "{shown}");
+        assert!(shown.contains("archive \u{b7} "), "{shown}");
+        assert!(!shown.contains("code.zip/"), "{shown}");
+        press(&mut app, "l"); // unfold code.zip
+        assert_eq!(
+            names(&app),
+            ["code.zip", "  src", "  README.md", "pack.tar.gz", "bad.7z"]
+        );
+        press(&mut app, "l"); // into it
+        press(&mut app, " "); // `src`: unfold with Space
+        assert_eq!(app.dir().unwrap().selected().unwrap().name, "src");
+        let n = names(&app);
+        assert!(n.contains(&"    main.rs".to_string()), "{n:?}");
+        assert!(!n.iter().any(|r| r.contains("evil")), "{n:?}");
+        press(&mut app, "j"); // deep
+        press(&mut app, "j"); // main.rs
+        assert_eq!(app.dir().unwrap().selected().unwrap().name, "main.rs");
+        enter_key(&mut app);
+        let v = app.attach().expect("the member opens in the viewer");
+        assert!(
+            v.target.ends_with("t0/code.zip/src/main.rs"),
+            "{}",
+            v.target
+        );
+        assert!(v.text.contains("two"));
+        // Read-only, like a pinned dok.
+        press(&mut app, "E");
+        assert!(
+            app.notification.as_deref().unwrap().contains("read-only"),
+            "{:?}",
+            app.notification
+        );
+        assert!(app.attach().is_some(), "still the viewer");
+        // `o` comes back to the same tree, folds and cursor.
+        press(&mut app, "o");
+        let d = app.dir().expect("back in the tree");
+        assert_eq!(d.selected().unwrap().name, "main.rs");
+        assert_eq!(d.open_folds(), ["code.zip", "code.zip/src"]);
+        assert!(opened().is_empty(), "nothing went to the OS opener");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_link_into_an_archive_opens_the_viewer_or_the_tree() {
+        let (dir, mut app) = archived();
+        enter_key(&mut app);
+        draw(&app, 100, 24);
+        app.open_dest("t0/pack.tar.gz/src/main.rs#L2");
+        let v = app.attach().expect("the member opens");
+        assert!(v.target.ends_with("t0/pack.tar.gz/src/main.rs"));
+        // `#L2` lands on the file's second line.
+        let (rows, _) = app.attachment_rows().unwrap();
+        assert_eq!(rows[app.attach().unwrap().nav.line].text, "let two = 2;");
+        app.close_doc();
+        app.open_dest("t0/pack.tar.gz/src/");
+        assert_eq!(
+            app.dir().unwrap().rel,
+            "t0/yaks/t0/pack.tar.gz/src".replace("t0/yaks/t0", "t0/yaks/t0")
+        );
+        assert_eq!(names(&app), ["deep", "main.rs"]);
+        app.close_doc();
+        app.open_dest("t0/code.zip/");
+        assert_eq!(names(&app), ["src", "README.md"]);
+        // A missing or hostile member says so and opens nothing.
+        app.close_doc();
+        app.open_dest("t0/code.zip/../evil.txt");
+        assert!(app.dir().is_none() && app.attach().is_none());
+        // An unsupported archive keeps the note and is never opened.
+        app.open_dest("t0/bad.7z");
+        assert_eq!(
+            app.notification.as_deref(),
+            Some("bad.7z: an archive; O \u{2192} p copies its path")
+        );
+        assert!(opened().is_empty());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn take_out_on_a_member_gives_the_path_through_the_archive_and_a_read_only_copy() {
+        let (dir, mut app) = archived();
+        enter_key(&mut app);
+        app.open_dest("t0/code.zip/src/main.rs");
+        press(&mut app, "O");
+        let Overlay::TakeOut(t) = std::mem::replace(&mut app.overlay, Overlay::None) else {
+            panic!("the take-out menu should be up");
+        };
+        assert!(matches!(t.place, Place::Member { .. }));
+        let root = app.farm.as_ref().unwrap().root().to_path_buf();
+        let through = "t0/yaks/t0/code.zip/src/main.rs";
+        app.take_out_with(None, &t, 'r');
+        assert_eq!(crate::tui::takeout::copied().as_deref(), Some(through));
+        app.take_out_with(None, &t, 'p');
+        assert_eq!(
+            crate::tui::takeout::copied(),
+            Some(root.join(through).display().to_string())
+        );
+        // `e` queues the editor on a read-only extracted copy.
+        app.take_out_with(Some("ed"), &t, 'e');
+        let note = app.notification.clone().unwrap();
+        assert!(note.contains("read-only copy"), "{note}");
+        assert!(app.pending_editor.is_some());
+        let (copy, snap) = crate::locate::Space::new(&root, None)
+            .local_path(&t.place)
+            .unwrap();
+        assert!(snap);
+        assert!(std::fs::metadata(&copy).unwrap().permissions().readonly());
+        assert!(std::fs::read_to_string(&copy).unwrap().contains("two"));
+        // `o` opens that copy with the system.
+        app.take_out_with(None, &t, 'o');
+        assert_eq!(opened(), [copy.display().to_string()]);
+        // `g`: a host cannot link into an archive.
+        app.take_out_with(None, &t, 'g');
+        assert!(
+            app.notification
+                .as_deref()
+                .unwrap()
+                .contains("host cannot link into an archive"),
+            "{:?}",
+            app.notification
+        );
+        // From the tree, an archive row is the archive file (never system-opened).
+        app.open_dest("t0/");
+        press(&mut app, "O"); // on code.zip
+        let Overlay::TakeOut(t) = std::mem::replace(&mut app.overlay, Overlay::None) else {
+            panic!("the take-out menu should be up");
+        };
+        assert!(matches!(t.place, Place::FarmFile { .. }));
         let _ = std::fs::remove_dir_all(dir);
     }
 }

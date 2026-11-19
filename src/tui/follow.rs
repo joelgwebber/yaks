@@ -49,6 +49,15 @@ pub(crate) struct PeekCache {
 /// The row a heading or line anchor lands on in a viewer's rows: the first
 /// row whose source covers the heading's line (a heading in block `block`).
 fn anchor_row(v: &AttachView, rows: &[detail::DLine], anchor: &Anchor) -> Option<usize> {
+    // A plain text file (not markdown) has rows with no source span: line N
+    // is its Nth row that does not continue a wrapped line.
+    if let (Anchor::Lines(a, _), DocKind::Member, false) = (anchor, &v.doc, v.markdown) {
+        let mut n = 0;
+        return rows.iter().position(|r| {
+            n += usize::from(!r.cont);
+            n == *a as usize
+        });
+    }
     // Within a dok or source, block 0 is the body below the frontmatter;
     // `#L12` counts lines of the whole file, so shift past the frontmatter.
     let body = v.blocks()[0];
@@ -280,15 +289,17 @@ impl App {
             Place::Commit { sha } => self.open_commit(sha),
             Place::Url(u) => self.os_open(u, u),
             Place::Missing(why) => self.notification = Some(why.clone()),
-            Place::FarmFile { anchor, .. } => match self.read_place(place) {
-                Ok(view) => {
-                    self.follow_to_doc(view);
-                    self.scroll_to_anchor(anchor.as_ref());
-                    let label = Space::link(place).map(|l| links::label(&l));
-                    self.notification = Some(format!("viewing {}", label.unwrap_or_default()));
+            Place::FarmFile { anchor, .. } | Place::Member { anchor, .. } => {
+                match self.read_place(place) {
+                    Ok(view) => {
+                        self.follow_to_doc(view);
+                        self.scroll_to_anchor(anchor.as_ref());
+                        let label = Space::link(place).map(|l| links::label(&l));
+                        self.notification = Some(format!("viewing {}", label.unwrap_or_default()));
+                    }
+                    Err(e) => self.notification = Some(e),
                 }
-                Err(e) => self.notification = Some(e),
-            },
+            }
         }
     }
 
@@ -355,6 +366,7 @@ impl App {
                     .map(DocView::Text)
                     .ok_or_else(|| format!("{target}: cannot be shown here"))
             }
+            Place::Member { archive, inner, .. } => self.read_member(archive, inner),
             Place::CodeFile { rel, rev, .. } => self
                 .read_code_view(rel, rev.as_deref(), None)
                 .map(DocView::Text),
@@ -363,6 +375,40 @@ impl App {
             Place::Yak { id, .. } => Err(format!("{id}: a yak, not a document")),
             Place::Url(u) => Err(format!("{u}: a URL")),
         }
+    }
+
+    /// File `inner` of the archive at farm path `archive`, in the viewer
+    /// that fits it (a picture, else text), read-only and read through
+    /// [`crate::entries::read`], so its size is capped as a file's is. The
+    /// view's target is the path through the archive, which history keeps.
+    fn read_member(&self, archive: &str, inner: &str) -> Result<DocView, String> {
+        let root = self.farm_root().ok_or("no farm to read")?;
+        let target = format!("{archive}/{inner}");
+        let Some((c, top)) = crate::entries::container_at(&root, archive) else {
+            return Err(format!("{archive}: not an archive of this farm"));
+        };
+        if !top.is_empty() {
+            return Err(format!("{target}: not a file of an archive"));
+        }
+        let name = inner.rsplit('/').next().unwrap_or(inner);
+        let max = if crate::store::is_image_name(name) {
+            super::imageview::IMAGE_MAX_BYTES
+        } else {
+            VIEW_MAX_BYTES
+        };
+        let bytes = crate::entries::read(&c, inner, max)
+            .map_err(|e| format!("{target}: {e:#}").replace(&format!("{inner}: "), ""))?;
+        // Where the farm would have it; never read, so it need not exist.
+        let path = root.join(&target);
+        if let Some(v) = ImageView::from_bytes(&target, path.clone(), name, &bytes, &self.picker) {
+            return Ok(DocView::Image(v));
+        }
+        let mut v = AttachView::member(&target, path, name, bytes)
+            .ok_or_else(|| format!("{target}: not text or a picture; O then o opens a copy"))?;
+        // The pane's width as last drawn, so a `#L12` anchor is placed on
+        // the rows the view will have (an unmeasured view wraps per column).
+        v.width.set(self.detail_width.get());
+        Ok(DocView::Text(v))
     }
 
     /// The link that names what `view` shows: a subject's one stable name

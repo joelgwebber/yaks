@@ -767,10 +767,10 @@ changes a yak. `Enter` on a pane link still follows it.
 | Key | |
 |---|---|
 | `e` | Open in `$VISUAL`/`$EDITOR` at the line (the TUI suspends while it runs, so a full-screen editor works) |
-| `o` | Open with the system (`open`, `xdg-open`); never an archive (`.tgz`, `.zip`, ...), which says to use `p` |
-| `p` | Copy the absolute path. A pinned `code:path@sha` file gives the working-tree path when the file is unchanged since the pin, else a read-only copy of `git show <sha>:<path>` under the temp directory (`yaks-src/<sha>/…`), which the message says |
-| `r` | Copy the farm- or repo-relative path |
-| `g` | Copy the host link, `https://github.com/<owner>/<repo>/blob/<branch or sha>/<path>#L12-L20`: GitHub, GitLab and Gitea/Forgejo, the same link `yaks url` prints. A pin links its commit |
+| `o` | Open with the system (`open`, `xdg-open`); never an archive file (`.tgz`, `.zip`, ...), which says to use `p`. On a member of an archive: a read-only temp copy of it |
+| `p` | Copy the absolute path (a member of an archive: the archive's path plus the member's, `<archive>/src/main.rs`; `e` and `o` extract a read-only temp copy under `yaks-archive/` and say so). A pinned `code:path@sha` file gives the working-tree path when the file is unchanged since the pin, else a read-only copy of `git show <sha>:<path>` under the temp directory (`yaks-src/<sha>/…`), which the message says |
+| `r` | Copy the farm- or repo-relative path (a member of an archive: the path through it, `<id>/code.zip/src/main.rs`) |
+| `g` | Copy the host link (a member of an archive has none: a host cannot link into one, so link the archive file), `https://github.com/<owner>/<repo>/blob/<branch or sha>/<path>#L12-L20`: GitHub, GitLab and Gitea/Forgejo, the same link `yaks url` prints. A pin links its commit |
 
 `Esc` or `q` closes the menu; any other key leaves it up. The menu is modal, so
 its keys are listed in the `?` overlay's *Take out* section, not in the table
@@ -890,13 +890,27 @@ Dot files are listed (directory sources and attached directories keep them);
 the farm (`..` and `.git` components are refused). The view lists at most 2000
 rows, and counts at most 999 files in its header.
 
-**An archive is never opened from the TUI.** `Enter` on a `.tgz`, `.tar`,
-`.tar.gz`, `.zip`, `.7z`, `.gz`, `.bz2` or `.xz` (in the tree, or following a
+**Archives read as read-only directories** (yaks-93ee). A `.zip`, `.tar`, `.tar.gz`
+or `.tgz` in the tree has a fold marker like a directory and unfolds with
+`Enter`, `l` or `Space`; its size column keeps `archive · <size>`. Its members
+list as directories and files and open in the text or image viewer like any
+file (`o` comes back to the tree with its folds), read-only: `E` says so, and
+nothing is ever extracted into the farm. A link through the archive,
+`<id>/code.zip/src/main.rs#L12` or `<id>/code.zip/`, opens the member or the
+archive's tree the same way (see [links](cli.md#links)). A member with an
+absolute or `..` path, a `.git` component or a symlink is not listed; an
+archive over 50 MiB, or one that does not open, is a plain file. The
+take-out menu (`O`, above) on a member gives `p` the archive's
+path plus the member's and `r` the path through it, extracts a read-only temp
+copy for `e` and `o`, and answers `g` that a host cannot link into an archive.
+
+**Any other archive is never opened from the TUI.** `Enter` on a `.7z`, `.gz`,
+`.bz2` or `.xz` (or a `.tgz` that is not really one; in the tree, or following a
 link to one) says `<name>: an archive; O → p copies its path` and does nothing
 else: handing one to the system's opener runs its archive utility, which unpacks
 it into the farm. The take-out menu's `o` on one says the same; `p`, `r` and `e`
-still work. (A directory attached with `yaks attach` is the way to keep a set of
-files; `.tgz` stays a plain file.)
+still work. Attaching a directory with `yaks attach` is still the way to keep a
+set of files that stay greppable.
 
 ## Following links and peek
 

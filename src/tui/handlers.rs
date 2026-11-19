@@ -75,20 +75,52 @@ impl AttachView {
         if std::fs::metadata(&found.path).ok()?.len() > VIEW_MAX_BYTES {
             return None;
         }
-        let text = String::from_utf8(std::fs::read(&found.path).ok()?).ok()?;
+        let bytes = std::fs::read(&found.path).ok()?;
+        Self::from_bytes(
+            target,
+            found.path.clone(),
+            &found.name,
+            bytes,
+            DocKind::Attachment,
+        )
+    }
+
+    /// The read-only viewer for member `name` of an archive (yaks-93ee),
+    /// holding `bytes`: the same text rules as [`AttachView::open`]. `target`
+    /// is the farm path through the archive (`<id>/code.zip/src/main.rs`),
+    /// which is also what history and the take-out menu name it by; `path` is
+    /// where the farm would have it, never read or written.
+    pub(crate) fn member(target: &str, path: PathBuf, name: &str, bytes: Vec<u8>) -> Option<Self> {
+        Self::from_bytes(target, path, name, bytes, DocKind::Member)
+    }
+
+    /// The viewer for file `name` whose content is `bytes`, or `None` when it
+    /// should open externally: an image, or not UTF-8 text (invalid UTF-8, or
+    /// a NUL byte). The caller has applied the size cap.
+    fn from_bytes(
+        target: &str,
+        path: PathBuf,
+        name: &str,
+        bytes: Vec<u8>,
+        doc: DocKind,
+    ) -> Option<Self> {
+        if crate::store::is_image_name(name) {
+            return None;
+        }
+        let text = String::from_utf8(bytes).ok()?;
         if text.contains('\0') {
             return None;
         }
-        let markdown = Path::new(&found.name)
+        let markdown = Path::new(name)
             .extension()
             .and_then(|e| e.to_str())
             .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
         Some(AttachView {
             target: target.to_string(),
-            path: found.path.clone(),
+            path,
             text,
             markdown,
-            doc: DocKind::Attachment,
+            doc,
             rev: None,
             nav: LineNav::default(),
             width: Cell::new(0),
@@ -183,7 +215,7 @@ impl AttachView {
         match &self.doc {
             DocKind::Code { error: Some(_), .. } => None,
             DocKind::Code { .. } => Some(self.nav.line as u32 + 1),
-            DocKind::Attachment | DocKind::File if !self.markdown => {
+            DocKind::Attachment | DocKind::File | DocKind::Member if !self.markdown => {
                 Some(rows[..=self.nav.line].iter().filter(|r| !r.cont).count() as u32)
             }
             _ => {
@@ -220,7 +252,7 @@ impl AttachView {
     pub(crate) fn copy_path(&self) -> &str {
         match self.doc {
             DocKind::Attachment => self.target.strip_prefix(".yaks/").unwrap_or(&self.target),
-            DocKind::Source | DocKind::Dok | DocKind::File => &self.target,
+            DocKind::Source | DocKind::Dok | DocKind::File | DocKind::Member => &self.target,
             DocKind::Code { .. } => self.code_rel().unwrap_or(&self.target),
         }
     }
@@ -229,8 +261,10 @@ impl AttachView {
     /// dok's kind (`topic`, ...), or `source`.
     pub(crate) fn kind_label(&self) -> String {
         match &self.doc {
-            DocKind::Attachment | DocKind::File if self.markdown => "markdown".into(),
-            DocKind::Attachment | DocKind::File => "text".into(),
+            DocKind::Attachment | DocKind::File | DocKind::Member if self.markdown => {
+                "markdown".into()
+            }
+            DocKind::Attachment | DocKind::File | DocKind::Member => "text".into(),
             DocKind::Dok => crate::doks::Dok::parse(&self.target, &self.text).kind(),
             DocKind::Source => "source".into(),
             DocKind::Code { .. } => "code".into(),
@@ -242,7 +276,7 @@ impl AttachView {
     /// the frontmatter (a dok, a source).
     pub(crate) fn blocks(&self) -> Vec<&str> {
         match &self.doc {
-            DocKind::Attachment | DocKind::File | DocKind::Code { .. } => {
+            DocKind::Attachment | DocKind::File | DocKind::Member | DocKind::Code { .. } => {
                 vec![self.text.as_str()]
             }
             DocKind::Dok | DocKind::Source => vec![self.body()],
@@ -334,6 +368,10 @@ pub(crate) enum DocKind {
     Dok,
     Source,
     File,
+    /// A file inside an archive attachment (yaks-93ee), read-only: `E`
+    /// refuses, as for a pinned dok. Its `target` is the farm path through
+    /// the archive.
+    Member,
     /// A `code:` file of the code checkout (yaks-c3d0), read-only: shown with
     /// line numbers, coloured by its extension (`lang`), the lines the link
     /// named (`marked`) in the gutter's accent. `error` is why there is no
@@ -1648,6 +1686,14 @@ impl App {
         if v.code_rel().is_some() {
             self.notification = Some(format!(
                 "{}: a code file is read-only here; O then e opens your editor",
+                v.target
+            ));
+            return;
+        }
+        // A member of an archive is read in place, never written (yaks-93ee).
+        if matches!(v.doc, DocKind::Member) {
+            self.notification = Some(format!(
+                "{}: inside an archive, read-only; O then e opens a copy in your editor",
                 v.target
             ));
             return;

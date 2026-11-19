@@ -30,7 +30,7 @@ use super::keymap::Cmd;
 use super::{App, detail};
 
 /// Largest image file the viewer decodes; a bigger one opens externally.
-const IMAGE_MAX_BYTES: u64 = 32 << 20;
+pub(super) const IMAGE_MAX_BYTES: u64 = 32 << 20;
 
 /// Largest svg the viewer rasterizes. Far below [`IMAGE_MAX_BYTES`]: an svg is
 /// text that expands to pixels, and rasterizing blocks the UI.
@@ -63,23 +63,30 @@ pub(super) fn read_svg(path: &Path) -> Option<Vec<u8>> {
     std::fs::read(path).ok()
 }
 
-/// Decode an image attachment to pixels: an svg through toque's rasterizer (and
-/// the PNG cache), anything else through the `image` crate with the format
-/// guessed from the content.
-fn decode_attachment(path: &Path, name: &str) -> Option<image::DynamicImage> {
+/// Decode an image (`name` says whether it is an svg) to pixels: an svg
+/// through toque's rasterizer (and the PNG cache), anything else through the
+/// `image` crate with the format guessed from the content.
+fn decode_bytes(bytes: &[u8], name: &str) -> Option<image::DynamicImage> {
     let is_svg = Path::new(name)
         .extension()
         .is_some_and(|e| e.eq_ignore_ascii_case("svg"));
     if is_svg {
-        let png = svg_png(&read_svg(path)?, super::cache::svg_cache_base().as_deref())?;
+        if bytes.len() as u64 > SVG_MAX_BYTES {
+            return None;
+        }
+        let png = svg_png(bytes, super::cache::svg_cache_base().as_deref())?;
         return image::load_from_memory(&png).ok();
     }
-    image::ImageReader::open(path)
-        .ok()?
+    image::ImageReader::new(std::io::Cursor::new(bytes))
         .with_guessed_format()
         .ok()?
         .decode()
         .ok()
+}
+
+/// Decode the image file at `path` to pixels ([`decode_bytes`]).
+fn decode_attachment(path: &Path, name: &str) -> Option<image::DynamicImage> {
+    decode_bytes(&std::fs::read(path).ok()?, name)
 }
 
 /// How the picture is scaled: to the pane, to its width, or by a factor.
@@ -182,6 +189,27 @@ impl ImageView {
             return None;
         }
         let img = decode_attachment(&found.path, &found.name)?;
+        Some(Self::new(target, found.path.clone(), img, picker))
+    }
+
+    /// The viewer for image `name` whose content is `bytes` (a member of an
+    /// archive, yaks-93ee), or `None` when it cannot be decoded. `path` is
+    /// where the farm would have it, never read.
+    pub(crate) fn from_bytes(
+        target: &str,
+        path: PathBuf,
+        name: &str,
+        bytes: &[u8],
+        picker: &Picker,
+    ) -> Option<Self> {
+        if !crate::store::is_image_name(name) {
+            return None;
+        }
+        let img = decode_bytes(bytes, name)?;
+        Some(Self::new(target, path, img, picker))
+    }
+
+    fn new(target: &str, path: PathBuf, img: image::DynamicImage, picker: &Picker) -> Self {
         let mut picker = picker.clone();
         let grid = grid_of(&picker);
         if picker.protocol_type() == ProtocolType::Halfblocks {
@@ -192,9 +220,9 @@ impl ImageView {
             p.set_protocol_type(ProtocolType::Halfblocks);
             picker = p;
         }
-        Some(ImageView {
+        ImageView {
             target: target.to_string(),
-            path: found.path.clone(),
+            path: path,
             dims: (img.width(), img.height()),
             image: img,
             picker,
@@ -203,7 +231,7 @@ impl ImageView {
             offset: Cell::new((0, 0)),
             pane: Cell::new((0, 0)),
             drawn: RefCell::new(None),
-        })
+        }
     }
 
     #[cfg(test)]

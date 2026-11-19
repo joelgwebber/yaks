@@ -136,6 +136,24 @@ fn anchor_line(place: &Place) -> Option<u32> {
 }
 
 impl App {
+    /// The place of farm path `rel`: a file inside an archive is a
+    /// [`Place::Member`] (read-only), any other path a [`Place::FarmFile`].
+    fn farm_place(&self, space: &Space, rel: String) -> Place {
+        let link = Link::Farm {
+            path: rel.clone(),
+            rev: None,
+            anchor: None,
+        };
+        match space.resolve(&link) {
+            m @ Place::Member { .. } => m,
+            _ => Place::FarmFile {
+                rel,
+                rev: None,
+                anchor: None,
+            },
+        }
+    }
+
     /// What links resolve against: the farm and the code checkout.
     fn take_space(&self) -> Option<Space> {
         let root = self.farm.as_ref()?.root().to_path_buf();
@@ -153,7 +171,7 @@ impl App {
         let subject = match ctx {
             Ctx::Viewer => self.viewer_subject(&space),
             Ctx::Image => self.image_subject(&space),
-            Ctx::Dir => self.dir_subject(),
+            Ctx::Dir => self.dir_subject(&space),
             Ctx::Commit => self.commit_view().map(|v| {
                 let (place, label) = v.place();
                 Ok(TakeOut {
@@ -204,7 +222,7 @@ impl App {
                 let rel = match v.doc {
                     // An attachment's target is `<id>/<file>`; its file is
                     // somewhere under the farm.
-                    DocKind::Attachment => match self.farm_relative(&v.path) {
+                    DocKind::Attachment | DocKind::Member => match self.farm_relative(&v.path) {
                         Some(r) => r,
                         None => return Some(Err(format!("{}: not a file of the farm", v.target))),
                     },
@@ -216,55 +234,59 @@ impl App {
                     .map(|r| format!("@{}", &r[..r.len().min(7)]))
                     .unwrap_or_default();
                 let label = format!("{}{pin}", v.target);
-                (
-                    Place::FarmFile {
+                let place = match v.doc {
+                    DocKind::Member => self.farm_place(space, rel),
+                    _ => Place::FarmFile {
                         rel,
                         rev: v.rev.clone(),
                         anchor: None,
                     },
-                    label,
-                )
+                };
+                (place, label)
             }
         };
-        let _ = space;
         Some(Ok(TakeOut { place, line, label }))
     }
 
     /// The directory view's selected file. A directory has no file to take
     /// out: `y` copies its path.
-    fn dir_subject(&self) -> Option<Result<TakeOut, String>> {
+    fn dir_subject(&self, space: &Space) -> Option<Result<TakeOut, String>> {
         let v = self.dir()?;
         let row = v.selected()?;
-        if row.is_dir {
+        // An archive row is a directory to the tree but one file to take out.
+        if row.is_dir && !row.archive {
             return Some(Err(format!(
                 "{}/: a directory; y copies its path",
                 row.name
             )));
         }
         let rel = v.selected_rel()?;
-        Some(Ok(TakeOut {
-            place: Place::FarmFile {
+        // A file inside an archive is a member; the archive row itself is
+        // the archive file.
+        let place = if row.archive {
+            Place::FarmFile {
                 rel: rel.clone(),
                 rev: None,
                 anchor: None,
-            },
+            }
+        } else {
+            self.farm_place(space, rel.clone())
+        };
+        Some(Ok(TakeOut {
+            place,
             line: None,
             label: rel,
         }))
     }
 
     /// The open image's file.
-    fn image_subject(&self, _space: &Space) -> Option<Result<TakeOut, String>> {
+    fn image_subject(&self, space: &Space) -> Option<Result<TakeOut, String>> {
         let v = self.image()?;
         let Some(rel) = self.farm_relative(&v.path) else {
             return Some(Err(format!("{}: not a file of the farm", v.target)));
         };
         Some(Ok(TakeOut {
-            place: Place::FarmFile {
-                rel,
-                rev: None,
-                anchor: None,
-            },
+            place: self.farm_place(space, rel),
             line: None,
             label: v.target.clone(),
         }))
@@ -382,6 +404,13 @@ impl App {
                     }
                 }
             }
+            // A member has no path of its own: the archive's, then the member's.
+            'p' if matches!(place, Place::Member { .. }) => {
+                let path = space
+                    .rel_path(place)
+                    .map_or_else(String::new, |r| space.farm.join(r).display().to_string());
+                copied_note(copy(&path), &path, "")
+            }
             'p' => match space.local_path(place) {
                 Err(why) => why,
                 Ok((file, snap)) => {
@@ -393,6 +422,9 @@ impl App {
                 None => "this link names no file".into(),
                 Some(rel) => copied_note(copy(&rel), &rel, ""),
             },
+            'g' if matches!(place, Place::Member { .. }) => {
+                "a host cannot link into an archive; link the archive file".into()
+            }
             'g' => match space.web_url(place, false) {
                 Err(e) => host_problem(&format!("{e:#}")),
                 Ok(w) => {
@@ -407,11 +439,7 @@ impl App {
 
 /// What a read-only copy adds to a message.
 fn copy_note(snapshot: bool) -> &'static str {
-    if snapshot {
-        " (read-only copy at the pinned commit)"
-    } else {
-        ""
-    }
+    if snapshot { " (read-only copy)" } else { "" }
 }
 
 fn copied_note(ok: bool, what: &str, then: &str) -> String {

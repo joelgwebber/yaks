@@ -62,14 +62,14 @@ pub fn farm_file_in<'a>(root: &Path, path: &'a str) -> Cow<'a, str> {
     }
 }
 
-/// The farm directory `link` names, as a farm-relative path with no trailing
-/// `/`, when it names one: a [`Link::Farm`] path or a [`Link::Attachment`]
-/// (`<id>/` is the yak's whole attachment directory) that is a directory on
-/// disk, a source named by its bare `<date>-<sha8>` id included
-/// ([`farm_file_in`]). Unpinned only; never a path
-/// [`crate::entries::safe_rel`] refuses, nor a symlink.
-pub fn dir_of(farm: &Path, link: &Link) -> Option<String> {
-    let rel = match link {
+/// The farm-relative path (no trailing `/`) `link` writes, when it is an
+/// unpinned [`Link::Farm`] path or a [`Link::Attachment`] (`<id>/` is the
+/// yak's whole attachment directory), a source named by its bare
+/// `<date>-<sha8>` id included ([`farm_file_in`]). The path may pass
+/// *through* an archive (`<id>/code.zip/src/main.rs`); [`dir_of`] and
+/// [`member_of`] say what it names. `None` for a farm path that is a file.
+fn rel_of(farm: &Path, link: &Link) -> Option<String> {
+    Some(match link {
         Link::Farm {
             path, rev: None, ..
         } => {
@@ -80,7 +80,9 @@ pub fn dir_of(farm: &Path, link: &Link) -> Option<String> {
                 farm_file_in(farm, &format!("{p}/x"))
                     .strip_suffix("/x")?
                     .to_string()
-            } else if farm.join(&*farm_file_in(farm, p)).is_file() {
+            } else if farm.join(&*farm_file_in(farm, p)).is_file()
+                && !crate::entries::is_browsable_name(p)
+            {
                 return None;
             } else {
                 p.to_string()
@@ -98,8 +100,31 @@ pub fn dir_of(farm: &Path, link: &Link) -> Option<String> {
                 .replace('\\', "/")
         }
         _ => return None,
-    };
-    crate::entries::container_at(farm, &rel).map(|_| rel)
+    })
+}
+
+/// The farm directory `link` names, as a farm-relative path with no trailing
+/// `/`, when it names one: a [`rel_of`] path that is a directory on disk, an
+/// archive file (`.zip`, `.tar`, `.tar.gz`, `.tgz`: it reads as a read-only
+/// directory, yaks-93ee) or a directory inside one. Unpinned only; never a
+/// path [`crate::entries::safe_rel`] refuses, nor a symlink.
+pub fn dir_of(farm: &Path, link: &Link) -> Option<String> {
+    let rel = rel_of(farm, link)?;
+    crate::entries::dir_at(farm, &rel).map(|_| rel)
+}
+
+/// The file inside an archive `link` names, as the archive's farm-relative
+/// path and the file's path inside it (`("<herd>/yaks/<id>/code.zip",
+/// "src/main.rs")`), when it names one that is there.
+pub fn member_of(farm: &Path, link: &Link) -> Option<(String, String)> {
+    use crate::entries::{Node, container_at, stat};
+    let rel = rel_of(farm, link)?;
+    let (c, inner) = container_at(farm, &rel)?;
+    if inner.is_empty() || !matches!(stat(&c, &inner), Some(Node::File(_))) {
+        return None;
+    }
+    let archive = rel[..rel.len() - inner.len()].trim_end_matches('/');
+    Some((archive.to_string(), inner))
 }
 
 /// What a link resolves to.
@@ -129,6 +154,15 @@ pub enum Place {
     /// [`crate::entries`] lists.
     FarmDir {
         rel: String,
+    },
+    /// A file inside an archive attachment (yaks-93ee), read-only: the
+    /// archive's farm-relative path and the file's path inside it. A
+    /// directory inside an archive is a [`Place::FarmDir`] whose `rel` passes
+    /// through the archive.
+    Member {
+        archive: String,
+        inner: String,
+        anchor: Option<Anchor>,
     },
     /// A file of the code repository.
     CodeFile {
@@ -168,11 +202,23 @@ impl Space {
 
     /// What `link` names. The one place that knows a link can name a
     /// directory: a farm path written with a trailing `/`, or any farm path
-    /// or attachment that is a directory on disk ([`dir_of`]), resolves to
-    /// [`Place::FarmDir`]. Every other link is lexical.
+    /// or attachment that is a directory on disk or an archive ([`dir_of`]),
+    /// resolves to [`Place::FarmDir`], and a file inside an archive
+    /// ([`member_of`]) to [`Place::Member`]. Every other link is lexical.
     pub fn resolve(&self, link: &Link) -> Place {
         if let Some(rel) = dir_of(&self.farm, link) {
             return Place::FarmDir { rel };
+        }
+        if let (
+            Some((archive, inner)),
+            Link::Farm { anchor, .. } | Link::Attachment { anchor, .. },
+        ) = (member_of(&self.farm, link), link)
+        {
+            return Place::Member {
+                archive,
+                inner,
+                anchor: anchor.clone(),
+            };
         }
         match link {
             Link::Url(u) => Place::Url(u.clone()),
@@ -281,6 +327,16 @@ impl Space {
                 rev: None,
                 anchor: None,
             },
+            // The path goes through the archive, as the link was written.
+            Place::Member {
+                archive,
+                inner,
+                anchor,
+            } => Link::Farm {
+                path: format!("{archive}/{inner}"),
+                rev: None,
+                anchor: anchor.clone(),
+            },
             Place::Missing(_) => return None,
         })
     }
@@ -323,6 +379,11 @@ impl Space {
                 Some((rel.clone(), rev.clone(), anchor.clone()))
             }
             Place::FarmDir { rel } => Some((rel.clone(), None, None)),
+            Place::Member {
+                archive,
+                inner,
+                anchor,
+            } => Some((format!("{archive}/{inner}"), None, anchor.clone())),
             _ => None,
         }
     }
@@ -362,8 +423,12 @@ impl Space {
 
     /// The path of the place's file on this machine, and whether it is a
     /// read-only copy: a pinned file is the working file when it is unchanged
-    /// since the pin, else a read-only copy of the pinned content.
+    /// since the pin, else a read-only copy of the pinned content; a member
+    /// of an archive is always a read-only copy ([`extract_member`]).
     pub fn local_path(&self, place: &Place) -> Result<(PathBuf, bool), String> {
+        if let Place::Member { archive, inner, .. } = place {
+            return extract_member(&self.farm, archive, inner).map(|p| (p, true));
+        }
         if let Place::CodeFile { rel, rev, .. } = place {
             let Some(code) = &self.code else {
                 return Err(format!("code:{rel}: no code checkout to read it from"));
@@ -420,6 +485,11 @@ impl Space {
         }
         if let Place::Missing(why) = place {
             bail!("{why}");
+        }
+        if let Place::Member { archive, inner, .. } = place {
+            bail!(
+                "{archive}/{inner}: a host cannot show a member of an archive; link the archive file"
+            );
         }
         if let Place::Commit { sha } = place {
             let Some(code) = &self.code else {
@@ -659,6 +729,45 @@ pub fn pinned_file(base: &Path, path: &str, rev: Option<&str>) -> Result<(PathBu
     Ok((tmp, true))
 }
 
+/// Most bytes of a member [`extract_member`] writes out.
+const EXTRACT_MAX_BYTES: u64 = 64 << 20;
+
+/// A read-only temp copy of member `inner` of the archive at farm path
+/// `archive`: `<tmp>/yaks-archive/<key>/<inner>`, `key` naming the archive's
+/// path, size and mtime so a changed archive never reuses a stale copy. The
+/// path is the one the viewer shows, so `e`/`o` act on what was read. `Err`
+/// is a one-line message.
+pub fn extract_member(farm: &Path, archive: &str, inner: &str) -> Result<PathBuf, String> {
+    use crate::entries::{Node, container_at, read, stat};
+    use std::hash::{Hash, Hasher};
+    let Some((c, top)) = container_at(farm, archive).filter(|(_, t)| t.is_empty()) else {
+        return Err(format!("{archive}: not an archive of this farm"));
+    };
+    let _ = top;
+    if !crate::entries::safe_rel(inner) || !matches!(stat(&c, inner), Some(Node::File(_))) {
+        return Err(format!("{archive}/{inner}: no such file in the archive"));
+    }
+    let bytes = read(&c, inner, EXTRACT_MAX_BYTES).map_err(|e| format!("{e:#}"))?;
+    let file = farm.join(archive);
+    let meta = std::fs::metadata(&file).map_err(|e| format!("{archive}: {e}"))?;
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    (&file, meta.len(), meta.modified().ok()).hash(&mut h);
+    let tmp = std::env::temp_dir()
+        .join("yaks-archive")
+        .join(format!("{:016x}", h.finish()))
+        .join(inner);
+    let write = || -> std::io::Result<()> {
+        std::fs::create_dir_all(tmp.parent().unwrap())?;
+        let _ = std::fs::remove_file(&tmp); // a previous copy is read-only
+        std::fs::write(&tmp, &bytes)?;
+        let mut perm = std::fs::metadata(&tmp)?.permissions();
+        perm.set_readonly(true);
+        std::fs::set_permissions(&tmp, perm)
+    };
+    write().map_err(|e| format!("temp copy failed: {e}"))?;
+    Ok(tmp)
+}
+
 /// What `yaks url <arg>` links: a link as written in a yak (`yaks-1a2b`,
 /// `/doks/x.md#setup`, `code:src/a.rs@3f2a9c1#L12-L20`), or a file path. A
 /// path inside the farm is a farm file, one inside the code checkout a
@@ -790,5 +899,144 @@ mod tests {
         let u = "https://github.com/o/r/commit/abc1234";
         assert_eq!(bare.read_url(Link::Url(u.into())), Link::Url(u.into()));
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A farm whose yak `t0` has `a.zip` and `b.tar.gz` attached (and the
+    /// fixture's hostile members), for the archive tests.
+    fn with_archives() -> (PathBuf, Space) {
+        use crate::entries::fixtures;
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static N: AtomicUsize = AtomicUsize::new(0);
+        // Links resolve against a directory: no farm files are needed.
+        let dir = std::env::temp_dir().join(format!(
+            "yaks-locate-{}-{}",
+            std::process::id(),
+            N.fetch_add(1, Ordering::SeqCst)
+        ));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let a = store::artifact_dir(&dir, "t0");
+        std::fs::create_dir_all(&a).unwrap();
+        let members: &[(&str, &[u8])] = &[
+            ("src/x.rs", b"one\ntwo\nthree\n"),
+            ("README.md", b"# hi\n"),
+            ("../evil.txt", b"evil"),
+        ];
+        fixtures::zip(&a.join("a.zip"), members);
+        fixtures::tgz(&a.join("b.tar.gz"), members, &[]);
+        let space = Space::new(&dir, None);
+        (dir, space)
+    }
+
+    fn parse(dest: &str) -> Link {
+        links::parse(dest, links::From::Yak, |t| t == "t0")
+    }
+
+    #[test]
+    fn a_path_through_an_archive_resolves_to_a_member_or_a_directory() {
+        let (dir, space) = with_archives();
+        let rel = |n: &str| {
+            let a = store::artifact_dir(&space.farm, "t0");
+            format!("{}/{n}", a.strip_prefix(&space.farm).unwrap().display())
+        };
+        for z in ["a.zip", "b.tar.gz"] {
+            // A member of the archive, with its anchor.
+            let l = parse(&format!("t0/{z}/src/x.rs#L2"));
+            assert_eq!(
+                space.resolve(&l),
+                Place::Member {
+                    archive: rel(z),
+                    inner: "src/x.rs".into(),
+                    anchor: Some(Anchor::Lines(2, 2)),
+                },
+                "{z}"
+            );
+            // A directory in it, the archive's top, and the archive itself.
+            assert_eq!(
+                space.resolve(&parse(&format!("t0/{z}/src/"))),
+                Place::FarmDir {
+                    rel: rel(&format!("{z}/src"))
+                },
+                "{z}"
+            );
+            for top in [format!("t0/{z}/"), format!("t0/{z}")] {
+                assert_eq!(
+                    space.resolve(&parse(&top)),
+                    Place::FarmDir { rel: rel(z) },
+                    "{top}"
+                );
+            }
+            // The same through a farm path.
+            let l = parse(&format!("/{}", rel(&format!("{z}/src/x.rs"))));
+            assert!(matches!(space.resolve(&l), Place::Member { .. }), "{z}");
+            // Hostile and missing members are nothing.
+            for bad in ["../evil.txt", "evil.txt", "src/nope.rs", "src/x.rs/y"] {
+                let l = parse(&format!("t0/{z}/{bad}"));
+                assert!(
+                    !matches!(
+                        space.resolve(&l),
+                        Place::Member { .. } | Place::FarmDir { .. }
+                    ),
+                    "{z}/{bad}"
+                );
+                assert_eq!(links::exists(&space.farm, &l), Some(false), "{z}/{bad}");
+            }
+            // exists.
+            for good in ["src/x.rs", "src/", "README.md", ""] {
+                let l = parse(&format!("t0/{z}/{good}"));
+                assert_eq!(links::exists(&space.farm, &l), Some(true), "{z}/{good}");
+            }
+        }
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn peek_reads_a_member_at_its_lines_and_lists_an_archive_directory() {
+        let (dir, space) = with_archives();
+        let bases = links::Bases {
+            farm: &space.farm,
+            code: None,
+        };
+        let p = links::peek(&parse("t0/a.zip/src/x.rs#L2"), &bases, 0).unwrap();
+        assert!(
+            p.text.contains("two") && !p.text.contains("three"),
+            "{}",
+            p.text
+        );
+        let p = links::peek(&parse("t0/b.tar.gz/"), &bases, 0).unwrap();
+        assert_eq!(p.text, "src/\nREADME.md\n");
+        let p = links::peek(&parse("t0/b.tar.gz/src/"), &bases, 0).unwrap();
+        assert_eq!(p.text, "x.rs\n");
+        assert!(links::peek(&parse("t0/a.zip/../evil.txt"), &bases, 0).is_err());
+        assert!(links::peek(&parse("t0/a.zip/src/nope.rs"), &bases, 0).is_err());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_member_links_back_names_a_read_only_copy_and_has_no_host_url() {
+        let (dir, space) = with_archives();
+        let l = parse("t0/a.zip/src/x.rs#L2");
+        let place = space.resolve(&l);
+        // The link it came from goes through the archive, and parses back
+        // to the same place.
+        let back = Space::link(&place).unwrap();
+        assert_eq!(space.resolve(&back), place);
+        let (rel, ..) = space.farm_rel(&place).unwrap();
+        assert!(rel.ends_with("t0/a.zip/src/x.rs"), "{rel}");
+        // A read-only temp copy of the member, not the archive.
+        let (path, copy) = space.local_path(&place).unwrap();
+        assert!(copy);
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "one\ntwo\nthree\n");
+        assert!(std::fs::metadata(&path).unwrap().permissions().readonly());
+        assert!(path.starts_with(std::env::temp_dir()));
+        // A second extraction replaces the read-only copy.
+        assert_eq!(space.local_path(&place).unwrap().0, path);
+        // A host cannot show a member.
+        let why = space.web_url(&place, false).unwrap_err().to_string();
+        assert!(
+            why.contains("host cannot show a member of an archive"),
+            "{why}"
+        );
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

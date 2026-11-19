@@ -846,7 +846,7 @@ static BINDINGS: &[Binding] = &[
     bind(Dir, &[k(PageUp)], MovePageUp, "Full-page up", NoHint),
     bind(Dir, &[c('g'), k(Home)], MoveTop, "Top", NoHint),
     bind(Dir, &[c('G'), k(End)], MoveBottom, "Bottom", NoHint),
-    bind(Dir, &[k(Enter)], PaneEnter, "Open the file in the viewer (o / i come back); fold or unfold a directory; an archive is never opened, O → p copies its path", hint("Enter:open")),
+    bind(Dir, &[k(Enter)], PaneEnter, "Open the file in the viewer (o / i come back); fold or unfold a directory or a .zip/.tar/.tgz archive; any other archive is never opened, O → p copies its path", hint("Enter:open")),
     bind(Dir, &[c(' ')], TreeToggle, "Fold / unfold the directory", NoHint),
     bind(Dir, &[c('l'), k(Right)], TreeRight, "Unfold the directory, else go to its first entry", NoHint),
     bind(Dir, &[c('h'), k(Left)], TreeLeft, "Fold the directory, else go to the directory that holds the row", NoHint),
@@ -1259,7 +1259,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             (
                 "o",
-                "Open with the system (the default application); never an archive (.tgz .tar .zip .gz ...): p copies its path",
+                "Open with the system (the default application); never an archive file itself (p copies its path); a member of an archive opens as a read-only copy",
             ),
             (
                 "p",
@@ -1294,7 +1294,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
             ),
             (
                 "(directory)",
-                "A link to a directory, or an Attachments: / Files: row, opens it as a tree in the pane: Enter opens a file or folds a directory; an archive is never opened",
+                "A link to a directory, or an Attachments: / Files: row, opens it as a tree in the pane: Enter opens a file or folds a directory or a .zip/.tar/.tgz archive; any other archive is never opened",
             ),
             (
                 "(image)",

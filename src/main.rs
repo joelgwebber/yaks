@@ -293,7 +293,9 @@ enum Command {
     ///
     /// A directory attaches with its layout, under its own name
     /// (`<id>/<dir>/...`), in one write, and one link names it
-    /// (`[<dir>/](<id>/<dir>/)`). Attach a directory, never an archive. It
+    /// (`[<dir>/](<id>/<dir>/)`). Attach a directory rather than an archive (an
+    /// archive is readable in place, but its files are not greppable or
+    /// diffable in the farm). It
     /// uses a directory source's walk, skip list (`.git`, `node_modules`,
     /// `target`, ...; dot files are kept) and limits (200 files, 5 MiB), and
     /// refuses over them, writing nothing. A symlink is never followed or
@@ -1033,6 +1035,9 @@ enum Command {
     /// section), `code:src/foo.rs#L12-L40` (lines of a code file, from the
     /// code checkout yaks was started in), `code:src/foo.rs@3f2a9c1#L12` (as
     /// at a commit), `yaks-1a2b/log.txt#L5` (an attachment),
+    /// `yaks-1a2b/code.zip/src/main.rs#L5` (a file inside an attached
+    /// `.zip`, `.tar`, `.tar.gz` or `.tgz`; `yaks-1a2b/code.zip/` lists its
+    /// top level, one entry a line),
     /// `yaks-1a2b#2026-11-04T22:13:03Z` (one note of a yak, by its timestamp;
     /// `-1`, `-2` for later notes of the same second), `commit:3f2a9c1` (a code
     /// commit: author, date, message and changed files). A host URL of the

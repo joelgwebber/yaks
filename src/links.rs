@@ -830,10 +830,14 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
         Link::Attachment { name: path, .. } if path.contains(['{', '}', '<', '>']) => None,
         Link::Farm { path, .. } => Some(
             root.join(&*crate::locate::farm_file_in(root, path))
-                .exists(),
+                .exists()
+                // A directory or file inside an archive (yaks-93ee).
+                || crate::locate::dir_of(root, link).is_some()
+                || crate::locate::member_of(root, link).is_some(),
         ),
         Link::Attachment { id, name, .. } => Some(
             crate::locate::dir_of(root, link).is_some()
+                || crate::locate::member_of(root, link).is_some()
                 || crate::farm::locate_attachment(root, id, name).is_some(),
         ),
         Link::Upward(_) => Some(false),
@@ -1078,13 +1082,26 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
         }
         // A directory (a farm path with its `/`, an attached directory): its
         // top level, one entry a line, as the TUI lists it.
+        // (An archive, and a directory inside one, lists the same way.)
         Link::Farm { .. } | Link::Attachment { .. }
             if crate::locate::dir_of(bases.farm, link).is_some() =>
         {
             let rel = crate::locate::dir_of(bases.farm, link).unwrap_or_default();
-            let c = crate::entries::container_at(bases.farm, &rel)
+            let (c, inner) = crate::entries::dir_at(bases.farm, &rel)
                 .ok_or_else(|| anyhow::anyhow!("{label}: not a directory of this farm"))?;
-            crate::entries::listing(&c)
+            crate::entries::listing(&c, &inner)
+        }
+        // A file inside an archive: its text, cut to the anchor as a file's.
+        Link::Farm { anchor, .. } | Link::Attachment { anchor, .. }
+            if crate::locate::member_of(bases.farm, link).is_some() =>
+        {
+            let (archive, inner) = crate::locate::member_of(bases.farm, link).unwrap_or_default();
+            let (c, _) = crate::entries::container_at(bases.farm, &archive)
+                .ok_or_else(|| anyhow::anyhow!("{label}: no such archive"))?;
+            let bytes = crate::entries::read(&c, &inner, 4 << 20)?;
+            let text = String::from_utf8(bytes)
+                .unwrap_or_else(|e| format!("(binary file, {} bytes)\n", e.into_bytes().len()));
+            span(&inner, &text, anchor, context)?
         }
         Link::Farm { path, .. } if path.ends_with('/') => {
             bail!("{label}: no such directory in this farm")
