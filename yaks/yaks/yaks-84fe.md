@@ -52,3 +52,24 @@ Decision: whether a link names a directory is decided once, in `locate::dir_of`,
 Decision: `doctor` now checks any farm link ending in `/` (unless it holds `{}`/`<>` placeholders), where before a slash-ended path was always `../`. Checked on this farm: `yaks doctor` output is identical before and after (8 lines). Rejected: running a slash-ended link through the extension heuristic for prose (a directory has no extension, so it would never be checked).
 
 Decision: history's `PaneAt::Doc` keeps one `dest` string (`links::dest` of the view's link) instead of `path` + `rev`; restore is `read_place(place_of_dest(dest))`. History is in memory only, so there is no stored format to migrate. Rejected: storing a `Place` (it would need `Clone`/`PartialEq` plumbing and gives nothing a string does not; a string is also what stars will store, yaks-4381).
+
+#### 2026-11-19T02:33:13Z
+
+*herd-files*
+
+Done (herd-files). The shape, per [the design](/doks/design/files-directories-archives.md):
+
+- **One lister**, `src/entries.rs` (`Container::Dir`, `container_at`, `list`, `count_files`, `listing`, `safe_rel`): the directory view, `yaks peek` of a directory and the `Attachments:`/`Files:` counts all list through it, so they agree (`.git` and symlinks left out, dot files kept, dirs first).
+- **One resolver**: the grammar keeps a trailing `/` on a farm path and reads `<id>/` as all of a yak's attachments; `locate::dir_of` decides "is it a directory" once, giving `Place::FarmDir`; `links::dest` writes any link as a destination `parse` reads back.
+- **One opener** in the TUI: `App::open_place` / `read_place` (`src/tui/follow.rs`) behind both follow dispatches, the directory view's Enter, history restore, `/`-URLs and `open_farm_doc`. Deleted: `farm_dir_of`, `target_dir`, `farm_path_is_dir`, `read_doc`, `open_external`, `resolve_attachment`, `follow_url`, and dirview's own lister and counter. History keeps a subject by its destination.
+
+Evidence:
+
+- Gate: `cargo test -p yaks` 1507 passed, 0 failed; `cargo fmt --check` clean. The existing TUI and links tests are unchanged except for renamed entry points.
+- New tests: `dest_round_trips_through_parse` (every link kind, from the root and from a yak), `a_farm_path_may_name_a_directory`, `exists_and_peek_accept_a_farm_directory`, `every_kind_of_document_round_trips_through_its_destination` (dok, directory, attachment with a space, file in an attached dir, image), `entries` unit tests; the dirview climb-out test now asks the resolver.
+- Real CLI (release build) on the yaks-1d2b repro farm: `yaks doctor` "All clear" (before: two `../` errors); `yaks peek /doks/x/sketches/` lists `sub/`, `a.txt` (the symlink to `/etc` left out).
+- Real TUI (headless, release build), attached: [the dok's directory link followed and `o` back](yaks-84fe/dok-directory-link-and-back.txt), [a yak's Attachments row opening its tree](yaks-84fe/yak-attachments-row.txt).
+- Line counts (TUI files touched): 296 added, 453 removed; `dirview.rs` 992 to 823, `handlers.rs` 3251 to 3185, `follow.rs` 999 to 1135 (it now holds the one opener).
+- Docs: `docs/cli.md` (link table: farm directory row, `<id>/`; `peek` of a directory), `docs/tui.md` (the directory-link example was wrong for a dok's own sibling directory: now `x/sketches/`), `.agents/skills/yaks` Links. No CLI flag or TUI key changed.
+
+Fixes yaks-1d2b.
