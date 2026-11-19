@@ -343,6 +343,9 @@ pub fn rewrite_ref(r: &str, plan: &[(String, String)]) -> Option<String> {
 /// metadata, OS litter, and build and dependency directories. Everything
 /// else is kept, dot files and dot directories included (`.github/`,
 /// `.agents/` and `.gitignore` are often the point of a repo snapshot).
+///
+/// Separately from this list, [`walk_dir`] never follows a symlink: a link,
+/// to a file or a directory, is skipped wherever it occurs, whatever its name.
 const WALK_SKIP: &[&str] = &[
     ".git",
     ".DS_Store",
@@ -357,12 +360,16 @@ const WALK_SKIP: &[&str] = &[
 
 /// What a directory walk found: the files kept (relative path with `/`
 /// separators, bytes), sorted by path, and the entries left out (a skipped
-/// directory as `<rel>/`, a file as `<rel>`), sorted.
+/// directory as `<rel>/`, a file as `<rel>`, a symlink as `<rel>` whatever it
+/// points at, with no trailing `/`), sorted.
 pub(crate) type Walked = (Vec<(String, Vec<u8>)>, Vec<String>);
 
 /// Walk the directory `dir` for a directory source (yaks-3da7), skipping
-/// only [`WALK_SKIP`] and reporting each entry skipped, so what was left out
-/// is never silent. The limits apply to what is kept: more than
+/// only [`WALK_SKIP`], symlinks and entries that are neither a file nor a
+/// directory (sockets, FIFOs), and reporting each entry skipped, so what was
+/// left out is never silent. A symlink is never followed or copied, to a file
+/// or a directory: its target may lie outside the tree (or be unreadable), and
+/// a snapshot must hold only what is under `dir`. The limits apply to what is kept: more than
 /// [`MAX_DIR_FILES`] files, or more than [`MAX_DIR_BYTES`] bytes in all, is an
 /// error. `yaks source add <dir>` and `yaks attach <dir>` share this walk.
 pub(crate) fn walk_dir(dir: &Path) -> Result<Walked> {
@@ -381,13 +388,18 @@ pub(crate) fn walk_dir(dir: &Path) -> Result<Walked> {
                 format!("{rel}/{name}")
             };
             let p = e.path();
+            // `DirEntry::file_type` does not follow a symlink (`Path::is_dir`
+            // and `is_file` do).
+            let ty = e
+                .file_type()
+                .with_context(|| format!("reading {}", p.display()))?;
             if WALK_SKIP.contains(&name.as_str()) {
-                skipped.push(if p.is_dir() { format!("{r}/") } else { r });
+                skipped.push(if ty.is_dir() { format!("{r}/") } else { r });
                 continue;
             }
-            if p.is_dir() {
+            if ty.is_dir() {
                 stack.push((r, p));
-            } else if p.is_file() {
+            } else if ty.is_file() {
                 out.push((r, std::fs::read(&p)?));
                 if out.len() > MAX_DIR_FILES {
                     bail!(
@@ -395,6 +407,9 @@ pub(crate) fn walk_dir(dir: &Path) -> Result<Walked> {
                         dir.display()
                     );
                 }
+            } else {
+                // A symlink, or a socket, FIFO or device.
+                skipped.push(r);
             }
         }
     }
@@ -608,23 +623,25 @@ impl Report {
         let (Some(n), false) = (self.dir_files, self.skipped.is_empty()) else {
             return String::new();
         };
-        const SHOWN: usize = 5;
-        let names = self
-            .skipped
-            .iter()
-            .take(SHOWN)
-            .cloned()
-            .collect::<Vec<_>>()
-            .join(", ");
-        let more = match self.skipped.len().saturating_sub(SHOWN) {
-            0 => String::new(),
-            m => format!(", and {m} more"),
-        };
-        format!(
-            " ({n} files; skipped {}: {names}{more})",
-            self.skipped.len()
-        )
+        format!(" ({n} files; {})", skipped_summary(&self.skipped))
     }
+}
+
+/// `skipped M: a, b, ...` (at most five named) for a walk's skipped list,
+/// the one wording `source add` and `attach` share.
+pub(crate) fn skipped_summary(skipped: &[String]) -> String {
+    const SHOWN: usize = 5;
+    let names = skipped
+        .iter()
+        .take(SHOWN)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(", ");
+    let more = match skipped.len().saturating_sub(SHOWN) {
+        0 => String::new(),
+        m => format!(", and {m} more"),
+    };
+    format!("skipped {}: {names}{more}", skipped.len())
 }
 
 /// `(existing, given)` when the request names a title other than the saved
@@ -1506,6 +1523,32 @@ mod tests {
         }
         let e = walk_dir(&proj).unwrap_err().to_string();
         assert!(e.contains("more than 200 files"), "{e}");
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn walk_dir_never_follows_a_symlink_and_lists_it_as_skipped() {
+        use std::os::unix::fs::symlink;
+        let base = tmp("walk-links");
+        let outside = base.join("outside");
+        std::fs::create_dir_all(outside.join("sub")).unwrap();
+        std::fs::write(outside.join("secret.txt"), "s").unwrap();
+        std::fs::write(outside.join("sub/deep.txt"), "d").unwrap();
+        let proj = base.join("proj");
+        std::fs::create_dir_all(proj.join("a")).unwrap();
+        std::fs::write(proj.join("a/real.txt"), "r").unwrap();
+        symlink(outside.join("secret.txt"), proj.join("a/file-link")).unwrap();
+        symlink(&outside, proj.join("dir-link")).unwrap();
+        symlink("/nonexistent-yaks-target", proj.join("dangling")).unwrap();
+        // A link named like a WALK_SKIP entry is reported once, as a link.
+        symlink(&outside, proj.join("node_modules")).unwrap();
+        let (files, skipped) = walk_dir(&proj).unwrap();
+        assert_eq!(files, [("a/real.txt".to_string(), b"r".to_vec())]);
+        assert_eq!(
+            skipped,
+            ["a/file-link", "dangling", "dir-link", "node_modules"]
+        );
         let _ = std::fs::remove_dir_all(&base);
     }
 

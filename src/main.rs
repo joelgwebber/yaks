@@ -294,8 +294,9 @@ enum Command {
     /// (`<id>/<dir>/...`), in one write, and one link names it
     /// (`[<dir>/](<id>/<dir>/)`). Attach a directory, never an archive. It
     /// uses a directory source's walk, skip list (`.git`, `node_modules`,
-    /// `target`, dot files, ...) and limits (200 files, 5 MiB), and refuses
-    /// over them, writing nothing. `--name` stores it under another directory
+    /// `target`, ...; dot files are kept) and limits (200 files, 5 MiB), and refuses
+    /// over them, writing nothing. A symlink is never followed or copied. What the
+    /// walk skipped is printed (`skipped 3: proj/.git/, proj/link, ...`). `--name` stores it under another directory
     /// name; `--caption` is for an image, not a directory.
     Attach {
         /// A yak id, or the farm path of a dok or session note.
@@ -2580,6 +2581,7 @@ fn main() -> Result<()> {
             }
             let mut files: Vec<(String, Vec<u8>)> = Vec::new();
             let mut any_dir = false;
+            let mut dir_skipped: Vec<String> = Vec::new();
             for path in &paths {
                 if path.is_dir() {
                     // A directory keeps its layout under its own name: the
@@ -2609,7 +2611,11 @@ fn main() -> Result<()> {
                         std::process::exit(1);
                     }
                     let inner = match sources::walk_dir(&abs) {
-                        Ok((f, _skipped)) => f,
+                        Ok((f, left_out)) => {
+                            dir_skipped
+                                .extend(left_out.into_iter().map(|s| format!("{stored}/{s}")));
+                            f
+                        }
                         Err(e) => {
                             eprintln!("error: {e}");
                             std::process::exit(1);
@@ -2617,7 +2623,7 @@ fn main() -> Result<()> {
                     };
                     if inner.is_empty() {
                         eprintln!(
-                            "error: {} holds no files to attach (.git, .DS_Store, node_modules, target and the like are skipped)",
+                            "error: {} holds no files to attach (.git, .DS_Store, node_modules, target, symlinks and the like are skipped)",
                             path.display()
                         );
                         std::process::exit(1);
@@ -2687,6 +2693,10 @@ fn main() -> Result<()> {
                     };
                     let linked = if no_link { ", not linked" } else { "" };
                     println!("attached {n} to {id} ({}{linked})", dir.display());
+                    // What a directory's walk left out, as `source add` says it.
+                    if !dir_skipped.is_empty() {
+                        println!("{}", sources::skipped_summary(&dir_skipped));
+                    }
                     if let Some(text) = note {
                         let actor = actor::resolve(as_actor.as_deref());
                         farm.update(

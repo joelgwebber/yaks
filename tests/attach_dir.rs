@@ -232,3 +232,31 @@ fn a_directory_with_nothing_to_store_and_a_caption_are_refused() {
     let err = f.fails(&["attach", &id, proj.to_str().unwrap(), "--caption", "c"]);
     assert!(err.contains("--caption"), "{err}");
 }
+
+/// A symlink in the directory (yaks-8218) is never followed or copied, to a
+/// file or a directory, and `attach` says it left each one out.
+#[cfg(unix)]
+#[test]
+fn a_symlink_in_a_directory_is_skipped_and_reported_not_followed() {
+    use std::os::unix::fs::symlink;
+    let f = Farm::new("links");
+    let id = f.yak();
+    let outside = f.dir.join("outside");
+    write(&outside.join("secret.txt"), "s");
+    write(&outside.join("sub/deep.txt"), "d");
+    let proj = f.dir.join("linked");
+    write(&proj.join("real.txt"), "r");
+    symlink(outside.join("secret.txt"), proj.join("file-link")).unwrap();
+    symlink(&outside, proj.join("dir-link")).unwrap();
+    symlink("/etc", proj.join("etc-link")).unwrap();
+
+    let out = f.run(&["attach", &id, proj.to_str().unwrap()]);
+    assert!(out.contains("attached linked/ (1 file) to"), "{out}");
+    assert!(
+        out.contains("skipped 3: linked/dir-link, linked/etc-link, linked/file-link"),
+        "{out}"
+    );
+    let yak_file = PathBuf::from(f.run(&["path", &id]).trim());
+    let dir = yak_file.with_extension("").join("linked");
+    assert_eq!(tree(&dir), ["real.txt"]);
+}
