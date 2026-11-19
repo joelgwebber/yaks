@@ -1,0 +1,266 @@
+=== frame 0 · 100x12 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+ yak-20ec p3 task     🦬 Solo yak
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 1 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+◂ Task: yak-20ec
+│
+│ Title:       Solo yak
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     1m ago
+│ Updated:     1m ago
+│ Tags:        -
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:d
+=== end ===
+=== frame 2 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+◂  🦬 yak-20ec  task     p3  Solo yak
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Type:        task
+│ Priority:    p3
+│ Created:     1m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ Attachments: 3 files
+→ yak-20ec/
+=== end ===
+=== frame 3 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+browsing yak/yaks/yak-20ec/
+◂ 📁 yak/yaks/yak-20ec/  3 files
+│ ▸ proj/
+│   notes.md                                                                                    8 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 4 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (1)   📖 Doks (1)   🛖 Sh
+starred /yak/yaks/yak-20ec/
+◂ 📁 yak/yaks/yak-20ec/  3 files
+│ ▸ proj/
+│   notes.md                                                                                    8 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 5 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (1)   📖 Doks (1)   🛖 Sh
+
+◂ 📁 yak/yaks/yak-20ec/  3 files
+│ ▸ proj/
+│   notes.md                                                                                    8 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 6 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (1)   📖 Doks (1)   🛖 Sh
+viewing yak/yaks/yak-20ec/notes.md
+◂ 📖 yak/yaks/yak-20ec/notes.md  markdown
+│ Notes
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo
+=== end ===
+=== frame 7 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+starred yak-20ec/notes.md
+◂ 📖 yak/yaks/yak-20ec/notes.md  markdown
+│ Notes
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo
+=== end ===
+=== frame 8 · 100x12 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=4 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+◂  🦬 yak-20ec  task     p3  Solo yak
+│ ─────────────────────────────────────────────────────────────────────────────────────────────────
+│ Type:        task
+│ Priority:    p3
+│ Created:     1m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ Attachments: 3 files
+→ yak-20ec/
+=== end ===
+=== frame 9 · 100x12 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+ yak-20ec p3 task     🦬 Solo yak
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 10 · 100x12 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+ yak-20ec p3 task     🦬 Solo yak
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 11 · 100x12 · focus=list · view=🪒 Shaving · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+No tasks.
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 12 · 100x12 · focus=list · view=🐑 Shorn · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+No tasks.
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 13 · 100x12 · focus=list · view=🕒 Recent · cursor=0 · rows=1 · sel=yak-20ec · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+ yak-20ec p3 task     🦬 Solo yak
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 14 · 100x12 · focus=list · view=⭐ Starred · cursor=0 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+ 📁 yak-20ec/  Solo yak                                                                           ⭐
+ 📎 notes.md  yak-20ec  Solo yak                                                                  ⭐
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
+=== frame 15 · 100x12 · focus=list · view=⭐ Starred · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+
+ 📁 yak-20ec/  Solo yak                                                                           ⭐
+ 📎 notes.md  yak-20ec  Solo yak                                                                  ⭐
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
+=== frame 16 · 100x12 · focus=detail · view=⭐ Starred · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+viewing yak-20ec/notes.md
+◂ 📎 yak-20ec/notes.md  markdown ⭐
+│ Notes
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo
+=== end ===
+=== frame 17 · 100x12 · focus=list · view=⭐ Starred · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (1)   🛖 Sh
+← Starred · yak-20ec/notes.md
+ 📁 yak-20ec/  Solo yak                                                                           ⭐
+ 📎 notes.md  yak-20ec  Solo yak                                                                  ⭐
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
+=== frame 18 · 100x12 · focus=list · view=⭐ Starred · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (1)   📖 Doks (1)   🛖 Sh
+unstarred yak-20ec/notes.md
+ 📁 yak-20ec/  Solo yak                                                                           ⭐
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
