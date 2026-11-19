@@ -1,11 +1,11 @@
 ---
 id: yaks-84fe
 title: 'Refactor: one container lister and one resolver for files, directories and subjects (open_place, links::dest)'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-19T01:32:15Z'
-updated: '2026-11-19T02:33:13Z'
+updated: '2026-11-19T02:33:14Z'
 tags:
 - links
 - tui
@@ -73,3 +73,9 @@ Evidence:
 - Docs: `docs/cli.md` (link table: farm directory row, `<id>/`; `peek` of a directory), `docs/tui.md` (the directory-link example was wrong for a dok's own sibling directory: now `x/sketches/`), `.agents/skills/yaks` Links. No CLI flag or TUI key changed.
 
 Fixes yaks-1d2b.
+
+#### 2026-11-19T02:33:14Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
