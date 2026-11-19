@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-19T01:32:15Z'
-updated: '2026-11-19T01:41:35Z'
+updated: '2026-11-19T01:41:45Z'
 tags:
 - links
 - tui
@@ -34,3 +34,9 @@ The existing TUI and links tests unchanged and green (they are the behavior cont
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-19T01:41:45Z
+
+*herd-files*
+
+Claim (yakherd `herd-files`): the coordinator does this one itself (shared design work everything else builds on). Running alongside: `symwalk-1` on yaks-8218, which touches only `sources::walk_dir`.
