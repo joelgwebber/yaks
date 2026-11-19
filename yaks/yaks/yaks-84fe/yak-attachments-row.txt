@@ -1,0 +1,36 @@
+=== frame 2 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7df3 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂  🦬 yak-7df3  task     p3  t
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Updated:     3h ago
+│ Tags:        -
+│
+│ Attachments: 2 files
+│ ── peek: yak-7df3/ ────────────────────────────────────────────────────────────────────
+│ d/
+│
+│
+│
+│
+│
+→ yak-7df3/
+=== end ===
+=== frame 3 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7df3 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+browsing yak/yaks/yak-7df3/
+◂ 📁 yak/yaks/yak-7df3/  2 files
+│ ▸ d/
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===

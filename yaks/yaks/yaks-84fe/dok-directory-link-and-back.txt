@@ -1,0 +1,64 @@
+=== frame 7 · 90x14 · focus=detail · view=📖 Doks · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · doks=1 · entry=doks/x.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📖 doks/x.md  note
+│ title:       X
+│ created:     2026-11-18T23:25:27Z
+│ Attachments: 2 files
+│ ── peek: doks/x/ ──────────────────────────────────────────────────────────────────────
+│ sketches/
+│
+│
+│
+│
+│
+→ doks/x/
+=== end ===
+=== frame 8 · 90x14 · focus=detail · view=📖 Doks · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · doks=1 · entry=doks/x.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📖 doks/x.md  note
+│
+│ See sketches and one and abs.
+│
+│ ── peek: doks/x/sketches/ ─────────────────────────────────────────────────────────────
+│ sub/
+│ a.txt
+│
+│
+│
+│
+→ doks/x/sketches/
+=== end ===
+=== frame 9 · 90x14 · focus=detail · view=📖 Doks · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · doks=1 · entry=doks/x.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+browsing doks/x/sketches/
+◂ 📁 doks/x/sketches/  2 files
+│ ▸ sub/
+│   a.txt                                                                             3 B
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 10 · 90x14 · focus=detail · view=📖 Doks · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · doks=1 · entry=doks/x.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+← Doks · doks/x.md
+◂ 📖 doks/x.md  note
+│
+│ See sketches and one and abs.
+│
+│ ── peek: doks/x/sketches/ ─────────────────────────────────────────────────────────────
+│ sub/
+│ a.txt
+│
+│
+│
+│
+→ doks/x/sketches/
+=== end ===
