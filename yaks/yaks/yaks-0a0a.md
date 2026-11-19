@@ -1,11 +1,11 @@
 ---
 id: yaks-0a0a
 title: 'MERGE_HEAD/CHERRY_PICK_HEAD checked as files: wrong on reftable repos (init.defaultrefformat=reftable)'
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-19T23:42:03Z'
-updated: '2026-11-19T23:52:18Z'
+updated: '2026-11-19T23:52:19Z'
 tags:
 - git
 - cli
@@ -38,3 +38,9 @@ Evidence:
 - New tests: `changes::tests::a_pending_cherry_pick_is_seen_in_either_ref_format`; `tests/autocommit.rs::commit_refuses_during_a_cherry_pick_in_either_ref_format`, a farm-branch run of `yaks commit` during a conflicting cherry-pick. With the old `changes.rs` it fails for reftable ("git commit failed ... the farm changes are staged, not committed").
 - Real run in a reftable scratch repo: the installed `973a47e1` binary left the farm changes staged under git's error; the new build refuses with yaks' own message.
 - Gate: `cargo test -p yaks` 1525 passed, 0 failed (with Joel's reftable default in `~/.gitconfig`); `cargo fmt --check` clean.
+
+#### 2026-11-19T23:52:19Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
