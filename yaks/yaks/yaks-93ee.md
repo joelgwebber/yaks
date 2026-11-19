@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T02:35:08Z'
+updated: '2026-11-19T02:35:33Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -102,3 +102,9 @@ Claim (yakherd `herd-files`). Owner: worker `archive-1` (Sonnet 5.5), on top of 
 *archive-1*
 
 Started: 2026-11-19T02:35Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-93ee.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/ynehkedbp6zv/yaks.
+
+#### 2026-11-19T02:35:33Z
+
+*herd-files*
+
+Batch note (herd-files), base 84ffb8b7: archive-1 on yaks-93ee (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-oJZIBxBCA0aLJyrhJPreUvVwLftHG); star-1 on yaks-4381 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-rxpIBxBCA0aLJyrhJPreUvVwLftHG). Earlier: symwalk-1 on yaks-8218 (claude-sonnet-5-5) landed 22b1c30d; yaks-84fe by herd-files (Opus) landed 84ffb8b7.
