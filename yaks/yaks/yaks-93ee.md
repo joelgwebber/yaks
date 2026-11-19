@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T02:35:33Z'
+updated: '2026-11-19T02:44:10Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -108,3 +108,11 @@ Started: 2026-11-19T02:35Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-
 *herd-files*
 
 Batch note (herd-files), base 84ffb8b7: archive-1 on yaks-93ee (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-oJZIBxBCA0aLJyrhJPreUvVwLftHG); star-1 on yaks-4381 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-rxpIBxBCA0aLJyrhJPreUvVwLftHG). Earlier: symwalk-1 on yaks-8218 (claude-sonnet-5-5) landed 22b1c30d; yaks-84fe by herd-files (Opus) landed 84ffb8b7.
+
+#### 2026-11-19T02:44:10Z
+
+*archive-1*
+
+Decision: deps added exactly as allowed: `zip 2.6.1` (default-features off, deflate-flate2), `tar 0.4.46`, `flate2 1` (already in tree via png). Newly locked crates: zip, tar, arbitrary, derive_arbitrary (zip's `arbitrary` dep, unconditional in 2.6; pulls proc-macro2/quote/syn already present), plus tar's `filetime`/`libc` already present. `cargo tree -e normal -i zip` shows only yaks; zip's own normal deps: crc32fast, indexmap, memchr (+ arbitrary, crossbeam-utils). I kept Cargo.lock to additions only (cargo's re-lock also bumped windows-sys pins; reverted that noise).
+
+Decision: a supported archive (.zip .tar .tar.gz .tgz) that opens as a valid archive resolves as a directory (`Place::FarmDir`) however it is linked, with or without a trailing `/`. Rejected: slash-only. Reason: `links::parse` drops the trailing `/` of an attachment name (`<id>/x.tgz/` == `<id>/x.tgz`), and parse/dest are out of scope; without this rule the archive's own top could not be named for history or `peek`. A corrupt/oversized/unsupported archive stays a plain file (the existing note).
