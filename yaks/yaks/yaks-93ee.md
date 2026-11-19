@@ -5,7 +5,9 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T01:29:59Z'
+updated: '2026-11-19T01:32:30Z'
+depends_on:
+- yaks-84fe
 tags:
 - tui
 - doks
