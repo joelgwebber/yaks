@@ -8798,7 +8798,7 @@ mod place_stars {
                 "t0/code.zip/src/lib.rs",
                 "\u{1f4c4}",
                 "lib.rs",
-                "code.zip/src",
+                "t0/code.zip/src  solo yak",
             ),
             (
                 "t0/code.tgz/doc",

@@ -256,12 +256,22 @@ impl App {
             }
             // A file inside an archive (yaks-93ee): a file, and where it
             // lives is the archive and the directory inside it.
+            // An archive attached to a yak reads like any attachment's file:
+            // `<id>/code.zip/src` and the yak's title.
             Place::Member { archive, inner, .. } => {
-                let (parent, name) = split(&format!("{archive}/{inner}"));
-                PlaceLabel {
-                    icon: file_icon(&name, FILE),
-                    whence: parent,
-                    name,
+                match links::parse(&format!("/{archive}"), links::From::Cli, is_yak) {
+                    Link::Attachment { id, name, .. } => {
+                        let icon = file_icon(&inner, FILE);
+                        in_yak(&id, &format!("{name}/{inner}"), false, icon)
+                    }
+                    _ => {
+                        let (parent, name) = split(&format!("{archive}/{inner}"));
+                        PlaceLabel {
+                            icon: file_icon(&name, FILE),
+                            whence: parent,
+                            name,
+                        }
+                    }
                 }
             }
             Place::FarmFile { rel, rev, .. } => {
