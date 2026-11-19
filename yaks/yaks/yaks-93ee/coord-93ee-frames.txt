@@ -1,0 +1,270 @@
+=== frame 0 · 90x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+ yak-0e4b p3 task     🦬 arch
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:de
+=== end ===
+=== frame 1 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ Task: yak-0e4b
+│
+│ Title:       arch
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ ── peek ───────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:co
+=== end ===
+=== frame 2 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂  🦬 yak-0e4b  task     p3  arch
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Updated:     just now
+│ Tags:        -
+│
+│ Attachments: 2 files
+│ ── peek: yak-0e4b/ ────────────────────────────────────────────────────────────────────
+│ code.tgz
+│ code.zip
+│
+│
+│
+│
+→ yak-0e4b/
+=== end ===
+=== frame 3 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+browsing yak/yaks/yak-0e4b/
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▸ code.tgz                                                              archive · 534 B
+│ ▸ code.zip                                                              archive · 638 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 4 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▸ code.zip                                                              archive · 638 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 5 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▸ code.zip                                                              archive · 638 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 6 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▸ code.zip                                                              archive · 638 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 7 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▸ src/
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 8 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▸ src/
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 9 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▸ src/
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 10 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▸ src/
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 11 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▾ src/
+│       main.rs                                                                      34 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 12 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▾ src/
+│       main.rs                                                                      34 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 13 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+viewing yak/yaks/yak-0e4b/code.zip/src/main.rs
+◂ 📎 yak/yaks/yak-0e4b/code.zip/src/main.rs  text
+│ fn main() {
+│     println!("hi");
+│ }
+│
+│
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out
+=== end ===
+=== frame 14 · 90x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-0e4b · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+← Hairy · yak/yaks/yak-0e4b/
+◂ 📁 yak/yaks/yak-0e4b/  2 files
+│ ▾ code.tgz                                                              archive · 534 B
+│   ▸ proj/
+│ ▾ code.zip                                                              archive · 638 B
+│   ▸ doc/
+│   ▾ src/
+│       main.rs                                                                      34 B
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
