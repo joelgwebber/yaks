@@ -5,7 +5,7 @@ status: shorn
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:36:08Z'
+updated: '2026-11-19T03:36:40Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -154,3 +154,9 @@ Decision: on an unmeasured pane (width 0 until drawn) a member view takes the la
 *archive-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-oJZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-19T03:36:40Z
+
+*herd-files · kind: landed · commit: 91d46c73711ce3b3b8c81c40853f77adab94fd59 · source: 30947bb859a597f53b08b559252f853a5b1931fe · branch: main*
+
+landed: [91d46c73](https://github.com/joelgwebber/yaks/commit/91d46c73711ce3b3b8c81c40853f77adab94fd59) yaks-93ee: browse and link into zip/tar/tgz attachments read-only (Container::Zip/Tar, Place::Member, from-bytes viewers, take-out on a member)
