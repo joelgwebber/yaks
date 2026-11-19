@@ -1,11 +1,11 @@
 ---
 id: yaks-93ee
 title: Browse and link into archive attachments (zip, tar.gz) read-only
-status: shaving
+status: shorn
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:36:01Z'
+updated: '2026-11-19T03:36:08Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -148,3 +148,9 @@ Real runs (release binary, scratch farm): `peek <id>/x.tgz/`, `peek <id>/x.zip/s
 Decision: `Entry.archive` flag (archive rows are `is_dir && archive`): the tree folds them, but `count_files`, `listing` and the take-out treat an archive as ONE file. Rejected: a separate `Entry` kind (every lister caller would match on it).
 
 Decision: on an unmeasured pane (width 0 until drawn) a member view takes the last drawn pane width (`App::detail_width`) so `#L2` lands on the right row; plain-text members count `#L` over non-continuation rows. Rejected: leaving it (row 10 on a per-column wrap).
+
+#### 2026-11-19T03:36:08Z
+
+*archive-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG-oJZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
