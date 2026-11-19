@@ -1,11 +1,11 @@
 ---
 id: yaks-0a0a
 title: 'MERGE_HEAD/CHERRY_PICK_HEAD checked as files: wrong on reftable repos (init.defaultrefformat=reftable)'
-status: hairy
+status: shaving
 type: bug
 priority: 2
 created: '2026-11-19T23:42:03Z'
-updated: '2026-11-19T23:42:03Z'
+updated: '2026-11-19T23:42:09Z'
 tags:
 - git
 - cli
@@ -17,3 +17,9 @@ Found while gating yaks-b4d7 (herd-files). Since `~/.gitconfig` gained `init.def
 - **Tests:** `land::tests::a_conflicting_merge_falls_back_to_cherry_pick_and_names_the_files` fails today (it asserts `.git/CHERRY_PICK_HEAD` exists); `land.rs` (MERGE_HEAD setup asserts) and `commit.rs` assert the same files and pass only by luck of order or file format. Make them ask git, and make test repos explicit about the ref format or test both.
 
 Repro: `git init` (with reftable default), make a conflicting cherry-pick: `git rev-parse --verify CHERRY_PICK_HEAD` succeeds, `ls .git/CHERRY_PICK_HEAD` fails.
+
+#### 2026-11-19T23:42:09Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
