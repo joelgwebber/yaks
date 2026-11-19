@@ -353,6 +353,26 @@ fn entry_row(
     Line::from(spans)
 }
 
+/// One starred place's list row (yaks-4381): an icon for its kind, the name,
+/// then where it lives dimmed, padded to the full width so the cursor
+/// highlight spans the row, and the star the yak and dok rows end in.
+pub(crate) fn place_item(label: &super::actions::PlaceLabel, width: u16) -> ListItem<'static> {
+    let name = truncate_disp(&label.name, (width as usize / 2).max(8));
+    let mut spans = vec![
+        Span::raw(" "),
+        Span::raw(label.icon),
+        Span::raw(" "),
+        Span::styled(name.clone(), Style::new().add_modifier(Modifier::BOLD)),
+        Span::raw("  "),
+    ];
+    let used: usize = spans.iter().map(|sp| disp_width(&sp.content)).sum();
+    let star = " \u{2b50}";
+    let room = (width as usize).saturating_sub(used + disp_width(star));
+    spans.push(Span::styled(pad(&label.whence, room), dim()));
+    spans.push(Span::raw(star));
+    ListItem::new(Line::from(spans))
+}
+
 /// What the Doks view's list says instead of rows: why the read failed, or
 /// that nothing is there or nothing matches. `None` when there are rows.
 pub(crate) fn doks_notice(app: &App, no_rows: bool) -> Option<Paragraph<'static>> {
@@ -1067,6 +1087,7 @@ mod tests {
                 tree::Item::Yak(t) => t.id.clone(),
                 tree::Item::Doc(e) => e.path.clone(),
                 tree::Item::Shed(s) => s.name.clone(),
+                tree::Item::Place(d) => d.to_string(),
             })
             .collect()
     }
@@ -1079,7 +1100,7 @@ mod tests {
         assert!(app.is_starred("doks/howto/release.md"));
         assert_eq!(
             app.notification.as_deref(),
-            Some("starred doks/howto/release.md")
+            Some("starred /doks/howto/release.md")
         );
         // Yaks first, then doks: star the yak after the dok.
         let doks = app.view;
@@ -1114,16 +1135,53 @@ mod tests {
     }
 
     #[test]
-    fn a_source_or_session_note_cannot_be_starred() {
+    fn a_source_and_a_session_note_can_be_starred() {
         let mut app = on_doks_unpersisted();
         press(&mut app, "G"); // the session note
         assert_eq!(app.selected_doc().unwrap().group, DocGroup::Session);
         press(&mut app, "*");
-        assert!(app.working_set.is_empty());
+        let session = app.selected_doc().unwrap().path.clone();
+        assert_eq!(app.working_set, [format!("/{session}")]);
+        assert_eq!(app.notification, Some(format!("starred /{session}")));
+        press(&mut app, "k"); // the source above it
+        assert_eq!(app.selected_doc().unwrap().group, DocGroup::Source);
+        press(&mut app, "*");
+        let source = app.selected_doc().unwrap().path.clone();
         assert_eq!(
-            app.notification.as_deref(),
-            Some("only a yak or a dok can be starred")
+            app.working_set,
+            [format!("/{session}"), format!("/{source}")]
         );
+        // Both list in Starred, as document rows.
+        assert_eq!(
+            starred_view_paths(&mut app),
+            [session.clone(), source.clone()]
+        );
+        // `*` on the Starred row unstars it.
+        press(&mut app, "*");
+        assert_eq!(app.working_set, [format!("/{source}")]);
+    }
+
+    #[test]
+    fn a_legacy_working_set_entry_is_the_same_star_as_its_destination() {
+        let mut app = on_doks_unpersisted();
+        // The file an older yaks wrote: a bare farm path.
+        app.set_working_set(vec![
+            "doks/howto/release.md".into(),
+            "/doks/howto/release.md".into(),
+        ]);
+        assert_eq!(app.working_set, ["/doks/howto/release.md"], "one star");
+        assert!(app.is_starred("doks/howto/release.md"));
+        assert_eq!(starred_view_paths(&mut app), ["doks/howto/release.md"]);
+        // `*` on the dok unstars that star (it does not add a second).
+        let i = app
+            .views
+            .iter()
+            .position(|v| v.key == view::DOKS_KEY)
+            .unwrap();
+        app.set_view(i);
+        assert_eq!(app.selected_doc().unwrap().path, "doks/howto/release.md");
+        press(&mut app, "*");
+        assert!(app.working_set.is_empty());
     }
 
     #[test]

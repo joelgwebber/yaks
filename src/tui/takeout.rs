@@ -313,8 +313,22 @@ impl App {
         }))
     }
 
-    /// The list's row: a dok or source, or a yak.
+    /// The list's row: a dok or source, a starred place, or a yak.
     fn row_subject(&self) -> Option<Result<TakeOut, String>> {
+        if let Some(dest) = self.selected_place() {
+            let place = self.place_of_dest(&dest);
+            if let Place::Missing(why) = &place {
+                return Some(Err(why.clone()));
+            }
+            let label = Space::link(&place)
+                .map(|l| links::label(&l))
+                .unwrap_or(dest);
+            return Some(Ok(TakeOut {
+                line: anchor_line(&place),
+                place,
+                label,
+            }));
+        }
         if let Some(e) = self.selected_doc() {
             return Some(Ok(TakeOut {
                 place: Place::FarmFile {

@@ -13,7 +13,7 @@ interchangeable.
   the overdue ones lead; unpinned, from the view picker, `` ` ``), **All**
   (every yak, dead ones too, then every dok,
   source and session note; unpinned, from the view picker, `` ` ``) and
-  **Starred** (the yaks and doks you starred with `*`, yaks first); you can save the current filter as a named view. The
+  **Starred** (what you starred with `*`: yaks, then doks, then other files, directories and commits, see [Starred](#starred)); you can save the current filter as a named view. The
   **Doks** tab lists the farm's doks, sources and session notes (see [Doks tab](#doks-tab)),
   and the **Sheds** tab is a tree of the farm's workers (actors) with the yaks
   each one touched (see [Sheds tab](#sheds-tab)).
@@ -177,7 +177,7 @@ a character).
 | `m` | Mark / unmark row (multi-select) |
 | `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
 | `` ` `` / `V` | View picker / save filter as a view |
-| `*` | Star / unstar the yak, or the dok on a document row or open in the viewer (Starred view) |
+| `*` | Star / unstar what the pane shows (any file, image, directory or commit), else the yak or the document row under the cursor, else a Starred place row (see [Starred](#starred)) |
 | `W` | Commit the farm (`yaks commit`; also in the detail pane). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
 | `U` | Sync the farm (`yaks sync`: commit, pull, push; also in the detail pane). Shows `syncing…` while it runs (it touches the network, so the TUI waits; the interval sync does the same in the background), then the sync report's last line, or the error |
 
@@ -430,7 +430,7 @@ and a document row has its own keys (the yak keys do nothing there):
 | `/` | Search every view (a dok's body and a source's text too); `Esc` clears it |
 | `E` | Edit the dok in place (also `E` in its viewer): frontmatter and body in one editor, `Ctrl-S` saves |
 | `c` | New dok: type its path, then write its body (`C` does nothing here) |
-| `*` | Star / unstar the dok (also `*` in its viewer); a source or session note cannot be starred |
+| `*` | Star / unstar the dok, source or session note (also `*` in its viewer) |
 | `y` | Copy the path (also `y` in its viewer with nothing selected, as a yak's pane copies its id; `v` then `y` copies lines) |
 | `Ctrl-R` | Reread the doks now |
 
@@ -988,12 +988,9 @@ dok list`, `yaks source list` and `yaks session list` read).
   folder.
 - **The tab count** is the number of doks (sources and session notes are not
   counted) the query keeps.
-- **`*` stars the dok** (also with it open in the viewer), as it stars a yak:
-  a ⭐ ends the row and shows in the viewer's header, and the **Starred** view
-  lists starred doks after starred yaks (`Enter` opens one). The star is kept
-  per user in the same file as a yak's, under the dok's farm path
-  (`doks/...`), which is never a yak id; a dok that moved or was deleted is
-  skipped.
+- **`*` stars the dok, source or session note** (also with it open in the
+  viewer): a ⭐ ends the row and shows in the viewer's header, and the
+  **Starred** view lists it (see [Starred](#starred)).
 - **`Enter` opens the dok** in the text viewer, next to the list (a jump:
   `o` closes it again, back on its row). Its
   frontmatter shows as field rows (`type:`, `title:`, `tags:`, ...) above the
@@ -1035,6 +1032,31 @@ dok list`, `yaks source list` and `yaks session list` read).
 ![yaks TUI Doks tab](assets/tui-doks.svg)
 
 ![yaks TUI Doks tab with a dok open](assets/tui-doks-dok.svg)
+
+## Starred
+
+`*` stars **whatever the pane shows**: a text file (a dok, a source, an
+attachment, a file inside an attached directory, a code file), an image, a
+directory (in the directory view) or a commit (in the commit view). With nothing
+open in the pane it stars the yak under the cursor, or the document row (a dok,
+a source or a session note) on the Doks tab; on a Starred row it unstars it.
+A star is a **link destination**, the name the history and the links use
+(`yaks-1a2b`, `/doks/x.md`, `t0/proj/src/a.rs`, `t0/proj/`, `code:src/a.rs@<sha>`,
+`commit:<sha>`), kept per user in `working_set.json` (a yak is its bare id). A
+file written by an older yaks (`doks/x.md`) is read as the same star, so it
+needs no migration.
+
+The **Starred** view lists yaks first, then documents, then every other place,
+each in the order you starred them. A yak and a document keep their own rows. Any
+other star is one generic row: an icon for its kind (📎 an attachment, 🖼 an
+image, 📁 a directory, 📄 a file, 🔀 a commit), the file's name, then dim where it
+lives (the yak's id and title for an attachment, the directory for a farm file,
+`code:<dir>` for a code file, `commit:` for a commit). `Enter` opens it as a
+followed link does (a jump: `o` comes back), `*` unstars it, `O` takes it out
+(its file's menu), and `/` filters the list by name. A star that no longer
+resolves (a deleted file, a gone yak or dok) is skipped; a commit or code file
+is not looked up when the list is drawn (that is a git call per row), so opening
+one that is gone says so.
 
 ## Sheds tab
 

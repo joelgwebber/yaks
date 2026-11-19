@@ -6,35 +6,73 @@
 
 use super::*;
 
+/// What a star in the working set names now (see [`App::resolve_star`]).
+pub(crate) enum Star<'a> {
+    Yak(&'a Task),
+    /// A dok, a source or a session note.
+    Doc(&'a doks_tab::DoksEntry),
+    /// Anything else the pane can show, by its link destination.
+    Place(&'a str),
+}
+
+/// A starred place's list row ([`App::place_label`]).
+pub(crate) struct PlaceLabel {
+    pub icon: &'static str,
+    pub name: String,
+    pub whence: String,
+}
+
 impl App {
-    /// What `*` stars: the open document (the viewer has the keys), else the
-    /// selected yak, else the selected dok row. `Err` says why there is
-    /// nothing to star: only a yak or a dok can be (not a source, a session
-    /// note, an attachment or a shed).
+    /// A star's one name, its canonical link destination
+    /// ([`views_store::star_key`]).
+    pub(crate) fn star_key(&self, star: &str) -> String {
+        views_store::star_key(star, |id| self.task(id).is_some())
+    }
+
+    /// Replace the working set with `stars`, each as [`App::star_key`] names
+    /// it (a stored `doks/x.md` is the star `/doks/x.md`; a star listed twice
+    /// is one). Every read of the set compares canonical keys.
+    pub(crate) fn set_working_set(&mut self, stars: Vec<String>) {
+        self.working_set = views_store::canonical_set(stars, |id| self.task(id).is_some());
+    }
+
+    /// What `*` stars, as a star key: what the pane shows when it shows a
+    /// document (a file, an image, a directory, a commit: its link
+    /// destination), else the selected yak, else the selected row (a dok, a
+    /// source or session note, a starred place). `Err` says why there is
+    /// nothing to star; "nothing to star" is not worth a notification.
     fn star_target(&self) -> Result<String, &'static str> {
-        if let Some(v) = self.attach() {
-            return if crate::doks::is_dok_path(&v.target) {
-                Ok(v.target.clone())
-            } else {
-                Err("only a yak or a dok can be starred")
-            };
+        if let Some(pane) = &self.doc {
+            return self
+                .doc_link(&pane.view)
+                .and_then(|l| crate::links::dest(&l))
+                .map(|d| self.star_key(&d))
+                .ok_or("this document has no name to star");
         }
         if let Some(id) = self.selected_id() {
             return Ok(id);
         }
-        match self.selected_doc() {
-            Some(e) if e.group == DocGroup::Dok => Ok(e.path.clone()),
-            Some(_) => Err("only a yak or a dok can be starred"),
-            None => Err("nothing to star"),
+        match self.selected_row() {
+            Some(tree::Item::Doc(e)) => {
+                let link = crate::links::Link::Farm {
+                    path: e.path.clone(),
+                    rev: None,
+                    anchor: None,
+                };
+                let dest = crate::links::dest(&link).unwrap_or_else(|| e.path.clone());
+                Ok(self.star_key(&dest))
+            }
+            Some(tree::Item::Place(dest)) => Ok(dest.to_string()),
+            Some(tree::Item::Yak(_) | tree::Item::Shed(_)) | None => Err("nothing to star"),
         }
     }
 
-    /// `*`: star or unstar a yak (by id) or a dok (by its farm path, which
-    /// never collides with an id) in the one working set the Starred view
-    /// lists.
+    /// `*`: star or unstar the pane's subject, or the selected row's, in the
+    /// one working set the Starred view lists. A star is a link destination
+    /// (a yak is its bare id).
     pub(crate) fn toggle_star(&mut self) {
-        let id = match self.star_target() {
-            Ok(id) => id,
+        let key = match self.star_target() {
+            Ok(key) => key,
             Err(why) => {
                 // A yak command with no yak under the cursor stays silent
                 // (the Doks tab's yak keys do nothing).
@@ -44,8 +82,8 @@ impl App {
                 return;
             }
         };
-        let was = self.is_starred(&id);
-        self.working_set = views_store::toggle_working_set(&self.working_set, &id);
+        let was = self.is_starred(&key);
+        self.working_set = views_store::toggle_working_set(&self.working_set, &key);
         if let Some(h) = &self.farm {
             views_store::save_working_set(h.root(), &self.working_set);
         }
@@ -53,14 +91,199 @@ impl App {
             self.clamp_cursor();
         }
         self.notification = Some(if was {
-            format!("unstarred {id}")
+            format!("unstarred {key}")
         } else {
-            format!("starred {id}")
+            format!("starred {key}")
         });
     }
 
-    pub(crate) fn is_starred(&self, id: &str) -> bool {
-        self.working_set.iter().any(|i| i == id)
+    /// Whether `star` (a yak id or a link destination, in any spelling
+    /// [`App::star_key`] reads) is starred.
+    pub(crate) fn is_starred(&self, star: &str) -> bool {
+        let key = self.star_key(star);
+        self.working_set.iter().any(|s| *s == key)
+    }
+
+    /// What star `star` names now, for the Starred list; `None` when it no
+    /// longer resolves (a gone yak, a deleted file or attachment). A commit
+    /// and a code file are not looked up (that is a git call per frame): they
+    /// stay listed, and opening one says what is missing.
+    pub(crate) fn resolve_star<'a>(&'a self, star: &'a str) -> Option<Star<'a>> {
+        use crate::links::{self, Link};
+        use crate::locate::{Place, Space};
+        if let Some(t) = self.task(star) {
+            return Some(Star::Yak(t));
+        }
+        // A bare token that is no yak is a yak that is gone.
+        if !star.contains(['/', ':']) {
+            return None;
+        }
+        let link = links::parse(star, links::From::Cli, |s| self.task(s).is_some());
+        if let Link::Farm {
+            path, rev: None, ..
+        } = &link
+        {
+            let rel = crate::locate::farm_file(path);
+            let entry = self.doks.entries.iter().flatten().find(|e| e.path == *rel);
+            if let Some(e) = entry {
+                return Some(Star::Doc(e));
+            }
+        }
+        let root = self.farm.as_ref()?.root();
+        let place = Space::new(root, None).resolve(&link);
+        let there = match &place {
+            // Resolving a directory looked at the disk.
+            Place::FarmDir { .. } | Place::CodeFile { .. } | Place::Commit { .. } => true,
+            Place::FarmFile { rel, rev: None, .. } => root.join(rel).is_file(),
+            Place::FarmFile { rev: Some(_), .. } => true,
+            Place::Attachment { id, name, .. } => {
+                crate::farm::attachment_path(root, id, name).is_some_and(|p| p.is_file())
+            }
+            Place::Yak { .. } | Place::Url(_) | Place::Missing(_) => false,
+        };
+        there.then_some(Star::Place(star))
+    }
+
+    /// The starred place under the cursor (a Starred row of a file,
+    /// directory, code file or commit), by its link destination.
+    pub(crate) fn selected_place(&self) -> Option<String> {
+        match self.selected_row()? {
+            tree::Item::Place(dest) => Some(dest.to_string()),
+            _ => None,
+        }
+    }
+
+    /// Enter on a starred place: open what it names, a jump (`o` comes back).
+    pub(crate) fn open_selected_place(&mut self) {
+        if let Some(dest) = self.selected_place() {
+            let place = self.place_of_dest(&dest);
+            self.open_place(&place);
+        }
+    }
+
+    /// How a starred place reads in the list: an icon for its kind, its
+    /// name, and where it lives.
+    pub(crate) fn place_label(&self, dest: &str) -> PlaceLabel {
+        use crate::links::{self, Link};
+        use crate::locate::{Place, Space};
+        const FILE: &str = "\u{1f4c4}";
+        const PAPERCLIP: &str = "\u{1f4ce}";
+        const IMAGE: &str = "\u{1f5bc}";
+        const FOLDER: &str = "\u{1f4c1}";
+        const COMMIT: &str = "\u{1f500}";
+        let is_yak = |s: &str| self.task(s).is_some();
+        let unknown = || PlaceLabel {
+            icon: PAPERCLIP,
+            name: dest.to_string(),
+            whence: String::new(),
+        };
+        let Some(root) = self.farm.as_ref().map(|f| f.root()) else {
+            return unknown();
+        };
+        // `dir/name` as (`dir`, `name`).
+        let split = |p: &str| match p.trim_end_matches('/').rsplit_once('/') {
+            Some((d, n)) => (d.to_string(), n.to_string()),
+            None => (String::new(), p.trim_end_matches('/').to_string()),
+        };
+        // Something inside yak `id`'s attachments: `<id>/<inner>`, then the
+        // yak's title.
+        let in_yak = |id: &str, inner: &str, dir: bool, icon: &'static str| {
+            let full = if inner.is_empty() {
+                id.to_string()
+            } else {
+                format!("{id}/{inner}")
+            };
+            let (parent, name) = split(&full);
+            let title = self.task(id).map(|t| t.title.as_str()).unwrap_or("");
+            let whence = match (parent.is_empty(), title.is_empty()) {
+                (true, _) => title.to_string(),
+                (false, true) => parent,
+                (false, false) => format!("{parent}  {title}"),
+            };
+            PlaceLabel {
+                icon,
+                name: if dir { format!("{name}/") } else { name },
+                whence,
+            }
+        };
+        let file_icon = |name: &str, other: &'static str| {
+            if crate::store::is_image_name(name) {
+                IMAGE
+            } else {
+                other
+            }
+        };
+        let place = Space::new(root, None).resolve(&links::parse(dest, links::From::Cli, is_yak));
+        match place {
+            Place::Attachment { id, name, .. } => {
+                // A file of the yak itself is an attachment (📎); one inside an
+                // attached directory is a file (📄).
+                let icon = file_icon(&name, if name.contains('/') { FILE } else { PAPERCLIP });
+                in_yak(&id, &name, false, icon)
+            }
+            Place::FarmDir { rel } => {
+                // A yak's attachment directory, or a directory in it.
+                match links::parse(&format!("/{rel}"), links::From::Cli, is_yak) {
+                    Link::Attachment { id, name, .. } => {
+                        in_yak(&id, name.trim_end_matches('/'), true, FOLDER)
+                    }
+                    // The yak's whole attachment directory, `<herd>/yaks/<id>`.
+                    _ if rel
+                        .split('/')
+                        .nth(2)
+                        .is_some_and(|id| rel.split('/').count() == 3 && is_yak(id)) =>
+                    {
+                        let id = rel.split('/').nth(2).unwrap_or_default();
+                        in_yak(id, "", true, FOLDER)
+                    }
+                    _ => {
+                        let (parent, name) = split(&rel);
+                        PlaceLabel {
+                            icon: FOLDER,
+                            name: format!("{name}/"),
+                            whence: if parent.is_empty() {
+                                "/".into()
+                            } else {
+                                parent
+                            },
+                        }
+                    }
+                }
+            }
+            Place::FarmFile { rel, rev, .. } => {
+                let (parent, name) = split(&rel);
+                let pin = rev.map(|r| format!("@{}", &r[..r.len().min(7)]));
+                PlaceLabel {
+                    icon: file_icon(&name, FILE),
+                    whence: format!(
+                        "{}{}",
+                        if parent.is_empty() { "/" } else { &parent },
+                        pin.unwrap_or_default()
+                    ),
+                    name,
+                }
+            }
+            Place::CodeFile { rel, rev, .. } => {
+                let (parent, name) = split(&rel);
+                let pin = rev.map(|r| format!("@{}", &r[..r.len().min(7)]));
+                PlaceLabel {
+                    icon: file_icon(&name, FILE),
+                    whence: format!(
+                        "code:{}{}{}",
+                        parent,
+                        if parent.is_empty() { "" } else { "/" },
+                        pin.unwrap_or_default()
+                    ),
+                    name,
+                }
+            }
+            Place::Commit { sha } => PlaceLabel {
+                icon: COMMIT,
+                name: sha[..sha.len().min(7)].to_string(),
+                whence: "commit:".into(),
+            },
+            Place::Yak { .. } | Place::Url(_) | Place::Missing(_) => unknown(),
+        }
     }
 
     pub(crate) fn save_current_view(&mut self, name: String) {

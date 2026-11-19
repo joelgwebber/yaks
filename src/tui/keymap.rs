@@ -366,7 +366,7 @@ struct Section {
 }
 
 /// The `?` overlay's sections, in order. Every binding is in exactly one.
-const SECTIONS: [Section; 9] = [
+const SECTIONS: [Section; 10] = [
     Section {
         ctx: Ctx::List,
         kinds: &[None, Some(RowKind::Yak)],
@@ -401,6 +401,11 @@ const SECTIONS: [Section; 9] = [
         ctx: Ctx::List,
         kinds: &[Some(RowKind::Doc)],
         title: "Document rows (the Doks view: the farm's doks and sources)",
+    },
+    Section {
+        ctx: Ctx::List,
+        kinds: &[Some(RowKind::Place)],
+        title: "Starred places (the Starred view: a starred attachment, directory, code file or commit)",
     },
     Section {
         ctx: Ctx::List,
@@ -657,7 +662,7 @@ use Cmd::FarmSync;
 use Ctx::*;
 use Hint::None as NoHint;
 use KeyCode::{BackTab, Down, End, Enter, Esc, F, Home, Left, PageDown, PageUp, Right, Tab, Up};
-use tree::RowKind::{self, Doc, Shed, Yak};
+use tree::RowKind::{self, Doc, Place, Shed, Yak};
 
 /// The table. Within a context, the order is the order of the bottom hint
 /// and of the `?` overlay, so the hinted bindings keep their hint's order.
@@ -806,7 +811,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('}')], ViewNext, VIEW_PANE_NEXT, NoHint),
     bind(Viewer, &[c('{')], ViewPrev, VIEW_PANE_PREV, NoHint),
     bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok (the same flag as the yak pane's)", NoHint),
-    bind(Viewer, &[c('*')], YakStar, "Star / unstar the dok (Starred view)", NoHint),
+    bind(Viewer, &[c('*')], YakStar, "Star / unstar the file (Starred view)", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
     bind(Viewer, &[c('O')], TakeOut, TAKE_OUT_FILE, NoHint),
     bind(Viewer, &[c('#')], NavGoto, "Go to any yak by id / title (closes the dok)", NoHint),
@@ -828,6 +833,7 @@ static BINDINGS: &[Binding] = &[
     bind(Image, &[c('q'), ctrl('c')], AppQuit, "Quit", NoHint),
     bind(Image, &[c('o')], NavBack, "History back", NoHint),
     bind(Image, &[c('i')], NavForward, "History forward", NoHint),
+    bind(Image, &[c('*')], YakStar, "Star / unstar the image (Starred view)", NoHint),
     bind(Image, &[c('O')], TakeOut, TAKE_OUT_FILE, NoHint),
     bind(Image, &[c('#')], NavGoto, "Go to any yak by id / title (closes the image)", NoHint),
     bind(Image, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
@@ -851,6 +857,7 @@ static BINDINGS: &[Binding] = &[
     bind(Dir, &[c('l'), k(Right)], TreeRight, "Unfold the directory, else go to its first entry", NoHint),
     bind(Dir, &[c('h'), k(Left)], TreeLeft, "Fold the directory, else go to the directory that holds the row", NoHint),
     bind(Dir, &[c('y')], RowCopy, "Copy the row's farm path", hint("y:copy path")),
+    bind(Dir, &[c('*')], YakStar, "Star / unstar the directory (Starred view)", NoHint),
     bind(Dir, &[c('O')], TakeOut, TAKE_OUT_FILE, hint("O:take out")),
     bind(Dir, &[c('o')], NavBack, "History back", NoHint),
     bind(Dir, &[c('i')], NavForward, "History forward", hint("i/o:fwd/back")),
@@ -877,6 +884,7 @@ static BINDINGS: &[Binding] = &[
     bind(Commit, &[c('l'), k(Right)], TreeRight, "Unfold the file's diff", NoHint),
     bind(Commit, &[c('h'), k(Left)], TreeLeft, "Fold the diff, the cursor back on its file", NoHint),
     bind(Commit, &[c('y')], RowCopy, "Copy the commit hash", hint("y:copy hash")),
+    bind(Commit, &[c('*')], YakStar, "Star / unstar the commit (Starred view)", NoHint),
     bind(Commit, &[c('O')], TakeOut, TAKE_OUT_COMMIT, hint("O:take out")),
     bind(Commit, &[c('o')], NavBack, "History back", NoHint),
     bind(Commit, &[c('i')], NavForward, "History forward", hint("i/o:fwd/back")),
@@ -895,13 +903,25 @@ static BINDINGS: &[Binding] = &[
     bind_row(Doc, &[c('E')], DokEdit, "Edit the dok: frontmatter (YAML) and body; Ctrl-S saves", hint("E:edit")),
     bind_row(Doc, &[c('c')], DokNew, "New dok: type its path (doks/... or <herd>/doks/...), then its body", hint("c:new dok")),
     bind_row(Doc, &[c('/'), ctrl('f')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
-    bind_row(Doc, &[c('*')], YakStar, "Star / unstar the dok (Starred view)", NoHint),
+    bind_row(Doc, &[c('*')], YakStar, "Star / unstar the document (Starred view)", NoHint),
     bind_row(Doc, &[c('y')], RowCopy, "Copy the path", hint("y:copy path")),
     bind_row(Doc, &[c('O')], TakeOut, TAKE_OUT_ROW, hint("O:take out")),
     bind_row(Doc, &[ctrl('r')], ListRefresh, "Reread the doks (also on any farm change)", NoHint),
     bind_row(Doc, &[c('`')], ViewPick, "", NoHint),
     bind_row(Doc, &[c('?'), k(F(1))], AppHelp, "", hint("?:help")),
     bind_row(Doc, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
+
+    // -- the list: starred place rows (the Starred view: an attachment, a
+    // -- directory, a code file or a commit). Its movement, view and farm keys
+    // -- are the list's; `` ` ``, `?` and `q` repeat theirs only so that the
+    // -- bottom hint is the place row's own.
+    bind_row(Place, &[k(Enter)], PaneOpen, "Open it: a file, directory or commit, as a followed link does (o goes back)", hint("Enter:open")),
+    bind_row(Place, &[c('/'), ctrl('f')], SearchOpen, "Search every view; Esc clears", hint("/:search")),
+    bind_row(Place, &[c('*')], YakStar, "Unstar it", NoHint),
+    bind_row(Place, &[c('O')], TakeOut, TAKE_OUT_ROW, hint("O:take out")),
+    bind_row(Place, &[c('`')], ViewPick, "", NoHint),
+    bind_row(Place, &[c('?'), k(F(1))], AppHelp, "", hint("?:help")),
+    bind_row(Place, &[c('q'), ctrl('c')], AppQuit, "", hint("q:quit")),
 
     // -- the list: shed rows (the Sheds view). A shed's yaks below it are yak
     // -- rows. Its movement and farm keys are the list's; `` ` ``, `?` and `q`
@@ -1445,9 +1465,18 @@ impl App {
     /// picks the target from `ctx`; the viewers run theirs themselves.
     pub(crate) fn run_cmd(&mut self, ctx: Ctx, cmd: Cmd) {
         // The global commands run as anywhere; the rest of a viewer's are its own.
+        // `*` stars the pane's subject on every surface ([`App::toggle_star`]).
         let global = matches!(
             cmd,
-            AppQuit | AppHelp | NavGoto | FarmCommit | FarmSync | ViewNext | ViewPrev | TakeOut
+            AppQuit
+                | AppHelp
+                | NavGoto
+                | FarmCommit
+                | FarmSync
+                | ViewNext
+                | ViewPrev
+                | TakeOut
+                | YakStar
         );
         match ctx {
             Ctx::Viewer if !global => return self.run_viewer_cmd(cmd),
@@ -1473,6 +1502,7 @@ impl App {
             TreeRight => self.tree_right(),
             PaneOpen => match ctx {
                 Ctx::List if self.selected_doc().is_some() => self.open_doks_entry(),
+                Ctx::List if self.selected_place().is_some() => self.open_selected_place(),
                 _ => self.open_detail_pane(),
             },
             PaneEnter => self.detail_enter(),
@@ -1618,6 +1648,7 @@ mod tests {
             Some(RowKind::Yak),
             Some(RowKind::Doc),
             Some(RowKind::Shed),
+            Some(RowKind::Place),
         ];
         for (ctx, kind) in Ctx::ALL.into_iter().flat_map(|c| kinds.map(|k| (c, k))) {
             let mut seen: Vec<(Key, Cmd)> = Vec::new();

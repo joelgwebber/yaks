@@ -256,6 +256,8 @@ impl App {
         } else if i == self.cursor && self.selected_doc().is_some() {
             // A document has no detail pane: the second click opens it.
             self.open_doks_entry();
+        } else if i == self.cursor && self.selected_place().is_some() {
+            self.open_selected_place();
         } else if i == self.cursor {
             self.open_detail_pane();
         } else {

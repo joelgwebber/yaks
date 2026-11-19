@@ -727,6 +727,7 @@ mod tests {
                 tree::Item::Shed(s) => format!("shed:{}", s.name),
                 tree::Item::Yak(t) => t.id.clone(),
                 tree::Item::Doc(e) => e.path.clone(),
+                tree::Item::Place(d) => d.to_string(),
             })
             .collect()
     }

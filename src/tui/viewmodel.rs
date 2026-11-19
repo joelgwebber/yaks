@@ -213,30 +213,35 @@ impl App {
     }
 
     /// Rows the starred working set resolves to, flat: the starred yaks in
-    /// star order, then the starred doks in star order (as the All view lists
-    /// documents after yaks). An entry that is neither a yak nor a dok of
-    /// this farm any more (deleted, moved) is skipped.
+    /// star order, then the starred documents (doks, sources, session notes),
+    /// then every other starred place (an attachment, a directory, a code
+    /// file, a commit), each in star order. A star that no longer resolves
+    /// (a deleted yak or file) is skipped.
     pub(crate) fn working_set_rows(&self) -> Vec<tree::Row<'_>> {
+        use actions::Star;
         let q = self.query.as_deref();
-        let yaks = self
+        let stars: Vec<Star<'_>> = self
             .working_set
             .iter()
-            .filter_map(|id| self.task(id))
-            .filter(|t| self.query_keeps(t))
-            .map(tree::Row::leaf);
-        let docs = self
-            .working_set
-            .iter()
-            .filter_map(|path| {
-                self.doks
-                    .entries
-                    .iter()
-                    .flatten()
-                    .find(|e| e.group == DocGroup::Dok && e.path == *path)
-            })
-            .filter(|e| q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)))
-            .map(tree::Row::doc);
-        yaks.chain(docs).collect()
+            .filter_map(|s| self.resolve_star(s))
+            .collect();
+        let yaks = stars.iter().filter_map(|s| match s {
+            Star::Yak(t) if self.query_keeps(t) => Some(tree::Row::leaf(t)),
+            _ => None,
+        });
+        let docs = stars.iter().filter_map(|s| match s {
+            Star::Doc(e) if q.is_none_or(|q| tree::query_matches(tree::Item::Doc(e), q)) => {
+                Some(tree::Row::doc(e))
+            }
+            _ => None,
+        });
+        let places = stars.iter().filter_map(|s| match s {
+            Star::Place(d) if q.is_none_or(|q| tree::query_matches(tree::Item::Place(d), q)) => {
+                Some(tree::Row::place(d))
+            }
+            _ => None,
+        });
+        yaks.chain(docs).chain(places).collect()
     }
 
     /// Flat, sorted rows for a sorted view (Recent / custom sorted).
@@ -459,6 +464,15 @@ impl App {
                 match self.read_farm_doc(&path, None) {
                     Ok(v) => {
                         self.show_doc(DocView::Text(v));
+                    }
+                    Err(msg) => self.notification = Some(msg),
+                }
+            }
+            Some(tree::Item::Place(dest)) => {
+                let place = self.place_of_dest(dest);
+                match self.read_place(&place) {
+                    Ok(v) => {
+                        self.show_doc(v);
                     }
                     Err(msg) => self.notification = Some(msg),
                 }

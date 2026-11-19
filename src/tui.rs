@@ -532,7 +532,7 @@ impl App {
         app.family_scope = ui.family;
         app.filter = clone_spec(&views[0].spec);
         app.views = views;
-        app.working_set = working_set;
+        app.set_working_set(working_set);
         app.farm = Some(farm);
         if !regrew.regrew.is_empty() {
             app.notification = Some(farmsync::regrew_notice(&regrew));

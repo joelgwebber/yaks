@@ -43,6 +43,9 @@ pub(crate) enum RowKey {
     Doc(String),
     /// A shed, by name.
     Shed(String),
+    /// A starred place (an attachment, a directory, a code file, a commit),
+    /// by its link destination.
+    Place(String),
 }
 
 impl RowKey {
@@ -51,13 +54,15 @@ impl RowKey {
             tree::Item::Yak(t) => RowKey::Yak(t.id.clone()),
             tree::Item::Doc(e) => RowKey::Doc(e.path.clone()),
             tree::Item::Shed(s) => RowKey::Shed(s.name.clone()),
+            tree::Item::Place(d) => RowKey::Place(d.to_string()),
         }
     }
 
-    /// What the notification calls it: the id, the path, the name.
+    /// What the notification calls it: the id, the path, the name, the
+    /// destination.
     fn label(&self) -> &str {
         match self {
-            RowKey::Yak(s) | RowKey::Doc(s) | RowKey::Shed(s) => s,
+            RowKey::Yak(s) | RowKey::Doc(s) | RowKey::Shed(s) | RowKey::Place(s) => s,
         }
     }
 }
@@ -337,6 +342,8 @@ impl App {
                 RowKey::Yak(id) => self.task(id).is_some_and(|t| t.status != Status::Dead),
                 RowKey::Doc(path) => self.doks.entries.iter().flatten().any(|e| e.path == *path),
                 RowKey::Shed(_) => false,
+                // Still starred, so only filtered out here.
+                RowKey::Place(dest) => self.is_starred(dest),
             };
             miss(key.label(), if there { "moved" } else { "gone" });
         }

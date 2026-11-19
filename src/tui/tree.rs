@@ -17,13 +17,16 @@ use crate::tui::doks_tab::DoksEntry;
 use crate::tui::view::FamilyScope;
 
 /// What a list row is (the design's "rows": /doks/design/tui-model.md#1-rows-and-views).
-/// A yak, a document (a dok or a saved source) or a shed (an actor on
-/// the Sheds view, with the yaks it touched below it).
+/// A yak, a document (a dok or a saved source), a shed (an actor on
+/// the Sheds view, with the yaks it touched below it) or a place: anything
+/// else a person can star (an attachment, a directory, a code file, a commit),
+/// named by its link destination (yaks-4381). Only the Starred view lists them.
 #[derive(Clone, Copy)]
 pub enum Item<'a> {
     Yak(&'a Task),
     Doc(&'a DoksEntry),
     Shed(&'a Shed),
+    Place(&'a str),
 }
 
 /// An [`Item`]'s kind, without the data: what a key binding names to apply to
@@ -33,6 +36,7 @@ pub enum RowKind {
     Yak,
     Doc,
     Shed,
+    Place,
 }
 
 impl Item<'_> {
@@ -41,6 +45,7 @@ impl Item<'_> {
             Item::Yak(_) => RowKind::Yak,
             Item::Doc(_) => RowKind::Doc,
             Item::Shed(_) => RowKind::Shed,
+            Item::Place(_) => RowKind::Place,
         }
     }
 }
@@ -52,7 +57,8 @@ impl Item<'_> {
 /// - a document: its title, path, kind and tags, and its text (a dok's file,
 ///   a source's file: [`DoksEntry::text`]);
 /// - a shed: its name. A shed also stays when a yak of it matches; that is the
-///   tree rule, applied where the shed's rows are built.
+///   tree rule, applied where the shed's rows are built;
+/// - a place: its link destination (which holds the file's name).
 pub fn query_matches(item: Item<'_>, q: &str) -> bool {
     let q = q.to_lowercase();
     let has = |s: &str| s.to_lowercase().contains(&q);
@@ -66,6 +72,7 @@ pub fn query_matches(item: Item<'_>, q: &str) -> bool {
                 || e.text.contains(&q)
         }
         Item::Shed(s) => has(&s.name),
+        Item::Place(dest) => has(&crate::links::percent_decode(dest)),
     }
 }
 
@@ -110,7 +117,7 @@ impl<'a> Row<'a> {
             Item::Yak(t) => Some(t.id.clone()),
             Item::Shed(s) if s.quiet() => Some(shed_open_key(&s.name)),
             Item::Shed(s) => Some(shed_collapse_key(&s.name)),
-            Item::Doc(_) => None,
+            Item::Doc(_) | Item::Place(_) => None,
         }
     }
 
@@ -146,6 +153,12 @@ impl<'a> Row<'a> {
     /// A depth-0, non-ghost, childless row for a document.
     pub fn doc(entry: &'a DoksEntry) -> Row<'a> {
         Row::of(Item::Doc(entry))
+    }
+
+    /// A depth-0, non-ghost, childless row for a starred place, by its link
+    /// destination.
+    pub fn place(dest: &'a str) -> Row<'a> {
+        Row::of(Item::Place(dest))
     }
 
     fn of(item: Item<'a>) -> Row<'a> {

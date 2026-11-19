@@ -342,16 +342,51 @@ pub fn can_unpin(views: &[View], i: usize) -> bool {
 
 // -- working set -------------------------------------------------------------
 
+/// A star's one name: its canonical link destination (yaks-4381). A yak is
+/// its bare id; anything else is what [`crate::links::dest`] writes for it
+/// (`/doks/x.md`, `t0/proj/src/a.rs`, `code:src/a.rs@<sha>`, `commit:<sha>`),
+/// so the legacy `doks/x.md` entry and a new `/doks/x.md` are one star.
+/// `is_yak` says which tokens are yak ids. A bare token (no `/`, no `:`) is
+/// kept as written: a yak id that is gone stays the id it was.
+pub fn star_key(star: &str, is_yak: impl Fn(&str) -> bool) -> String {
+    if !star.contains(['/', ':']) {
+        return star.to_string();
+    }
+    let link = crate::links::parse(star, crate::links::From::Cli, is_yak);
+    crate::links::dest(&link).unwrap_or_else(|| star.to_string())
+}
+
+/// The working set as stored; the app reads it through
+/// `App::set_working_set`, which makes each entry canonical ([`star_key`]).
 pub fn load_working_set(root: &Path) -> Vec<String> {
     load_working_set_at(&working_set_path(root))
 }
 
+/// Under `cargo test` nothing is written: a test that stars on a farm-backed
+/// app must not leave a file in the developer's config dir (the file's round
+/// trip is tested through [`save_working_set_at`]).
 pub fn save_working_set(root: &Path, ids: &[String]) {
+    #[cfg(not(test))]
     save_working_set_at(&working_set_path(root), ids);
+    #[cfg(test)]
+    let _ = (root, ids);
 }
 
-/// The working set's file holds yak ids and dok paths (`doks/...`) in one
-/// list: a path never collides with an id.
+/// `stars`, each as [`star_key`] names it, without repeats.
+pub fn canonical_set(stars: Vec<String>, is_yak: impl Fn(&str) -> bool) -> Vec<String> {
+    let mut out: Vec<String> = Vec::with_capacity(stars.len());
+    for s in stars {
+        let key = star_key(&s, &is_yak);
+        if !out.contains(&key) {
+            out.push(key);
+        }
+    }
+    out
+}
+
+/// The working set's file holds yak ids and link destinations (`/doks/x.md`,
+/// `t0/a.png`, ...) in one list; an old file's `doks/x.md` paths are read as
+/// the same destinations ([`star_key`]), so the file needs no migration.
 fn load_working_set_at(path: &Path) -> Vec<String> {
     let Ok(text) = fs::read_to_string(path) else {
         return vec![];
@@ -502,6 +537,30 @@ mod tests {
         save_working_set_at(&file, &ids);
         assert_eq!(load_working_set_at(&file), ids);
         let _ = fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_legacy_dok_path_and_its_destination_are_one_star() {
+        let is_yak = |s: &str| s == "yaks-0001";
+        assert_eq!(star_key("doks/x.md", is_yak), "/doks/x.md");
+        assert_eq!(star_key("/doks/x.md", is_yak), "/doks/x.md");
+        assert_eq!(star_key("yak/doks/b.md", is_yak), "/yak/doks/b.md");
+        assert_eq!(star_key("yaks-0001", is_yak), "yaks-0001");
+        // A yak that is gone keeps its id; the herd-file form is the yak.
+        assert_eq!(star_key("yaks-9999", is_yak), "yaks-9999");
+        assert_eq!(star_key("/yaks/yaks/yaks-0001.md", is_yak), "yaks-0001");
+        assert_eq!(
+            star_key("yaks-0001/proj/a.rs", is_yak),
+            "yaks-0001/proj/a.rs"
+        );
+        assert_eq!(star_key("code:src/a.rs", is_yak), "code:src/a.rs");
+        let set = canonical_set(
+            ["doks/x.md", "yaks-0001", "/doks/x.md"]
+                .map(String::from)
+                .to_vec(),
+            is_yak,
+        );
+        assert_eq!(set, ["/doks/x.md", "yaks-0001"]);
     }
 
     #[test]

@@ -25,13 +25,14 @@ use std::rc::Rc;
 use super::*;
 
 /// Where a cached row's item lives: a yak's index in this farm's tasks, a
-/// document's index in `App.doks.entries`, or a shed's index in the sheds
-/// snapshot.
+/// document's index in `App.doks.entries`, a shed's index in the sheds
+/// snapshot, or a starred place's index in `App.working_set`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(super) enum Loc {
     Home(usize),
     Doc(usize),
     Shed(usize),
+    Star(usize),
 }
 
 /// A `tree::Row` with its `Item` replaced by a [`Loc`].
@@ -212,6 +213,10 @@ impl App {
                     None => unreachable!("row shed {} is not in the snapshot", s.name),
                 }
             }
+            tree::Item::Place(d) => match self.working_set.iter().position(|s| s == d) {
+                Some(i) => Loc::Star(i),
+                None => unreachable!("row place {d} is not starred"),
+            },
         }
     }
 
@@ -224,6 +229,7 @@ impl App {
                 let snap = self.sheds.snapshot.as_ref();
                 tree::Item::Shed(&snap.expect("a shed row has a snapshot").sheds()[i])
             }
+            Loc::Star(i) => tree::Item::Place(&self.working_set[i]),
         }
     }
 

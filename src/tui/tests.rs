@@ -7199,6 +7199,7 @@ mod query {
                 tree::Item::Yak(t) => t.id.clone(),
                 tree::Item::Doc(e) => e.path.clone(),
                 tree::Item::Shed(s) => format!("shed:{}", s.name),
+                tree::Item::Place(d) => d.to_string(),
             })
             .collect()
     }
@@ -8697,6 +8698,227 @@ mod commit_view {
         press(&mut app, "e");
         assert!(matches!(app.overlay, Overlay::TakeOut(_)));
         esc_key(&mut app);
+        let _ = std::fs::remove_dir_all(proj);
+    }
+}
+
+// -- starring what the pane shows (yaks-4381) ----------------------------------
+
+mod place_stars {
+    use super::*;
+    use std::path::Path;
+    use std::process::Command;
+
+    fn git(dir: &Path, args: &[&str]) -> String {
+        let out = Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=Ada", "-c", "user.email=ada@example.com"])
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "git {args:?}: {out:?}");
+        String::from_utf8(out.stdout).unwrap().trim().to_string()
+    }
+
+    /// A farm (inside a git checkout with `src/a.rs`) whose yak `t0` has a
+    /// text attachment, an image, and an attached directory `proj/`.
+    /// Returns the checkout, the app and the commit's hash.
+    fn farm() -> (PathBuf, App, String) {
+        let mut t0 = task("t0", "solo yak", Status::Hairy, 3, None);
+        t0.body = "See [notes](t0/notes.md).".into();
+        let (proj, farm) = temp_farm(&[t0]);
+        farm.attach("t0", "notes.md", b"# Notes\n\nhello\n")
+            .unwrap();
+        farm.attach("t0", "shot.png", &two_tone_png(16, 16))
+            .unwrap();
+        let a = crate::store::artifact_dir(farm.root(), "t0");
+        for (rel, data) in [
+            ("proj/src/main.rs", "fn main() {}\n"),
+            ("proj/Cargo.toml", "x\n"),
+        ] {
+            let p = a.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, data).unwrap();
+        }
+        std::fs::create_dir_all(proj.join("src")).unwrap();
+        git(&proj, &["init", "-q", "-b", "main"]);
+        std::fs::write(proj.join("src/a.rs"), "fn a() {}\n").unwrap();
+        git(&proj, &["add", "src"]);
+        git(&proj, &["commit", "-q", "-m", "add a.rs"]);
+        let sha = git(&proj, &["rev-parse", "HEAD"]);
+        let app = App::with_farm(farm).unwrap();
+        (proj, app, sha)
+    }
+
+    fn starred_view(app: &mut App) {
+        let i = app
+            .views
+            .iter()
+            .position(|v| v.key == "working-set")
+            .unwrap();
+        app.set_view(i);
+    }
+
+    /// Open `dest` in the pane, star it with `*`, close the pane, and return
+    /// the Starred list's frame.
+    fn star(app: &mut App, dest: &str) -> String {
+        app.open_dest(dest);
+        assert!(app.doc.is_some(), "{dest} opened in the pane");
+        press(app, "*");
+        assert_eq!(app.notification, Some(format!("starred {dest}")));
+        esc_key(app);
+        assert!(app.doc.is_none());
+        starred_view(app);
+        draw(app, 100, 14)
+    }
+
+    #[test]
+    fn every_kind_of_place_stars_from_the_pane_lists_opens_and_unstars() {
+        let (proj, mut app, sha) = farm();
+        let commit = format!("commit:{sha}");
+        // (what is starred, the icon, the name, where it lives, what opens)
+        let cases: [(&str, &str, &str, &str); 6] = [
+            ("t0/notes.md", "\u{1f4ce}", "notes.md", "solo yak"),
+            ("t0/shot.png", "\u{1f5bc}", "shot.png", "solo yak"),
+            (
+                "t0/proj/src/main.rs",
+                "\u{1f4c4}",
+                "main.rs",
+                "t0/proj/src  solo yak",
+            ),
+            ("t0/proj/src", "\u{1f4c1}", "src/", "t0/proj  solo yak"),
+            ("code:src/a.rs", "\u{1f4c4}", "a.rs", "code:src"),
+            (&commit, "\u{1f500}", &sha[..7], "commit:"),
+        ];
+        for (dest, icon, name, whence) in cases {
+            app.working_set.clear();
+            let frame = star(&mut app, dest);
+            assert_eq!(app.working_set, [dest.to_string()]);
+            let row = frame
+                .lines()
+                .find(|l| l.contains(icon) && l.contains(name))
+                .unwrap_or_else(|| panic!("{dest}: no row with {icon} {name}:\n{frame}"));
+            assert!(row.contains(whence), "{dest}: {row}");
+            assert!(row.contains('\u{2b50}'), "{dest}: starred row: {row}");
+            assert_eq!(app.row_kind(), tree::RowKind::Place, "{dest}");
+            // Enter opens it, a jump: `o` comes back to the list row.
+            enter_key(&mut app);
+            assert!(app.doc.is_some(), "{dest}: Enter opened it");
+            // (The pane names a directory by its farm path; the star is the
+            // same name in canonical form.)
+            let shown = app
+                .doc_link(&app.doc.as_ref().unwrap().view)
+                .and_then(|l| crate::links::dest(&l))
+                .map(|d| app.star_key(&d));
+            assert_eq!(shown, Some(dest.to_string()), "{dest}");
+            // `*` in the pane unstars it, `*` on the row stars it back...
+            press(&mut app, "*");
+            assert!(app.working_set.is_empty(), "{dest}");
+            press(&mut app, "*");
+            assert_eq!(app.working_set, [dest.to_string()]);
+            press(&mut app, "o");
+            assert!(app.doc.is_none(), "{dest}: o closes it");
+            assert_eq!(app.selected_place().as_deref(), Some(dest), "o: the row");
+            // ...and `*` on the row unstars it.
+            press(&mut app, "*");
+            assert!(app.working_set.is_empty(), "{dest}");
+            assert_eq!(app.row_count(), 0, "{dest}: the row goes");
+        }
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn starred_yaks_docs_and_places_list_in_that_order_and_a_stale_star_is_skipped() {
+        let (proj, mut app, _) = farm();
+        crate::tui::doks_tab::fixture::write(&crate::store::artifact_dir(
+            app.farm.as_ref().unwrap().root(),
+            "t0",
+        ));
+        let root = app.farm.as_ref().unwrap().root().to_path_buf();
+        crate::tui::doks_tab::fixture::write(&root);
+        app.reload_doks();
+        // Starred in the order place, dok, yak, place.
+        app.set_working_set(
+            [
+                "t0/notes.md",
+                "doks/howto/release.md",
+                "t0",
+                "t0/proj",
+                // Stale: a deleted attachment, a gone yak, a missing dok.
+                "t0/gone.md",
+                "t9",
+                "/doks/gone.md",
+            ]
+            .map(String::from)
+            .to_vec(),
+        );
+        starred_view(&mut app);
+        let rows: Vec<String> = app
+            .rows()
+            .iter()
+            .map(|r| match r.item {
+                tree::Item::Yak(t) => t.id.clone(),
+                tree::Item::Doc(e) => e.path.clone(),
+                tree::Item::Place(d) => d.to_string(),
+                tree::Item::Shed(_) => unreachable!(),
+            })
+            .collect();
+        assert_eq!(
+            rows,
+            ["t0", "doks/howto/release.md", "t0/notes.md", "t0/proj"]
+        );
+        assert_eq!(app.view_count(app.active_view()), 4);
+        // The query matches a place by its name.
+        app.query = Some("proj".into());
+        assert_eq!(app.row_count(), 1);
+        assert_eq!(app.selected_place().as_deref(), Some("t0/proj"));
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_place_row_takes_out_its_file_and_its_keys_are_its_own() {
+        let (proj, mut app, _) = farm();
+        app.set_working_set(vec!["t0/proj/src/main.rs".into()]);
+        starred_view(&mut app);
+        // A yak key does nothing on a place row.
+        press(&mut app, "E");
+        assert!(matches!(app.overlay, Overlay::None));
+        press(&mut app, "O");
+        match &app.overlay {
+            Overlay::TakeOut(t) => assert_eq!(t.label, "t0/proj/src/main.rs"),
+            _ => panic!("O opens the take-out menu on a place row"),
+        }
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    #[test]
+    fn a_legacy_working_set_file_still_stars_and_unstars_its_dok() {
+        let (proj, mut app, _) = farm();
+        let root = app.farm.as_ref().unwrap().root().to_path_buf();
+        crate::tui::doks_tab::fixture::write(&root);
+        app.reload_doks();
+        // What an older yaks saved: yak ids and bare `doks/...` paths.
+        let file = std::env::temp_dir().join(format!("yaks-legacy-ws-{}.json", std::process::id()));
+        std::fs::write(&file, r#"{"v":2,"ids":["t0","doks/howto/release.md"]}"#).unwrap();
+        let text = std::fs::read_to_string(&file).unwrap();
+        let _ = std::fs::remove_file(&file);
+        let ids: Vec<String> = serde_json::from_str::<serde_json::Value>(&text).unwrap()["ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_string())
+            .collect();
+        app.set_working_set(ids);
+        assert!(app.is_starred("doks/howto/release.md"));
+        starred_view(&mut app);
+        assert_eq!(app.row_count(), 2);
+        // Open it from its row, then `*` unstars that very star.
+        press(&mut app, "j");
+        enter_key(&mut app);
+        assert_eq!(app.attach().unwrap().target, "doks/howto/release.md");
+        press(&mut app, "*");
+        assert_eq!(app.working_set, ["t0"]);
         let _ = std::fs::remove_dir_all(proj);
     }
 }

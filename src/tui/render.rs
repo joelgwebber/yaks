@@ -135,6 +135,7 @@ fn render_keys_popup(app: &App, frame: &mut Frame, mid: Rect) {
             tree::RowKind::Yak => " · yak rows",
             tree::RowKind::Doc => " · document rows",
             tree::RowKind::Shed => " · shed rows",
+            tree::RowKind::Place => " · starred place rows",
         },
         _ => "",
     };
@@ -827,7 +828,7 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
     // row's are reset (below).
     let plain_row = matches!(
         rows.get(app.cursor).map(|r| r.item),
-        Some(tree::Item::Doc(_) | tree::Item::Shed(_))
+        Some(tree::Item::Doc(_) | tree::Item::Shed(_) | tree::Item::Place(_))
     );
     // The list reads as focused only while it has focus.
     let focused = app.focus == Focus::List;
@@ -869,6 +870,9 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
                     .map(|(k, _)| k.label()),
             ),
             tree::Item::Doc(e) => doc_cols.item(e, area.width, app.is_starred(&e.path)),
+            tree::Item::Place(dest) => {
+                super::doks_tab::place_item(&app.place_label(dest), area.width)
+            }
             tree::Item::Shed(s) => {
                 shed_kinds = s.rows();
                 let now = shed_now.unwrap_or_else(chrono::Utc::now);
