@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T02:44:10Z'
+updated: '2026-11-19T03:15:42Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -116,3 +116,15 @@ Batch note (herd-files), base 84ffb8b7: archive-1 on yaks-93ee (claude-sonnet-5-
 Decision: deps added exactly as allowed: `zip 2.6.1` (default-features off, deflate-flate2), `tar 0.4.46`, `flate2 1` (already in tree via png). Newly locked crates: zip, tar, arbitrary, derive_arbitrary (zip's `arbitrary` dep, unconditional in 2.6; pulls proc-macro2/quote/syn already present), plus tar's `filetime`/`libc` already present. `cargo tree -e normal -i zip` shows only yaks; zip's own normal deps: crc32fast, indexmap, memchr (+ arbitrary, crossbeam-utils). I kept Cargo.lock to additions only (cargo's re-lock also bumped windows-sys pins; reverted that noise).
 
 Decision: a supported archive (.zip .tar .tar.gz .tgz) that opens as a valid archive resolves as a directory (`Place::FarmDir`) however it is linked, with or without a trailing `/`. Rejected: slash-only. Reason: `links::parse` drops the trailing `/` of an attachment name (`<id>/x.tgz/` == `<id>/x.tgz`), and parse/dest are out of scope; without this rule the archive's own top could not be named for history or `peek`. A corrupt/oversized/unsupported archive stays a plain file (the existing note).
+
+#### 2026-11-19T03:15:42Z
+
+*archive-1*
+
+Milestone (02:5x): `entries` (Zip/Tar containers, index cache per path+mtime+size, `read` bounded by take(max+1), safety rules, fixtures that write real zip/tar/tgz incl. hostile members), `locate` (`Place::Member`, `member_of`, `extract_member` temp copy, web_url refusal), `links::exists/peek`, `DirView` through archives, `AttachView::member`/`ImageView::from_bytes`, `read_place`/`open_place`, take-out subjects are written and `cargo test -p yaks` was green before I added the new tests; now adding TUI tests, docs, real runs.
+
+Decision: `entries::list` marks an archive file as `is_dir && archive` only when its name AND first bytes agree (`PK`, gzip magic, or a tar that indexes), so a `.tgz` of plain text (the existing test's `pack.tgz`) stays a plain file with the existing note. Rejected: name-only (rows would unfold into nothing); fully indexing every archive when listing a directory (reads them all).
+
+Decision: `count_files` counts a browsable archive as ONE file (members not counted). Rejected: counting members: the Attachments row would change meaning and a tar index would be built just to render a detail pane.
+
+Decision: take-out `p` on a member gives `<abs archive path>/<inner>` (a path that does not exist on disk), `r` the farm path through the archive, per the brief; `e`/`o` use the read-only temp copy (`/tmp/yaks-archive/<hash of path,size,mtime>/<inner>`, a changed archive never reuses a stale copy). Rejected: `p` giving the temp copy (would put a vanishing tmp path on the clipboard).
