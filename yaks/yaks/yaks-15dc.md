@@ -1,11 +1,11 @@
 ---
 id: yaks-15dc
 title: Ensure all the internal link types work as expected
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-19T23:28:12Z'
+updated: '2026-11-19T23:29:35Z'
 tags:
 - tui
 ---
@@ -30,3 +30,9 @@ Let's also consider line ranges in links, like the Github UI supports. This woul
 *sched-1*
 
 Also, also -- Might be cool to have line-range links open a restricted view of a file, from which you can also navigate to the whole file.
+
+#### 2026-11-19T23:29:35Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
