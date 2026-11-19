@@ -62,6 +62,9 @@ pub(crate) fn render(app: &App, frame: &mut Frame) {
             render_list(app, frame, left);
         }
         let inner = right_divider(frame, right, true);
+        // The pane's width, whatever it shows: a viewer opened before its
+        // first draw lays out at it (`App::show_doc`, yaks-b4d7).
+        app.pane_width.set(inner.width);
         if modal {
             // Affordance: the pane covers the list, so tip its divider with a
             // back-chevron — the list is behind it, `Esc` returns to it.

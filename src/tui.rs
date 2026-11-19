@@ -360,6 +360,10 @@ pub struct App {
     /// Detail-pane content width captured at render, used to soft-wrap the
     /// detail lines so the row-indexed model matches what's on screen.
     detail_width: Cell<u16>,
+    /// The right pane's inner width at the last draw, whatever it showed (a
+    /// yak, a document): what a viewer opened before its first draw lays out
+    /// at ([`App::doc_width`], yaks-b4d7).
+    pane_width: Cell<u16>,
     /// "Now" and the display timezone for human-friendly timestamps (pinned
     /// under `cargo test`; see [`when::Clock::app_default`]).
     clock: when::Clock,
@@ -469,6 +473,7 @@ impl App {
             page: 10,
             detail_page: 10,
             detail_width: Cell::new(0),
+            pane_width: Cell::new(0),
             clock: when::Clock::app_default(),
             list_offset: Cell::new(0),
             overlay: Overlay::None,

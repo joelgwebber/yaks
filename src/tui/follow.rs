@@ -160,6 +160,15 @@ impl App {
     /// the first document was opened from (the list, or a yak's detail); a
     /// document replacing another keeps that. Returns the view it replaced.
     pub(crate) fn show_doc(&mut self, view: DocView) -> Option<DocView> {
+        // A view not drawn yet has no width (0): rows laid out at that width
+        // wrap one column per row, so an anchor placed before the first draw
+        // (`#heading`, `#L12`) lands thousands of rows down, past the end
+        // (yaks-b4d7). Every viewer starts at the pane's width as last drawn.
+        if let DocView::Text(v) = &view {
+            if v.width.get() == 0 {
+                v.width.set(self.doc_width());
+            }
+        }
         let (from, old) = match self.doc.take() {
             Some(d) => (d.from, Some(d.view)),
             None => (self.focus, None),
@@ -167,6 +176,16 @@ impl App {
         self.doc = Some(DocPane { view, from });
         self.focus = Focus::Detail;
         old
+    }
+
+    /// The width a viewer lays out at before it is drawn: the pane's as last
+    /// drawn, else the detail pane's, else a full terminal's (an app never
+    /// drawn, as in a test that opens a dok straight away).
+    pub(crate) fn doc_width(&self) -> u16 {
+        [self.pane_width.get(), self.detail_width.get()]
+            .into_iter()
+            .find(|&w| w > 0)
+            .unwrap_or(80)
     }
 
     /// Show a document followed from a link: a jump, so `o` comes back to
@@ -403,11 +422,8 @@ impl App {
         if let Some(v) = ImageView::from_bytes(&target, path.clone(), name, &bytes, &self.picker) {
             return Ok(DocView::Image(v));
         }
-        let mut v = AttachView::member(&target, path, name, bytes)
+        let v = AttachView::member(&target, path, name, bytes)
             .ok_or_else(|| format!("{target}: not text or a picture; O then o opens a copy"))?;
-        // The pane's width as last drawn, so a `#L12` anchor is placed on
-        // the rows the view will have (an unmeasured view wraps per column).
-        v.width.set(self.detail_width.get());
         Ok(DocView::Text(v))
     }
 
@@ -1034,6 +1050,34 @@ mod tests {
         assert!(!status.contains("·"), "{status}");
         enter_key(&mut app);
         assert_eq!(viewer(&app).target, "doks/topics/vector-search.md");
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// yaks-b4d7: a link followed from a yak opens a viewer that has never
+    /// been drawn. Its anchor used to be placed on rows laid out at width 0
+    /// (one column each), so it landed far past the end: the last row pinned
+    /// at the top and nothing above it on screen. The viewer starts at the
+    /// pane's width, so once drawn the cursor is on the heading's row.
+    #[test]
+    fn a_link_from_a_yak_lands_on_its_heading_in_the_first_frame() {
+        let (proj, mut app) = on_yak_with_links();
+        tab_key(&mut app);
+        enter_key(&mut app);
+        assert!(
+            viewer(&app).width.get() > 1,
+            "the viewer starts at the pane's width"
+        );
+        let frame = draw(&app, 120, 24);
+        // The rows as drawn, at the pane's real width.
+        let (rows, _) = app.attachment_rows().unwrap();
+        let v = viewer(&app);
+        assert_eq!(
+            rows.get(v.nav.line).map(|r| r.text.as_str()),
+            Some("Indexes"),
+            "the cursor is on the heading:\n{frame}"
+        );
+        assert!(v.nav.scroll as usize <= v.nav.line, "and it is on screen");
+        assert!(frame.contains("HNSW"), "{frame}");
         let _ = std::fs::remove_dir_all(proj);
     }
 
