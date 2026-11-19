@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T01:42:12Z'
+updated: '2026-11-19T02:34:18Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -82,3 +82,17 @@ Answers taken in: refactor first, filed as yaks-84fe (now a dependency of this y
 *herd-files*
 
 Batch note (herd-files): symwalk-1 on yaks-8218, model claude-sonnet-5-5, base b013ff06, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG98JJIBxBCA0aLJyrhJPreUvVwLftHG. yaks-84fe by herd-files itself (Opus).
+
+#### 2026-11-19T02:34:18Z
+
+*herd-files*
+
+Claim (yakherd `herd-files`). Owner: worker `archive-1` (Sonnet 5.5), on top of yaks-84fe (`84ffb8b7`). Scope, by the [design dok](/doks/design/files-directories-archives.md) section 2, 4, 5:
+
+- `src/entries.rs`: `Container::Zip`, `Container::Tar { gz }`; `container_at` walks a path's segments through an archive (returns the container and the inner path); `list` and a bounded `read` for archives; member-name safety (no absolute, `..` or symlink members).
+- `src/locate.rs`: a directory inside an archive is `Place::FarmDir` (its `rel` may pass through the archive); a file in one is a new `Place::Member`. `links::exists` / `peek` go through it.
+- TUI: from-bytes constructors for `AttachView` and `ImageView`; `App::read_place` / `open_place` arms; the directory view unfolds `.zip`/`.tar`/`.tar.gz`/`.tgz` like a directory (other archive kinds keep the "copy its path" note); take-out on a member (`p`/`r` path through the archive; `e`/`o` a read-only temp copy). Never system-open an archive.
+- Deps: `zip` 2.x (no default features, `deflate-flate2`), `tar` 0.4 (no default features), `flate2` 1. Cargo.toml/Cargo.lock edits allowed for exactly these.
+- Out of scope: stars (yaks-4381, `star-1` running beside it), `links.rs` grammar, keymap.
+- Evidence: tests on a built zip and tar.gz (list, read, link resolve, doctor, peek, a `..` member refused, a member over the size cap refused); headless frames of a tree unfolding into an archive and a member open, attached; the gate; docs (`docs/cli.md` links + peek, `docs/tui.md` "Browsing a directory", `yaks` skill Links).
+- Judge: the coordinator at landing.
