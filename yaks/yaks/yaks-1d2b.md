@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-18T23:29:05Z'
-updated: '2026-11-19T01:32:31Z'
+updated: '2026-11-19T02:33:14Z'
 tags:
 - links
 - doks
@@ -22,3 +22,9 @@ Fix: the grammar allows a farm path ending in `/` (a directory), as `clean_attac
 *delta:Review yaks-93ee for file and yak handli*
 
 Folded into yaks-84fe (the refactor makes the grammar accept a farm directory path); shear when it lands.
+
+#### 2026-11-19T02:33:14Z
+
+*herd-files*
+
+Fixed by yaks-84fe (herd-files): `links::parse` keeps a trailing `/` on a farm path, and `exists`/`peek` resolve it through `locate::dir_of`. On the repro farm: `yaks doctor` All clear, `yaks peek /doks/x/sketches/` lists the directory. Tests: `a_farm_path_may_name_a_directory`, `exists_and_peek_accept_a_farm_directory`.
