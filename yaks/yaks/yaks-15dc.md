@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-19T22:17:09Z'
+updated: '2026-11-19T22:17:24Z'
 ---
 
-Test [link](code:src/tui/actions.rs:10).
+Test [link](code:src/tui/actions.rs).
