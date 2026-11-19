@@ -1,11 +1,11 @@
 ---
 id: yaks-84fe
 title: 'Refactor: one container lister and one resolver for files, directories and subjects (open_place, links::dest)'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-19T01:32:15Z'
-updated: '2026-11-19T01:32:36Z'
+updated: '2026-11-19T01:41:35Z'
 tags:
 - links
 - tui
@@ -28,3 +28,9 @@ Archives (yaks-93ee), star-anything (yaks-4381), `walk_dir` symlinks (yaks-8218)
 ## Evidence
 
 The existing TUI and links tests unchanged and green (they are the behavior contract); new tests: `dest` round-trips `parse` for every link kind; history restores each kind of subject; `doctor`/`peek` on a dok sibling directory. A line count of the touched TUI files before and after. Headless frames of a directory link followed from a dok, and `o` back.
+
+#### 2026-11-19T01:41:35Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
