@@ -401,20 +401,12 @@ impl App {
         match j.target {
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
-            detail::Target::Url(u) => self.follow_url(&u),
-            detail::Target::Commit { sha } => self.open_commit(&sha),
-            detail::Target::Artifact(p) => self.open_external(&p),
-            detail::Target::Source { path, lines, rev } => {
-                self.open_code(&path, lines, rev.as_deref())
-            }
             detail::Target::Footnote(n) => self.goto_footnote(&n),
-            // A farm document opens in the viewer (yaks-7395).
-            detail::Target::Farm { path, rev, anchor } => {
-                self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
-            }
             detail::Target::Local(_) => {
                 self.notification = Some("in-page anchors are followed in the viewer".into())
             }
+            // Everything else names a place: the one opener (yaks-84fe).
+            t => self.open_target(&t),
         }
     }
 

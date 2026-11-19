@@ -29,6 +29,7 @@ use super::imageview::ImageView;
 use super::linenav::Viewport;
 use super::*;
 use crate::links::{self, Anchor, Link};
+use crate::locate::{Place, Space};
 
 /// Largest farm file the viewer reads (as for attachments).
 const VIEW_MAX_BYTES: u64 = 1 << 20;
@@ -190,82 +191,216 @@ impl App {
         ImageView::open(path, &found, &self.picker)
     }
 
-    /// A document as the pane showed it, read again from disk: `path` is its
-    /// name as the viewer gives it (`<id>/<file>` for an attachment, else a
-    /// farm path) and `rev` the farm commit of a pinned one. What
-    /// [`super::history`] restores a dok by.
-    pub(crate) fn read_doc(&self, path: &str, rev: Option<&str>) -> Result<DocView, String> {
-        // A directory of the farm, named with its trailing `/`.
-        if let Some(rel) = path.strip_suffix('/') {
-            let root = self
-                .farm_root()
-                .ok_or_else(|| format!("{path}: no farm to read"))?;
-            return super::dirview::DirView::open(&root, rel).map(DocView::Dir);
-        }
-        // A commit of the code repository, shown by `open_commit`.
-        if let Some(sha) = path.strip_prefix("commit:") {
-            return self.read_commit_view(sha).map(DocView::Commit);
-        }
-        // A code file of the checkout, shown by `open_code`.
-        if let Some(rel) = path.strip_prefix("code:") {
-            return self.read_code_view(rel, rev, None).map(DocView::Text);
-        }
-        // A farm file is under the farm root; an attachment is not (it lives
-        // under its yak), so the path tells them apart.
-        if rev.is_some()
-            || self
-                .farm_root()
-                .is_some_and(|r| r.join(&*crate::locate::farm_file_in(&r, path)).is_file())
-        {
-            if rev.is_none() {
-                if let Some(v) = self.farm_image(path) {
-                    return Ok(DocView::Image(v));
-                }
-            }
-            return self.read_farm_doc(path, rev).map(DocView::Text);
-        }
-        let found = self
-            .resolve_attachment(path)
-            .ok_or_else(|| format!("{path}: not in this farm"))?;
-        if let Some(v) = ImageView::open(path, &found, &self.picker) {
-            return Ok(DocView::Image(v));
-        }
-        AttachView::open(path, &found)
-            .map(DocView::Text)
-            .ok_or_else(|| format!("{path}: cannot be shown here"))
+    // -- one resolver, one opener (yaks-84fe) -------------------------------
+    //
+    // Every link the pane follows, every document history restores and every
+    // row that opens a subject goes link -> [`Place`] ([`App::resolve`], the
+    // farm's one resolver, `locate::Space`) -> [`App::open_place`] /
+    // [`App::read_place`]. Whether a link names a directory, an attachment,
+    // a farm file, a code file or a commit is decided there, once.
+
+    /// What links resolve against here: the farm and the code checkout.
+    pub(crate) fn space(&self) -> Option<Space> {
+        let root = self.farm_root()?;
+        let code = super::source::source_base(&root, self.sheds.cwd.as_deref());
+        Some(Space::new(&root, code))
     }
 
-    /// Open farm file `path` in the viewer at `anchor`, a jump. An image
-    /// opens in the image viewer.
-    pub(crate) fn open_farm_doc(&mut self, path: &str, rev: Option<&str>, anchor: Option<&Anchor>) {
-        // A link to a directory opens the directory view (yaks-3329).
-        if rev.is_none() && self.farm_path_is_dir(path) {
-            if let Some(rel) = self.farm_dir_of(&format!("/{path}")) {
-                return self.open_dir(&rel);
-            }
+    /// What `link` names, by the farm's resolver. A URL on the code repo's
+    /// own host reads as the commit or pinned file it names.
+    pub(crate) fn resolve(&self, link: Link) -> Place {
+        match (self.space(), link) {
+            (Some(s), link) => s.resolve(&s.read_url(link)),
+            (None, Link::Url(u)) => Place::Url(u),
+            (None, _) => Place::Missing("no farm to resolve the link against".into()),
         }
-        if rev.is_none() {
-            if let Some(v) = self.farm_image(path) {
-                self.follow_to_doc(DocView::Image(v));
-                self.notification = Some(format!("viewing {path}"));
-                return;
-            }
-        }
-        let v = match self.read_farm_doc(path, rev) {
-            Ok(v) => v,
-            Err(e) => {
-                self.notification = Some(e);
-                return;
-            }
+    }
+
+    /// What pane link `t` names; `None` for one that moves within the pane or
+    /// the list instead (a yak, a note, a footnote, an in-page anchor).
+    pub(crate) fn place_of(&self, t: &Target) -> Option<Place> {
+        let link = match t {
+            Target::Url(u) => Link::Url(u.clone()),
+            t => t.as_link()?,
         };
-        self.follow_to_doc(DocView::Text(v));
-        self.scroll_to_anchor(anchor);
-        let label = links::label(&Link::Farm {
+        Some(self.resolve(link))
+    }
+
+    /// What a link destination names, read as a yak reads it (`<id>/<file>`,
+    /// `<id>/` for its attachment directory, `/doks/x.md`, `commit:<sha>`).
+    pub(crate) fn place_of_dest(&self, dest: &str) -> Place {
+        let link = links::parse(dest, links::From::Yak, |s| self.task(s).is_some());
+        self.resolve(link)
+    }
+
+    /// Follow pane link `t` to what it names (see [`App::open_place`]).
+    pub(crate) fn open_target(&mut self, t: &Target) {
+        if let Some(p) = self.place_of(t) {
+            self.open_place(&p);
+        }
+    }
+
+    /// Open what a link destination names (see [`App::place_of_dest`]): a
+    /// test's way to follow a link without drawing one.
+    #[cfg(test)]
+    pub(crate) fn open_dest(&mut self, dest: &str) {
+        let p = self.place_of_dest(dest);
+        self.open_place(&p);
+    }
+
+    /// Open farm file or directory `path` (at farm commit `rev`, at
+    /// `anchor`): a dok, a source, any farm path.
+    pub(crate) fn open_farm_doc(&mut self, path: &str, rev: Option<&str>, anchor: Option<&Anchor>) {
+        let p = self.resolve(Link::Farm {
             path: path.to_string(),
             rev: rev.map(String::from),
             anchor: anchor.cloned(),
         });
-        self.notification = Some(format!("viewing {label}"));
+        self.open_place(&p);
+    }
+
+    /// Show what `place` names, a jump (`o` comes back): a directory in the
+    /// directory view, a farm file, attachment or code file in the text or
+    /// image viewer (at its anchor), a commit in the commit view, a yak in
+    /// the detail pane. An attachment the pane cannot show, and a URL, go to
+    /// the system opener, never an archive ([`App::os_open`]).
+    pub(crate) fn open_place(&mut self, place: &Place) {
+        match place {
+            Place::Yak { id, note: None } => self.goto_task(id),
+            Place::Yak { id, note: Some(n) } => self.goto_note(id, n),
+            Place::FarmDir { rel } => self.open_dir(rel),
+            Place::Attachment { id, name, .. } => self.open_attachment(id, name),
+            Place::CodeFile { rel, rev, anchor } => {
+                let lines = match anchor {
+                    Some(Anchor::Lines(a, b)) => Some((*a, *b)),
+                    _ => None,
+                };
+                self.open_code(rel, lines, rev.as_deref());
+            }
+            Place::Commit { sha } => self.open_commit(sha),
+            Place::Url(u) => self.os_open(u, u),
+            Place::Missing(why) => self.notification = Some(why.clone()),
+            Place::FarmFile { anchor, .. } => match self.read_place(place) {
+                Ok(view) => {
+                    self.follow_to_doc(view);
+                    self.scroll_to_anchor(anchor.as_ref());
+                    let label = Space::link(place).map(|l| links::label(&l));
+                    self.notification = Some(format!("viewing {}", label.unwrap_or_default()));
+                }
+                Err(e) => self.notification = Some(e),
+            },
+        }
+    }
+
+    /// Attachment `name` of yak `id`, when it is a file of this farm.
+    fn attachment_file(&self, id: &str, name: &str) -> Option<crate::farm::FoundAttachment> {
+        let root = self.farm_root()?;
+        self.task(id)?;
+        crate::farm::locate_attachment(&root, id, name)
+    }
+
+    /// Open an attachment: in the viewer when it can show it, else with the
+    /// system opener; an archive is never opened (it would unpack into the
+    /// farm, yaks-3329) and says how to get its path.
+    fn open_attachment(&mut self, id: &str, name: &str) {
+        let target = format!("{id}/{}", links::percent_encode_path(name));
+        let Some(found) = self.attachment_file(id, name) else {
+            self.notification = Some(format!("{target}: not in this farm"));
+            return;
+        };
+        if super::dirview::is_archive_name(&found.name) {
+            self.notification = Some(super::dirview::archive_note(&found.name));
+            return;
+        }
+        let place = Place::Attachment {
+            id: id.to_string(),
+            name: name.to_string(),
+            anchor: None,
+        };
+        match self.read_place(&place) {
+            Ok(view) => {
+                self.notification = Some(format!("viewing {target}"));
+                self.follow_to_doc(view);
+            }
+            Err(_) => self.os_open(&target, &found.path.display().to_string()),
+        }
+    }
+
+    /// The pane's view of `place`, read from disk (what history restores a
+    /// document by, and what the openers show). `Err` is a one-line message
+    /// for the status bar.
+    pub(crate) fn read_place(&self, place: &Place) -> Result<DocView, String> {
+        match place {
+            Place::FarmDir { rel } => {
+                let root = self.farm_root().ok_or("no farm to read")?;
+                super::dirview::DirView::open(&root, rel).map(DocView::Dir)
+            }
+            Place::FarmFile { rel, rev, .. } => {
+                if rev.is_none() {
+                    if let Some(v) = self.farm_image(rel) {
+                        return Ok(DocView::Image(v));
+                    }
+                }
+                self.read_farm_doc(rel, rev.as_deref()).map(DocView::Text)
+            }
+            Place::Attachment { id, name, .. } => {
+                let target = format!("{id}/{}", links::percent_encode_path(name));
+                let found = self
+                    .attachment_file(id, name)
+                    .ok_or_else(|| format!("{target}: not in this farm"))?;
+                if let Some(v) = ImageView::open(&target, &found, &self.picker) {
+                    return Ok(DocView::Image(v));
+                }
+                AttachView::open(&target, &found)
+                    .map(DocView::Text)
+                    .ok_or_else(|| format!("{target}: cannot be shown here"))
+            }
+            Place::CodeFile { rel, rev, .. } => self
+                .read_code_view(rel, rev.as_deref(), None)
+                .map(DocView::Text),
+            Place::Commit { sha } => self.read_commit_view(sha).map(DocView::Commit),
+            Place::Missing(why) => Err(why.clone()),
+            Place::Yak { id, .. } => Err(format!("{id}: a yak, not a document")),
+            Place::Url(u) => Err(format!("{u}: a URL")),
+        }
+    }
+
+    /// The link that names what `view` shows: a subject's one stable name
+    /// (yaks-84fe), which history keeps and [`App::read_place`] reads back.
+    pub(crate) fn doc_link(&self, view: &DocView) -> Option<Link> {
+        let attachment = |target: &str| {
+            let target = target.strip_prefix(".yaks/").unwrap_or(target);
+            let (id, name) = target.split_once('/')?;
+            Some(Link::Attachment {
+                id: id.to_string(),
+                name: links::percent_decode(name),
+                anchor: None,
+            })
+        };
+        let farm = |path: &str, rev: Option<String>| Link::Farm {
+            path: path.to_string(),
+            rev,
+            anchor: None,
+        };
+        match view {
+            DocView::Text(v) => match &v.doc {
+                DocKind::Attachment => attachment(&v.target),
+                DocKind::Code { .. } => Some(Link::Code {
+                    path: v.code_rel()?.to_string(),
+                    rev: v.rev.clone(),
+                    anchor: None,
+                }),
+                _ => Some(farm(&v.target, v.rev.clone())),
+            },
+            // A farm image's file is its target under the farm root; an
+            // attachment's lives under its yak.
+            DocView::Image(v) => match self.farm_root() {
+                Some(r) if r.join(&v.target) == v.path => Some(farm(&v.target, None)),
+                _ => attachment(&v.target),
+            },
+            DocView::Dir(v) => Some(farm(&format!("{}/", v.rel), None)),
+            DocView::Commit(v) => Some(Link::Commit { sha: v.sha.clone() }),
+        }
     }
 
     /// Put the open viewer's cursor on `anchor`'s row (when the anchor is
@@ -334,11 +469,6 @@ impl App {
         target: &Target,
         doc: Option<&AttachView>,
     ) -> Option<(String, Result<String, String>)> {
-        // A directory: its top level, one entry a line.
-        if let Some(rel) = self.target_dir(target, doc) {
-            let dir = self.farm_root()?.join(&rel);
-            return Some((format!("{rel}/"), Ok(super::dirview::listing(&dir))));
-        }
         let link = match (target, doc) {
             (Target::Local(a), Some(v)) if v.doc != DocKind::Attachment => Link::Farm {
                 path: v.target.clone(),
@@ -528,7 +658,10 @@ mod tests {
         app.open_farm_doc("sources/2026-11-03-81364278", None, None);
         let v = viewer(&app);
         assert_eq!(v.target, "sources/2026-11-03-81364278.md");
-        assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
+        assert!(
+            app.read_place(&app.place_of_dest("/sources/2026-11-03-81364278"))
+                .is_ok()
+        );
         app.open_farm_doc("sources/nope", None, None);
         assert_eq!(
             app.notification.as_deref(),
@@ -555,7 +688,10 @@ mod tests {
             viewer(&app).target,
             "sources/2026-11-03-81364278-a-readable-slug.md"
         );
-        assert!(app.read_doc("sources/2026-11-03-81364278", None).is_ok());
+        assert!(
+            app.read_place(&app.place_of_dest("/sources/2026-11-03-81364278"))
+                .is_ok()
+        );
         let _ = std::fs::remove_dir_all(proj);
     }
 

@@ -1031,7 +1031,7 @@ pub(crate) fn link_target(dest: &str, from: crate::links::From, known: &HashSet<
         Link::Local(a) => Target::Local(a),
         // A `commit:<sha>` link opens the commit view (yaks-3f90). A host
         // commit URL stays a URL here (reading it needs the code repo's host,
-        // a git call per link): following it reads it back ([`App::follow_url`]).
+        // a git call per link): following it reads it back ([`App::resolve`]).
         Link::Commit { sha } => Target::Commit { sha },
         Link::Upward(_) => Target::Artifact(dest.to_string()),
         Link::Yak { id, note: None } => Target::Task(id),

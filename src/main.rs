@@ -15,6 +15,7 @@ mod clipboard;
 mod commit;
 mod conflicts;
 mod doks;
+mod entries;
 mod farm;
 mod fields;
 mod filter;

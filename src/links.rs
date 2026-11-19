@@ -43,7 +43,9 @@ pub enum Anchor {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Link {
     Url(String),
-    /// A farm document by its farm-relative path.
+    /// A farm document by its farm-relative path; a path ending in `/` names
+    /// a directory of the farm (`doks/x/sketches/`, a dok's sibling
+    /// directory).
     Farm {
         path: String,
         rev: Option<String>,
@@ -52,7 +54,8 @@ pub enum Link {
     /// A yak's attachment, `<id>/<name>`. `name` may have directories in it
     /// (`proj/src/main.rs`, a file of an attached directory) or name a
     /// directory itself (`proj`, written `<id>/proj/`); never `.`, `..` or an
-    /// empty segment.
+    /// empty segment. Empty (`<id>/`) is the yak's whole attachment
+    /// directory.
     Attachment {
         id: String,
         name: String,
@@ -186,13 +189,22 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
                 }
             }
         }
-        return match clean(rest) {
+        return match clean_farm(rest) {
             Some(path) => Link::Farm { path, rev, anchor },
             None => Link::Upward(dest.to_string()),
         };
     }
     if let Some((id, name)) = path.split_once('/') {
         if is_yak(id) {
+            // `<id>/` is the yak's whole attachment directory (the detail
+            // pane's `Attachments:` row links it): an attachment with no name.
+            if name.is_empty() {
+                return Link::Attachment {
+                    id: id.to_string(),
+                    name: String::new(),
+                    anchor,
+                };
+            }
             if let Some(name) = clean_attachment(name) {
                 return Link::Attachment {
                     id: id.to_string(),
@@ -221,7 +233,7 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
     } else {
         format!("{base}/{path}")
     };
-    match clean(&joined) {
+    match clean_farm(&joined) {
         Some(path) => Link::Farm { path, rev, anchor },
         None => Link::Upward(dest.to_string()),
     }
@@ -406,7 +418,6 @@ pub fn parse_anchor(frag: &str) -> Option<Anchor> {
     })
 }
 
-/// Drop `.` and empty segments; `None` for `..`, a trailing `/` or nothing.
 /// An attachment name as a link writes it after `<id>/`: one or more
 /// segments, a trailing `/` allowed (a directory, dropped here), and no
 /// empty, `.` or `..` segment. `None` when it is not one.
@@ -416,6 +427,17 @@ fn clean_attachment(name: &str) -> Option<String> {
         .then(|| name.to_string())
 }
 
+/// A farm path as a link writes it: [`clean`], except that a trailing `/`
+/// names a directory (`doks/x/sketches/`, yaks-1d2b) and is kept, so the
+/// path says lexically that it is one.
+fn clean_farm(p: &str) -> Option<String> {
+    match p.strip_suffix('/') {
+        Some(dir) => clean(dir).map(|d| format!("{d}/")),
+        None => clean(p),
+    }
+}
+
+/// Drop `.` and empty segments; `None` for `..`, a trailing `/` or nothing.
 fn clean(p: &str) -> Option<String> {
     if p.ends_with('/') {
         return None;
@@ -484,6 +506,46 @@ pub fn slug(heading: &str) -> String {
         })
         .flat_map(char::to_lowercase)
         .collect()
+}
+
+/// The link as a destination [`parse`] reads back (from the farm root, as
+/// [`From::Cli`] reads it) to the same link: `yaks-1a2b`,
+/// `doks/x.md#setup`, `doks/x/sketches/`, `yaks-1a2b/proj/src/a.rs#L3-L9`,
+/// `code:src/a.rs@abc1234`, `commit:<sha>`. The stable name of what the TUI
+/// shows (history, stars: yaks-84fe); [`label`] is for display. A path is
+/// percent-encoded where a destination needs it. `None` for what has no
+/// destination of its own: an in-document anchor, a `../` link.
+pub fn dest(link: &Link) -> Option<String> {
+    let anchor = |a: &Option<Anchor>| match a {
+        Some(Anchor::Lines(x, y)) if x == y => format!("#L{x}"),
+        Some(Anchor::Lines(x, y)) => format!("#L{x}-L{y}"),
+        Some(Anchor::Heading(h)) => format!("#{h}"),
+        None => String::new(),
+    };
+    let rev = |r: &Option<String>| r.as_ref().map(|r| format!("@{r}")).unwrap_or_default();
+    let p = percent_encode_path;
+    Some(match link {
+        Link::Url(u) => u.clone(),
+        Link::Farm {
+            path,
+            rev: r,
+            anchor: a,
+        } => format!("/{}{}{}", p(path), rev(r), anchor(a)),
+        Link::Code {
+            path,
+            rev: r,
+            anchor: a,
+        } => format!("code:{}{}{}", p(path), rev(r), anchor(a)),
+        Link::Attachment {
+            id,
+            name,
+            anchor: a,
+        } => format!("{id}/{}{}", p(name), anchor(a)),
+        Link::Commit { sha } => format!("commit:{sha}"),
+        Link::Yak { id, note: None } => id.clone(),
+        Link::Yak { id, note: Some(n) } => format!("{id}#{n}"),
+        Link::Upward(_) | Link::Local(_) => return None,
+    })
 }
 
 /// The link as one short label: `doks/x.md#setup`, `code:src/a.rs:L3-L9@abc1234`.
@@ -759,16 +821,21 @@ pub fn exists(root: &Path, link: &Link) -> Option<bool> {
                 || (p.contains('/') && (ns(first) || below_doks.is_some_and(ns))))
     };
     match link {
+        // A directory written with its `/` (yaks-1d2b) is a link, whatever
+        // its last segment looks like: by the resolver's rule.
+        Link::Farm { path, .. } if path.ends_with('/') && !path.contains(['{', '}', '<', '>']) => {
+            Some(crate::locate::dir_of(root, link).is_some())
+        }
         Link::Farm { path, .. } if !checkable(path) => None,
         Link::Attachment { name: path, .. } if path.contains(['{', '}', '<', '>']) => None,
         Link::Farm { path, .. } => Some(
             root.join(&*crate::locate::farm_file_in(root, path))
                 .exists(),
         ),
-        // A file, or an attached directory (`<id>/proj/`, yaks-a57c).
-        Link::Attachment { id, name, .. } => {
-            Some(crate::farm::attachment_path(root, id, name).is_some_and(|p| p.exists()))
-        }
+        Link::Attachment { id, name, .. } => Some(
+            crate::locate::dir_of(root, link).is_some()
+                || crate::farm::locate_attachment(root, id, name).is_some(),
+        ),
         Link::Upward(_) => Some(false),
         // A note link is checked for its note; a plain yak id is `refs`' business.
         Link::Yak { id, note: Some(n) } => Some(
@@ -1009,8 +1076,21 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
                 Some(n) => note_text(id, &text, n)?,
             }
         }
+        // A directory (a farm path with its `/`, an attached directory): its
+        // top level, one entry a line, as the TUI lists it.
+        Link::Farm { .. } | Link::Attachment { .. }
+            if crate::locate::dir_of(bases.farm, link).is_some() =>
+        {
+            let rel = crate::locate::dir_of(bases.farm, link).unwrap_or_default();
+            let c = crate::entries::container_at(bases.farm, &rel)
+                .ok_or_else(|| anyhow::anyhow!("{label}: not a directory of this farm"))?;
+            crate::entries::listing(&c)
+        }
+        Link::Farm { path, .. } if path.ends_with('/') => {
+            bail!("{label}: no such directory in this farm")
+        }
         Link::Farm { path, rev, anchor } => {
-            // `/sources/<id>` names a directory: its `source.md` is the file.
+            // `/sources/<id>` names a source: its file is `sources/<id>.md`.
             let path = &*crate::locate::farm_file_in(bases.farm, path);
             let text = match rev {
                 // A farm path at a commit: the farm root is `.yaks/` in its
@@ -1021,26 +1101,6 @@ pub fn peek(link: &Link, bases: &Bases, context: u32) -> Result<Peek> {
             span(path, &text, anchor, context)?
         }
         Link::Attachment { id, name, anchor } => {
-            let dir = crate::farm::attachment_path(bases.farm, id, name).filter(|p| p.is_dir());
-            if let Some(dir) = dir {
-                // An attached directory: its entries, one per line.
-                let mut names: Vec<String> = std::fs::read_dir(&dir)?
-                    .flatten()
-                    .map(|e| {
-                        let n = e.file_name().to_string_lossy().into_owned();
-                        if e.path().is_dir() {
-                            format!("{n}/")
-                        } else {
-                            n
-                        }
-                    })
-                    .collect();
-                names.sort();
-                return Ok(Peek {
-                    label,
-                    text: names.iter().map(|n| format!("{n}\n")).collect(),
-                });
-            }
             let Some(found) = crate::farm::locate_attachment(bases.farm, id, name) else {
                 bail!("{id}/{name}: no such attachment");
             };
@@ -1805,5 +1865,102 @@ mod tests {
             }),
             "commit:3f2a9c1"
         );
+    }
+
+    /// yaks-84fe: `dest` writes every kind of link as a destination that
+    /// `parse` (from the farm root, and from a yak) reads back to the same
+    /// link: the stable name history and stars keep.
+    #[test]
+    fn dest_round_trips_through_parse() {
+        let att = |name: &str, anchor| Link::Attachment {
+            id: "yaks-1a2b".into(),
+            name: name.into(),
+            anchor,
+        };
+        let links = [
+            Link::Url("https://example.com/a?b=1".into()),
+            Link::Yak {
+                id: "yaks-1a2b".into(),
+                note: None,
+            },
+            Link::Yak {
+                id: "yaks-1a2b".into(),
+                note: Some("2026-11-04t221303z".into()),
+            },
+            farm("doks/x.md", None, Some(Anchor::Heading("setup".into()))),
+            farm(
+                "doks/x.md",
+                Some("abc1234".into()),
+                Some(Anchor::Lines(3, 9)),
+            ),
+            farm("doks/x/sketches/", None, None),
+            farm("doks/with space (1).md", None, None),
+            att("", None),
+            att("proj", None),
+            att("proj/src/a.rs", Some(Anchor::Lines(4, 4))),
+            att("my log.txt", None),
+            Link::Code {
+                path: "src/a.rs".into(),
+                rev: Some("abc1234".into()),
+                anchor: Some(Anchor::Lines(1, 2)),
+            },
+            Link::Commit {
+                sha: "3f2a9c1d00".into(),
+            },
+        ];
+        for l in links {
+            let d = dest(&l).unwrap();
+            for from in [From::Cli, From::Yak] {
+                assert_eq!(parse(&d, from, yak), l, "{d}");
+            }
+        }
+        assert_eq!(dest(&Link::Local(Anchor::Heading("x".into()))), None);
+        assert_eq!(dest(&Link::Upward("../x".into())), None);
+    }
+
+    /// yaks-1d2b: a farm path written with its `/` names a directory, from
+    /// the farm root and relative to a dok; it never climbs out.
+    #[test]
+    fn a_farm_path_may_name_a_directory() {
+        let pg = From::Dok("doks/x.md");
+        assert_eq!(
+            parse("x/sketches/", pg, yak),
+            farm("doks/x/sketches/", None, None)
+        );
+        assert_eq!(
+            parse("/doks/x/sketches/", pg, yak),
+            farm("doks/x/sketches/", None, None)
+        );
+        assert_eq!(
+            parse("/sources/a/", From::Yak, yak),
+            farm("sources/a/", None, None)
+        );
+        assert!(matches!(parse("/doks/../", pg, yak), Link::Upward(_)));
+        assert!(matches!(parse("../up/", pg, yak), Link::Upward(_)));
+    }
+
+    /// yaks-1d2b: `exists` and `peek` accept a directory link (the CLI's
+    /// `doctor` and `peek`), listing it by the farm's one lister.
+    #[test]
+    fn exists_and_peek_accept_a_farm_directory() {
+        let root = std::env::temp_dir().join(format!("yaks-dirlink-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("doks/x/sketches/sub")).unwrap();
+        std::fs::write(root.join("doks/x.md"), "x").unwrap();
+        std::fs::write(root.join("doks/x/sketches/a.txt"), "a").unwrap();
+        std::fs::create_dir_all(root.join("doks/x/sketches/.git")).unwrap();
+        let pg = From::Dok("doks/x.md");
+        let link = parse("x/sketches/", pg, yak);
+        assert_eq!(exists(&root, &link), Some(true));
+        assert_eq!(exists(&root, &parse("x/nope/", pg, yak)), Some(false));
+        let bases = Bases {
+            farm: &root,
+            code: None,
+        };
+        let p = peek(&link, &bases, 0).unwrap();
+        assert_eq!(p.text, "sub/\na.txt\n");
+        let e = peek(&parse("x/nope/", pg, yak), &bases, 0).unwrap_err();
+        assert!(e.to_string().contains("no such directory"), "{e}");
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

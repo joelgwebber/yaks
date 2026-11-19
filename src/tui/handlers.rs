@@ -5,7 +5,6 @@
 //! `resolve_*`) — plus the top-level free `handle_key` dispatcher. Split out of
 //! `tui.rs` (yaks-b1cc / b1cc/7). `use super::*` inherits `tui.rs`'s scope.
 
-use super::imageview::ImageView;
 use super::linenav::{LineNav, Viewport};
 use super::*;
 
@@ -1379,47 +1378,6 @@ impl App {
         });
     }
 
-    /// Open a URL or attachment (`Enter` on its link, or `O`). An attachment
-    /// (`<id>/<file>`) is resolved by [`App::resolve_attachment`]. A text
-    /// attachment opens in the in-TUI viewer ([`AttachView`], yaks-699b) and a
-    /// decodable image in the image viewer ([`ImageView`], yaks-4305); a URL or
-    /// any other file goes to the OS default application (best-effort).
-    pub(crate) fn open_external(&mut self, target: &str) {
-        let arg = if target.contains("://") || target.starts_with("mailto:") {
-            target.to_string()
-        } else if let Some(rel) = self.farm_dir_of(target) {
-            // A directory of the farm (`<id>/proj/`, `/sources/<id>/files/`).
-            return self.open_dir(&rel);
-        } else {
-            match self.resolve_attachment(target) {
-                Some(found) => {
-                    // An archive is never opened from here, nor handed to
-                    // the system (it would unpack into the farm).
-                    if super::dirview::is_archive_name(&found.name) {
-                        self.notification = Some(super::dirview::archive_note(&found.name));
-                        return;
-                    }
-                    if let Some(v) = ImageView::open(target, &found, &self.picker) {
-                        self.notification = Some(format!("viewing {target}"));
-                        self.follow_to_doc(DocView::Image(v));
-                        return;
-                    }
-                    if let Some(v) = AttachView::open(target, &found) {
-                        self.notification = Some(format!("viewing {target}"));
-                        self.follow_to_doc(DocView::Text(v));
-                        return;
-                    }
-                    found.path.display().to_string()
-                }
-                None => {
-                    self.notification = Some(format!("{target}: not in this farm"));
-                    return;
-                }
-            }
-        };
-        self.os_open(target, &arg);
-    }
-
     /// After cancelling editor `ov`: an attachment edit puts its viewer back
     /// in the pane (the file unchanged); anything else just closes.
     pub(crate) fn drop_editor(&mut self, ov: Overlay) {
@@ -1666,21 +1624,9 @@ impl App {
             // Closes the viewer (the yak replaces it) and opens the yak.
             detail::Target::Task(id) => self.goto_task(&id),
             detail::Target::Note { id, anchor } => self.goto_note(&id, &anchor),
-            detail::Target::Artifact(u) => {
-                match self.target_dir(&detail::Target::Artifact(u.clone()), Some(v)) {
-                    Some(rel) => self.open_dir(&rel),
-                    None => self.open_external(&u),
-                }
-            }
-            detail::Target::Url(u) => self.follow_url(&u),
-            detail::Target::Commit { sha } => self.open_commit(&sha),
-            detail::Target::Source { path, lines, rev } => {
-                self.open_code(&path, lines, rev.as_deref())
-            }
-            detail::Target::Farm { path, rev, anchor } => {
-                self.open_farm_doc(&path, rev.as_deref(), anchor.as_ref())
-            }
             detail::Target::Local(a) => self.follow_local_anchor(lines, vp, &a),
+            // Everything else names a place: the one opener (yaks-84fe).
+            t => self.open_target(&t),
         }
     }
 
@@ -1820,18 +1766,6 @@ impl App {
             text,
             EditAction::EditAttachment(v, from),
         ));
-    }
-
-    /// Where attachment link `target` (`<id>/<file>`, farm-relative) is on
-    /// disk in this farm: the same rule as `yaks attachment`.
-    pub(crate) fn resolve_attachment(&self, target: &str) -> Option<crate::farm::FoundAttachment> {
-        let rel = target.strip_prefix(".yaks/").unwrap_or(target);
-        let (id, name) = rel.split_once('/')?;
-        crate::farm::locate_attachment(
-            self.farm.as_ref()?.root(),
-            id,
-            &crate::links::percent_decode(name),
-        )
     }
 
     /// M — append a timestamped comment/note to the selected task (multi-line).

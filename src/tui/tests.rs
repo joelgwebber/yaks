@@ -5763,7 +5763,7 @@ fn a_markdown_attachment_draws_its_sibling_images_in_place() {
     );
     let mut app = App::with_farm(farm).unwrap();
     HeadlessApp::on_resize(&mut app, 100, 40);
-    app.open_external("t0/evidence.md");
+    app.open_dest("t0/evidence.md");
     assert!(app.attach().is_some(), "{:?}", app.notification);
     draw(&app, 100, 40);
     let (rows, _) = app.attachment_rows().unwrap();
@@ -8646,11 +8646,11 @@ mod commit_view {
     #[test]
     fn a_pasted_host_commit_url_opens_the_commit_view() {
         let (proj, _, landed, mut app) = fixture();
-        app.follow_url(&format!("https://github.com/o/r/commit/{landed}"));
+        app.open_dest(&format!("https://github.com/o/r/commit/{landed}"));
         assert_eq!(app.commit_view().unwrap().sha, landed);
         // Another repository's URL is not read as ours.
         app.close_doc();
-        app.follow_url("https://github.com/other/repo/commit/abcdef1234567");
+        app.open_dest("https://github.com/other/repo/commit/abcdef1234567");
         assert!(app.commit_view().is_none());
         let _ = std::fs::remove_dir_all(proj);
     }

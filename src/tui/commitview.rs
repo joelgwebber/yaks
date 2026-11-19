@@ -41,7 +41,6 @@ use super::render::{disp_width, truncate_disp};
 use super::source::source_base;
 use super::*;
 use crate::gitrepo::CommitInfo;
-use crate::links::{self, Link};
 use crate::locate::{Place, Space};
 
 /// What the pane can act on: the row's `Enter`.
@@ -568,27 +567,6 @@ impl App {
                 self.follow_to_doc(DocView::Commit(v));
             }
             Err(e) => self.notification = Some(e),
-        }
-    }
-
-    /// Follow a URL: the code repo's own host URLs read back as what they name
-    /// (a commit opens the commit view, a file pinned to a commit the code
-    /// viewer), everything else goes to the system opener.
-    pub(crate) fn follow_url(&mut self, url: &str) {
-        let space = self
-            .farm
-            .as_ref()
-            .map(|f| Space::new(f.root(), source_base(f.root(), self.sheds.cwd.as_deref())));
-        match space.map(|s| s.read_url(Link::Url(url.to_string()))) {
-            Some(Link::Commit { sha }) => self.open_commit(&sha),
-            Some(Link::Code { path, rev, anchor }) => {
-                let lines = match anchor {
-                    Some(links::Anchor::Lines(a, b)) => Some((a, b)),
-                    _ => None,
-                };
-                self.open_code(&path, lines, rev.as_deref());
-            }
-            _ => self.open_external(url),
         }
     }
 

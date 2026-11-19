@@ -861,9 +861,11 @@ left, and everything in it is read-only.
 
 It opens from:
 
-- **a link to a directory**: `[proj/](<id>/proj/)` in a yak, `[sketches](sketches/)`
-  in a dok, `/sources/<id>/` (the tree or original beside a source) anywhere; the status bar shows the
-  destination and the peek pane lists the directory's top level;
+- **a link to a directory**, any link whose path ends in `/`: `[proj/](<id>/proj/)`
+  in a yak, `[sketches](x/sketches/)` in `doks/x.md` (or `/doks/x/sketches/` from
+  anywhere), `/sources/<id>/` (the tree or original beside a source); the status
+  bar shows the destination and the peek pane lists the directory's top level,
+  as `yaks peek` does;
 - **the `Attachments: 3 files` row** of a yak's detail pane (when its attachment
   directory holds files) and of a dok in the viewer; **`Files:`** on a source.
   `Tab` to it and `Enter`. A directory attached with `yaks attach <dir>` keeps

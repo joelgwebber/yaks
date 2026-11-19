@@ -62,6 +62,46 @@ pub fn farm_file_in<'a>(root: &Path, path: &'a str) -> Cow<'a, str> {
     }
 }
 
+/// The farm directory `link` names, as a farm-relative path with no trailing
+/// `/`, when it names one: a [`Link::Farm`] path or a [`Link::Attachment`]
+/// (`<id>/` is the yak's whole attachment directory) that is a directory on
+/// disk, a source named by its bare `<date>-<sha8>` id included
+/// ([`farm_file_in`]). Unpinned only; never a path
+/// [`crate::entries::safe_rel`] refuses, nor a symlink.
+pub fn dir_of(farm: &Path, link: &Link) -> Option<String> {
+    let rel = match link {
+        Link::Farm {
+            path, rev: None, ..
+        } => {
+            let p = path.trim_end_matches('/');
+            // `sources/<id>` names the source's file, not its directory,
+            // unless written as a directory.
+            if path.ends_with('/') {
+                farm_file_in(farm, &format!("{p}/x"))
+                    .strip_suffix("/x")?
+                    .to_string()
+            } else if farm.join(&*farm_file_in(farm, p)).is_file() {
+                return None;
+            } else {
+                p.to_string()
+            }
+        }
+        Link::Attachment { id, name, .. } => {
+            let dir = store::artifact_dir(farm, id);
+            let dir = match name.trim_end_matches('/') {
+                "" => dir,
+                n => crate::farm::attachment_path(farm, id, n)?,
+            };
+            dir.strip_prefix(farm)
+                .ok()?
+                .to_string_lossy()
+                .replace('\\', "/")
+        }
+        _ => return None,
+    };
+    crate::entries::container_at(farm, &rel).map(|_| rel)
+}
+
 /// What a link resolves to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Place {
@@ -77,11 +117,18 @@ pub enum Place {
         rev: Option<String>,
         anchor: Option<Anchor>,
     },
-    /// A yak's attachment.
+    /// A yak's attachment: a file, or a file inside an attached directory.
     Attachment {
         id: String,
         name: String,
         anchor: Option<Anchor>,
+    },
+    /// A directory of the farm (yaks-84fe), by its farm-relative path with
+    /// no trailing `/`: a yak's attachment directory or a directory in it, a
+    /// dok's or source's sibling directory, any other farm directory. What
+    /// [`crate::entries`] lists.
+    FarmDir {
+        rel: String,
     },
     /// A file of the code repository.
     CodeFile {
@@ -119,7 +166,14 @@ impl Space {
         }
     }
 
+    /// What `link` names. The one place that knows a link can name a
+    /// directory: a farm path written with a trailing `/`, or any farm path
+    /// or attachment that is a directory on disk ([`dir_of`]), resolves to
+    /// [`Place::FarmDir`]. Every other link is lexical.
     pub fn resolve(&self, link: &Link) -> Place {
+        if let Some(rel) = dir_of(&self.farm, link) {
+            return Place::FarmDir { rel };
+        }
         match link {
             Link::Url(u) => Place::Url(u.clone()),
             Link::Yak { id, note } => Place::Yak {
@@ -222,6 +276,11 @@ impl Space {
             },
             Place::Commit { sha } => Link::Commit { sha: sha.clone() },
             Place::Url(u) => Link::Url(u.clone()),
+            Place::FarmDir { rel } => Link::Farm {
+                path: format!("{rel}/"),
+                rev: None,
+                anchor: None,
+            },
             Place::Missing(_) => return None,
         })
     }
@@ -263,6 +322,7 @@ impl Space {
             Place::FarmFile { rel, rev, anchor } => {
                 Some((rel.clone(), rev.clone(), anchor.clone()))
             }
+            Place::FarmDir { rel } => Some((rel.clone(), None, None)),
             _ => None,
         }
     }

@@ -4,7 +4,8 @@
 //! directory (`doks/x.md` + `doks/x/`), a directory source's `files/`.
 //!
 //! - **Reached** by following a link that names a directory (`<id>/proj/`,
-//!   `/sources/<id>/files/`), by the `Attachments:` row of a yak's detail pane
+//!   `/doks/x/sketches/`; the resolver decides, `locate::Place::FarmDir`),
+//!   by the `Attachments:` row of a yak's detail pane
 //!   and of a dok in the viewer, and by the `Files:` row of a source's view.
 //!   Each is a jump of the app's one history ([`super::history`]).
 //! - **Keys** are the table's ([`super::keymap`], `Ctx::Dir`): `j`/`k` move,
@@ -16,14 +17,16 @@
 //!   take-out menu's `o`, say how to get its path instead
 //!   ([`archive_note`], enforced by `App::os_open`).
 //!
-//! Only the folds that are open are read from disk. Symlinks are not listed (one
-//! could point out of the farm), nor is a `.git` directory, and the tree lists
-//! no more than [`MAX_ROWS`] rows. Other dot files are listed: directory
-//! sources and attached directories keep them.
+//! Only the folds that are open are read from disk, through the farm's one
+//! lister ([`crate::entries`], so `yaks peek` lists a directory the same
+//! way): no symlinks, no `.git`, every other dot file. The tree lists no more
+//! than [`MAX_ROWS`] rows.
 
 use std::cell::Cell;
 use std::collections::BTreeSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+use crate::entries::Container;
 
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -32,7 +35,6 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
 
 use super::detail::{self, Target};
-use super::handlers::DocKind;
 use super::keymap::Cmd;
 use super::render::{disp_width, truncate_disp};
 use super::*;
@@ -65,35 +67,14 @@ pub(crate) fn archive_note(name: &str) -> String {
     format!("{name}: an archive; O \u{2192} p copies its path")
 }
 
-/// Whether a directory entry is left out of the view: `.git`.
-fn hidden(name: &str) -> bool {
-    name == ".git"
-}
-
-/// Files under `dir`, counted to [`COUNT_CAP`] (so a huge tree costs a
-/// bounded walk): symlinks and `.git` are not counted.
+/// Files in farm directory `dir` (absolute), counted to [`COUNT_CAP`] by
+/// the farm's listing rules ([`crate::entries`]): what the `Attachments:` /
+/// `Files:` rows and the view's header show.
 pub(crate) fn count_files(dir: &Path) -> usize {
-    fn walk(dir: &Path, n: &mut usize) {
-        let Ok(rd) = std::fs::read_dir(dir) else {
-            return;
-        };
-        for e in rd.flatten() {
-            if *n >= COUNT_CAP {
-                return;
-            }
-            if hidden(&e.file_name().to_string_lossy()) {
-                continue;
-            }
-            match e.file_type() {
-                Ok(t) if t.is_dir() => walk(&e.path(), n),
-                Ok(t) if t.is_file() => *n += 1,
-                _ => {}
-            }
-        }
-    }
-    let mut n = 0;
-    walk(dir, &mut n);
-    n
+    crate::entries::count_files(
+        &crate::entries::Container::Dir(dir.to_path_buf()),
+        COUNT_CAP,
+    )
 }
 
 /// `3 files`, `1 file`, `999+ files`.
@@ -122,51 +103,6 @@ pub(crate) fn files_row(label: &str, target: Target, n: usize) -> detail::DLine 
     }
 }
 
-/// One listed entry of a directory.
-struct Entry {
-    name: String,
-    is_dir: bool,
-    size: u64,
-}
-
-/// `dir`'s entries, directories first then files, each sorted by name
-/// (case-insensitive). Symlinks and `.git` are left out.
-fn list(dir: &Path) -> Vec<Entry> {
-    let Ok(rd) = std::fs::read_dir(dir) else {
-        return Vec::new();
-    };
-    let mut out: Vec<Entry> = rd
-        .flatten()
-        .filter_map(|e| {
-            let name = e.file_name().to_string_lossy().into_owned();
-            if hidden(&name) {
-                return None;
-            }
-            let t = e.file_type().ok()?;
-            if t.is_symlink() || !(t.is_dir() || t.is_file()) {
-                return None;
-            }
-            let size = if t.is_file() {
-                e.metadata().map_or(0, |m| m.len())
-            } else {
-                0
-            };
-            Some(Entry {
-                name,
-                is_dir: t.is_dir(),
-                size,
-            })
-        })
-        .collect();
-    out.sort_by(|a, b| {
-        b.is_dir
-            .cmp(&a.is_dir)
-            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
-            .then_with(|| a.name.cmp(&b.name))
-    });
-    out
-}
-
 /// One visible row of the tree.
 pub(crate) struct DirRow {
     /// Path below the directory (`src/deep/x.rs`).
@@ -184,7 +120,8 @@ pub(crate) struct DirView {
     /// The directory's farm-relative path, no trailing `/`: the pane's header
     /// and what the history re-reads it by.
     pub(crate) rel: String,
-    dir: PathBuf,
+    /// What it lists, read through [`crate::entries`].
+    container: Container,
     open: BTreeSet<String>,
     rows: Vec<DirRow>,
     pub(crate) cursor: usize,
@@ -198,14 +135,13 @@ impl DirView {
     /// The view of farm directory `rel` under `root`.
     pub(crate) fn open(root: &Path, rel: &str) -> Result<DirView, String> {
         let rel = rel.trim_matches('/');
-        let dir = root.join(rel);
-        if rel.is_empty() || !dir.is_dir() {
+        let Some(container) = crate::entries::container_at(root, rel) else {
             return Err(format!("{rel}: not a directory of this farm"));
-        }
+        };
         let mut v = DirView {
             rel: rel.to_string(),
-            total: count_files(&dir),
-            dir,
+            total: crate::entries::count_files(&container, COUNT_CAP),
+            container,
             open: BTreeSet::new(),
             rows: Vec::new(),
             cursor: 0,
@@ -217,13 +153,13 @@ impl DirView {
 
     fn rebuild(&mut self) {
         fn walk(
-            dir: &Path,
+            c: &Container,
             prefix: &str,
             depth: usize,
             open: &BTreeSet<String>,
             out: &mut Vec<DirRow>,
         ) {
-            for e in list(dir) {
+            for e in crate::entries::list(c, prefix) {
                 if out.len() >= MAX_ROWS {
                     return;
                 }
@@ -235,19 +171,19 @@ impl DirView {
                 let expanded = e.is_dir && open.contains(&path);
                 out.push(DirRow {
                     path: path.clone(),
-                    name: e.name.clone(),
+                    name: e.name,
                     depth,
                     is_dir: e.is_dir,
                     expanded,
                     size: e.size,
                 });
                 if expanded {
-                    walk(&dir.join(&e.name), &path, depth + 1, open, out);
+                    walk(c, &path, depth + 1, open, out);
                 }
             }
         }
         let mut rows = Vec::new();
-        walk(&self.dir, "", 0, &self.open, &mut rows);
+        walk(&self.container, "", 0, &self.open, &mut rows);
         self.rows = rows;
         self.cursor = self.cursor.min(self.rows.len().saturating_sub(1));
     }
@@ -330,24 +266,6 @@ impl DirView {
             }
         }
     }
-}
-
-/// A listing of the directory's top level for the peek pane: directories
-/// first (`name/`), then files, one per line.
-pub(crate) fn listing(dir: &Path) -> String {
-    let entries = list(dir);
-    if entries.is_empty() {
-        return "(empty directory)\n".into();
-    }
-    let mut s = String::new();
-    for e in entries {
-        s.push_str(&e.name);
-        if e.is_dir {
-            s.push('/');
-        }
-        s.push('\n');
-    }
-    s
 }
 
 /// `1234` -> `1.2 KiB`, as `yaks weight` writes sizes.
@@ -463,81 +381,6 @@ impl App {
         }
     }
 
-    /// The farm directory a link target names, as a farm-relative path with no
-    /// trailing `/`, when there is one. `target` is an attachment link
-    /// (`<id>/proj/`, `.yaks/<id>/proj`, `<id>/` for the yak's whole
-    /// attachment directory) or a farm path (`/sources/<id>/files/`; a
-    /// `sources/<id>` without the slug is found like a file's is). Never a
-    /// path with a `.` or `..` component, so a link cannot climb out of the
-    /// farm, nor with a `.git` one.
-    pub(crate) fn farm_dir_of(&self, target: &str) -> Option<String> {
-        let root = self.farm.as_ref()?.root();
-        let decoded = crate::links::percent_decode(target.strip_prefix(".yaks/").unwrap_or(target));
-        let rel = if let Some(abs) = decoded.strip_prefix('/') {
-            abs.trim_matches('/').to_string()
-        } else {
-            let t = decoded.trim_matches('/');
-            let (id, name) = t.split_once('/').unwrap_or((t, ""));
-            if self.task(id).is_some() {
-                let dir = crate::store::artifact_dir(root, id);
-                let dir = if name.is_empty() { dir } else { dir.join(name) };
-                dir.strip_prefix(root)
-                    .ok()?
-                    .to_string_lossy()
-                    .replace('\\', "/")
-            } else {
-                t.to_string()
-            }
-        };
-        if rel.is_empty()
-            || rel
-                .split('/')
-                .any(|c| matches!(c, "" | "." | ".." | ".git") || c.contains('\\'))
-        {
-            return None;
-        }
-        if root.join(&rel).is_dir() {
-            return Some(rel);
-        }
-        // A source named by its bare `<date>-<sha8>` id.
-        let rest = rel.strip_prefix("sources/")?;
-        let (id, tail) = rest.split_once('/').unwrap_or((rest, ""));
-        let dir = crate::sources::dir_for(root, id)?;
-        let found = if tail.is_empty() {
-            dir
-        } else {
-            format!("{dir}/{tail}")
-        };
-        root.join(&found).is_dir().then_some(found)
-    }
-
-    /// The directory a pane link points at (what Enter browses), when it
-    /// points at one. `doc` is the viewer's document when the link is in one:
-    /// a relative link (`sketches/`) is written from its folder, as the
-    /// grammar reads a dok's links.
-    pub(crate) fn target_dir(
-        &self,
-        t: &Target,
-        doc: Option<&super::handlers::AttachView>,
-    ) -> Option<String> {
-        match t {
-            Target::Farm {
-                path, rev: None, ..
-            } if self.farm_path_is_dir(path) => self.farm_dir_of(&format!("/{path}")),
-            Target::Artifact(p) => {
-                let from_doc = doc
-                    .filter(|v| !matches!(v.doc, DocKind::Attachment | DocKind::Code { .. }))
-                    .filter(|_| !p.starts_with('/') && !p.contains("://"))
-                    .and_then(|v| {
-                        let base = v.target.rsplit_once('/').map_or("", |(d, _)| d);
-                        self.farm_dir_of(&format!("/{base}/{p}"))
-                    });
-                from_doc.or_else(|| self.farm_dir_of(p))
-            }
-            _ => None,
-        }
-    }
-
     /// The directory of files that goes with farm document `path`, as the
     /// viewer's `Attachments:` / `Files:` row, with its file count: the
     /// document's sibling directory (its path without `.md`), for a dok, a
@@ -564,19 +407,6 @@ impl App {
         };
         let n = count_files(&root.join(&rel));
         (n > 0).then_some((label, rel, n))
-    }
-
-    /// Whether farm path `path` as written names a directory rather than a
-    /// file: it ends in `/`, or there is no file by that name (`sources/<id>`
-    /// is its file, `sources/<id>.md`, not the directory).
-    pub(crate) fn farm_path_is_dir(&self, path: &str) -> bool {
-        let Some(root) = self.farm.as_ref().map(|f| f.root()) else {
-            return false;
-        };
-        path.ends_with('/')
-            || !root
-                .join(&*crate::locate::farm_file_in(root, path))
-                .is_file()
     }
 
     /// Show farm directory `rel` in the pane, a jump (`o` comes back).
@@ -668,6 +498,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::locate::Place;
     use crate::model::Status;
     use crate::tui::handlers::OS_OPENED;
     use crate::tui::test_support::*;
@@ -730,7 +561,7 @@ mod tests {
         let (dir, mut app) = attached();
         enter_key(&mut app);
         draw(&app, 100, 24);
-        app.open_external("t0/");
+        app.open_dest("t0/");
         assert_eq!(app.surface_ctx(), keymap::Ctx::Dir);
         // Directories first, then files by name; the dot file inside is kept.
         assert_eq!(names(&app), ["proj", "pack.tgz", "run.log"]);
@@ -774,7 +605,7 @@ mod tests {
         let (dir, mut app) = attached();
         enter_key(&mut app);
         draw(&app, 100, 24);
-        app.open_external("t0/proj/");
+        app.open_dest("t0/proj/");
         assert_eq!(names(&app), ["src", ".hidden", "Cargo.toml"]);
         enter_key(&mut app);
         assert_eq!(
@@ -803,7 +634,7 @@ mod tests {
         enter_key(&mut app);
         draw(&app, 100, 24);
         // In the tree.
-        app.open_external("t0/");
+        app.open_dest("t0/");
         press(&mut app, "j"); // pack.tgz
         assert_eq!(app.dir().unwrap().selected().unwrap().name, "pack.tgz");
         enter_key(&mut app);
@@ -815,13 +646,13 @@ mod tests {
         // From a link.
         app.close_doc();
         app.notification = None;
-        app.open_external("t0/pack.tgz");
+        app.open_dest("t0/pack.tgz");
         assert_eq!(
             app.notification.as_deref(),
             Some("pack.tgz: an archive; O \u{2192} p copies its path")
         );
         // From the take-out menu: `o` on it, and `p` still copies the path.
-        app.open_external("t0/");
+        app.open_dest("t0/");
         press(&mut app, "j");
         press(&mut app, "O");
         let Overlay::TakeOut(t) = std::mem::replace(&mut app.overlay, Overlay::None) else {
@@ -950,9 +781,15 @@ mod tests {
         let _ = std::fs::remove_dir_all(dir);
     }
 
+    /// The one resolver decides what a link names: a directory link never
+    /// climbs out of the farm or into git, and a file is not a directory.
     #[test]
     fn a_link_cannot_climb_out_of_the_farm_or_into_git() {
         let (dir, app) = attached();
+        let dir_of = |dest: &str| match app.place_of_dest(dest) {
+            Place::FarmDir { rel } => Some(rel),
+            _ => None,
+        };
         for bad in [
             "/../",
             "/doks/../..",
@@ -961,22 +798,16 @@ mod tests {
             "/sources/x/./",
             "/",
         ] {
-            assert_eq!(app.farm_dir_of(bad), None, "{bad}");
+            assert_eq!(dir_of(bad), None, "{bad}");
         }
+        assert_eq!(dir_of("t0/proj/").as_deref(), Some("t0/yaks/t0/proj"));
         assert_eq!(
-            app.farm_dir_of("t0/proj/").as_deref(),
+            dir_of("/t0/yaks/t0/proj/").as_deref(),
             Some("t0/yaks/t0/proj")
         );
-        assert_eq!(
-            app.farm_dir_of("/t0/yaks/t0/proj").as_deref(),
-            Some("t0/yaks/t0/proj")
-        );
-        assert_eq!(app.farm_dir_of("t0/nope/"), None);
-        assert_eq!(
-            app.farm_dir_of("t0/run.log"),
-            None,
-            "a file is not a directory"
-        );
+        assert_eq!(dir_of("t0/").as_deref(), Some("t0/yaks/t0"));
+        assert_eq!(dir_of("t0/nope/"), None);
+        assert_eq!(dir_of("t0/run.log"), None, "a file is not a directory");
         let _ = std::fs::remove_dir_all(dir);
     }
 

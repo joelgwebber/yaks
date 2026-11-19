@@ -71,14 +71,15 @@ pub(crate) enum PaneAt {
         line: usize,
         scroll: u16,
     },
-    /// A document open in the pane: an attachment, a dok, a source or an
-    /// image (whose line and scroll are 0).
+    /// A document open in the pane: an attachment, a dok, a source, an
+    /// image (whose line and scroll are 0), a directory, a code file or a
+    /// commit.
     Doc {
-        /// The document as the viewer names it: `<id>/<file>` for an
-        /// attachment, a farm-relative path otherwise.
-        path: String,
-        /// The farm commit it was shown at, for a pinned link.
-        rev: Option<String>,
+        /// What it is, as the link destination that names it
+        /// (`crate::links::dest`: `/doks/x.md`, `t0/proj/`, `code:src/a.rs@<sha>`,
+        /// `commit:<sha>`): the subject's one stable name (yaks-84fe), read
+        /// back through the resolver on restore.
+        dest: String,
         /// Where focus goes when it closes ([`DocPane::from`]).
         from: Focus,
         /// The yak the pane showed under it, when that was not the cursor's
@@ -86,8 +87,8 @@ pub(crate) enum PaneAt {
         under: Option<String>,
         line: usize,
         scroll: u16,
-        /// A directory view's open folds (`path` then ends in `/`, `line` is
-        /// its cursor row); empty for any other document.
+        /// A directory or commit view's open folds (`line` is then its
+        /// cursor row); empty for any other document.
         folds: Vec<String>,
     },
     /// The shed under the cursor, in the pane.
@@ -98,7 +99,8 @@ impl PaneAt {
     fn label(&self) -> &str {
         match self {
             PaneAt::Yak { id, .. } => id,
-            PaneAt::Doc { path, .. } => path,
+            // `/doks/x.md` reads as `doks/x.md`, as the viewer names it.
+            PaneAt::Doc { dest, .. } => dest.strip_prefix('/').unwrap_or(dest),
             PaneAt::Shed(name) => name,
         }
     }
@@ -178,54 +180,26 @@ impl App {
             .get(self.cursor)
             .map(|r| RowKey::of(self.resolve_item(r.loc)));
         let pane = match &self.doc {
-            Some(DocPane {
-                view: DocView::Text(v),
-                from,
-            }) => Some(PaneAt::Doc {
-                path: v.target.clone(),
-                rev: v.rev.clone(),
-                from: *from,
-                under: self.pane_yak.clone(),
-                line: v.nav.line,
-                scroll: v.nav.scroll,
-                folds: Vec::new(),
-            }),
-            Some(DocPane {
-                view: DocView::Image(v),
-                from,
-            }) => Some(PaneAt::Doc {
-                path: v.target.clone(),
-                rev: None,
-                from: *from,
-                under: self.pane_yak.clone(),
-                line: 0,
-                scroll: 0,
-                folds: Vec::new(),
-            }),
-            Some(DocPane {
-                view: DocView::Dir(v),
-                from,
-            }) => Some(PaneAt::Doc {
-                path: format!("{}/", v.rel),
-                rev: None,
-                from: *from,
-                under: self.pane_yak.clone(),
-                line: v.cursor,
-                scroll: 0,
-                folds: v.open_folds(),
-            }),
-            Some(DocPane {
-                view: DocView::Commit(v),
-                from,
-            }) => Some(PaneAt::Doc {
-                path: format!("commit:{}", v.sha),
-                rev: None,
-                from: *from,
-                under: self.pane_yak.clone(),
-                line: v.cursor(),
-                scroll: 0,
-                folds: v.open_folds(),
-            }),
+            Some(DocPane { view, from }) => {
+                // The cursor row and folds of whichever view it is; an image
+                // has neither.
+                let (line, scroll, folds) = match view {
+                    DocView::Text(v) => (v.nav.line, v.nav.scroll, Vec::new()),
+                    DocView::Image(_) => (0, 0, Vec::new()),
+                    DocView::Dir(v) => (v.cursor, 0, v.open_folds()),
+                    DocView::Commit(v) => (v.cursor(), 0, v.open_folds()),
+                };
+                self.doc_link(view)
+                    .and_then(|l| crate::links::dest(&l))
+                    .map(|dest| PaneAt::Doc {
+                        dest,
+                        from: *from,
+                        under: self.pane_yak.clone(),
+                        line,
+                        scroll,
+                        folds,
+                    })
+            }
             None if self.focus == Focus::Detail => {
                 if let Some(s) = self.selected_shed() {
                     Some(PaneAt::Shed(s.name.clone()))
@@ -393,14 +367,13 @@ impl App {
                 }
             }
             Some(PaneAt::Doc {
-                path,
-                rev,
+                dest,
                 from,
                 under,
                 line,
                 scroll,
                 folds,
-            }) => match self.read_doc(path, rev.as_deref()) {
+            }) => match self.read_place(&self.place_of_dest(dest)) {
                 Ok(mut view) => {
                     if let DocView::Dir(d) = &mut view {
                         d.restore(folds, *line);
@@ -418,7 +391,7 @@ impl App {
                     self.set_doc_position(*line, *scroll);
                     shown = true;
                 }
-                Err(_) => miss(path, "gone"),
+                Err(_) => miss(dest.strip_prefix('/').unwrap_or(dest), "gone"),
             },
             None => {}
         }
@@ -705,8 +678,7 @@ mod tests {
         goto_view(&mut app, "status:hairy");
         app.history.back.push(Location {
             pane: Some(PaneAt::Doc {
-                path: path.clone(),
-                rev: None,
+                dest: format!("/{path}"),
                 from: Focus::List,
                 under: None,
                 line: 0,
@@ -828,5 +800,51 @@ mod tests {
         app.goto_task("nope");
         assert_eq!(app.history.back.len(), n);
         assert_eq!(app.notification.as_deref(), Some("nope not found"));
+    }
+
+    /// yaks-84fe: a document in the pane is kept by the link destination
+    /// that names it, and read back through the one resolver: every kind the
+    /// pane shows from the farm (a dok, an attachment, a file in an attached
+    /// directory, an image, a directory) comes back as the same view.
+    #[test]
+    fn every_kind_of_document_round_trips_through_its_destination() {
+        let (proj, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let root = farm.root().to_path_buf();
+        let put = |rel: &str, data: &[u8]| {
+            let p = root.join(rel);
+            std::fs::create_dir_all(p.parent().unwrap()).unwrap();
+            std::fs::write(p, data).unwrap();
+        };
+        put("doks/x.md", b"---\ntitle: X\n---\n\nbody\n");
+        put("doks/x/sketches/a.txt", b"a");
+        let a = crate::store::artifact_dir(&root, "t0");
+        let a = a.strip_prefix(&root).unwrap().to_string_lossy().to_string();
+        put(&format!("{a}/my log.txt"), b"log");
+        put(&format!("{a}/proj/src/main.rs"), b"fn main() {}");
+        let mut png = Vec::new();
+        image::DynamicImage::new_rgb8(4, 4)
+            .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
+            .unwrap();
+        put(&format!("{a}/shot.png"), &png);
+        let mut app = App::with_farm(farm).unwrap();
+        app.detail_page = 20;
+        for (dest, want) in [
+            ("/doks/x.md", "/doks/x.md"),
+            ("/doks/x/sketches/", "/doks/x/sketches/"),
+            ("t0/my%20log.txt", "t0/my%20log.txt"),
+            ("t0/proj/src/main.rs", "t0/proj/src/main.rs"),
+            ("t0/shot.png", "t0/shot.png"),
+            ("t0/proj/", &format!("/{a}/proj/")),
+        ] {
+            app.open_dest(dest);
+            let Some(PaneAt::Doc { dest: kept, .. }) = app.current_location().pane else {
+                panic!("{dest}: no document in the pane ({:?})", app.notification);
+            };
+            assert_eq!(kept, want, "{dest}");
+            let view = app.read_place(&app.place_of_dest(&kept)).unwrap();
+            let again = app.doc_link(&view).and_then(|l| crate::links::dest(&l));
+            assert_eq!(again.as_deref(), Some(want), "{dest} reads back the same");
+        }
+        let _ = std::fs::remove_dir_all(proj);
     }
 }
