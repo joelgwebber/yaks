@@ -8777,8 +8777,12 @@ mod place_stars {
     fn every_kind_of_place_stars_from_the_pane_lists_opens_and_unstars() {
         let (proj, mut app, sha) = farm();
         let commit = format!("commit:{sha}");
+        // Archives (yaks-93ee): a file inside one, and a directory inside one.
+        let a = crate::store::artifact_dir(app.farm.as_ref().unwrap().root(), "t0");
+        crate::entries::fixtures::zip(&a.join("code.zip"), &[("src/lib.rs", b"pub fn f() {}\n")]);
+        crate::entries::fixtures::tgz(&a.join("code.tgz"), &[("doc/a.md", b"# A\n")], &[]);
         // (what is starred, the icon, the name, where it lives, what opens)
-        let cases: [(&str, &str, &str, &str); 6] = [
+        let cases: [(&str, &str, &str, &str); 8] = [
             ("t0/notes.md", "\u{1f4ce}", "notes.md", "solo yak"),
             ("t0/shot.png", "\u{1f5bc}", "shot.png", "solo yak"),
             (
@@ -8790,6 +8794,18 @@ mod place_stars {
             ("t0/proj/src", "\u{1f4c1}", "src/", "t0/proj  solo yak"),
             ("code:src/a.rs", "\u{1f4c4}", "a.rs", "code:src"),
             (&commit, "\u{1f500}", &sha[..7], "commit:"),
+            (
+                "t0/code.zip/src/lib.rs",
+                "\u{1f4c4}",
+                "lib.rs",
+                "code.zip/src",
+            ),
+            (
+                "t0/code.tgz/doc",
+                "\u{1f4c1}",
+                "doc/",
+                "t0/code.tgz  solo yak",
+            ),
         ];
         for (dest, icon, name, whence) in cases {
             app.working_set.clear();

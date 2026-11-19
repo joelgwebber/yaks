@@ -132,8 +132,12 @@ impl App {
         let root = self.farm.as_ref()?.root();
         let place = Space::new(root, None).resolve(&link);
         let there = match &place {
-            // Resolving a directory looked at the disk.
-            Place::FarmDir { .. } | Place::CodeFile { .. } | Place::Commit { .. } => true,
+            // Resolving a directory, or a file inside an archive, looked at
+            // the disk (an archive member that is gone does not resolve).
+            Place::FarmDir { .. }
+            | Place::Member { .. }
+            | Place::CodeFile { .. }
+            | Place::Commit { .. } => true,
             Place::FarmFile { rel, rev: None, .. } => root.join(rel).is_file(),
             Place::FarmFile { rev: Some(_), .. } => true,
             Place::Attachment { id, name, .. } => {
@@ -248,6 +252,16 @@ impl App {
                             },
                         }
                     }
+                }
+            }
+            // A file inside an archive (yaks-93ee): a file, and where it
+            // lives is the archive and the directory inside it.
+            Place::Member { archive, inner, .. } => {
+                let (parent, name) = split(&format!("{archive}/{inner}"));
+                PlaceLabel {
+                    icon: file_icon(&name, FILE),
+                    whence: parent,
+                    name,
                 }
             }
             Place::FarmFile { rel, rev, .. } => {
