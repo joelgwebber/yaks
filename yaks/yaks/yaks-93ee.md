@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T02:34:18Z'
+updated: '2026-11-19T02:35:08Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -96,3 +96,9 @@ Claim (yakherd `herd-files`). Owner: worker `archive-1` (Sonnet 5.5), on top of 
 - Out of scope: stars (yaks-4381, `star-1` running beside it), `links.rs` grammar, keymap.
 - Evidence: tests on a built zip and tar.gz (list, read, link resolve, doctor, peek, a `..` member refused, a member over the size cap refused); headless frames of a tree unfolding into an archive and a member open, attached; the gate; docs (`docs/cli.md` links + peek, `docs/tui.md` "Browsing a directory", `yaks` skill Links).
 - Judge: the coordinator at landing.
+
+#### 2026-11-19T02:35:08Z
+
+*archive-1*
+
+Started: 2026-11-19T02:35Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-93ee.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/ynehkedbp6zv/yaks.
