@@ -294,10 +294,11 @@ enum Command {
     /// (`<id>/<dir>/...`), in one write, and one link names it
     /// (`[<dir>/](<id>/<dir>/)`). Attach a directory, never an archive. It
     /// uses a directory source's walk, skip list (`.git`, `node_modules`,
-    /// `target`, ...; dot files are kept) and limits (200 files, 5 MiB), and refuses
-    /// over them, writing nothing. A symlink is never followed or copied. What the
-    /// walk skipped is printed (`skipped 3: proj/.git/, proj/link, ...`). `--name` stores it under another directory
-    /// name; `--caption` is for an image, not a directory.
+    /// `target`, ...; dot files are kept) and limits (200 files, 5 MiB), and
+    /// refuses over them, writing nothing. A symlink is never followed or
+    /// copied. What the walk skipped is printed (`skipped 3: proj/.git/,
+    /// proj/link, ...`). `--name` stores it under another directory name;
+    /// `--caption` is for an image, not a directory.
     Attach {
         /// A yak id, or the farm path of a dok or session note.
         id: String,
