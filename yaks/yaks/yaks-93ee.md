@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:15:42Z'
+updated: '2026-11-19T03:35:51Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -128,3 +128,9 @@ Decision: `entries::list` marks an archive file as `is_dir && archive` only when
 Decision: `count_files` counts a browsable archive as ONE file (members not counted). Rejected: counting members: the Attachments row would change meaning and a tar index would be built just to render a detail pane.
 
 Decision: take-out `p` on a member gives `<abs archive path>/<inner>` (a path that does not exist on disk), `r` the farm path through the archive, per the brief; `e`/`o` use the read-only temp copy (`/tmp/yaks-archive/<hash of path,size,mtime>/<inner>`, a changed archive never reuses a stale copy). Rejected: `p` giving the temp copy (would put a vanishing tmp path on the clipboard).
+
+#### 2026-11-19T03:35:51Z
+
+*archive-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
