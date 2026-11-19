@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T01:32:32Z'
+updated: '2026-11-19T01:42:12Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -76,3 +76,9 @@ picked up
 *delta:Review yaks-93ee for file and yak handli*
 
 Answers taken in: refactor first, filed as yaks-84fe (now a dependency of this yak and of yaks-4381); link form `<id>/code.zip/src/main.rs`; archives go ahead once yaks-84fe lands (Joel has real `.tgz` attachments in ~/src/fs/joel). yaks-4381 fits the refactor; the design dok now has a section on it (a subject's name is its canonical link destination). Leaving this yak shaving, waiting on yaks-84fe.
+
+#### 2026-11-19T01:42:12Z
+
+*herd-files*
+
+Batch note (herd-files): symwalk-1 on yaks-8218, model claude-sonnet-5-5, base b013ff06, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG98JJIBxBCA0aLJyrhJPreUvVwLftHG. yaks-84fe by herd-files itself (Opus).
