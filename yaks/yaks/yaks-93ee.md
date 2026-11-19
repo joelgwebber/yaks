@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T01:27:51Z'
+updated: '2026-11-19T01:28:58Z'
 tags:
 - tui
 - doks
@@ -57,3 +57,9 @@ Three decisions before any code:
 1. Strong yes. It could get out of hand pretty quickly otherwise.
 2. Yup, sounds good and intuitive.
 3. The P4 thing is kind of an accident. I actually have a bunch of .tgz archives in my ~/src/fs/joel repo, which is what triggered this yak. So let's go ahead and do it once the refactoring is in place.
+
+#### 2026-11-19T01:28:58Z
+
+*sched-1*
+
+Also, consider whether yaks-4381 fits into the refactoring.
