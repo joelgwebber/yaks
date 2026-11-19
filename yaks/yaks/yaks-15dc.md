@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-19T23:40:14Z'
+updated: '2026-11-19T23:57:32Z'
 tags:
 - tui
 ---
@@ -50,3 +50,15 @@ Plan:
 
 1. Accept the `path:N` and `path:N-M` (and `:LN`) shorthand as the same `#L` anchor, for every path link (farm, attachment, code), so the forms people paste from editors and compilers work. `links::dest` keeps writing the `#L` form, and `doctor` keeps checking them.
 2. A line-range link opens a narrowed view: the viewer shows only the linked lines (with a header saying so), and a key widens it to the whole file at the same place. Peek already shows only the range.
+
+#### 2026-11-19T23:57:32Z
+
+*herd-files*
+
+Decision (herd-files): how a line-range link opens narrowed.
+
+- **Only a real range narrows** (`#L10-L14`, `:10-14`). A single line (`#L12`, `:12`) opens the whole file on that line, as GitHub does; a one-line view would hide the context the reader came for.
+- **The narrowed view is the same viewer, its rows filtered** to the range (from the first row that touches it to the last). So find, yank, Tab between links, `O`/`e` at the line and peek all keep working without a second code path. The header says `lines 10–14 of 120 · w whole file`.
+- **`w` toggles** whole file / range, keeping the cursor on the same file line. It is a look, so lowercase (`Cmd::DocWiden`, `doc.widen`, both key families). Rejected: `Esc` peeling the range (Esc already peels selection, then search, then closes; one more layer would make closing a range link take three presses), and a separate "open whole file" link row.
+- **History keeps it**: a narrowed view's subject is its link with the range (`links::dest` keeps `#L10-L14`), so `o`/`i` come back narrowed; widened, it is the plain file.
+- **Applies to every text file**: code, farm files, doks, attachments, archive members. A code file's range is still marked in the gutter.
