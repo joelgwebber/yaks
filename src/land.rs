@@ -1044,6 +1044,20 @@ mod tests {
             .to_string()
     }
 
+    /// Whether `head` (`MERGE_HEAD`, `CHERRY_PICK_HEAD`) is set, by git: it
+    /// is a file under `.git/` only with the `files` ref format, not in a
+    /// reftable repository (yaks-0a0a).
+    fn has_ref(d: &Path, head: &str) -> bool {
+        Command::new("git")
+            .arg("-C")
+            .arg(d)
+            .args(["rev-parse", "-q", "--verify", head])
+            .output()
+            .unwrap()
+            .status
+            .success()
+    }
+
     fn setup(tag: &str) -> Repo {
         setup_with(tag, &[])
     }
@@ -1131,7 +1145,7 @@ mod tests {
         // (a.txt modified, new/f.txt an untracked leftover).
         git(d, &["merge", "-q", "--no-commit", "--no-ff", &r.w]);
         git(d, &["read-tree", "HEAD"]);
-        assert!(d.join(".git/MERGE_HEAD").exists(), "setup: MERGE_HEAD");
+        assert!(has_ref(d, "MERGE_HEAD"), "setup: MERGE_HEAD");
 
         let (res, out) = land(d, &r.w, false, false);
         assert_eq!(code(&res), 0, "{res:?}\n{out}");
@@ -1147,7 +1161,7 @@ mod tests {
         assert_eq!(read(d, "a.txt"), "a2");
         assert_eq!(read(d, "new/f.txt"), "n");
         assert_eq!(read(d, "b.txt"), "b");
-        assert!(!d.join(".git/MERGE_HEAD").exists(), "MERGE_HEAD left");
+        assert!(!has_ref(d, "MERGE_HEAD"), "MERGE_HEAD left");
         assert_eq!(git(d, &["status", "--porcelain"]), "");
         assert!(out.contains("identical to the computed merge"), "{out}");
         assert!(out.contains("landed: "), "{out}");
@@ -1279,7 +1293,7 @@ mod tests {
         assert!(out.contains("the merge would conflict"), "{out}");
         assert!(out.contains("CONFLICT") && out.contains("a.txt"), "{out}");
         assert!(
-            d.join(".git/CHERRY_PICK_HEAD").exists(),
+            has_ref(d, "CHERRY_PICK_HEAD"),
             "left for the user to resolve"
         );
     }

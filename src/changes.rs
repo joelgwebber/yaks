@@ -231,14 +231,27 @@ pub fn outside(root: &Path) -> Result<Vec<String>> {
 
 /// A merge or cherry-pick in progress: `(the ref git sets, what it is)`. Git
 /// refuses a partial commit during one, which `yaks commit` relies on.
+/// Whether the repository whose (worktree) git dir is `git_dir` keeps its
+/// refs in a reftable: its common dir holds `reftable/` (a linked
+/// worktree's `commondir` file names the common dir).
+fn uses_reftable(git_dir: &Path) -> bool {
+    let common = std::fs::read_to_string(git_dir.join("commondir"))
+        .map(|c| git_dir.join(c.trim()))
+        .unwrap_or_else(|_| git_dir.to_path_buf());
+    common.join("reftable").is_dir()
+}
+
 pub fn pending_operation(root: &Path) -> Result<Option<(&'static str, &'static str)>> {
-    // The ref git sets is a file in the worktree's own git dir: look there
-    // when the farm is a farm branch, and ask git for any other.
+    // The ref git sets is a file in the worktree's own git dir with the
+    // `files` ref format: look there when the farm is a farm branch (no git
+    // process per write). A reftable repository (`init.defaultrefformat=
+    // reftable`) keeps it in its tables, so ask git there, as for any other
+    // farm (yaks-0a0a).
     let farm = crate::store::farm_git(root);
     for (head, what) in [("MERGE_HEAD", "merge"), ("CHERRY_PICK_HEAD", "cherry-pick")] {
         let set = match &farm {
-            Some(f) => f.git_dir.join(head).is_file(),
-            None => git(root, &["rev-parse", "-q", "--verify", head])?
+            Some(f) if !uses_reftable(&f.git_dir) => f.git_dir.join(head).is_file(),
+            _ => git(root, &["rev-parse", "-q", "--verify", head])?
                 .status
                 .success(),
         };
@@ -397,4 +410,67 @@ fn is_attachment(path: &str) -> bool {
 fn is_flat_yak_file(path: &str) -> bool {
     let rel = farm_rel(path);
     store::path_owner(&rel).is_some() && store::attachment_owner(&rel).is_none()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn run(dir: &Path, args: &[&str]) -> std::process::Output {
+        let out = Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+            .args(args)
+            .output()
+            .unwrap();
+        out
+    }
+
+    /// yaks-0a0a: a pending cherry-pick is seen whatever the repository's
+    /// ref format: with reftable, `CHERRY_PICK_HEAD` is no file under `.git/`.
+    #[test]
+    fn a_pending_cherry_pick_is_seen_in_either_ref_format() {
+        for format in ["files", "reftable"] {
+            let d =
+                std::env::temp_dir().join(format!("yaks-pending-{format}-{}", std::process::id()));
+            let _ = std::fs::remove_dir_all(&d);
+            std::fs::create_dir_all(&d).unwrap();
+            let init = run(
+                &d,
+                &[
+                    "init",
+                    "-q",
+                    "-b",
+                    "main",
+                    &format!("--ref-format={format}"),
+                ],
+            );
+            if !init.status.success() {
+                // A git too old for `--ref-format` has only the files format.
+                assert_eq!(format, "reftable", "{init:?}");
+                continue;
+            }
+            std::fs::write(d.join("a"), "a\n").unwrap();
+            run(&d, &["add", "a"]);
+            run(&d, &["commit", "-qm", "a"]);
+            assert_eq!(pending_operation(&d).unwrap(), None);
+            run(&d, &["checkout", "-qb", "w"]);
+            std::fs::write(d.join("a"), "w\n").unwrap();
+            run(&d, &["commit", "-qam", "w"]);
+            run(&d, &["checkout", "-q", "main"]);
+            std::fs::write(d.join("a"), "m\n").unwrap();
+            run(&d, &["commit", "-qam", "m"]);
+            assert!(
+                !run(&d, &["cherry-pick", "w"]).status.success(),
+                "it conflicts"
+            );
+            assert_eq!(
+                pending_operation(&d).unwrap(),
+                Some(("CHERRY_PICK_HEAD", "cherry-pick")),
+                "{format}"
+            );
+            let _ = std::fs::remove_dir_all(&d);
+        }
+    }
 }

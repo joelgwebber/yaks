@@ -6,6 +6,20 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
+/// Whether a cherry-pick is in progress in `r`, by git: `CHERRY_PICK_HEAD` is
+/// a file under `.git/` only with the `files` ref format, not in a reftable
+/// repository (yaks-0a0a).
+fn picking(r: &std::path::Path) -> bool {
+    std::process::Command::new("git")
+        .arg("-C")
+        .arg(r)
+        .args(["rev-parse", "-q", "--verify", "CHERRY_PICK_HEAD"])
+        .output()
+        .unwrap()
+        .status
+        .success()
+}
+
 fn temp(tag: &str) -> PathBuf {
     let d = std::env::temp_dir().join(format!("yaks-landcont-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
@@ -131,13 +145,13 @@ fn continue_finishes_the_pick_and_records_the_landing() {
     let o = yaks(r, &["land", &sc.worker]);
     assert_eq!(o.status.code(), Some(5), "{}", text(&o));
     assert!(text(&o).contains("yaks land --continue"), "{}", text(&o));
-    assert!(r.join(".git/CHERRY_PICK_HEAD").exists());
+    assert!(picking(&r));
     assert!(!notes(&sc).contains("kind: landed"), "nothing recorded yet");
 
     // While it waits, a second `land` neither resets the tree nor lands.
     let again = yaks(r, &["land", &sc.worker]);
     assert_eq!(again.status.code(), Some(8), "{}", text(&again));
-    assert!(r.join(".git/CHERRY_PICK_HEAD").exists());
+    assert!(picking(&r));
 
     resolve(&sc);
     let out = ok(r, &["land", "--continue"]);
@@ -145,7 +159,7 @@ fn continue_finishes_the_pick_and_records_the_landing() {
         out.contains(&format!("recorded the landing on {}", sc.id)),
         "{out}"
     );
-    assert!(!r.join(".git/CHERRY_PICK_HEAD").exists());
+    assert!(!picking(&r));
     assert!(!r.join(".git/yaks-land.json").exists(), "state removed");
     assert_eq!(git(r, &["rev-parse", "HEAD^"]), sc.other);
     assert_eq!(
@@ -193,7 +207,7 @@ fn continue_while_conflicts_remain_changes_nothing_and_can_be_retried() {
     yaks(r, &["land", &sc.worker]);
     let o = yaks(r, &["land", "--continue"]);
     assert_eq!(o.status.code(), Some(5), "{}", text(&o));
-    assert!(r.join(".git/CHERRY_PICK_HEAD").exists());
+    assert!(picking(&r));
     assert!(r.join(".git/yaks-land.json").exists(), "still waiting");
     resolve(&sc);
     ok(r, &["land", "--continue"]);
@@ -225,7 +239,7 @@ fn abort_restores_the_tree_and_forgets_the_state() {
     let r = &sc.repo;
     yaks(r, &["land", &sc.worker]);
     ok(r, &["land", "--abort"]);
-    assert!(!r.join(".git/CHERRY_PICK_HEAD").exists());
+    assert!(!picking(&r));
     assert!(!r.join(".git/yaks-land.json").exists());
     assert_eq!(git(r, &["rev-parse", "HEAD"]), sc.other);
     assert_eq!(git(r, &["status", "--porcelain"]), "");

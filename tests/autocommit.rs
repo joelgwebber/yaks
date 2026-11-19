@@ -14,10 +14,27 @@ struct Farm {
 
 impl Farm {
     fn new(tag: &str) -> Farm {
+        Farm::with_format(tag, "files")
+    }
+
+    /// A farm in a repository of ref format `format` (`files`, `reftable`).
+    fn with_format(tag: &str, format: &str) -> Farm {
         let dir =
             std::env::temp_dir().join(format!("yaks-autocommit-{tag}-{}", std::process::id()));
         common::cleanup(&dir);
-        common::git_init(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let o = std::process::Command::new("git")
+            .args([
+                "init",
+                "-q",
+                "-b",
+                "main",
+                &format!("--ref-format={format}"),
+            ])
+            .current_dir(&dir)
+            .output()
+            .unwrap();
+        assert!(o.status.success(), "git init: {o:?}");
         let f = Farm { dir };
         f.run("me", &["init", "--no-skills"]);
         f
@@ -321,4 +338,50 @@ fn commit_as_stamps_a_hand_edit_for_touched_and_undo() {
     assert!(!o.status.success());
     assert!(String::from_utf8_lossy(&o.stderr).contains("--as"), "{o:?}");
     assert!(f.git(&["status", "--porcelain"]).contains("notes.md"));
+}
+
+/// yaks-0a0a: a cherry-pick in progress in the farm worktree is seen, so
+/// `yaks commit` refuses with its own message rather than leaving the farm
+/// changes staged under git's "cannot do a partial commit". In a reftable
+/// repository `CHERRY_PICK_HEAD` is no file under the git dir.
+#[test]
+fn commit_refuses_during_a_cherry_pick_in_either_ref_format() {
+    for format in ["files", "reftable"] {
+        let f = Farm::with_format(&format!("pick-{format}"), format);
+        let wt = f.wt();
+        let g = |args: &[&str]| {
+            std::process::Command::new("git")
+                .arg("-C")
+                .arg(&wt)
+                .args(["-c", "user.name=t", "-c", "user.email=t@t"])
+                .args(args)
+                .output()
+                .unwrap()
+        };
+        let branch = f.git(&["branch", "--show-current"]).trim().to_string();
+        g(&["checkout", "-q", "-b", "side"]);
+        std::fs::write(wt.join("x.txt"), "side\n").unwrap();
+        g(&["add", "x.txt"]);
+        g(&["commit", "-qm", "side"]);
+        g(&["checkout", "-q", &branch]);
+        std::fs::write(wt.join("x.txt"), "main\n").unwrap();
+        g(&["add", "x.txt"]);
+        g(&["commit", "-qm", "main"]);
+        assert!(
+            !g(&["cherry-pick", "side"]).status.success(),
+            "it conflicts"
+        );
+        // A farm change for `commit` to take (an uncommitted hand edit).
+        let id = f.create("me", "Pending");
+        let path = String::from_utf8(f.out("me", &["path", &id]).stdout).unwrap();
+        let body = std::fs::read_to_string(path.trim()).unwrap();
+        std::fs::write(path.trim(), format!("{body}\nHand edit.\n")).unwrap();
+        let o = f.out("me", &["commit"]);
+        let err = String::from_utf8_lossy(&o.stderr);
+        assert!(
+            err.contains("a cherry-pick is in progress"),
+            "{format}: {err}"
+        );
+        common::cleanup(&f.dir);
+    }
 }

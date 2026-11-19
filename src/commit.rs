@@ -498,7 +498,10 @@ mod tests {
         git(&repo, &["commit", "-q", "-m", "side"]);
         git(&repo, &["checkout", "-q", "-"]);
         git(&repo, &["merge", "--no-commit", "--no-ff", "-q", "side"]);
-        assert!(repo.join(".git/MERGE_HEAD").exists(), "merge is pending");
+        assert!(
+            crate::changes::pending_operation(&repo).unwrap().is_some(),
+            "merge is pending"
+        );
         put(&repo, ".yaks/yak/yaks/yak-0003.md", "three\n");
 
         let err = match run(&farm(&repo), None, false) {

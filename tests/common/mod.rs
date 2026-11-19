@@ -10,8 +10,18 @@ use std::process::Command;
 /// `git init` in `dir` (created if absent).
 pub fn git_init(dir: &Path) {
     std::fs::create_dir_all(dir).unwrap();
+    // The `files` ref format whatever the user's `init.defaultrefformat`: the
+    // git-spawn budgets in these tests count a files-format repository
+    // (reftable is covered on its own, yaks-0a0a).
     let out = Command::new("git")
-        .args(["init", "-q", "-b", "main"])
+        .args([
+            "-c",
+            "init.defaultRefFormat=files",
+            "init",
+            "-q",
+            "-b",
+            "main",
+        ])
         .current_dir(dir)
         .output()
         .unwrap();
