@@ -1,0 +1,36 @@
+=== frame 4 · 90x10 · focus=list · view=⭐ Starred · cursor=0 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (
+
+ 📁 code.zip/  yak-de5c  arch                                                           ⭐
+ 📄 main.rs  yak-de5c/code.zip/src  arch                                                ⭐
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
+=== frame 6 · 90x10 · focus=detail · view=⭐ Starred · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (
+viewing yak/yaks/yak-de5c/code.zip/src/main.rs
+◂ 📎 yak/yaks/yak-de5c/code.zip/src/main.rs  text
+│ fn main() {}
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out
+=== end ===
+=== frame 7 · 90x10 · focus=list · view=⭐ Starred · cursor=1 · rows=2 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (2)   📖 Doks (
+← Starred · yak-de5c/code.zip/src/main.rs
+ 📁 code.zip/  yak-de5c  arch                                                           ⭐
+ 📄 main.rs  yak-de5c/code.zip/src  arch                                                ⭐
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  /:search  O:take out  ?:help  q:quit
+=== end ===
