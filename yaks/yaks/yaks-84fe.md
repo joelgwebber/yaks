@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-19T01:32:15Z'
-updated: '2026-11-19T01:41:45Z'
+updated: '2026-11-19T02:33:13Z'
 tags:
 - links
 - tui
@@ -40,3 +40,15 @@ moved: hairy -> shaving
 *herd-files*
 
 Claim (yakherd `herd-files`): the coordinator does this one itself (shared design work everything else builds on). Running alongside: `symwalk-1` on yaks-8218, which touches only `sources::walk_dir`.
+
+#### 2026-11-19T02:33:13Z
+
+*herd-files*
+
+Decision: an attachment link with an empty name, `<id>/`, is the yak's whole attachment directory, in the grammar (`links::parse`). The detail pane's `Attachments:` row has always linked `<id>/`, but the grammar read it as the farm path `<id>/`; the old TUI papered over that in `farm_dir_of`. Rejected: keeping a TUI-side special case (a second rule), or changing the row's link to the long `/<herd>/yaks/<id>/` form (the short form is what people write).
+
+Decision: whether a link names a directory is decided once, in `locate::dir_of`, called by `Space::resolve` (giving `Place::FarmDir`), `links::exists` and `links::peek`. A farm path says it is a directory lexically with a trailing `/` (kept by `clean_farm`); an attachment or a farm path without the `/` is a directory when the disk says so, as before. Rejected: requiring the `/` everywhere (would break existing `<id>/proj` links and `/sources/<id>/files`-style paths written without it).
+
+Decision: `doctor` now checks any farm link ending in `/` (unless it holds `{}`/`<>` placeholders), where before a slash-ended path was always `../`. Checked on this farm: `yaks doctor` output is identical before and after (8 lines). Rejected: running a slash-ended link through the extension heuristic for prose (a directory has no extension, so it would never be checked).
+
+Decision: history's `PaneAt::Doc` keeps one `dest` string (`links::dest` of the view's link) instead of `path` + `rev`; restore is `read_place(place_of_dest(dest))`. History is in memory only, so there is no stored format to migrate. Rejected: storing a `Place` (it would need `Clone`/`PartialEq` plumbing and gives nothing a string does not; a string is also what stars will store, yaks-4381).
