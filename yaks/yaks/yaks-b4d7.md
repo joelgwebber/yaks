@@ -1,11 +1,11 @@
 ---
 id: yaks-b4d7
 title: Direct links to doks, with no anchor, often jump to the bottom
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-16T21:20:31Z'
-updated: '2026-11-19T23:40:13Z'
+updated: '2026-11-19T23:52:19Z'
 tags:
 - tui
 ---
@@ -31,3 +31,9 @@ Repro in a scratch farm (headless, before the fix): a yak links `[mid](/doks/anc
 Fix: `App::show_doc` gives any viewer not drawn yet the pane's width as last drawn (`App::doc_width`: the right pane's inner width, recorded in `render`; else the detail pane's; else 80). The member viewer's own width hack (yaks-93ee) goes, since it is now the general rule.
 
 Test: `a_link_from_a_yak_lands_on_its_heading_in_the_first_frame` (fails without the fix: the viewer's width is 0). Headless after: `#middle` lands with "Middle" as the top row.
+
+#### 2026-11-19T23:52:19Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
