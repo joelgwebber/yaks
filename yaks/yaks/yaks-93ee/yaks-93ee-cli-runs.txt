@@ -1,0 +1,40 @@
+# yaks-93ee real runs, release binary, scratch farm
+
+$ yaks peek yak-7ed0/x.tgz/
+── yak-7ed0/x.tgz
+doc/
+src/
+(exit 0)
+
+$ yaks peek yak-7ed0/x.zip/src/a.rs#L1-L2
+── yak-7ed0/x.zip/src/a.rs:L1-L2
+1  line one
+2  line two
+(exit 0)
+
+$ yaks peek yak-7ed0/x.zip/
+── yak-7ed0/x.zip
+doc/
+src/
+(exit 0)
+
+$ yaks peek yak-7ed0/x.tgz/doc/
+── yak-7ed0/x.tgz/doc
+r.md
+(exit 0)
+
+$ yaks peek yak-7ed0/x.zip/../evil.txt
+error: yak-7ed0/x.zip/../evil.txt: a link may not climb out with ../; link from the farm root (/doks/...)
+(exit 1)
+
+$ yaks url yak-7ed0/x.zip/src/a.rs
+error: yak/yaks/yak-7ed0/x.zip/src/a.rs: a host cannot show a member of an archive; link the archive file
+(exit 1)
+
+$ yaks doctor
+Found 2 farm-integrity issues:
+
+Broken link (a farm path or attachment that does not exist, or a ../ link):
+  yak-7ed0:L15: (yak-7ed0/x.zip/src/nope.rs) no such file in the farm
+  yak-7ed0:L15: (yak-7ed0/x.tgz/ghost/) no such file in the farm
+(exit 1)

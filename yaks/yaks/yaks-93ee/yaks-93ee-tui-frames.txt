@@ -1,0 +1,286 @@
+=== frame 0 · 100x24 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+ yak-7ed0 p3 task     🦬 scratch
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 1 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ Task: yak-7ed0
+│
+│ Title:       scratch
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ Attachments: 2 files
+│
+│ 📎 x
+│
+│ ── peek ─────────────────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:d
+=== end ===
+=== frame 2 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ Task: yak-7ed0
+│
+│ Title:       scratch
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ Attachments: 2 files
+│
+│ 📎 x
+│
+│ ── peek: yak-7ed0/ ──────────────────────────────────────────────────────────────────────────────
+│ x.tgz
+│ x.zip
+│
+│
+│
+│
+→ yak-7ed0/
+=== end ===
+=== frame 3 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+browsing yak/yaks/yak-7ed0/
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▸ x.tgz                                                                           archive · 440 B
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 4 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▾ x.tgz                                                                           archive · 440 B
+│   ▸ doc/
+│   ▸ src/
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 5 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▾ x.tgz                                                                           archive · 440 B
+│   ▸ doc/
+│   ▸ src/
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 6 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▾ x.tgz                                                                           archive · 440 B
+│   ▾ doc/
+│       r.md                                                                                    6 B
+│   ▸ src/
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 7 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▾ x.tgz                                                                           archive · 440 B
+│   ▾ doc/
+│       r.md                                                                                    6 B
+│   ▸ src/
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
+=== frame 8 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+viewing yak/yaks/yak-7ed0/x.tgz/doc/r.md
+◂ 📎 yak/yaks/yak-7ed0/x.tgz/doc/r.md  markdown
+│ doc
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo
+=== end ===
+=== frame 9 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+yak/yaks/yak-7ed0/x.tgz/doc/r.md: inside an archive, read-only; O then e opens a copy in your editor
+◂ 📎 yak/yaks/yak-7ed0/x.tgz/doc/r.md  markdown
+│ doc
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo
+=== end ===
+=== frame 10 · 100x24 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-7ed0 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=dir · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sh
+← Hairy · yak/yaks/yak-7ed0/
+◂ 📁 yak/yaks/yak-7ed0/  2 files
+│ ▾ x.tgz                                                                           archive · 440 B
+│   ▾ doc/
+│       r.md                                                                                    6 B
+│   ▸ src/
+│ ▸ x.zip                                                                           archive · 341 B
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+Esc:close  j/k:move  Enter:open  y:copy path  O:take out  i/o:fwd/back  q:quit
+=== end ===
