@@ -11,7 +11,7 @@ tags:
 
 # Files, directories and archives: one way to name, list and open them
 
-Status: proposal, for [yaks-93ee](/yaks/yaks/yaks-93ee.md) (browse and link into archive attachments). Read this before adding a new kind of thing a link can name, or a new way to list files.
+Status: agreed with Joel, 2026-11-19 (refactor first; link form `<id>/code.zip/src/main.rs`; archives after the refactor). For [yaks-93ee](/yaks/yaks/yaks-93ee.md) (archives) and [yaks-4381](/yaks/yaks/yaks-4381.md) (star anything). Read this before adding a new kind of thing a link can name, or a new way to list files.
 
 ## The finding in one paragraph
 
@@ -87,12 +87,38 @@ Recommended: **the path just goes through the archive**, `<id>/code.zip/src/main
 - Take-out (`O`) on a member: `p`/`r` give the archive's path plus the member's (`code.zip/src/main.rs`); `e` and `o` extract the member to a read-only temp copy, the rule `locate::pinned_file` already uses for a pinned file. An archive inside an archive is still never system-opened.
 - `doctor` checks a member link exists (reads the index). `yaks attach` is unchanged: attaching a directory is still what the skill recommends.
 
+## Stars, history and the pane: one name for a subject (yaks-4381)
+
+[yaks-4381](/yaks/yaks/yaks-4381.md) wants `*` to star anything the pane can show (an attachment, a file in an attached directory, later an archive member), and list it in Starred. It needs the same seam, and it adds one requirement: **a subject needs a stable, storable name.**
+
+Today there are three ad-hoc names:
+
+- the working set (`working_set.json`) holds yak ids and dok paths, and `star_target` accepts only those two;
+- history's `PaneAt::Doc.path` is an encoded string: `<id>/<file>`, a farm path, `<dir>/` for a directory, `commit:<sha>`, `code:<rel>`, which `read_doc` takes apart again by prefix;
+- the viewers each keep a `target` string in their own form.
+
+Every one of these strings is already, or nearly, a link destination: `yaks-1a2b`, `doks/x.md`, `<id>/proj/src/a.rs`, `commit:3f2a9c1`, `code:src/a.rs`, and `doks/x/sketches/` once yaks-1d2b is fixed. So the rule is: **a subject's name is its canonical link destination.**
+
+- `links::dest(&Link) -> String`, the inverse of `parse` (`From::Cli`, from the farm root). Not `label`, which is for display (`:L12`).
+- Each `DocView` reports its `Place`; history stores `dest(place)` and restores with `open_place(resolve(parse(dest)))`, so `read_doc`'s prefix sniffing goes away. `PaneAt::Doc.folds` and `line` stay as they are.
+- A star is a destination. Existing entries (ids, `doks/...` paths) already parse as one, so the stored file needs no migration. `*` stars the pane's current place, whatever its kind, and the "only a yak or a dok can be starred" refusal goes.
+- **Starred list:** a star that resolves to a yak or a dok keeps its rich row. Anything else gets one generic row, `tree::Item::Place`: an icon by kind, the file's name, and where it lives (the yak's id and title, or the dok's directory), e.g. `📎 main.rs   yaks-1a2b/proj/src  Fix the parser`. `Enter` opens it through `open_place`. A star that no longer resolves is skipped, as a deleted dok is today.
+- This is also what the [TUI model](/doks/design/tui-model.md)'s "the pane shows a subject" needs: one value for the subject, not a `DocView` variant plus a string per variant.
+
+With this, an archive member is starrable and restorable by history for free once `Place::Member` exists.
+
 ## The order
 
-1. **Prep refactor (no user-visible change, except the bug fix):** `src/entries.rs` with `Container::Dir` only; `DirView`, `peek` and the count list through it; `Place` gains `FarmDir`; the grammar allows a farm path ending in `/`; the TUI openers go through one `open_place`. This fixes the sibling-directory link bug and deletes the TUI's disk-sniffing helpers. Measured by: fewer lines in `dirview.rs`/`follow.rs`/`handlers.rs`, and one place per question.
-2. **Archives (yaks-93ee):** add `Container::Zip`/`Tar`, the from-bytes viewer constructors, `Place::Member`, take-out's temp copy, docs and help. With step 1 done this touches `entries.rs`, `locate.rs`, the viewers' constructors and the take-out menu, and no opener.
+1. **Refactor, [yaks-84fe](/yaks/yaks/yaks-84fe.md):** no user-visible change except fixing yaks-1d2b.
+   - `src/entries.rs` with `Container::Dir` only; `DirView`, `peek` and the file count list through it.
+   - The grammar allows a farm path ending in `/`; `Place` gains `FarmDir`; `links::dest` writes a place's canonical destination.
+   - The TUI openers go through one `open_place` (and `read_place` for history); history stores destinations; `farm_dir_of`, `target_dir`, `farm_path_is_dir` and `read_doc`'s prefix dispatch go away.
+   - Measured by: one place per question, fewer lines in `dirview.rs`, `follow.rs` and `handlers.rs`, and history round-tripping every kind of subject through its destination.
+2. **Then, independently:**
+   - **Archives ([yaks-93ee](/yaks/yaks/yaks-93ee.md)):** `Container::Zip`/`Tar`, from-bytes viewer constructors, `Place::Member`, take-out's temp copy, docs and help. Touches `entries.rs`, `locate.rs`, the viewers' constructors and the take-out menu, and no opener.
+   - **Star anything ([yaks-4381](/yaks/yaks/yaks-4381.md)):** `star_target` is the pane's place; `working_set_rows` resolves destinations; the generic `Item::Place` row.
 
-Doing 2 without 1 is possible, and is exactly the growth this dok is about.
+Doing either part of 2 without 1 is possible, and is exactly the growth this dok is about.
 
 ## Bugs found while reading
 
