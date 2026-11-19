@@ -5,7 +5,7 @@ status: shaving
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:35:51Z'
+updated: '2026-11-19T03:36:01Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -134,3 +134,17 @@ Decision: take-out `p` on a member gives `<abs archive path>/<inner>` (a path th
 *archive-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-19T03:36:01Z
+
+*archive-1*
+
+Summary (archive-1). `yaks verify yaks-93ee` PASS; `cargo fmt --check` clean; `cargo test -p yaks` green (1293 unit + all integration suites).
+
+Landed in my checkout (one commit, not pushed): `entries` Zip/Tar containers + `container_at -> (Container, inner)` + `dir_at`/`stat`/`read`; `locate::Place::Member`, `member_of`, `extract_member`, `web_url` refusal; `links::exists`/`peek` arms; `DirView` through archives (fold marker, `archive · <size>`); `AttachView::member`/`ImageView::from_bytes` (file constructors now call shared byte-level code); `read_place` Member arm (+ `#L` anchor on a member lands on its row); `E` refuses; take-out `p`/`r`/`e`/`o`/`g` on a member; history round-trip cases; docs (`cli.md` link table + peek, `tui.md`, yaks SKILL Links, clap help, keymap help strings).
+
+Real runs (release binary, scratch farm): `peek <id>/x.tgz/`, `peek <id>/x.zip/src/a.rs#L1-L2`, `doctor` good vs broken member links, `url` refusal; headless frames of the tree unfolding into `x.tgz` and a member open in the viewer, `E` refusal and `o` back. Evidence attached: yaks-93ee-tui-frames.txt, yaks-93ee-cli-runs.txt.
+
+Decision: `Entry.archive` flag (archive rows are `is_dir && archive`): the tree folds them, but `count_files`, `listing` and the take-out treat an archive as ONE file. Rejected: a separate `Entry` kind (every lister caller would match on it).
+
+Decision: on an unmeasured pane (width 0 until drawn) a member view takes the last drawn pane width (`App::detail_width`) so `#L2` lands on the right row; plain-text members count `#L` over non-continuation rows. Rejected: leaving it (row 10 on a per-column wrap).
