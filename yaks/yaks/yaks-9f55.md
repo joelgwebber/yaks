@@ -1,13 +1,19 @@
 ---
 id: yaks-9f55
 title: Use markdown renderer for source files with of type .md
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-19T20:49:16Z'
-updated: '2026-11-19T20:49:16Z'
+updated: '2026-11-19T23:29:34Z'
 tags:
 - tui
 ---
 
 We do this automatically for doks, but not for linked files in source and (I think?) attachments.
+
+#### 2026-11-19T23:29:34Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
