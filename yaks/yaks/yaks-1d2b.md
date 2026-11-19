@@ -1,11 +1,11 @@
 ---
 id: yaks-1d2b
 title: Links to a dok's or source's directory (x/sketches/, /doks/x/sketches/) are reported as ../ by doctor and refused by peek
-status: hairy
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-18T23:29:05Z'
-updated: '2026-11-19T02:33:14Z'
+updated: '2026-11-19T02:33:15Z'
 tags:
 - links
 - doks
@@ -28,3 +28,9 @@ Folded into yaks-84fe (the refactor makes the grammar accept a farm directory pa
 *herd-files*
 
 Fixed by yaks-84fe (herd-files): `links::parse` keeps a trailing `/` on a farm path, and `exists`/`peek` resolve it through `locate::dir_of`. On the repro farm: `yaks doctor` All clear, `yaks peek /doks/x/sketches/` lists the directory. Tests: `a_farm_path_may_name_a_directory`, `exists_and_peek_accept_a_farm_directory`.
+
+#### 2026-11-19T02:33:15Z
+
+*herd-files · kind: move · from: hairy · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shorn
