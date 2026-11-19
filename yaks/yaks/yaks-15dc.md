@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-19T23:26:57Z'
+updated: '2026-11-19T23:28:12Z'
 tags:
 - tui
 ---
@@ -24,3 +24,9 @@ Though perhaps I have that syntax wrong?
 *sched-1*
 
 Let's also consider line ranges in links, like the Github UI supports. This would be helpful for selecting subsets of a file visually, in the peek UI, as well as providing narrowed context for humans and agents.
+
+#### 2026-11-19T23:28:12Z
+
+*sched-1*
+
+Also, also -- Might be cool to have line-range links open a restricted view of a file, from which you can also navigate to the whole file.
