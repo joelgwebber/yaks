@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-19T23:57:32Z'
+updated: '2026-11-20T00:07:09Z'
 tags:
 - tui
 ---
@@ -62,3 +62,20 @@ Decision (herd-files): how a line-range link opens narrowed.
 - **`w` toggles** whole file / range, keeping the cursor on the same file line. It is a look, so lowercase (`Cmd::DocWiden`, `doc.widen`, both key families). Rejected: `Esc` peeling the range (Esc already peels selection, then search, then closes; one more layer would make closing a range link take three presses), and a separate "open whole file" link row.
 - **History keeps it**: a narrowed view's subject is its link with the range (`links::dest` keeps `#L10-L14`), so `o`/`i` come back narrowed; widened, it is the plain file.
 - **Applies to every text file**: code, farm files, doks, attachments, archive members. A code file's range is still marked in the gutter.
+
+#### 2026-11-20T00:07:09Z
+
+*herd-files*
+
+Done (herd-files), in `412882e4` with yaks-9f55.
+
+- **Shorthand:** `path:12`, `:12-40`, `:L12-L40`, after `@<rev>` too, read as `#L12-L40` on every path link (`links::split_line_suffix`). Not when a `#` fragment is present, never on `commit:`, never `:0`. `links::dest` writes the `#L` form. `yaks doctor` output on this farm is unchanged.
+- **One line rule:** every viewer row now records its file line (plain text rows included), so a line anchor, the range cut and `e`-at-the-line read one function, `AttachView::row_line`, for code, plain text, markdown and archive members. The code viewer's own landing (`land_on_line`) and its separate open path are gone: `open_code` goes through `open_place`.
+- **Narrowed range view:** a range link opens narrowed (`read_place`, so history restores it narrowed; the kept destination carries the range). The header says `lines 10–16 · w whole file`; `w` (`doc.widen`, lowercase, a look) toggles, the cursor staying on its file line. A single line opens the whole file on it.
+
+Evidence:
+
+- `yaks peek code:src/tui/actions.rs:10`, `...@<full sha>:10`, `...:10-12` all print the lines (before: "no such file").
+- Tests: `a_colon_line_suffix_is_a_line_anchor`; `a_line_range_opens_narrowed_in_every_kind_of_file` (attachment by `#L` and `:`, a dok with frontmatter, a code file; narrowed, history keeps the range, `w` widens on the same line; a single line is not narrowed); the code-link test now checks narrowing and `w`.
+- Headless, release build: [range link narrowed, then `w`](yaks-15dc/coord-15dc-range-and-w.txt).
+- Gate: `cargo test -p yaks` 1528 passed, 0 failed; fmt clean. Docs: `docs/cli.md` (shorthand), `docs/tui.md` (narrowed view, `w`, markdown code files), `yaks` skill Links line; `?` help from `BINDINGS`.
