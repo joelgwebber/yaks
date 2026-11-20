@@ -1,11 +1,11 @@
 ---
 id: yaks-15dc
 title: Ensure all the internal link types work as expected
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-20T00:07:09Z'
+updated: '2026-11-20T00:07:11Z'
 tags:
 - tui
 ---
@@ -79,3 +79,9 @@ Evidence:
 - Tests: `a_colon_line_suffix_is_a_line_anchor`; `a_line_range_opens_narrowed_in_every_kind_of_file` (attachment by `#L` and `:`, a dok with frontmatter, a code file; narrowed, history keeps the range, `w` widens on the same line; a single line is not narrowed); the code-link test now checks narrowing and `w`.
 - Headless, release build: [range link narrowed, then `w`](yaks-15dc/coord-15dc-range-and-w.txt).
 - Gate: `cargo test -p yaks` 1528 passed, 0 failed; fmt clean. Docs: `docs/cli.md` (shorthand), `docs/tui.md` (narrowed view, `w`, markdown code files), `yaks` skill Links line; `?` help from `BINDINGS`.
+
+#### 2026-11-20T00:07:11Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
