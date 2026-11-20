@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 3
 created: '2026-11-19T20:49:16Z'
-updated: '2026-11-19T23:40:13Z'
+updated: '2026-11-20T00:07:09Z'
 tags:
 - tui
 ---
@@ -23,3 +23,9 @@ moved: hairy -> shaving
 *herd-files*
 
 Checked (herd-files): a markdown attachment already renders as markdown (`yak-d170/n.md` shows `markdown`, rendered). What does not is a `code:` link to a `.md` file: it opens in the code viewer, line numbers and all. Plan: a `code:` file that is markdown renders as markdown (read-only, as a code file is), keeping `#L` anchors working by source line; the take-out menu is unchanged.
+
+#### 2026-11-20T00:07:09Z
+
+*herd-files*
+
+Done (herd-files) in `412882e4`: a `code:` link to a `.md`/`.markdown` file renders as markdown (header kind `markdown`, no line gutter), read-only (`E` refuses as for any code file); a range narrows it by source lines. Markdown attachments, farm files and archive members already rendered. One markdown test (`links::is_markdown_name`) for all of them now. Test: `a_markdown_code_file_renders_as_markdown`; seen headless on `code:README.md`. Gate 1528/0.
