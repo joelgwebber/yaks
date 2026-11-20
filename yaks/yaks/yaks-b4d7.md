@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-16T21:20:31Z'
-updated: '2026-11-19T23:52:19Z'
+updated: '2026-11-20T00:07:10Z'
 tags:
 - tui
 ---
@@ -37,3 +37,9 @@ Test: `a_link_from_a_yak_lands_on_its_heading_in_the_first_frame` (fails without
 *herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-20T00:07:10Z
+
+*herd-files*
+
+Evidence frame: [the `#middle` link lands on its heading](yaks-b4d7/coord-b4d7-anchor-lands.txt) (release build, headless). Committed as `b9f31552`.
