@@ -1,0 +1,160 @@
+=== frame 0 · 90x18 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+ yak-d170 p3 task     🦬 linker
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:de
+=== end ===
+=== frame 1 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂ Task: yak-d170
+│
+│ Title:       linker
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     6m ago
+│ Updated:     1m ago
+│ ── peek ───────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:co
+=== end ===
+=== frame 2 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂  🦬 yak-d170  task     p3  linker
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Created:     6m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ See mid and plain.
+│
+│ ── peek: doks/anch.md#middle ──────────────────────────────────────────────────────────
+│ ## Middle
+│
+│ Middle text.
+│
+│ Paragraph 30.
+│ …
+→ doks/anch.md#middle
+=== end ===
+=== frame 3 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+viewing doks/anch.md#middle
+◂ 📖 doks/anch.md  note
+│ Middle
+│
+│ Middle text.
+│
+│ Paragraph 30.
+│
+│ Paragraph 31.
+│
+│ Paragraph 32.
+│
+│ Paragraph 33.
+│
+│ Paragraph 34.
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out
+=== end ===
+=== frame 4 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+← Hairy · yak-d170
+◂  🦬 yak-d170  task     p3  linker
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Created:     6m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ See mid and plain.
+│
+│ ── peek: doks/anch.md#middle ──────────────────────────────────────────────────────────
+│ ## Middle
+│
+│ Middle text.
+│
+│ Paragraph 30.
+│ …
+→ doks/anch.md#middle
+=== end ===
+=== frame 5 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂  🦬 yak-d170  task     p3  linker
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Created:     6m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ See mid and plain.
+│
+│ ── peek: doks/anch.md ─────────────────────────────────────────────────────────────────
+│ type: note
+│ title: Anch
+│ created: '2026-11-19T23:34:03Z'
+│
+│ # Top
+│
+→ doks/anch.md
+=== end ===
+=== frame 6 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+
+◂  🦬 yak-d170  task     p3  linker
+│ ───────────────────────────────────────────────────────────────────────────────────────
+│ Created:     6m ago
+│ Updated:     1m ago
+│ Tags:        -
+│
+│ See mid and plain.
+│
+│ ── peek: doks/anch.md#middle ──────────────────────────────────────────────────────────
+│ ## Middle
+│
+│ Middle text.
+│
+│ Paragraph 30.
+│ …
+→ doks/anch.md#middle
+=== end ===
+=== frame 7 · 90x18 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=6 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (
+viewing doks/anch.md#middle
+◂ 📖 doks/anch.md  note
+│ Middle
+│
+│ Middle text.
+│
+│ Paragraph 30.
+│
+│ Paragraph 31.
+│
+│ Paragraph 32.
+│
+│ Paragraph 33.
+│
+│ Paragraph 34.
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out
+=== end ===
