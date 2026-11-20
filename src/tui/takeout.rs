@@ -575,7 +575,18 @@ mod tests {
         let frame = draw(&app, 100, 24);
         assert!(frame.contains("{ } code:src/a.rs  code"), "{frame}");
         assert!(frame.contains("3 │     let n = 42;"), "{frame}");
-        // Landed on line 3 (row 2), at the top of the page.
+        // A range link opens narrowed to its lines (yaks-15dc): line 3 is the
+        // first row, line 1 is not shown, and the header says how to widen.
+        assert_eq!(app.attach().unwrap().nav.line, 0);
+        assert!(!frame.contains("1 │ // a comment"), "{frame}");
+        assert!(
+            frame.contains("lines 3\u{2013}4 \u{b7} w whole file"),
+            "{frame}"
+        );
+        // `w`: the whole file, the cursor still on line 3 (row 2).
+        press(&mut app, "w");
+        let frame = draw(&app, 100, 24);
+        assert!(frame.contains("1 │ // a comment"), "{frame}");
         assert_eq!(app.attach().unwrap().nav.line, 2);
         // Coloured by extension: a keyword and a number carry the palette's
         // styles; the gutter of the named lines is the accent.
@@ -591,6 +602,106 @@ mod tests {
         // Esc comes back to the yak.
         esc_key(&mut app);
         assert!(app.attach().is_none());
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// yaks-15dc: one line rule for every kind of file. A range link opens
+    /// narrowed (a plain attachment, a dok, a code file), `w` widens to the
+    /// whole file at the same line, history brings the narrowed view back,
+    /// and a single line opens the whole file on that line.
+    #[test]
+    fn a_line_range_opens_narrowed_in_every_kind_of_file() {
+        let (proj, _, mut app) = on_links("x");
+        let root = app.farm.as_ref().unwrap().root().to_path_buf();
+        let log: String = (1..=30).map(|i| format!("log line {i}\n")).collect();
+        app.farm
+            .as_ref()
+            .unwrap()
+            .attach("t0", "run.log", log.as_bytes())
+            .unwrap();
+        let body: String = (1..=30).map(|i| format!("Para {i}.\n\n")).collect();
+        std::fs::create_dir_all(root.join("doks")).unwrap();
+        std::fs::write(
+            root.join("doks/d.md"),
+            format!("---\ntitle: D\n---\n\n{body}"),
+        )
+        .unwrap();
+        app.reload();
+        // (link, a row inside the range, a row outside it, the first line)
+        for (dest, inside, outside, first) in [
+            ("t0/run.log#L10-L12", "log line 11", "log line 13", 10),
+            ("t0/run.log:10-12", "log line 11", "log line 14", 10),
+            // doks/d.md: frontmatter is lines 1-3, a blank, then `Para 1.`
+            // on line 5 and `Para n.` on line 3 + 2n.
+            ("/doks/d.md#L9-L11", "Para 4.", "Para 6.", 9),
+            ("code:src/a.rs:2-3", "fn main()", "// a comment", 2),
+        ] {
+            app.open_dest(dest);
+            let frame = draw(&app, 100, 24);
+            assert!(frame.contains(inside), "{dest}:\n{frame}");
+            assert!(!frame.contains(outside), "{dest} narrowed:\n{frame}");
+            let (rows, _) = app.attachment_rows().unwrap();
+            let v = app.attach().unwrap();
+            assert_eq!(
+                v.source_line(&rows),
+                Some(first),
+                "{dest}: on its first line"
+            );
+            // History keeps the range: the location names it, and reading
+            // that back is narrowed again.
+            let Some(history::PaneAt::Doc { dest: kept, .. }) = app.current_location().pane else {
+                panic!("{dest}: no document kept");
+            };
+            assert!(kept.contains(&format!("#L{first}-")), "{dest}: kept {kept}");
+            let again = app.read_place(&app.place_of_dest(&kept)).unwrap();
+            let DocView::Text(again) = again else {
+                panic!("{dest}: not text")
+            };
+            assert!(again.narrowed().is_some(), "{dest}: restored narrowed");
+            // `w`: the whole file, the cursor on the same line.
+            press(&mut app, "w");
+            let frame = draw(&app, 100, 24);
+            assert!(frame.contains(outside), "{dest} widened:\n{frame}");
+            let (rows, _) = app.attachment_rows().unwrap();
+            assert_eq!(
+                app.attach().unwrap().source_line(&rows),
+                Some(first),
+                "{dest}"
+            );
+            app.close_doc();
+        }
+        // A single line is the whole file, on that line.
+        app.open_dest("t0/run.log:20");
+        let (rows, _) = app.attachment_rows().unwrap();
+        let v = app.attach().unwrap();
+        assert_eq!(v.narrowed(), None);
+        assert_eq!(v.source_line(&rows), Some(20));
+        let _ = std::fs::remove_dir_all(proj);
+    }
+
+    /// yaks-9f55: a `code:` link to a markdown file renders it, as a dok or a
+    /// markdown attachment is, read-only; a range still narrows by its lines.
+    #[test]
+    fn a_markdown_code_file_renders_as_markdown() {
+        let (proj, _, mut app) = on_links("x");
+        std::fs::write(
+            proj.join("README.md"),
+            "# Title\n\nSome *words*.\n\n- one\n- two\n",
+        )
+        .unwrap();
+        app.open_dest("code:README.md");
+        let frame = draw(&app, 100, 24);
+        assert!(frame.contains("code:README.md  markdown"), "{frame}");
+        assert!(!frame.contains("# Title"), "rendered, no `#`:\n{frame}");
+        assert!(!frame.contains("1 │"), "no line-number gutter:\n{frame}");
+        assert!(frame.contains("Some words."), "{frame}");
+        press(&mut app, "E");
+        assert!(app.notification.as_deref().unwrap().contains("read-only"));
+        app.close_doc();
+        app.open_dest("code:README.md#L5-L6");
+        let frame = draw(&app, 100, 24);
+        assert!(frame.contains("one") && frame.contains("two"), "{frame}");
+        assert!(!frame.contains("Some words."), "narrowed:\n{frame}");
         let _ = std::fs::remove_dir_all(proj);
     }
 

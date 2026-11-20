@@ -91,25 +91,14 @@ pub(crate) fn source_base(farm_root: &Path, cwd: Option<&Path>) -> Option<PathBu
 impl App {
     /// Follow a `code:` link: open the file in the read-only viewer
     /// ([`App::read_code_view`]) at the lines the link names (a jump: `o`
-    /// comes back). Taking it out to an editor is `O` then `e`
-    /// ([`super::takeout`]).
+    /// comes back), through the one opener, [`App::open_place`]. Taking it
+    /// out to an editor is `O` then `e` ([`super::takeout`]).
     pub(crate) fn open_code(&mut self, path: &str, lines: Option<(u32, u32)>, rev: Option<&str>) {
-        let v = match self.read_code_view(path, rev, lines) {
-            Ok(v) => v,
-            Err(e) => {
-                self.notification = Some(e);
-                return;
-            }
-        };
-        let failed = matches!(v.doc, super::handlers::DocKind::Code { error: Some(_), .. });
-        self.follow_to_doc(DocView::Text(v));
-        if failed {
-            return;
-        }
-        if let Some((a, _)) = lines {
-            self.land_on_line(a as usize);
-        }
-        self.notification = Some(format!("viewing {}", source_label(path, lines, rev)));
+        self.open_place(&crate::locate::Place::CodeFile {
+            rel: path.to_string(),
+            rev: rev.map(String::from),
+            anchor: lines.map(|(a, b)| crate::links::Anchor::Lines(a, b)),
+        });
     }
 
     /// The viewer for code file `path` at `rev`. A file or commit that cannot
@@ -152,18 +141,6 @@ impl App {
             rev.map(String::from),
             marked,
         ))
-    }
-
-    /// Put the open viewer's cursor on 1-based `line` at the top of the
-    /// page, as a `#L12` link lands on its row.
-    fn land_on_line(&mut self, line: usize) {
-        let Some((rows, vp)) = self.attachment_rows() else {
-            return;
-        };
-        let Some(v) = self.attach_mut() else { return };
-        let to = line.saturating_sub(1).min(rows.len().saturating_sub(1));
-        v.nav.line = to;
-        v.nav.scroll = to.min(vp.max_scroll(rows.len())) as u16;
     }
 }
 

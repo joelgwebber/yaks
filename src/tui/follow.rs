@@ -46,43 +46,28 @@ pub(crate) struct PeekCache {
     map: HashMap<String, Result<String, String>>,
 }
 
-/// The row a heading or line anchor lands on in a viewer's rows: the first
-/// row whose source covers the heading's line (a heading in block `block`).
-fn anchor_row(v: &AttachView, rows: &[detail::DLine], anchor: &Anchor) -> Option<usize> {
-    // A plain text file (not markdown) has rows with no source span: line N
-    // is its Nth row that does not continue a wrapped line.
-    if let (Anchor::Lines(a, _), DocKind::Member, false) = (anchor, &v.doc, v.markdown) {
-        let mut n = 0;
-        return rows.iter().position(|r| {
-            n += usize::from(!r.cont);
-            n == *a as usize
-        });
+/// The row a heading or line anchor lands on in a viewer's rows. A line
+/// anchor: the first row on or after that file line (every row records its
+/// source line, yaks-15dc; the last row when the line is past them). A
+/// heading: the first row whose source covers its line.
+pub(crate) fn anchor_row(v: &AttachView, rows: &[detail::DLine], anchor: &Anchor) -> Option<usize> {
+    if let Anchor::Lines(a, _) = anchor {
+        let lines = v.line_of_rows(rows);
+        return lines
+            .iter()
+            .position(|l| l.is_some_and(|l| l >= *a))
+            .or_else(|| lines.iter().rposition(|l| l.is_some()));
     }
-    // Within a dok or source, block 0 is the body below the frontmatter;
-    // `#L12` counts lines of the whole file, so shift past the frontmatter.
-    let body = v.blocks()[0];
-    let front_lines = v.text[..v.text.len() - body.len()].lines().count();
-    let line = match anchor {
-        Anchor::Lines(a, _) => (*a as usize).saturating_sub(1).checked_sub(front_lines)?,
-        Anchor::Heading(h) => {
-            let (_, _, r) = links::sections(body).into_iter().find(|(_, s, _)| s == h)?;
-            body[..r.start].lines().count()
-        }
+    let Anchor::Heading(h) = anchor else {
+        return None;
     };
-    rows.iter()
-        .position(|r| {
-            r.src.is_some_and(|s| {
-                s.block == 0 && s.lines.is_some_and(|(a, b)| a <= line && line <= b)
-            })
-        })
-        .or_else(|| {
-            // A line past every rendered row (trailing blanks): the last row of
-            // the block.
-            rows.iter().rposition(|r| {
-                r.src
-                    .is_some_and(|s| s.block == 0 && s.lines.is_some_and(|(_, b)| b < line))
-            })
-        })
+    let body = v.blocks()[0];
+    let (_, _, r) = links::sections(body).into_iter().find(|(_, s, _)| s == h)?;
+    let line = body[..r.start].lines().count();
+    rows.iter().position(|r| {
+        r.src
+            .is_some_and(|s| s.block == 0 && s.lines.is_some_and(|(a, b)| a <= line && line <= b))
+    })
 }
 
 impl App {
@@ -288,38 +273,57 @@ impl App {
     }
 
     /// Show what `place` names, a jump (`o` comes back): a directory in the
-    /// directory view, a farm file, attachment or code file in the text or
-    /// image viewer (at its anchor), a commit in the commit view, a yak in
-    /// the detail pane. An attachment the pane cannot show, and a URL, go to
-    /// the system opener, never an archive ([`App::os_open`]).
+    /// directory view, a farm file, attachment, archive member or code file
+    /// in the text or image viewer, a commit in the commit view, a yak in the
+    /// detail pane. An attachment the pane cannot show, and a URL, go to the
+    /// system opener, never an archive ([`App::os_open`]).
+    ///
+    /// A text view lands on the link's anchor, one rule for every kind of
+    /// file (yaks-15dc): a `#heading` or `#L12` puts the cursor on that row;
+    /// a range, `#L10-L14`, opens narrowed to those lines (`w` widens).
     pub(crate) fn open_place(&mut self, place: &Place) {
+        let anchor = match place {
+            Place::FarmFile { anchor, .. }
+            | Place::Member { anchor, .. }
+            | Place::Attachment { anchor, .. }
+            | Place::CodeFile { anchor, .. } => anchor.clone(),
+            _ => None,
+        };
         match place {
-            Place::Yak { id, note: None } => self.goto_task(id),
-            Place::Yak { id, note: Some(n) } => self.goto_note(id, n),
-            Place::FarmDir { rel } => self.open_dir(rel),
-            Place::Attachment { id, name, .. } => self.open_attachment(id, name),
-            Place::CodeFile { rel, rev, anchor } => {
-                let lines = match anchor {
-                    Some(Anchor::Lines(a, b)) => Some((*a, *b)),
-                    _ => None,
-                };
-                self.open_code(rel, lines, rev.as_deref());
+            Place::Yak { id, note: None } => return self.goto_task(id),
+            Place::Yak { id, note: Some(n) } => return self.goto_note(id, n),
+            Place::FarmDir { rel } => return self.open_dir(rel),
+            Place::Commit { sha } => return self.open_commit(sha),
+            Place::Url(u) => return self.os_open(u, u),
+            Place::Missing(why) => {
+                self.notification = Some(why.clone());
+                return;
             }
-            Place::Commit { sha } => self.open_commit(sha),
-            Place::Url(u) => self.os_open(u, u),
-            Place::Missing(why) => self.notification = Some(why.clone()),
-            Place::FarmFile { anchor, .. } | Place::Member { anchor, .. } => {
+            Place::Attachment { id, name, anchor } => {
+                if !self.open_attachment(id, name, anchor.clone()) {
+                    return;
+                }
+            }
+            Place::FarmFile { .. } | Place::Member { .. } | Place::CodeFile { .. } => {
                 match self.read_place(place) {
-                    Ok(view) => {
-                        self.follow_to_doc(view);
-                        self.scroll_to_anchor(anchor.as_ref());
-                        let label = Space::link(place).map(|l| links::label(&l));
-                        self.notification = Some(format!("viewing {}", label.unwrap_or_default()));
+                    Ok(view) => self.follow_to_doc(view),
+                    Err(e) => {
+                        self.notification = Some(e);
+                        return;
                     }
-                    Err(e) => self.notification = Some(e),
                 }
             }
         }
+        // A code file that could not be read shows why, on its one row.
+        if matches!(
+            self.attach().map(|v| &v.doc),
+            Some(DocKind::Code { error: Some(_), .. })
+        ) {
+            return;
+        }
+        self.scroll_to_anchor(anchor.as_ref());
+        let label = Space::link(place).map(|l| links::label(&l));
+        self.notification = Some(format!("viewing {}", label.unwrap_or_default()));
     }
 
     /// Attachment `name` of yak `id`, when it is a file of this farm.
@@ -329,30 +333,33 @@ impl App {
         crate::farm::locate_attachment(&root, id, name)
     }
 
-    /// Open an attachment: in the viewer when it can show it, else with the
-    /// system opener; an archive is never opened (it would unpack into the
-    /// farm, yaks-3329) and says how to get its path.
-    fn open_attachment(&mut self, id: &str, name: &str) {
+    /// Open an attachment: in the viewer when it can show it (`true`), else
+    /// with the system opener; an archive is never opened (it would unpack
+    /// into the farm, yaks-3329) and says how to get its path.
+    fn open_attachment(&mut self, id: &str, name: &str, anchor: Option<Anchor>) -> bool {
         let target = format!("{id}/{}", links::percent_encode_path(name));
         let Some(found) = self.attachment_file(id, name) else {
             self.notification = Some(format!("{target}: not in this farm"));
-            return;
+            return false;
         };
         if super::dirview::is_archive_name(&found.name) {
             self.notification = Some(super::dirview::archive_note(&found.name));
-            return;
+            return false;
         }
         let place = Place::Attachment {
             id: id.to_string(),
             name: name.to_string(),
-            anchor: None,
+            anchor,
         };
         match self.read_place(&place) {
             Ok(view) => {
-                self.notification = Some(format!("viewing {target}"));
                 self.follow_to_doc(view);
+                true
             }
-            Err(_) => self.os_open(&target, &found.path.display().to_string()),
+            Err(_) => {
+                self.os_open(&target, &found.path.display().to_string());
+                false
+            }
         }
     }
 
@@ -360,6 +367,30 @@ impl App {
     /// document by, and what the openers show). `Err` is a one-line message
     /// for the status bar.
     pub(crate) fn read_place(&self, place: &Place) -> Result<DocView, String> {
+        let mut view = self.read_place_whole(place)?;
+        // A range link (`#L10-L14`, not a single line) shows only its lines,
+        // `w` widens (yaks-15dc): here, so following the link and history
+        // restoring it read alike.
+        let range = match place {
+            Place::FarmFile { anchor, .. }
+            | Place::Member { anchor, .. }
+            | Place::Attachment { anchor, .. }
+            | Place::CodeFile { anchor, .. } => match anchor {
+                Some(Anchor::Lines(a, b)) if a != b => Some((*a, *b)),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let (Some((a, b)), DocView::Text(v)) = (range, &mut view) {
+            if !matches!(v.doc, DocKind::Code { error: Some(_), .. }) {
+                v.narrow(a, b);
+            }
+        }
+        Ok(view)
+    }
+
+    /// [`App::read_place`] before a range narrows it: the whole file.
+    fn read_place_whole(&self, place: &Place) -> Result<DocView, String> {
         match place {
             Place::FarmDir { rel } => {
                 let root = self.farm_root().ok_or("no farm to read")?;
@@ -386,9 +417,15 @@ impl App {
                     .ok_or_else(|| format!("{target}: cannot be shown here"))
             }
             Place::Member { archive, inner, .. } => self.read_member(archive, inner),
-            Place::CodeFile { rel, rev, .. } => self
-                .read_code_view(rel, rev.as_deref(), None)
-                .map(DocView::Text),
+            // The lines the link names are marked in the gutter.
+            Place::CodeFile { rel, rev, anchor } => {
+                let marked = match anchor {
+                    Some(Anchor::Lines(a, b)) => Some((*a, *b)),
+                    _ => None,
+                };
+                self.read_code_view(rel, rev.as_deref(), marked)
+                    .map(DocView::Text)
+            }
             Place::Commit { sha } => self.read_commit_view(sha).map(DocView::Commit),
             Place::Missing(why) => Err(why.clone()),
             Place::Yak { id, .. } => Err(format!("{id}: a yak, not a document")),
@@ -445,15 +482,29 @@ impl App {
             anchor: None,
         };
         match view {
-            DocView::Text(v) => match &v.doc {
-                DocKind::Attachment => attachment(&v.target),
-                DocKind::Code { .. } => Some(Link::Code {
-                    path: v.code_rel()?.to_string(),
-                    rev: v.rev.clone(),
-                    anchor: None,
-                }),
-                _ => Some(farm(&v.target, v.rev.clone())),
-            },
+            // A view narrowed to a range is that range's link (yaks-15dc), so
+            // history brings it back narrowed and a star names the range.
+            DocView::Text(v) => {
+                let mut link = match &v.doc {
+                    DocKind::Attachment => attachment(&v.target)?,
+                    DocKind::Code { .. } => Link::Code {
+                        path: v.code_rel()?.to_string(),
+                        rev: v.rev.clone(),
+                        anchor: None,
+                    },
+                    _ => farm(&v.target, v.rev.clone()),
+                };
+                if let (
+                    Some((a, b)),
+                    Link::Farm { anchor, .. }
+                    | Link::Code { anchor, .. }
+                    | Link::Attachment { anchor, .. },
+                ) = (v.narrowed(), &mut link)
+                {
+                    *anchor = Some(Anchor::Lines(a, b));
+                }
+                Some(link)
+            }
             // A farm image's file is its target under the farm root; an
             // attachment's lives under its yak.
             DocView::Image(v) => match self.farm_root() {
@@ -467,7 +518,7 @@ impl App {
 
     /// Put the open viewer's cursor on `anchor`'s row (when the anchor is
     /// found; else a notification says so).
-    fn scroll_to_anchor(&mut self, anchor: Option<&Anchor>) {
+    pub(crate) fn scroll_to_anchor(&mut self, anchor: Option<&Anchor>) {
         let Some(anchor) = anchor else { return };
         let Some((rows, vp)) = self.attachment_rows() else {
             return;

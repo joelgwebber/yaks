@@ -308,6 +308,15 @@ pub(crate) fn render_attachment(
                 Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ),
             Span::styled(format!("  {kind}"), Style::new().fg(Color::DarkGray)),
+            // A range link's view (yaks-15dc): which lines, and how to widen.
+            Span::styled(
+                match v.range {
+                    Some(((a, b), true)) => format!("  lines {a}\u{2013}{b} \u{b7} w whole file"),
+                    Some(((a, b), false)) => format!("  w lines {a}\u{2013}{b}"),
+                    None => String::new(),
+                },
+                Style::new().fg(Color::Yellow),
+            ),
             Span::raw(if app.is_starred(&v.target) {
                 " \u{2b50}"
             } else {

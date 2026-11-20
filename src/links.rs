@@ -16,7 +16,9 @@
 //!
 //! `@<rev>` (7-40 hex digits) pins a path to a commit: a farm path to a
 //! farm-branch commit, a `code:` path to a code commit. `#L12` / `#L12-L40`
-//! name lines; any other `#anchor` a heading, by GitHub's slug rule.
+//! name lines (so does the editor shorthand `path:12`, `path:12-40`, with no
+//! `#` fragment: [`split_line_suffix`]); any other `#anchor` a heading, by
+//! GitHub's slug rule.
 //!
 //! Yaks keep two older code forms valid forever: `../src/foo.rs` and the
 //! pinned `../blob/<sha>/src/foo.rs` (yaks-da5e). Anywhere else a `../` link
@@ -122,14 +124,24 @@ pub fn parse(dest: &str, from: From, is_yak: impl Fn(&str) -> bool) -> Link {
         Some((b, f)) => (b, Some(f)),
         None => (dest, None),
     };
-    let anchor = frag.and_then(parse_anchor);
+    let mut anchor = frag.and_then(parse_anchor);
     if body.is_empty() {
         return match anchor {
             Some(a) => Link::Local(a),
             None => Link::Upward(dest.to_string()),
         };
     }
-    let body = percent_decode(body);
+    let mut body = percent_decode(body);
+    // The editor and compiler shorthand for lines, `path:12`, `path:12-40`,
+    // `path:L12-L40` (also after `@<rev>`), is the same as `#L12-L40`
+    // (yaks-15dc). Only with no `#` fragment; never on a URL (handled
+    // above) or a commit (`commit:1234567` is a hash, not line 1234567).
+    if frag.is_none() && !body.starts_with("commit:") {
+        if let Some((rest, lines)) = split_line_suffix(&body) {
+            anchor = Some(lines);
+            body = rest.to_string();
+        }
+    }
     if let Some(sha) = body.strip_prefix("commit:") {
         return match is_rev(sha) {
             true => Link::Commit {
@@ -263,6 +275,24 @@ fn yak_file_parts(path: &str) -> Option<(&str, Option<&str>)> {
         return None;
     }
     (crate::store::herd_of(id) == herd).then_some((id, tail))
+}
+
+/// `src/a.rs:12` -> `("src/a.rs", Lines(12, 12))`: a trailing `:N`, `:N-M`,
+/// `:LN` or `:LN-LM` (1-based; reordered when reversed) after a path with a
+/// file name before it. `None` for anything else (`a:b`, `x:0`, `commit:`).
+fn split_line_suffix(body: &str) -> Option<(&str, Anchor)> {
+    let (rest, tail) = body.rsplit_once(':')?;
+    let tail = tail.strip_prefix('L').unwrap_or(tail);
+    let (a, b) = match tail.split_once('-') {
+        Some((a, b)) => (a, b.strip_prefix('L').unwrap_or(b)),
+        None => (tail, tail),
+    };
+    let digits = |s: &str| !s.is_empty() && s.bytes().all(|c| c.is_ascii_digit());
+    if !digits(a) || !digits(b) || rest.is_empty() || rest.ends_with('/') {
+        return None;
+    }
+    let (a, b): (u32, u32) = (a.parse().ok()?, b.parse().ok()?);
+    (a > 0 && b > 0).then(|| (rest, Anchor::Lines(a.min(b), a.max(b))))
 }
 
 /// `path@<rev>` -> `(path, Some(rev))` when what follows the last `@` is 7-40
@@ -1933,6 +1963,77 @@ mod tests {
         }
         assert_eq!(dest(&Link::Local(Anchor::Heading("x".into()))), None);
         assert_eq!(dest(&Link::Upward("../x".into())), None);
+    }
+
+    /// yaks-15dc: the editor and compiler shorthand for lines, `path:12`,
+    /// `path:12-40`, `path:L12-L40`, means `#L12-L40` for every kind of path
+    /// link (after an `@<rev>` too); a `#` fragment wins, and a commit hash
+    /// or a colon in a name is not a line.
+    #[test]
+    fn a_colon_line_suffix_is_a_line_anchor() {
+        let code = |path: &str, rev: Option<&str>, a, b| Link::Code {
+            path: path.into(),
+            rev: rev.map(String::from),
+            anchor: Some(Anchor::Lines(a, b)),
+        };
+        let sha = "58eb9a6248e509e2e4cca2e158e1e97ca2c9a864";
+        for (dest, want) in [
+            ("code:src/a.rs:10", code("src/a.rs", None, 10, 10)),
+            ("code:src/a.rs:10-14", code("src/a.rs", None, 10, 14)),
+            ("code:src/a.rs:L10-L14", code("src/a.rs", None, 10, 14)),
+            ("code:src/a.rs:14-10", code("src/a.rs", None, 10, 14)),
+            (
+                "code:src/a.rs@58eb9a6:10",
+                code("src/a.rs", Some("58eb9a6"), 10, 10),
+            ),
+            (
+                &format!("code:src/a.rs@{sha}:10"),
+                code("src/a.rs", Some(sha), 10, 10),
+            ),
+            ("code:src/a.rs#L3", code("src/a.rs", None, 3, 3)),
+        ] {
+            assert_eq!(parse(dest, From::Yak, yak), want, "{dest}");
+        }
+        assert_eq!(
+            parse("/doks/x.md:5-6", From::Yak, yak),
+            farm("doks/x.md", None, Some(Anchor::Lines(5, 6)))
+        );
+        assert_eq!(
+            parse("yaks-1a2b/log.txt:7", From::Yak, yak),
+            Link::Attachment {
+                id: "yaks-1a2b".into(),
+                name: "log.txt".into(),
+                anchor: Some(Anchor::Lines(7, 7)),
+            }
+        );
+        // Not lines: a fragment already says where; a hash; no number; zero.
+        assert_eq!(
+            parse("code:a.rs:9#L2", From::Yak, yak),
+            Link::Code {
+                path: "a.rs:9".into(),
+                rev: None,
+                anchor: Some(Anchor::Lines(2, 2))
+            }
+        );
+        assert_eq!(
+            parse("commit:1234567", From::Yak, yak),
+            Link::Commit {
+                sha: "1234567".into()
+            }
+        );
+        assert_eq!(
+            parse("/doks/a:b.md", From::Yak, yak),
+            farm("doks/a:b.md", None, None)
+        );
+        assert_eq!(
+            parse("/doks/x.md:0", From::Yak, yak),
+            farm("doks/x.md:0", None, None)
+        );
+        // `dest` writes the canonical `#L` form back.
+        assert_eq!(
+            dest(&parse("code:src/a.rs:10-14", From::Yak, yak)).as_deref(),
+            Some("code:src/a.rs#L10-L14")
+        );
     }
 
     /// yaks-1d2b: a farm path written with its `/` names a directory, from

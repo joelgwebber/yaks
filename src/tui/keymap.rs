@@ -142,6 +142,7 @@ commands! {
     BlockPrev => "block.prev",
     PeekToggle => "peek.toggle",
     DocEdit => "doc.edit",
+    DocWiden => "doc.widen",
     FarmCommit => "farm.commit",
     FarmSync => "farm.sync",
     YakMark => "yak.mark",
@@ -180,8 +181,10 @@ impl Cmd {
             MoveDown | MoveUp | MoveTop | MoveBottom | MoveHalfDown | MoveHalfUp | MovePageDown
             | MovePageUp | ItemNext | ItemPrev | TreeToggle | TreeLeft | TreeRight
             | PaneScrollLeft | PaneScrollRight | LinkNext | LinkPrev | BlockNext | BlockPrev
-            | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown | SelectVisual
-            | SelectExtendDown | SelectExtendUp | SelectYank | RowCopy => Group::Move,
+            | DocWiden | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown
+            | SelectVisual | SelectExtendDown | SelectExtendUp | SelectYank | RowCopy => {
+                Group::Move
+            }
             PaneOpen | PaneEnter | PanePeel | PaneClose | NavBack | NavForward | TakeOut
             | PeekToggle => Group::Open,
             SearchOpen | FindOpen | FindNext | FindPrev | NavGoto | YakBackrefs => Group::Find,
@@ -218,7 +221,7 @@ impl Cmd {
             | ImageZoomActual | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight
             | ImagePanUp | ImagePanDown | FindOpen | FindNext | FindPrev | SelectVisual
             | SelectExtendDown | SelectExtendUp | SelectYank | BlockNext | BlockPrev
-            | PeekToggle | YakBackrefs => false,
+            | PeekToggle | YakBackrefs | DocWiden => false,
         }
     }
 }
@@ -810,6 +813,7 @@ static BINDINGS: &[Binding] = &[
     bind(Viewer, &[c('K')], ItemPrev, "Previous dok of the Doks list", NoHint),
     bind(Viewer, &[c('}')], ViewNext, VIEW_PANE_NEXT, NoHint),
     bind(Viewer, &[c('{')], ViewPrev, VIEW_PANE_PREV, NoHint),
+    bind(Viewer, &[c('w')], DocWiden, "A range link's view: the whole file, and back to the range", NoHint),
     bind(Viewer, &[c('p')], PeekToggle, "Show / hide the peek pane under the dok (the same flag as the yak pane's)", NoHint),
     bind(Viewer, &[c('*')], YakStar, "Star / unstar the file (Starred view)", NoHint),
     bind(Viewer, &[c('E')], DocEdit, "Edit the file in place (Ctrl-S saves; a past version or a source is read-only)", NoHint),
@@ -1579,8 +1583,9 @@ impl App {
             DokEdit => self.edit_doks_entry(),
             PeekToggle => self.toggle_peek(),
             // The viewers' own: `run_viewer_cmd` and `run_image_cmd`.
-            PaneClose | DocEdit | ImageZoomIn | ImageZoomOut | ImageZoomActual | ImageFitWidth
-            | ImageFit | ImagePanLeft | ImagePanRight | ImagePanUp | ImagePanDown => {}
+            PaneClose | DocEdit | DocWiden | ImageZoomIn | ImageZoomOut | ImageZoomActual
+            | ImageFitWidth | ImageFit | ImagePanLeft | ImagePanRight | ImagePanUp
+            | ImagePanDown => {}
         }
     }
 

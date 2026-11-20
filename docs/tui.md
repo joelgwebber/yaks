@@ -746,10 +746,22 @@ long line scrolls sideways (`h`/`l`); the lines the link names carry a bold
 yellow gutter and the cursor lands on the first, at the top of the page. The
 text is coloured by the file's extension with the highlighter the markdown code
 blocks use (Rust, shell, JSON, TOML, YAML, Python, JS/TS, Java); a file with no
-known extension is plain, with no colour. A pinned link
-(`code:src/links.rs@3f2a9c1#L100`) is read with `git show`, the file as it was
-at that commit, whatever the working tree holds. `E` refuses (the file is the
-checkout's, not the farm's); `y` copies the selected lines (or the path).
+known extension is plain, with no colour. A markdown file of the checkout
+(`code:README.md`) renders as markdown instead, as a dok does, still read-only.
+A pinned link (`code:src/links.rs@3f2a9c1#L100`) is read with `git show`, the
+file as it was at that commit, whatever the working tree holds. `E` refuses
+(the file is the checkout's, not the farm's); `y` copies the selected lines (or
+the path). The editor shorthand `code:src/links.rs:100` (or `:100-120`) means
+the same as `#L100`.
+
+**A line-range link opens narrowed.** Any link that names a range of lines,
+`#L100-L120` or `:100-120`, on a code file, a dok, an attachment or a file
+inside an archive, opens the viewer showing only those lines; the header says
+`lines 100–120 · w whole file`. `w` widens to the whole file, the cursor
+staying on the same line, and `w` again goes back to the range. Find, yank,
+links, peek and `O` work in the narrowed view as in the whole file. A single
+line (`#L100`) opens the whole file on that line. `o`/`i` bring a narrowed view
+back narrowed.
 
 When a pinned commit is not in this checkout (an agent on another machine
 dropped it, or never pushed it) the viewer shows one line, `commit abc1234 is
@@ -929,7 +941,9 @@ row also close it (the click selects the row). `q` quits, as everywhere, and
 - **`Enter` on a farm document** opens it in the viewer: a dok (frontmatter
   above the body), a source (its provenance above its text), or any other text file of
   the farm; an image opens in the image viewer. A `#heading` lands the cursor on
-  that heading, at the top of the dok; `#L12-L40` on line 12 of the file. A
+  that heading, at the top of the dok; `#L12` on line 12 of the file, and a
+  range `#L12-L40` opens [narrowed](#code-files-and-taking-things-out) to those
+  lines (`w` widens). A
   pinned link (`/doks/x.md@3f2a9c1`) shows the file as it was at that farm
   commit, `@3f2a9c1` in the header; `E` refuses (a past version is read-only).
   A link to a file the farm lacks says `not in this farm` and stays put.

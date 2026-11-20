@@ -55,9 +55,87 @@ pub(crate) struct AttachView {
     /// `Files:`), its farm-relative path and its file count. The viewer shows
     /// it as a row that opens the directory view (yaks-3329).
     pub(crate) files: Option<(&'static str, String, usize)>,
+    /// The line range a link named (`#L10-L14`, yaks-15dc), 1-based and
+    /// inclusive of the whole file's lines (a dok's frontmatter counted), and
+    /// whether the view shows only it (`w` toggles). `None` for a whole file.
+    pub(crate) range: Option<((u32, u32), bool)>,
 }
 
 impl AttachView {
+    /// Show only lines `a..=b` of the file (a range link, yaks-15dc); `w`
+    /// widens to the whole file and back ([`AttachView::toggle_range`]).
+    pub(crate) fn narrow(&mut self, a: u32, b: u32) {
+        self.range = Some(((a, b), true));
+        *self.rows_cache.borrow_mut() = None;
+    }
+
+    /// `w`: the whole file, or back to the range the link named. Returns
+    /// whether there was a range to toggle.
+    pub(crate) fn toggle_range(&mut self) -> bool {
+        let Some((r, on)) = self.range else {
+            return false;
+        };
+        self.range = Some((r, !on));
+        *self.rows_cache.borrow_mut() = None;
+        true
+    }
+
+    /// The range shown, when the view is narrowed.
+    pub(crate) fn narrowed(&self) -> Option<(u32, u32)> {
+        self.range.and_then(|(r, on)| on.then_some(r))
+    }
+
+    /// [`AttachView::row_line`] of each row.
+    pub(crate) fn line_of_rows(&self, rows: &[detail::DLine]) -> Vec<Option<u32>> {
+        rows.iter().map(|r| self.row_line(r)).collect()
+    }
+
+    /// The 1-based file line row `r` starts on: its source line (block 0),
+    /// shifted past a dok's frontmatter. Code, plain text and markdown rows
+    /// all record one; a dok's field rows do not.
+    fn row_line(&self, r: &detail::DLine) -> Option<u32> {
+        let (a, _) = r.src.filter(|s| s.block == 0)?.lines?;
+        let body = self.blocks()[0];
+        let front = self.text[..self.text.len() - body.len()].lines().count();
+        Some((a + front + 1) as u32)
+    }
+
+    /// `rows` cut to the narrowed range: from the first row whose line is in
+    /// it to the last, keeping wrapped continuations and blank rows between.
+    fn cut_to_range(&self, rows: Vec<detail::DLine>) -> Vec<detail::DLine> {
+        let Some((a, b)) = self.narrowed() else {
+            return rows;
+        };
+        let lines = self.line_of_rows(&rows);
+        // A markdown row's source span may start before `a` and cover it.
+        let covers = |i: usize| {
+            let start = lines[i];
+            let end = rows[i]
+                .src
+                .filter(|s| s.block == 0)
+                .and_then(|s| s.lines)
+                .map(|(x, y)| start.unwrap_or(0) + (y - x) as u32);
+            match (start, end) {
+                (Some(s), Some(e)) => s <= b && e >= a,
+                (Some(s), None) => (a..=b).contains(&s),
+                _ => false,
+            }
+        };
+        let first = (0..rows.len()).find(|&i| covers(i));
+        let last = (0..rows.len()).rev().find(|&i| covers(i));
+        let (Some(first), Some(mut last)) = (first, last) else {
+            return rows;
+        };
+        // A row's wrapped continuations belong to it.
+        while last + 1 < rows.len() && rows[last + 1].cont {
+            last += 1;
+        }
+        rows.into_iter()
+            .skip(first)
+            .take(last + 1 - first)
+            .collect()
+    }
+
     /// Replace the file's text (a saved edit, or what changed on disk),
     /// dropping the rows built from the old one.
     pub(crate) fn set_text(&mut self, text: String) {
@@ -111,10 +189,7 @@ impl AttachView {
         if text.contains('\0') {
             return None;
         }
-        let markdown = Path::new(name)
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+        let markdown = crate::links::is_markdown_name(name);
         Some(AttachView {
             target: target.to_string(),
             path,
@@ -126,6 +201,7 @@ impl AttachView {
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
             files: None,
+            range: None,
         })
     }
 
@@ -146,10 +222,7 @@ impl AttachView {
         } else {
             DocKind::File
         };
-        let markdown = Path::new(rel)
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+        let markdown = crate::links::is_markdown_name(rel);
         AttachView {
             target: rel.to_string(),
             path,
@@ -161,6 +234,7 @@ impl AttachView {
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
             files: None,
+            range: None,
         }
     }
 
@@ -180,11 +254,14 @@ impl AttachView {
             Ok(t) => (t, None),
             Err(e) => (String::new(), Some(e)),
         };
+        // A markdown file of the checkout reads rendered, as a dok or a
+        // markdown attachment does (yaks-9f55); it stays read-only.
+        let markdown = crate::links::is_markdown_name(rel);
         AttachView {
             target: format!("code:{rel}"),
             path,
             text,
-            markdown: false,
+            markdown,
             doc: DocKind::Code {
                 lang: super::syntax::Lang::from_path(rel),
                 marked,
@@ -195,6 +272,7 @@ impl AttachView {
             width: Cell::new(0),
             rows_cache: RefCell::new(None),
             files: None,
+            range: None,
         }
     }
 
@@ -211,21 +289,10 @@ impl AttachView {
     /// markdown file's line of the row's source (a dok's frontmatter counted).
     /// `None` when the cursor is on nothing with a line of its own.
     pub(crate) fn source_line(&self, rows: &[detail::DLine]) -> Option<u32> {
-        let row = rows.get(self.nav.line)?;
-        match &self.doc {
-            DocKind::Code { error: Some(_), .. } => None,
-            DocKind::Code { .. } => Some(self.nav.line as u32 + 1),
-            DocKind::Attachment | DocKind::File | DocKind::Member if !self.markdown => {
-                Some(rows[..=self.nav.line].iter().filter(|r| !r.cont).count() as u32)
-            }
-            _ => {
-                let src = row.src.filter(|s| s.block == 0)?;
-                let (a, _) = src.lines?;
-                let body = self.blocks()[0];
-                let front = self.text[..self.text.len() - body.len()].lines().count();
-                Some((a + front + 1) as u32)
-            }
+        if matches!(self.doc, DocKind::Code { error: Some(_), .. }) {
+            return None;
         }
+        self.row_line(rows.get(self.nav.line)?)
     }
 
     /// The document links in it are written from: an attachment of its yak
@@ -267,6 +334,7 @@ impl AttachView {
             DocKind::Attachment | DocKind::File | DocKind::Member => "text".into(),
             DocKind::Dok => crate::doks::Dok::parse(&self.target, &self.text).kind(),
             DocKind::Source => "source".into(),
+            DocKind::Code { .. } if self.markdown => "markdown".into(),
             DocKind::Code { .. } => "code".into(),
         }
     }
@@ -304,6 +372,17 @@ impl AttachView {
         known: &HashSet<&str>,
         images: Option<&detail::ImageEnv>,
     ) -> Vec<detail::DLine> {
+        let all = self.all_rows(width, known, images);
+        self.cut_to_range(all)
+    }
+
+    /// [`AttachView::rows`] before a range cut: the whole file.
+    fn all_rows(
+        &self,
+        width: u16,
+        known: &HashSet<&str>,
+        images: Option<&detail::ImageEnv>,
+    ) -> Vec<detail::DLine> {
         let width = width.max(1) as usize;
         let row = |text: String, md, links, nowrap, src| detail::DLine {
             text,
@@ -327,7 +406,9 @@ impl AttachView {
             error,
         } = &self.doc
         {
-            return code_rows(&self.text, *lang, *marked, error.as_deref(), width);
+            if !self.markdown || error.is_some() {
+                return code_rows(&self.text, *lang, *marked, error.as_deref(), width);
+            }
         }
         if matches!(self.doc, DocKind::Dok | DocKind::Source) {
             let blocks = self.blocks();
@@ -349,10 +430,20 @@ impl AttachView {
         } else if self.markdown {
             md_rows(&self.text, 0)
         } else {
+            // Each row records its file line (block 0), as a code row does,
+            // so a line anchor, a range cut and `e` at the line read one rule
+            // (`AttachView::row_lines`).
             let lines = self
                 .text
                 .lines()
-                .map(|l| row(l.replace('\t', "    "), vec![], vec![], None, None))
+                .enumerate()
+                .map(|(i, l)| {
+                    let src = detail::Src {
+                        block: 0,
+                        lines: Some((i, i)),
+                    };
+                    row(l.replace('\t', "    "), vec![], vec![], None, Some(src))
+                })
                 .collect();
             detail::wrap(lines, width)
         }
@@ -1477,6 +1568,28 @@ impl App {
         Some((rows, vp))
     }
 
+    /// `w` in a view a range link opened (yaks-15dc): the whole file, or
+    /// back to the range, the cursor staying on the same file line.
+    fn toggle_range(&mut self) {
+        let line = self
+            .attachment_rows()
+            .and_then(|(rows, _)| self.attach()?.source_line(&rows));
+        let Some(v) = self.attach_mut() else { return };
+        if !v.toggle_range() {
+            self.notification = Some("w widens a view a line-range link opened".into());
+            return;
+        }
+        let what = match v.narrowed() {
+            Some((a, b)) => format!("lines {a}\u{2013}{b}"),
+            None => "the whole file".into(),
+        };
+        // Back on the same line of the file, which may now be outside the
+        // range: the nearest row it has.
+        let at = line.or(v.range.map(|((a, _), _)| a));
+        self.scroll_to_anchor(at.map(|n| crate::links::Anchor::Lines(n, n)).as_ref());
+        self.notification = Some(format!("showing {what} (w toggles)"));
+    }
+
     /// Keys in the pane's find box, which edits the search register for the
     /// subject the pane shows: the open dok, else the yak's detail, by the
     /// same [`LineNav`] (yaks-84e0). Other keys in the viewer are the
@@ -1522,6 +1635,7 @@ impl App {
             Cmd::FindOpen => return self.open_find(),
             Cmd::PeekToggle => return self.toggle_peek(),
             Cmd::YakStar => return self.toggle_star(),
+            Cmd::DocWiden => return self.toggle_range(),
             Cmd::FindNext | Cmd::FindPrev => {
                 let delta = if cmd == Cmd::FindNext { 1 } else { -1 };
                 let register = self.register.clone();
