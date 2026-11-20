@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-20T04:22:23Z'
+updated: '2026-11-20T04:22:37Z'
 tags:
 - tui
 ---
@@ -15,7 +15,7 @@ Various types of links -- it looks like all work except for line numbers:
 - [Link](code:src/tui/actions.rs#L10) to source:line
 - [Link](code:src/tui/actions.rs@58eb9a6) to source@short-hash
 - [Link](code:src/tui/actions.rs@58eb9a6248e509e2e4cca2e158e1e97ca2c9a864) @hash
-- [Link](code:src/tui/actions.rs@58eb9a6248e509e2e4cca2e158e1e97ca2c9a864:10) @hash:line
+- [Link](code:src/tui/actions.rs@58eb9a6248e509e2e4cca2e158e1e97ca2c9a864#L10) @hash:line
 
 Though perhaps I have that syntax wrong?
 
