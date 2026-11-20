@@ -1,0 +1,108 @@
+=== frame 0 · 96x16 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+
+ yak-d170 p3 task     🦬 linker
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:f
+=== end ===
+=== frame 1 · 96x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+
+◂ Task: yak-d170
+│
+│ Title:       linker
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ ── peek ─────────────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment
+=== end ===
+=== frame 2 · 96x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=7 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+
+◂  🦬 yak-d170  task     p3  linker
+│ ─────────────────────────────────────────────────────────────────────────────────────────────
+│ Updated:     just now
+│ Tags:        -
+│
+│ Attachments: 1 file
+│ ── peek: yak-d170/ ──────────────────────────────────────────────────────────────────────────
+│ n.md
+│
+│
+│
+│
+│
+→ yak-d170/
+=== end ===
+=== frame 3 · 96x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+
+◂  🦬 yak-d170  task     p3  linker
+│ ─────────────────────────────────────────────────────────────────────────────────────────────
+│ Attachments: 1 file
+│
+│ range md
+│
+│ ── peek: code:src/tui/actions.rs:L10-L16 ────────────────────────────────────────────────────
+│ 10  pub(crate) enum Star<'a> {
+│ 11      Yak(&'a Task),
+│ 12      /// A dok, a source or a session note.
+│ 13      Doc(&'a doks_tab::DoksEntry),
+│ 14      /// Anything else the pane can show, by its link destination.
+│ …
+→ src/tui/actions.rs:L10-L16
+=== end ===
+=== frame 4 · 96x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+viewing code:src/tui/actions.rs:L10-L16
+◂ { } code:src/tui/actions.rs  code  lines 10–16 · w whole file
+│  10 │ pub(crate) enum Star<'a> {
+│  11 │     Yak(&'a Task),
+│  12 │     /// A dok, a source or a session note.
+│  13 │     Doc(&'a doks_tab::DoksEntry),
+│  14 │     /// Anything else the pane can show, by its link destination.
+│  15 │     Place(&'a str),
+│  16 │ }
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc
+=== end ===
+=== frame 5 · 96x16 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-d170 · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · detail_scroll=10 · pinned=yes ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (4)
+showing the whole file (w toggles)
+◂ { } code:src/tui/actions.rs  code  w lines 10–16
+│  10 │ pub(crate) enum Star<'a> {
+│  11 │     Yak(&'a Task),
+│  12 │     /// A dok, a source or a session note.
+│  13 │     Doc(&'a doks_tab::DoksEntry),
+│  14 │     /// Anything else the pane can show, by its link destination.
+│  15 │     Place(&'a str),
+│  16 │ }
+│  17 │
+│  18 │ /// A starred place's list row ([`App::place_label`]).
+│  19 │ pub(crate) struct PlaceLabel {
+│  20 │     pub icon: &'static str,
+│  21 │     pub name: String,
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc
+=== end ===
