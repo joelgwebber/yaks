@@ -1,11 +1,11 @@
 ---
 id: yaks-2e7c
 title: Take the command table mechanism from toque
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-21T05:22:42Z'
-updated: '2026-11-21T05:29:52Z'
+updated: '2026-11-21T05:29:53Z'
 tags:
 - tui
 ---
@@ -29,3 +29,9 @@ Landed against toque `d0a82db`.
 - The rule tests (shared keys, naming, case tier, both families, labels parse) call `toque::keys::rules`.
 
 Evidence: `cargo test` 1271 pass, the 1 failure is the pre-existing `land::...cherry_pick...`. A headless run (`? ? Esc Enter ?` at 120x50) of the old installed binary and the new one is byte-identical (312 lines), covering the hint bar, the popup and the full reference.
+
+#### 2026-11-21T05:29:53Z
+
+*tui-design · kind: move · from: shaving · to: shorn · thread: ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
