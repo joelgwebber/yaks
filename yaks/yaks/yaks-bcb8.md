@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:50:36Z'
+updated: '2026-11-21T21:50:37Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -52,3 +52,17 @@ Error: --change takes one yak: a change line describes one yak (use `--no-change
 ```
 
 TUI frame of the pre-filled prompt attached.
+
+#### 2026-11-21T21:50:37Z
+
+*change-1*
+
+Decision: the change note is written by a new `Farm::transition_noting` (the move plus the note under one lock); `transition_lifting` calls it with `None`. Rejected: a note written first via `update` (leaves a note behind on a refused shear, and two lock takes) and a separate Farm method per caller.
+
+Decision: `--section` is a flag of `shorn` and requires `--change`; values validated by clap against the six Keep a Changelog names. Rejected: `--meta section=` on shorn (the brief says not needed) and accepting any string.
+
+Decision: the shared reader is a new tiny module `src/changeline.rs` (`ChangeNote` to write, `latest(&Task) -> Option<Change>` and `default_section` to read; `#![allow(dead_code)]` until yaks-045c uses it). Rejected: putting it in model.rs/store.rs (model has no note parsing; store is already huge).
+
+Decision: TUI prefill applies to the single-yak shear only; the bulk (marked set) prompt stays an empty optional plain note, since a line describes one yak. Rejected: writing one title-seeded line on every marked yak, and refusing bulk shear. The cursor is moved to the end of the pre-filled title so typing appends.
+
+Decision: an empty `--change ""` is refused (use `--no-change`); a change note is written only when the move happens (not for AlreadyThere/refusals).
