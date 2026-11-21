@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:00Z'
+updated: '2026-11-21T22:26:01Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -42,3 +42,5 @@ Plan: src/release.rs (range resolution, one `git log` over the range, membership
 *rel-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+[v39-v40](yaks-045c/v39-v40.txt "real run on this repo: v39-v40")
