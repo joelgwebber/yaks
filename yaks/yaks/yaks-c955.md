@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:54:35Z'
+updated: '2026-11-21T21:54:36Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -74,3 +74,9 @@ moved: shaving -> shorn
 landed: [d2a9936c](https://github.com/joelgwebber/yaks/commit/d2a9936c79920d735d9201aabcc9598bab622afa) yaks-c955: @rev reads smudge Git LFS pointers; pinned farm images open in the image viewer
 
 [herd-pinned](yaks-c955/herd-pinned.txt "Coordinator's reproduction at d2a9936c: the @33f5db7f link in yaks-c955 opens the real LFS image")
+
+#### 2026-11-21T21:54:36Z
+
+*herd-files*
+
+Landed d2a9936c (herd-files). Reproduced with my build: `yaks peek` on manifesto-2.png@33f5db7f and on yaks-a4d8/lfs-test.png@1d0a4386 prints `(binary file, 170083 bytes)` (was the pointer before this build); headless TUI following the pinned link opens doc=image (herd-pinned.txt). Gate on the landed tree: fmt clean, 1530 passed, 0 failed. Diff read: one reader (`links::read_bytes_at`), `locate::pinned_file` routed through it too.
