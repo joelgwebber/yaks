@@ -30,7 +30,7 @@ edtui = { git = "https://github.com/joelgwebber/edtui", branch = "yaks-integrati
 # crates.io yet; Cargo.lock pins the exact commit.
 # `png`: rasterize svg attachments (embedded fonts, no system fonts) for the
 # image viewer, yaks-4e9c.
-toque = { git = "https://github.com/joelgwebber/toque", branch = "main", features = ["png", "theme"] }
+toque = { git = "https://github.com/joelgwebber/toque", branch = "main", features = ["png", "theme", "keys"] }
 notify = "6"
 arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"

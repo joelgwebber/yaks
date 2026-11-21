@@ -28,6 +28,7 @@ use super::{
 };
 use crate::filter::FilterSpec;
 use crate::model::{Status, Task};
+use toque::keys::Context as _;
 
 pub(crate) fn render(app: &App, frame: &mut Frame) {
     // Tab row, a blank gap, the main area, then the help bar (Python layout).

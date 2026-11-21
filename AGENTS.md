@@ -56,8 +56,10 @@ table only to exclude the local `.edtui` clone.
   keys (list, detail, text/image viewers, Doks and Sheds tabs) dispatch through it, and
   the `?` overlay (`help_content`), the `?` popup (`popup_entries`) and the bottom hint
   (`help_hint`) are generated from it: a key change is one edit there. Modal overlays
-  are not in it. `Keymap` is the table with the user's `keys:` overrides applied
-  (`keymap/overrides.rs`; read from `$XDG_CONFIG_HOME/yaks/config.yaml` by
+  are not in it. The mechanism (`Key`, `Family`, `Keymap`, the lookup, overrides, the
+  popup and reference layout, the rule checks) is `toque::keys`, shared with canon; a
+  change there is made in toque. `Keymap` is the table with the user's `keys:` overrides
+  applied (`keymap/overrides.rs`; read from `$XDG_CONFIG_HOME/yaks/config.yaml` by
   `App::with_farm`, never by `App::new`): every read of a key goes through it.
   It also holds the key `Family` (`App::editor_vim()` reads it; there is no other
   copy), and the `?` popup keeps its state in `App::keys_popup`.
@@ -159,12 +161,13 @@ these rules decide where a new one goes (the full text, with the reasons, is in
 
 - *Case is a tier.* Lowercase looks and moves; `Shift` changes an existing yak
   (or dok); `Ctrl` is the app and the farm. A command that writes must say so in
-  `Cmd::mutates` (an exhaustive `match`, so a new command is forced to choose);
+  `Cmd::writes` (an exhaustive `match`, so a new command is forced to choose);
   `no_lowercase_key_changes_an_existing_yak` fails when one sits on a lowercase
   key, bar its listed exceptions (`c`, `a`, `m`, `*` add or mark; `r` has a
   prompt). A new exception is a decision: argue it in the test.
 - *Two families, chosen once* (`keys: vim|standard`, `Family`). A key that
-  belongs to one family goes in `VIM_ONLY` / `STANDARD_ONLY`; every command
+  belongs to one family goes in `VIM_ONLY` / `STANDARD_ONLY` (toque's, overridable
+  per app through `Command::VIM_ONLY`); every command
   keeps a key in both, which `every_command_stays_bound_in_standard_mode`
   enforces. Give a vim-only key an arrow, `PgUp`/`PgDn` or `Home`/`End` beside it.
 - *Enter goes in, `Esc` comes out*; `h`/`l` never move between list and pane.
