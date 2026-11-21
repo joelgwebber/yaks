@@ -1,0 +1,245 @@
+{
+  "range": {
+    "from": "v0.0.40",
+    "to": "HEAD"
+  },
+  "commits": 13,
+  "yaks": [
+    {
+      "id": "yaks-0a0a",
+      "title": "MERGE_HEAD/CHERRY_PICK_HEAD checked as files: wrong on reftable repos (init.defaultrefformat=reftable)",
+      "type": "bug",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "09fe62f3b2354ed27ef20eba96115e7f4bbc5dd3",
+          "short": "09fe62f3",
+          "subject": "yaks-0a0a: a pending merge or cherry-pick is seen in a reftable repository (ask git there; tests ask git too)"
+        }
+      ]
+    },
+    {
+      "id": "yaks-15dc",
+      "title": "Ensure all the internal link types work as expected",
+      "type": "task",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "412882e417ec14567d2d10a97df1c4764e1e0f11",
+          "short": "412882e4",
+          "subject": "yaks-15dc, yaks-9f55: one line rule for every viewer; path:N shorthand; a line range opens narrowed (w widens); a markdown code: file renders"
+        }
+      ]
+    },
+    {
+      "id": "yaks-1d2b",
+      "title": "Links to a dok's or source's directory (x/sketches/, /doks/x/sketches/) are reported as ../ by doctor and refused by peek",
+      "type": "bug",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "84ffb8b79e7cbad749d535f2b5c37adf6e57525a",
+          "short": "84ffb8b7",
+          "subject": "yaks-84fe: one lister, one resolver, one opener for files and directories (also yaks-1d2b)"
+        }
+      ]
+    },
+    {
+      "id": "yaks-4381",
+      "title": "Ability to pin/star any file/resource that can be rendered in the detail view",
+      "type": "feature",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "973a47e16cd8ee5224989b0dc2b27002dfbeb5c5",
+          "short": "973a47e1",
+          "subject": "yaks-4381: a starred archive member reads like an attachment (<id>/code.zip/src and the yak's title)"
+        },
+        {
+          "sha": "9a09c2015a2953213e7fcc5a6fac4191d3f5fcb8",
+          "short": "9a09c201",
+          "subject": "yaks-4381: archive members star like any place (Place::Member arms after yaks-93ee)"
+        },
+        {
+          "sha": "58eb9a6248e509e2e4cca2e158e1e97ca2c9a864",
+          "short": "58eb9a62",
+          "subject": "yaks-4381: star anything the pane shows; Starred lists places as one generic row"
+        }
+      ]
+    },
+    {
+      "id": "yaks-8218",
+      "title": "walk_dir follows symlinks: yaks attach <dir> and source add <dir> copy a link's target from outside the tree",
+      "type": "bug",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "543403df8dadea907f2a6ab9f06ecf37acbffa17",
+          "short": "543403df",
+          "subject": "yaks-8218: wrap the attach help's new lines"
+        },
+        {
+          "sha": "22b1c30d02e6c1727dda5ba894ef3ef509e728e3",
+          "short": "22b1c30d",
+          "subject": "yaks-8218: walk_dir never follows symlinks; attach reports what a directory walk skipped"
+        }
+      ]
+    },
+    {
+      "id": "yaks-84fe",
+      "title": "Refactor: one container lister and one resolver for files, directories and subjects (open_place, links::dest)",
+      "type": "task",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "84ffb8b79e7cbad749d535f2b5c37adf6e57525a",
+          "short": "84ffb8b7",
+          "subject": "yaks-84fe: one lister, one resolver, one opener for files and directories (also yaks-1d2b)"
+        }
+      ]
+    },
+    {
+      "id": "yaks-93ee",
+      "title": "Browse and link into archive attachments (zip, tar.gz) read-only",
+      "type": "idea",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "9a09c2015a2953213e7fcc5a6fac4191d3f5fcb8",
+          "short": "9a09c201",
+          "subject": "yaks-4381: archive members star like any place (Place::Member arms after yaks-93ee)"
+        },
+        {
+          "sha": "91d46c73711ce3b3b8c81c40853f77adab94fd59",
+          "short": "91d46c73",
+          "subject": "yaks-93ee: browse and link into zip/tar/tgz attachments read-only (Container::Zip/Tar, Place::Member, from-bytes viewers, take-out on a member)"
+        }
+      ]
+    },
+    {
+      "id": "yaks-9f55",
+      "title": "Use markdown renderer for source files with of type .md",
+      "type": "task",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "412882e417ec14567d2d10a97df1c4764e1e0f11",
+          "short": "412882e4",
+          "subject": "yaks-15dc, yaks-9f55: one line rule for every viewer; path:N shorthand; a line range opens narrowed (w widens); a markdown code: file renders"
+        }
+      ]
+    },
+    {
+      "id": "yaks-b4d7",
+      "title": "Direct links to doks, with no anchor, often jump to the bottom",
+      "type": "bug",
+      "status": "shorn",
+      "parent": null,
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "b9f315527abdf35868f35c081bc06ff372a98298",
+          "short": "b9f31552",
+          "subject": "yaks-b4d7: a viewer opened before its first draw lays out at the pane's width, so an anchor lands on its row"
+        }
+      ]
+    },
+    {
+      "id": "yaks-bcb8",
+      "title": "Change lines: yaks shorn --change/--no-change, a kind: change note per yak",
+      "type": "feature",
+      "status": "shorn",
+      "parent": "yaks-a4d8",
+      "group": "change",
+      "change": "`yaks shorn --change \"<line>\"` records a yak's change line (and `--no-change` says there is none); the TUI shear prompt offers the title to edit as that line.",
+      "section": "added",
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "c20ad2259898bf62117cc0580163a48e22371adc",
+          "short": "c20ad225",
+          "subject": "yaks-bcb8: --change on a yak already shorn warns how to record the line instead of dropping it"
+        },
+        {
+          "sha": "d63203fc54e1e56d8148e06fe8879432e23481b2",
+          "short": "d63203fc",
+          "subject": "yaks-bcb8: yaks shorn --change/--no-change write a kind: change note; the TUI shear prompt offers the title as the change line"
+        }
+      ]
+    },
+    {
+      "id": "yaks-c955",
+      "title": "@rev links read LFS files: smudge the pointer so a pinned image shows",
+      "type": "bug",
+      "status": "shorn",
+      "parent": "yaks-a4d8",
+      "group": "gap",
+      "change": null,
+      "section": null,
+      "covered_by": null,
+      "commits": [
+        {
+          "sha": "d2a9936c79920d735d9201aabcc9598bab622afa",
+          "short": "d2a9936c",
+          "subject": "yaks-c955: @rev reads smudge Git LFS pointers; pinned farm images open in the image viewer"
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    "yaks-0a0a",
+    "yaks-15dc",
+    "yaks-1d2b",
+    "yaks-4381",
+    "yaks-8218",
+    "yaks-84fe",
+    "yaks-93ee",
+    "yaks-9f55",
+    "yaks-b4d7",
+    "yaks-c955"
+  ],
+  "commits_without_yak": []
+}

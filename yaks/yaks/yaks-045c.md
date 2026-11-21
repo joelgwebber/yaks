@@ -50,3 +50,5 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 [default](yaks-045c/default.txt "real run on this repo: default")
 
 [default-check](yaks-045c/default-check.txt "real run on this repo: default-check")
+
+[default](yaks-045c/default.json "yaks release changes --json (v0.0.40..HEAD)")
