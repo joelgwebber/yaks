@@ -1,0 +1,42 @@
+=== frame 7 · 120x40 · focus=detail · view=📖 Doks · cursor=0 · rows=1 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none · doc=text · doks=1 · entry=doks/releases/v0.2.0.md ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (3)   🕒 Recent (4)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sheds (1)        unpub
+
+◂ 📖 doks/releases/v0.2.0.md  release
+│ type:        release
+│ title:       yak v0.2.0
+│ description: What changed in v0.2.0: the headlines, then every change by section
+│ created:     2026-11-21T23:03:00Z
+│ version:     v0.2.0
+│ date:        2026-11-21
+│ range:       v0.1.0..HEAD
+│
+│ yak v0.2.0
+│
+│ <!-- Headlines: what matters in this release, with a screenshot if there is one (pin images with @<sha>). -->
+│
+│ <!-- yaks:changes -->
+│
+│ Added
+│
+│ • Adds a Search tab that finds yaks and doks as you type. (yak-67fa)
+│   ◦ Index builder (yak-88ef)
+│
+│ Not described
+│
+│ • Crash on empty farm (yak-84b9) (no change line)
+│
+│ <!-- /yaks:changes -->
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc close · q quit
+=== end ===
