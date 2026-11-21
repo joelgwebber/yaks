@@ -1,0 +1,16 @@
+Changes v0.0.40..HEAD: 13 commits, 11 yaks
+
+Added
+- `yaks shorn --change "<line>"` records a yak's change line (and `--no-change` says there is none); the TUI shear prompt offers the title to edit as that line. (yaks-bcb8; c20ad225 d63203fc)
+
+Shorn with no change line (10)
+- yaks-0a0a: MERGE_HEAD/CHERRY_PICK_HEAD checked as files: wrong on reftable repos (init.defaultrefformat=reftable) (09fe62f3)
+- yaks-15dc: Ensure all the internal link types work as expected (412882e4)
+- yaks-1d2b: Links to a dok's or source's directory (x/sketches/, /doks/x/sketches/) are reported as ../ by doctor and refused by peek (84ffb8b7)
+- yaks-4381: Ability to pin/star any file/resource that can be rendered in the detail view (973a47e1 9a09c201 58eb9a62)
+- yaks-8218: walk_dir follows symlinks: yaks attach <dir> and source add <dir> copy a link's target from outside the tree (543403df 22b1c30d)
+- yaks-84fe: Refactor: one container lister and one resolver for files, directories and subjects (open_place, links::dest) (84ffb8b7)
+- yaks-93ee: Browse and link into archive attachments (zip, tar.gz) read-only (9a09c201 91d46c73)
+- yaks-9f55: Use markdown renderer for source files with of type .md (412882e4)
+- yaks-b4d7: Direct links to doks, with no anchor, often jump to the bottom (b9f31552)
+- yaks-c955: @rev links read LFS files: smudge the pointer so a pinned image shows (d2a9936c)
