@@ -1,11 +1,11 @@
 ---
 id: yaks-2c0d
 title: 'Research: the No AI Slop manifesto and what it means for yaks'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-21T16:16:47Z'
-updated: '2026-11-21T16:25:22Z'
+updated: '2026-11-21T16:25:24Z'
 tags:
 - research
 - design
@@ -38,3 +38,9 @@ Shorn: the manifesto is saved and read against yaks.
 - Follow-up: yaks-a1dc holds the six proposals, with an ask for which to do and in what order.
 
 Evidence: `yaks doctor` and `yaks check` report nothing for the new dok or source (the one broken link doctor lists is yaks-5250's, older).
+
+#### 2026-11-21T16:25:24Z
+
+*noslop-1 · kind: move · from: shaving · to: shorn · thread: ksQQAaR4Et5XRd6SUAsLXtG1X5LOAHWQYJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
