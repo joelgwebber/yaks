@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:02:42Z'
+updated: '2026-11-21T22:11:17Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -28,3 +28,11 @@ moved: hairy -> shaving
 *herd-files*
 
 Claim (herd-files): worker rel-1 (Sonnet), base c20ad225. Scope: new src/release.rs (membership + report), `Command::Release` with subcommand `changes` in src/main.rs (leave room for `dok` and `changelog` later), a warning in src/land.rs after a landing, docs (docs/cli.md, README command table, yaks-coordinating skill's landing section + RELEASING.md note). Reuse src/changeline.rs (`latest`) and the commit-naming rule of src/yakcommits.rs. Out of scope: release doks, CHANGELOG.md. Evidence: integration tests on a temp repo with tags; a real run of `yaks release changes v0.0.39..v0.0.40` and `yaks release changes` (last tag..HEAD) on this repo, output attached. Judge: herd-files at landing.
+
+#### 2026-11-21T22:11:17Z
+
+*rel-1*
+
+Start 2026-11-21T22:03:58Z. Top-level: /Users/joel/src/yaks/.delta/worktrees/8c177wnt6s3h/yaks (base c20ad225). Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-045c.md.
+
+Plan: src/release.rs (range resolution, one `git log` over the range, membership by message scan with refs::scan_text + `commit:` notes via yakcommits::collect, report + text/json rendering); Command::Release{action: ReleaseCmd::Changes} in main.rs; warning in land.rs::record; docs.
