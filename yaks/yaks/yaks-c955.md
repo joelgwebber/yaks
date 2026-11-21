@@ -1,7 +1,7 @@
 ---
 id: yaks-c955
 title: '@rev links read LFS files: smudge the pointer so a pinned image shows'
-status: shaving
+status: shorn
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
@@ -60,3 +60,9 @@ Stray note above: an evidence link (the pinned image) written to drive the headl
 *lfs-1*
 
 Summary: @rev reads go through links::read_bytes_at (LFS pointer -> git lfs smudge; failure says the file is in LFS and could not be fetched). TUI opens a pinned farm image in the image viewer; pinned_file temp copy smudges too. Gate PASS. Caveat: the BEFORE half of peek-evidence.txt was retyped from the earlier pre-change run (the pre-change binary was overwritten by my rebuild).
+
+#### 2026-11-21T21:49:03Z
+
+*lfs-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHb29ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
