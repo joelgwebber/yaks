@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T22:32:10Z'
+updated: '2026-11-21T22:32:11Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -22,3 +22,9 @@ Decision 4 of [the changelog design](/doks/design/changelog.md#4-a-release-is-a-
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-21T22:32:11Z
+
+*herd-files*
+
+Claim (herd-files): worker rdok-1 (Sonnet), base 5d8a524c. Scope: src/release.rs (a renderer for the changes block reusing the report), `ReleaseCmd::Dok` in src/main.rs, a `release` dok schema written on first use (or via `dok define` machinery), `yaks check` flagging a stale block (src/check.rs), docs + the yaks-coordinating skill's release step + RELEASING.md. Out of scope: CHANGELOG.md (yaks-7278). Evidence: tests; a real `yaks release dok v0.0.40` and an unreleased one on this farm, rendered in the TUI headless. Judge: herd-files.
