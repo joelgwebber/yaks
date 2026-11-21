@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:10:01Z'
+updated: '2026-11-21T23:10:02Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -64,3 +64,9 @@ Decision: entry order within a section is oldest yak first (created, then id). Y
 *rdok-1*
 
 Decision: title is `<herd> <version>` when the farm declares a default herd (`yaks v0.0.41` here), else just the version. `yanked: false` is NOT written: a human adds `yanked: true` when needed; it is in the schema. A rerun on a dok with no block markers is refused, never overwritten. Nothing is written (no commit) when the dok would not change. `schemas/release.md` is written under the same lock, once.
+
+#### 2026-11-21T23:10:02Z
+
+*rdok-1*
+
+Decision: shared the block's membership with `release changes` (one `report_in`, `section_order`, `top_entries`); only `block` renders. Also moved the `Repo` test harness from tests/release_changes.rs into tests/common/mod.rs so tests/release_dok.rs reuses it. Block links use the schema-9 farm-root form `/<herd>/yaks/<id>.md` (as `links::note_link` writes), so they render on GitHub.
