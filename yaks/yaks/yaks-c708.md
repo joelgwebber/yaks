@@ -30,3 +30,5 @@ moved: hairy -> shaving
 Claim (herd-files): worker rdok-1 (Sonnet), base 5d8a524c. Scope: src/release.rs (a renderer for the changes block reusing the report), `ReleaseCmd::Dok` in src/main.rs, a `release` dok schema written on first use (or via `dok define` machinery), `yaks check` flagging a stale block (src/check.rs), docs + the yaks-coordinating skill's release step + RELEASING.md. Out of scope: CHANGELOG.md (yaks-7278). Evidence: tests; a real `yaks release dok v0.0.40` and an unreleased one on this farm, rendered in the TUI headless. Judge: herd-files.
 
 [rdok-dryrun-v0.0.40](yaks-c708/rdok-dryrun-v0.0.40.txt "yaks release dok v0.0.40 --dry-run on this farm")
+
+[rdok-dryrun-v0.0.41](yaks-c708/rdok-dryrun-v0.0.41.txt "yaks release dok v0.0.41 --dry-run (unreleased: v0.0.40..HEAD)")
