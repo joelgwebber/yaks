@@ -2793,9 +2793,11 @@ checksum = "fd3ca314f692efd6c868f8408f53fe444634a845f96c028b97d35f6a1f79f0ee"
 [[package]]
 name = "toque"
 version = "0.1.0"
-source = "git+https://github.com/joelgwebber/toque?branch=main#6a411f91852c5b999ce901854f863b6b2e8b2547"
+source = "git+https://github.com/joelgwebber/toque?branch=main#640993fbecad7a4a44cb699009adcf0bc830076c"
 dependencies = [
+ "image",
  "ratatui",
+ "ratatui-image",
  "resvg",
  "terminal-colorsaurus",
  "unicode-width",
