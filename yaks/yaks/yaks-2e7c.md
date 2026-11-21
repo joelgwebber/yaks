@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-21T05:22:42Z'
-updated: '2026-11-21T05:22:46Z'
+updated: '2026-11-21T05:29:52Z'
 tags:
 - tui
 ---
@@ -17,3 +17,15 @@ The generic half of src/tui/keymap.rs (Key, Family, Binding, Keymap lookup and o
 *tui-design · kind: move · from: hairy · to: shaving · thread: ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-21T05:29:52Z
+
+*tui-design*
+
+Landed against toque `d0a82db`.
+
+- `src/tui/keymap.rs` keeps the commands, contexts, `BINDINGS`, sections and extras; `Key`, `Family`, `Keymap`, `popup_lines` and the reference layout are toque's. `Cmd` implements `toque::keys::Command`; the filter drawer's state-dependent hint is a `Hint::Custom`.
+- `keymap/overrides.rs` is now just where the file lives (`load_user`); toque reads it.
+- The rule tests (shared keys, naming, case tier, both families, labels parse) call `toque::keys::rules`.
+
+Evidence: `cargo test` 1271 pass, the 1 failure is the pre-existing `land::...cherry_pick...`. A headless run (`? ? Esc Enter ?` at 120x50) of the old installed binary and the new one is byte-identical (312 lines), covering the hint bar, the popup and the full reference.
