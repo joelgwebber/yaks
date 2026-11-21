@@ -3956,6 +3956,14 @@ fn transition(
         }
         MoveOutcome::AlreadyThere => {
             println!("{id} is {already}");
+            if change.is_some() {
+                // The line rides on the move; one that did not happen writes
+                // none, so say how to record it rather than drop it silently.
+                eprintln!(
+                    "warning: no change line written for {id}; record one with \
+                     `yaks update {id} --note \"<line>\" --meta kind=change`"
+                );
+            }
             Ok(true)
         }
         MoveOutcome::Moved => {

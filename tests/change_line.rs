@@ -153,3 +153,14 @@ fn a_refused_shear_writes_no_change_note() {
     assert_eq!(f.status(&parent), "hairy");
     assert!(f.changes(&parent).is_empty());
 }
+
+#[test]
+fn a_change_line_for_a_yak_already_shorn_is_not_dropped_silently() {
+    let f = Farm::new("again");
+    let id = f.create("Done", "task");
+    f.run(&["shorn", &id]);
+    let out = f.cmd(&["shorn", &id, "--change", "late line"]);
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("--meta kind=change"), "{err}");
+    assert!(f.changes(&id).is_empty());
+}
