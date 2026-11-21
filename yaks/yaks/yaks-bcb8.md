@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:53:42Z'
+updated: '2026-11-21T21:54:27Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -72,3 +72,9 @@ Decision: an empty `--change ""` is refused (use `--no-change`); a change note i
 *change-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-21T21:54:27Z
+
+*change-1*
+
+Summary: `shorn --change/--section/--no-change` (Farm::transition_noting, one lock), src/changeline.rs (ChangeNote, latest, default_section, tests), TUI shear prefill with title as change line (single yak; bulk stays a plain optional comment), docs/skills/brief/help parity. Gate: cargo fmt --check ok; cargo test -p yaks all green (yaks verify PASS). New tests: tests/change_line.rs (5), changeline unit tests (4), TUI tests for prefill/edited/empty.
