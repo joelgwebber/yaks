@@ -44,3 +44,5 @@ Plan: src/release.rs (range resolution, one `git log` over the range, membership
 verify: `cargo test -p yaks` -> PASS (exit 0)
 
 [v39-v40](yaks-045c/v39-v40.txt "real run on this repo: v39-v40")
+
+[v40](yaks-045c/v40.txt "real run on this repo: v40")
