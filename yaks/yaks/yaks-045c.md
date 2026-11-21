@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:25Z'
+updated: '2026-11-21T22:26:52Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -94,3 +94,9 @@ moved: shaving -> shorn
 *rel-1 · kind: change*
 
 `yaks release changes [<range>] [--json] [--check]` lists the yaks a release's commits name, by change line and section, with the gaps, open yaks and commits naming no yak; `--check` exits 1 on a gap. `yaks land` warns when it records a landing on a shorn yak with no change line.
+
+#### 2026-11-21T22:26:52Z
+
+*herd-files · kind: landed · commit: 5d8a524c4fc530ff50546570768bfc79b7d9b00a · source: e1dad561f3b78f23b0ab9c5c8a2e19357c845457 · branch: main*
+
+landed: [5d8a524c](https://github.com/joelgwebber/yaks/commit/5d8a524c4fc530ff50546570768bfc79b7d9b00a) yaks-045c: yaks release changes (range membership from commits, --check), land warns on a shorn yak with no change line
