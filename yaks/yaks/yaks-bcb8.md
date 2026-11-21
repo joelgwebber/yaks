@@ -98,3 +98,16 @@ moved: shaving -> shorn
 landed: [d63203fc](https://github.com/joelgwebber/yaks/commit/d63203fc54e1e56d8148e06fe8879432e23481b2) yaks-bcb8: yaks shorn --change/--no-change write a kind: change note; the TUI shear prompt offers the title as the change line
 
 [shear-prompt](yaks-bcb8/shear-prompt.txt "Coordinator's reproduction: S → n pre-fills the title as the change line; typing ' (TUI)' + Enter wrote kind: change 'Live preview (TUI)'")
+
+#### 2026-11-21T22:01:49Z
+
+*herd-files*
+
+Landed d63203fc (herd-files), plus my follow-up 0ec… (see `yaks commits`): `shorn --change` on a yak that is already shorn printed only "is already shorn" and dropped the line; it now warns with the `yaks update <id> --note "<line>" --meta kind=change` correction (test `a_change_line_for_a_yak_already_shorn_is_not_dropped_silently`).
+
+Reproduced with my build on a scratch farm:
+
+- multi-id `--change` refused; `--section security` stored; `--no-change` stores `section: none`; plain `--change` on a feature stores no section.
+- TUI: `S` → `n` shows `Shear yak-2977 — change line (edit; empty for none · Enter shears · Ctrl-C cancel): Live preview`; appending ` (TUI)` and Enter wrote `kind: change` "Live preview (TUI)".
+
+Gate on the landed tree with the follow-up: fmt clean, 1541 passed, 0 failed.
