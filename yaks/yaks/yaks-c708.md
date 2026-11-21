@@ -34,3 +34,9 @@ Claim (herd-files): worker rdok-1 (Sonnet), base 5d8a524c. Scope: src/release.rs
 [rdok-dryrun-v0.0.41](yaks-c708/rdok-dryrun-v0.0.41.txt "yaks release dok v0.0.41 --dry-run (unreleased: v0.0.40..HEAD)")
 
 [rdok-tui-release-dok](yaks-c708/rdok-tui-release-dok.txt "Headless TUI frame (120x40): a release dok in the Doks tab, scratch farm")
+
+#### 2026-11-21T23:09:58Z
+
+*rdok-1*
+
+Decision: derived fields. A rerun updates `range` and `tag` always, and `date` only once the version is tagged (the tag commit's day in the farm's zone; untagged: today at creation, kept afterwards). `title`, `description`, `version`, `yanked`, prose and any hand-added field are never touched. Rejected: rewriting only the block (a dok created untagged would keep a stale `range: v0.0.40..HEAD` and no `tag:` forever, and `check` compares over `range:`); rewriting every field (would clobber hand edits).
