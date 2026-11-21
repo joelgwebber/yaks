@@ -14,6 +14,7 @@ sources:
 - sources/2026-11-21-2cb3322d-reno-openstack-design-constraints-and-usage.md
 - sources/2026-11-21-2fffc71b-git-cliff-docs-and-conventional-commits-100.md
 - sources/2026-11-21-f66f0491-github-automatically-generated-release-notes.md
+description: Survey of changelog tools (Keep a Changelog, Changesets, towncrier, reno, git-cliff, GitHub release notes), this repo release history and an LFS-at-commit probe; read before changing how yaks records or generates release notes
 ---
 
 # Changelogs: how existing tools do it, and what yaks can take
