@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-19T01:32:15Z'
-updated: '2026-11-19T02:33:14Z'
+updated: '2026-11-21T22:31:14Z'
 tags:
 - links
 - tui
@@ -79,3 +79,9 @@ Fixes yaks-1d2b.
 *herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-21T22:31:14Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change.
