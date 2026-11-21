@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:23Z'
+updated: '2026-11-21T22:26:24Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -76,3 +76,9 @@ Decision: version-bump exclusion is the named const `VERSION_BUMP = "Bump versio
 Decision: the land warning is emitted per yak right after that yak's `recorded the landing` line, only for `LandedOutcome::Recorded` (so also in a dry run, which reports `Recorded`), and only for shorn yaks with no `kind: change` note at all (a `--no-change` note counts as a line). It never changes the exit status. Rejected: warning for AlreadyRecorded (the earlier landing already said it).
 
 Observation (not a defect): the brief expected the default `yaks release changes` on this repo to show just yaks-c955 and yaks-bcb8. v0.0.40..HEAD at base c20ad225 has 13 commits naming 11 yaks: only yaks-bcb8 has a change line, the other 10 (including yaks-c955) are shorn with none, so they are listed as gaps and `--check` exits 1 there. That is the check working: those yaks predate the change-line convention.
+
+#### 2026-11-21T22:26:24Z
+
+*rel-1*
+
+Summary: new src/release.rs (range resolution, membership, report, text/--json, --check), Command::Release/ReleaseCmd::Changes in main.rs, land warning in land.rs (missing_change_line), Farm::code_repo pub(crate), dead_code allow removed from changeline.rs. Tests: 9 unit tests in release.rs, tests/release_changes.rs (8), tests/land_change_warning.rs (1). Docs: docs/cli.md (release section, land warning), README row, yaks-coordinating skill (6 Landing step 1 + 5), RELEASING.md. Gate: cargo fmt --check clean; cargo test -p yaks green (1315 unit + all integration).
