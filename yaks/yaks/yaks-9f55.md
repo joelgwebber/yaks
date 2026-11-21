@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-19T20:49:16Z'
-updated: '2026-11-20T00:07:12Z'
+updated: '2026-11-21T22:31:15Z'
 tags:
 - tui
 ---
@@ -35,3 +35,9 @@ Done (herd-files) in `412882e4`: a `code:` link to a `.md`/`.markdown` file rend
 *herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-21T22:31:15Z
+
+*herd-files · kind: change · section: fixed*
+
+A markdown file opened through a `code:` link renders as markdown.
