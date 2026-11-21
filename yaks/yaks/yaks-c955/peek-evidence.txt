@@ -1,0 +1,11 @@
+## BEFORE (binary built before the change; pointer text shown)
+version https://git-lfs.github.com/spec/v1
+oid sha256:0272f64e919d44ea476bc6d9c4f50d03a3ba332f2bf5740519a3beb96ce32fb4
+size 170083
+
+## AFTER: yaks peek '/sources/2026-11-05-0272f64e-proton-engineering-manifesto-page-2-of-3/manifesto-2.png@33f5db7f'
+── sources/2026-11-05-0272f64e-proton-engineering-manifesto-page-2-of-3/manifesto-2.png@33f5db7
+(binary file, 170083 bytes)
+
+## AFTER: git lfs smudge size check
+  170083

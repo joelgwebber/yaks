@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:45:42Z'
+updated: '2026-11-21T21:48:55Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -38,3 +38,5 @@ Evidence link (pinned LFS image): ![manifesto page 2](/sources/2026-11-05-0272f6
 *lfs-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+[peek-evidence](yaks-c955/peek-evidence.txt "peek of the pinned LFS image before (pointer) and after (170083-byte binary placeholder, matches git lfs smudge)")
