@@ -712,15 +712,14 @@ pub fn pinned_file(base: &Path, path: &str, rev: Option<&str>) -> Result<(PathBu
             return Err(format!("{rev}: {line}"));
         }
     }
-    let shown = git(base, &["show", &format!("{rev}:{rel}")]).map_err(|e| format!("git: {e}"))?;
-    if !shown.status.success() {
-        return Err(format!("{path} not in {}", &rev[..rev.len().min(7)]));
-    }
+    // The one reader of a file at a rev: an LFS file is its content, not its
+    // pointer ([`links::read_bytes_at`]).
+    let shown = links::read_bytes_at(base, path, Some(rev)).map_err(|e| format!("{e:#}"))?;
     let tmp = std::env::temp_dir().join("yaks-src").join(rev).join(path);
     let write = || -> std::io::Result<()> {
         std::fs::create_dir_all(tmp.parent().unwrap())?;
         let _ = std::fs::remove_file(&tmp); // a previous copy is read-only
-        std::fs::write(&tmp, &shown.stdout)?;
+        std::fs::write(&tmp, &shown)?;
         let mut perm = std::fs::metadata(&tmp)?.permissions();
         perm.set_readonly(true);
         std::fs::set_permissions(&tmp, perm)

@@ -28,7 +28,8 @@
 //! Parsing is pure ([`parse`]). Resolution ([`Resolved`]) and reading
 //! ([`peek`]) touch the disk and git.
 
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -923,16 +924,72 @@ fn git(dir: &Path, args: &[&str]) -> std::io::Result<std::process::Output> {
         .output()
 }
 
-/// Read `path` under `base`, or as it was at `rev` in the git repository
-/// holding `base` (`git show <rev>:./<path>`, run in `base`).
+/// Read `path` under `base` as text, or as it was at `rev` in the git
+/// repository holding `base` ([`read_bytes_at`]). Bytes that are not UTF-8
+/// read as a one-line `(binary file, N bytes)` placeholder.
 pub fn read_at(base: &Path, path: &str, rev: Option<&str>) -> Result<String> {
+    let bytes = read_bytes_at(base, path, rev)?;
+    Ok(String::from_utf8(bytes)
+        .unwrap_or_else(|e| format!("(binary file, {} bytes)\n", e.into_bytes().len())))
+}
+
+/// The first line of a Git LFS pointer file.
+const LFS_POINTER_PREFIX: &[u8] = b"version https://git-lfs.github.com/spec/v1";
+
+/// A real LFS pointer is about 130 bytes; anything bigger is content that
+/// merely starts with the same words.
+const LFS_POINTER_MAX: usize = 1024;
+
+/// `blob` (what `git show` printed for `path` at a rev) with an LFS pointer
+/// replaced by the file it names: the pointer goes to `git lfs smudge --
+/// <path>` run in `base`, which reads the object from the local LFS store or
+/// fetches it. Any other blob is returned as it is. A pointer that cannot be
+/// smudged (git-lfs missing, object not fetchable) is an error saying so,
+/// never the pointer text shown as if it were the file.
+fn smudge_if_lfs(base: &Path, path: &str, short: &str, blob: Vec<u8>) -> Result<Vec<u8>> {
+    if blob.len() > LFS_POINTER_MAX || !blob.starts_with(LFS_POINTER_PREFIX) {
+        return Ok(blob);
+    }
+    let fail = |why: String| {
+        anyhow::anyhow!("{path}@{short}: file is in Git LFS and could not be fetched ({why})")
+    };
+    let mut child = Command::new("git")
+        .arg("-C")
+        .arg(base)
+        .args(["lfs", "smudge", "--", path])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| fail(format!("git lfs: {e}")))?;
+    // The pointer is small, so writing it before reading cannot fill a pipe.
+    child
+        .stdin
+        .take()
+        .context("git lfs smudge stdin")?
+        .write_all(&blob)
+        .map_err(|e| fail(format!("git lfs: {e}")))?;
+    let out = child
+        .wait_with_output()
+        .map_err(|e| fail(format!("git lfs: {e}")))?;
+    if !out.status.success() || out.stdout.starts_with(LFS_POINTER_PREFIX) {
+        let err = String::from_utf8_lossy(&out.stderr);
+        let why = err
+            .lines()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or("git lfs smudge failed");
+        return Err(fail(why.trim().to_string()));
+    }
+    Ok(out.stdout)
+}
+
+/// The bytes of `path` under `base`, or as they were at `rev` in the git
+/// repository holding `base` (`git show <rev>:./<path>`, run in `base`). The
+/// one reader of a file at a rev: a Git LFS file reads as its content, not its
+/// pointer ([`smudge_if_lfs`]).
+pub fn read_bytes_at(base: &Path, path: &str, rev: Option<&str>) -> Result<Vec<u8>> {
     let Some(rev) = rev else {
-        let file = base.join(path);
-        return match std::fs::read(&file) {
-            Ok(b) => Ok(String::from_utf8(b)
-                .unwrap_or_else(|e| format!("(binary file, {} bytes)\n", e.into_bytes().len()))),
-            Err(_) => bail!("{path}: no such file"),
-        };
+        return std::fs::read(base.join(path)).or_else(|_| bail!("{path}: no such file"));
     };
     let mut out = git(base, &["show", &format!("{rev}:./{path}")])?;
     // A pin from before schema 8 names a commit where the dok was still under
@@ -955,15 +1012,15 @@ pub fn read_at(base: &Path, path: &str, rev: Option<&str>) -> Result<String> {
             out = next;
         }
     }
+    let short = &rev[..rev.len().min(7)];
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr);
         bail!(
-            "{path}@{}: {}",
-            &rev[..rev.len().min(7)],
+            "{path}@{short}: {}",
             err.lines().next().unwrap_or("not found")
         );
     }
-    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+    smudge_if_lfs(base, path, short, out.stdout)
 }
 
 /// The schema-7 spelling of a farm path under a doks root: `doks/x.md` was
@@ -1702,6 +1759,103 @@ mod tests {
             .unwrap_err()
             .to_string();
         assert!(err.contains("none.md"), "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    fn lfs_available() -> bool {
+        Command::new("git")
+            .args(["lfs", "version"])
+            .stdin(Stdio::null())
+            .output()
+            .is_ok_and(|o| o.status.success())
+    }
+
+    /// A scratch git repo at `dir` with `user` set and, when `lfs`, the LFS
+    /// filters installed in its own config only; returns a `git` runner.
+    fn scratch_repo(dir: &Path, lfs: bool) -> impl Fn(&[&str]) -> String + '_ {
+        let _ = std::fs::remove_dir_all(dir);
+        std::fs::create_dir_all(dir).unwrap();
+        let run = move |args: &[&str]| {
+            let o = Command::new("git")
+                .arg("-C")
+                .arg(dir)
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(
+                o.status.success(),
+                "{args:?}: {}",
+                String::from_utf8_lossy(&o.stderr)
+            );
+            String::from_utf8_lossy(&o.stdout).trim().to_string()
+        };
+        run(&["init", "-q"]);
+        run(&["config", "user.email", "t@t"]);
+        run(&["config", "user.name", "t"]);
+        if lfs {
+            run(&["lfs", "install", "--local"]);
+        }
+        run
+    }
+
+    /// A Git LFS file read at a commit is its content, not the 131-byte
+    /// pointer `git show` prints (yaks-c955); a plain file is unchanged.
+    #[test]
+    fn a_pin_to_an_lfs_file_reads_its_content() {
+        if !lfs_available() {
+            eprintln!("skipped: git lfs is not installed");
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("yaks-pin-lfs-{}", std::process::id()));
+        let run = scratch_repo(&dir, true);
+        run(&["lfs", "track", "*.png"]);
+        // Not valid UTF-8, like an image.
+        let png: Vec<u8> = (0..4096u32).map(|i| (i * 7 % 256) as u8).collect();
+        std::fs::write(dir.join("pic.png"), &png).unwrap();
+        std::fs::write(dir.join("note.md"), "plain\n").unwrap();
+        run(&["add", "."]);
+        run(&["commit", "-qm", "lfs"]);
+        let rev = run(&["rev-parse", "HEAD"]);
+        // Git stored a pointer, so this is the case the fix is for.
+        let blob = run(&["show", &format!("{rev}:pic.png")]);
+        assert!(blob.starts_with("version https://git-lfs.github.com/spec/v1"));
+
+        assert_eq!(read_bytes_at(&dir, "pic.png", Some(&rev)).unwrap(), png);
+        assert_eq!(
+            read_at(&dir, "pic.png", Some(&rev)).unwrap(),
+            format!("(binary file, {} bytes)\n", png.len())
+        );
+        assert_eq!(read_at(&dir, "note.md", Some(&rev)).unwrap(), "plain\n");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A pointer whose object is nowhere (never pushed, not in the local
+    /// store) says the file is in LFS and could not be fetched, rather than
+    /// showing the pointer as the file's text (yaks-c955).
+    #[test]
+    fn an_lfs_pointer_that_cannot_be_smudged_says_so() {
+        if !lfs_available() {
+            eprintln!("skipped: git lfs is not installed");
+            return;
+        }
+        let dir = std::env::temp_dir().join(format!("yaks-pin-lfs-gone-{}", std::process::id()));
+        let run = scratch_repo(&dir, true);
+        let pointer = format!(
+            "version https://git-lfs.github.com/spec/v1\noid sha256:{}\nsize 12\n",
+            "ab".repeat(32)
+        );
+        std::fs::write(dir.join("gone.png"), pointer).unwrap();
+        // Committed as plain text (no `.gitattributes`), so the pointer is the blob.
+        run(&["add", "."]);
+        run(&["-c", "core.hooksPath=/dev/null", "commit", "-qm", "gone"]);
+        let rev = run(&["rev-parse", "HEAD"]);
+        let err = read_at(&dir, "gone.png", Some(&rev))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("Git LFS") && err.contains("could not be fetched"),
+            "{err}"
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

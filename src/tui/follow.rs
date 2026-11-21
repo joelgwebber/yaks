@@ -204,6 +204,27 @@ impl App {
         ImageView::open(path, &found, &self.picker)
     }
 
+    /// The picture at farm file `path` as it was at commit `rev`, read
+    /// through git (an LFS file as its content, not its pointer:
+    /// [`links::read_bytes_at`]). `None` when it is not an image, not there at
+    /// that commit, too big, or cannot be decoded: the text viewer then says
+    /// why.
+    fn farm_image_at(&self, path: &str, rev: Option<&str>) -> Option<ImageView> {
+        if !crate::store::is_image_name(path) {
+            return None;
+        }
+        let root = self.farm_root()?;
+        let path = &*crate::locate::farm_file_in(&root, path);
+        let bytes = links::read_bytes_at(&root, path, rev).ok()?;
+        if bytes.len() as u64 > super::imageview::IMAGE_MAX_BYTES {
+            return None;
+        }
+        let name = path.rsplit('/').next().unwrap_or(path);
+        let mut v = ImageView::from_bytes(path, root.join(path), name, &bytes, &self.picker)?;
+        v.rev = rev.map(String::from);
+        Some(v)
+    }
+
     // -- one resolver, one opener (yaks-84fe) -------------------------------
     //
     // Every link the pane follows, every document history restores and every
@@ -401,6 +422,8 @@ impl App {
                     if let Some(v) = self.farm_image(rel) {
                         return Ok(DocView::Image(v));
                     }
+                } else if let Some(v) = self.farm_image_at(rel, rev.as_deref()) {
+                    return Ok(DocView::Image(v));
                 }
                 self.read_farm_doc(rel, rev.as_deref()).map(DocView::Text)
             }
@@ -508,7 +531,7 @@ impl App {
             // A farm image's file is its target under the farm root; an
             // attachment's lives under its yak.
             DocView::Image(v) => match self.farm_root() {
-                Some(r) if r.join(&v.target) == v.path => Some(farm(&v.target, None)),
+                Some(r) if r.join(&v.target) == v.path => Some(farm(&v.target, v.rev.clone())),
                 _ => attachment(&v.target),
             },
             DocView::Dir(v) => Some(farm(&format!("{}/", v.rel), None)),

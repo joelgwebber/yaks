@@ -154,6 +154,9 @@ pub(crate) struct ImageView {
     /// The link target as written (`<id>/<file>`), shown as the header.
     pub(crate) target: String,
     pub(crate) path: PathBuf,
+    /// The farm commit this picture was read at, for a pinned link
+    /// (`path@<rev>`); `None` for the file as it is now.
+    pub(crate) rev: Option<String>,
     /// Pixel size of the decoded image, shown in the header.
     dims: (u32, u32),
     image: image::DynamicImage,
@@ -223,6 +226,7 @@ impl ImageView {
         ImageView {
             target: target.to_string(),
             path: path,
+            rev: None,
             dims: (img.width(), img.height()),
             image: img,
             picker,
