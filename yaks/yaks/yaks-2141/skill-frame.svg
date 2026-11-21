@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="944" height="596" viewBox="0 0 944 596" font-family="ui-monospace,'SF Mono','DejaVu Sans Mono',Menlo,Consolas,monospace" font-size="14">
+<style>
+text{white-space:pre}
+.b0{fill:#c5c8c6}
+.b1{fill:#3a3a3a}
+.s0{fill:#1d1f21;font-weight:bold}
+.s1{fill-opacity:.6}
+.s2{fill:#8abeb7}
+.s3{fill:#8abeb7;font-weight:bold}
+.s4{fill:#969896}
+</style>
+<rect x="0" y="0" width="944" height="596" rx="8" fill="#1d1f21"/>
+<rect class="b0" x="10.0" y="10.0" width="17.3" height="18.0"/>
+<rect class="b0" x="35.2" y="10.0" width="92.9" height="18.0"/>
+<rect class="b1" x="26.8" y="46.0" width="126.5" height="18.0"/>
+<g fill="#c5c8c6">
+<text xml:space="preserve" y="23.5"><tspan x="10.0" class="s0"> 🧺</tspan><tspan x="35.2" class="s0"> All (863)</tspan><tspan x="136.0" class="s1"> ⭐</tspan><tspan x="161.2" class="s1"> Starred (11)</tspan><tspan x="287.2" class="s1"> 📥</tspan><tspan x="312.4" class="s1"> Inbox (3)</tspan><tspan x="413.2" class="s1"> 🦬</tspan><tspan x="438.4" class="s1"> Hairy (73)</tspan><tspan x="547.6" class="s1"> 🪒</tspan><tspan x="572.8" class="s1"> Shaving (7)</tspan><tspan x="690.4" class="s1"> 📖</tspan><tspan x="715.6" class="s1"> Doks (18)</tspan><tspan x="816.4" class="s1"> 🛖</tspan><tspan x="841.6" class="s1"> Sheds (8)</tspan></text>
+<text xml:space="preserve" y="59.5"><tspan x="10.0" class="s2">◂</tspan><tspan x="26.8" class="s3">Task: yaks-20a5</tspan></text>
+<text xml:space="preserve" y="77.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="95.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Title:</tspan><tspan x="136.0">Take the image pane from toque</tspan></text>
+<text xml:space="preserve" y="113.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Status:</tspan><tspan x="136.0">🐑</tspan><tspan x="161.2">shorn</tspan></text>
+<text xml:space="preserve" y="131.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Type:</tspan><tspan x="136.0">task</tspan></text>
+<text xml:space="preserve" y="149.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Priority:</tspan><tspan x="136.0">p2</tspan></text>
+<text xml:space="preserve" y="167.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Created:</tspan><tspan x="136.0">16m ago</tspan></text>
+<text xml:space="preserve" y="185.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Updated:</tspan><tspan x="136.0">16m ago</tspan></text>
+<text xml:space="preserve" y="203.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">Tags:</tspan><tspan x="136.0">tui</tspan></text>
+<text xml:space="preserve" y="221.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="239.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">toque yak-d206 extracted imageview.rs's zoom/pan/protocol into toque's image feature (for canon's album</tspan></text>
+<text xml:space="preserve" y="257.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">art). yaks keeps a thin ImageView: the attachment's name and path, decoding, the header, and the key</tspan></text>
+<text xml:space="preserve" y="275.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">mapping; it derefs to toque::image::ImageView.</tspan></text>
+<text xml:space="preserve" y="293.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">▸ tui-design · 16m ago · move · from hairy · to shaving · thread ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0a</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">moved: hairy -&gt; shaving</tspan></text>
+<text xml:space="preserve" y="347.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="365.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">▸ tui-design · 16m ago</tspan><tspan x="220.0" class="s4">────────────────────────────────────────────────────────────────────────────────────</tspan></text>
+<text xml:space="preserve" y="383.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">Evidence: cargo test → 1269 passed, 1 failed</tspan></text>
+<text xml:space="preserve" y="401.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">(land::tests::a_conflicting_merge_falls_back_to_cherry_pick_and_names_the_files, fails identically on</tspan></text>
+<text xml:space="preserve" y="419.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">main); every image-viewer test (fit, zoom steps, pan, colours, inline images) passes on toque's code.</tspan></text>
+<text xml:space="preserve" y="437.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">docshots_image_* regenerate byte-identical to main's own run (cmp over all four SVGs). Geometry unit tests</tspan></text>
+<text xml:space="preserve" y="455.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">moved to toque with the helpers. cargo fmt --check clean.</tspan></text>
+<text xml:space="preserve" y="473.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="491.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s2">▸ tui-design · 16m ago · move · from shaving · to shorn · thread ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0a</tspan></text>
+<text xml:space="preserve" y="509.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">moved: shaving -&gt; shorn</tspan></text>
+<text xml:space="preserve" y="527.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="563.5"><tspan x="10.0" class="s2">│</tspan></text>
+<text xml:space="preserve" y="581.5"><tspan x="10.0" class="s4">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:dep  S:stat</tspan></text>
+</g>
+</svg>
