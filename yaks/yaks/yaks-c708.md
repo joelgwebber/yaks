@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:09:58Z'
+updated: '2026-11-21T23:09:59Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -40,3 +40,9 @@ Claim (herd-files): worker rdok-1 (Sonnet), base 5d8a524c. Scope: src/release.rs
 *rdok-1*
 
 Decision: derived fields. A rerun updates `range` and `tag` always, and `date` only once the version is tagged (the tag commit's day in the farm's zone; untagged: today at creation, kept afterwards). `title`, `description`, `version`, `yanked`, prose and any hand-added field are never touched. Rejected: rewriting only the block (a dok created untagged would keep a stale `range: v0.0.40..HEAD` and no `tag:` forever, and `check` compares over `range:`); rewriting every field (would clobber hand edits).
+
+#### 2026-11-21T23:09:59Z
+
+*rdok-1*
+
+Decision: dok names may hold a dot inside (`doks/releases/v0.0.41.md`). `doks::path_problem` allowed only `a-z0-9-`, so the version could not be a file name. Allowed `.` inside a part (not at an edge, no `..`) for every dok rather than special-casing releases. Rejected: `v0-0-41.md` (the brief and design say `<tag>.md`; breaks `release dok <tag>` round-tripping).
