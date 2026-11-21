@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:10:02Z'
+updated: '2026-11-21T23:12:49Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -70,3 +70,9 @@ Decision: title is `<herd> <version>` when the farm declares a default herd (`ya
 *rdok-1*
 
 Decision: shared the block's membership with `release changes` (one `report_in`, `section_order`, `top_entries`); only `block` renders. Also moved the `Repo` test harness from tests/release_changes.rs into tests/common/mod.rs so tests/release_dok.rs reuses it. Block links use the schema-9 farm-root form `/<herd>/yaks/<id>.md` (as `links::note_link` writes), so they render on GitHub.
+
+#### 2026-11-21T23:12:49Z
+
+*rdok-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
