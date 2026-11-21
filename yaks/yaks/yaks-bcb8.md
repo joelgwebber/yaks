@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:39:27Z'
+updated: '2026-11-21T21:50:36Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -31,3 +31,5 @@ Claim (herd-files): worker change-1 (Sonnet). Scope: `Command::Shorn` and its di
 *change-1*
 
 Start: 2026-11-21T21:39:26Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-bcb8.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/w0zafkp7n7b5/yaks.
+
+[shear-prompt-frame](yaks-bcb8/shear-prompt-frame.txt "Headless TUI frame: S then n on a shaving yak titled Live; the prompt is the change line, pre-filled with the title, cursor after it")

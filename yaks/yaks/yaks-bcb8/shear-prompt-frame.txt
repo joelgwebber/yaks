@@ -1,0 +1,88 @@
+=== frame 0 · 120x20 · focus=list · view=🦬 Hairy · cursor=0 · rows=0 · sel=- · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (0)   🪒 Shaving (1)   🐑 Shorn (2)   🕒 Recent (3)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (1)        unpub
+
+No tasks.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 1 · 120x20 · focus=list · view=🪒 Shaving · cursor=0 · rows=1 · sel=yak-94f1 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (0)   🪒 Shaving (1)   🐑 Shorn (2)   🕒 Recent (3)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (1)        unpub
+
+ yak-94f1 p3 feature  🪒 Live
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 2 · 120x20 · focus=list · view=🪒 Shaving · cursor=0 · rows=1 · sel=yak-94f1 · blocked=- · collapsed=0 · filter=(all) · overlay=pick ===
+ 🦬 Hairy (0)   🪒 Shaving (1)   🐑 Shorn (2)   🕒 Recent (3)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (1)        unpub
+
+ yak-94f1 p3 feature  🪒 Live
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+State for yak-94f1: h=hairy s=shaving n=shorn x=slaughter  (Esc=cancel)
+=== end ===
+=== frame 3 · 120x20 · focus=list · view=🪒 Shaving · cursor=0 · rows=1 · sel=yak-94f1 · blocked=- · collapsed=0 · filter=(all) · overlay=edit ===
+ 🦬 Hairy (0)   🪒 Shaving (1)   🐑 Shorn (2)   🕒 Recent (3)   ⭐ Starred (0)   📖 Doks (0)   🛖 Sheds (1)        unpub
+
+ yak-94f1 p3 feature  🪒 Live
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Shear yak-94f1 — change line (edit; empty for none · Enter shears · Ctrl-C cancel): Live                          INSERT
+=== end ===
