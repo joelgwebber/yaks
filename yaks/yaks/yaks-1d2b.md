@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-18T23:29:05Z'
-updated: '2026-11-19T02:33:15Z'
+updated: '2026-11-21T22:31:12Z'
 tags:
 - links
 - doks
@@ -34,3 +34,9 @@ Fixed by yaks-84fe (herd-files): `links::parse` keeps a trailing `/` on a farm p
 *herd-files · kind: move · from: hairy · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn
+
+#### 2026-11-21T22:31:12Z
+
+*herd-files · kind: change · section: fixed*
+
+Links to a dok's or source's directory (`x/sketches/`) resolve: `peek` reads them and `doctor` no longer reports them as `../`.
