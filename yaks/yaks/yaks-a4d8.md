@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-21T22:03:22Z'
+updated: '2026-11-21T22:32:44Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -47,3 +47,9 @@ Batch 1 (herd-files, base 412882e4): change-1 on yaks-bcb8 (claude-sonnet-5-5, t
 *herd-files*
 
 Batch 1 landed: yaks-c955 d2a9936c (lfs-1), yaks-bcb8 d63203fc + coordinator follow-up c20ad225 (change-1); pushed to local main c20ad225 and installed. Batch 2 (base c20ad225): rel-1 on yaks-045c (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHdNjJIBxBCA0aLJyrhJPreUvVwLftHG).
+
+#### 2026-11-21T22:32:44Z
+
+*herd-files*
+
+yaks-045c landed 5d8a524c (rel-1); local main 5d8a524c, installed. Coordinator back-filled change lines for this session's ten yaks; `release changes --check` passes on v0.0.40..HEAD. Batch 3 (base 5d8a524c): rdok-1 on yaks-c708 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHeEmZIBxBCA0aLJyrhJPreUvVwLftHG).
