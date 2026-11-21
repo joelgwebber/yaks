@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:48:56Z'
+updated: '2026-11-21T21:49:03Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -54,3 +54,9 @@ Decision: `locate::pinned_file` (the "take out / open externally" temp copy of a
 Decision: TUI image at a rev = new `App::farm_image_at` (bytes -> `ImageView::from_bytes`) + `ImageView.rev` so `doc_link` keeps the pin (history/stars). Only farm paths; `code:` pinned images still open as text (out of scope, not listed in the yak).
 Evidence: unit tests `a_pin_to_an_lfs_file_reads_its_content` (real temp repo + git-lfs; fails without the smudge: returns the 131-byte pointer) and `an_lfs_pointer_that_cannot_be_smudged_says_so`; peek and headless frame attached; `cargo test -p yaks` 1530 passed 0 failed, `cargo fmt --check` clean. Note: `peek` of an image still prints `(binary file, N bytes)` (the same as an unpinned image); before it printed the pointer.
 Stray note above: an evidence link (the pinned image) written to drive the headless frame.
+
+#### 2026-11-21T21:49:03Z
+
+*lfs-1*
+
+Summary: @rev reads go through links::read_bytes_at (LFS pointer -> git lfs smudge; failure says the file is in LFS and could not be fetched). TUI opens a pinned farm image in the image viewer; pinned_file temp copy smudges too. Gate PASS. Caveat: the BEFORE half of peek-evidence.txt was retyped from the earlier pre-change run (the pre-change binary was overwritten by my rebuild).
