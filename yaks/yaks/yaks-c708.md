@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:13:21Z'
+updated: '2026-11-21T23:19:08Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -100,3 +100,5 @@ moved: shaving -> shorn
 *herd-files · kind: landed · commit: e1cf16c17b95e0ef6eca65075b70f6ce672be931 · source: ee9788ffdaeb5d09c73a2892a5a356dfebfe922f · branch: main*
 
 landed: [e1cf16c1](https://github.com/joelgwebber/yaks/commit/e1cf16c17b95e0ef6eca65075b70f6ce672be931) yaks-c708: yaks release dok writes doks/releases/<version>.md with a generated changes block; check flags a stale block
+
+[release-dok-frame](yaks-c708/release-dok-frame.txt "Coordinator's run: the real doks/releases/v0.0.41.md in the TUI (headlines kept across a rerun; the block's HTML comment markers show literally, filed as a follow-up)")
