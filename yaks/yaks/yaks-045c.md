@@ -102,3 +102,9 @@ moved: shaving -> shorn
 landed: [5d8a524c](https://github.com/joelgwebber/yaks/commit/5d8a524c4fc530ff50546570768bfc79b7d9b00a) yaks-045c: yaks release changes (range membership from commits, --check), land warns on a shorn yak with no change line
 
 [unreleased](yaks-045c/unreleased.txt "Coordinator's run at 5d8a524c after back-filling change lines for this session's yaks: --check passes")
+
+#### 2026-11-21T22:31:25Z
+
+*herd-files*
+
+Landed 5d8a524c (herd-files). Reproduced with my build: `yaks release changes` on v0.0.40..HEAD listed 14 commits, 12 yaks, two with change lines and ten gaps, and `--check` exited 1. I then wrote change lines for the ten gaps (this session's yaks), and `--check` passes (unreleased.txt). `v0.0.38` as a single tag resolves to v0.0.37..v0.0.38. `--json` keys: range, commits, yaks, gaps, commits_without_yak. Gate on the landed tree: fmt clean, 1554 passed, 0 failed.
