@@ -1,7 +1,7 @@
 ---
 id: yaks-c708
 title: 'Release doks: yaks release dok <tag> writes doks/releases/<tag>.md with a generated changes block'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
@@ -82,3 +82,15 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 *rdok-1*
 
 Summary: yaks release dok <version> [<range>] [--dry-run] writes doks/releases/<version>.md (kind release, schema on first use, one farm commit, rerun rewrites only the block and range/tag/date); yaks check flags stale-release; docs, README, RELEASING.md and the yaks-coordinating skill updated. Gate: cargo fmt --check clean; cargo test -p yaks green (41 result lines ok); verify PASS.
+
+#### 2026-11-21T23:12:55Z
+
+*rdok-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHeEmZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-21T23:12:55Z
+
+*rdok-1 · kind: change*
+
+`yaks release dok <version>` writes the release dok `doks/releases/<version>.md` (kind `release`) with a generated block of its changes by section, families nested and each entry linking its yak; a rerun rewrites only the block, and `yaks check` flags a release dok whose block is out of date. Dok names may now hold dots (`v0.0.41.md`).
