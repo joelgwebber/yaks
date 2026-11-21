@@ -1,11 +1,11 @@
 ---
 id: yaks-2c0d
 title: 'Research: the No AI Slop manifesto and what it means for yaks'
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-21T16:16:47Z'
-updated: '2026-11-21T16:16:47Z'
+updated: '2026-11-21T16:17:17Z'
 tags:
 - research
 - design
@@ -20,3 +20,9 @@ Questions:
 - What could yaks change (commands, skills, the farm's shape) to better support humans and agents collaborating in line with them?
 
 Output: a research dok under `doks/research/`, citing the source, and follow-up yaks for the concrete proposals (or asks where a human decision is needed).
+
+#### 2026-11-21T16:17:17Z
+
+*noslop-1 · kind: move · from: hairy · to: shaving · thread: ksQQAaR4Et5XRd6SUAsLXtG1X5LOAHWQYJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
