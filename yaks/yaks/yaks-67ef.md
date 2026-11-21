@@ -1,11 +1,11 @@
 ---
 id: yaks-67ef
 title: Take theme surfaces from toque
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-21T04:57:11Z'
-updated: '2026-11-21T05:10:36Z'
+updated: '2026-11-21T05:10:37Z'
 tags:
 - tui
 ---
@@ -31,3 +31,9 @@ Against the patched local toque: fmt clean; `cargo test` 1272 passed, 1 failed (
 *tui-design*
 
 Committed and pushed against toque ed595ee (now on origin). Snapshots unchanged; tui-surfaces.svg regenerates byte-identical. The one failing test (land::...cherry_pick...) fails identically on main before this change.
+
+#### 2026-11-21T05:10:37Z
+
+*tui-design · kind: move · from: shaving · to: shorn · thread: ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
