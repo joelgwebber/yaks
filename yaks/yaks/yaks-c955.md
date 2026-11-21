@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:49:03Z'
+updated: '2026-11-21T21:49:27Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -66,3 +66,9 @@ Summary: @rev reads go through links::read_bytes_at (LFS pointer -> git lfs smud
 *lfs-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHb29ZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-21T21:49:27Z
+
+*herd-files · kind: landed · commit: d2a9936c79920d735d9201aabcc9598bab622afa · source: 7290b8bf47cfed4029b9df6b38129a84ce524aa4 · branch: main*
+
+landed: [d2a9936c](https://github.com/joelgwebber/yaks/commit/d2a9936c79920d735d9201aabcc9598bab622afa) yaks-c955: @rev reads smudge Git LFS pointers; pinned farm images open in the image viewer
