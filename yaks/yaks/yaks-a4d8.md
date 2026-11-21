@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-21T21:21:10Z'
+updated: '2026-11-21T21:35:17Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -29,3 +29,9 @@ moved: hairy -> shaving
 *herd-files*
 
 Decision (Joel, 2026-11-21): build it into yaks rather than adopt Changesets/towncrier, taking their conventions: a `kind: change` note written at shear, release membership computed from commit ranges (reno's model, never stored), a release dok per tag with a generated block, and CHANGELOG.md as a per-branch projection. Research: [/doks/research/changelogs.md](/doks/research/changelogs.md) (six sources saved, LFS-at-commit probe attached as [lfs-probe.md](yaks-a4d8/lfs-probe.md)). Design: [/doks/design/changelog.md](/doks/design/changelog.md). Pieces filed as children: yaks-bcb8 (change lines), yaks-045c (release changes + check), yaks-c708 (release doks), yaks-7278 (CHANGELOG.md), yaks-c955 (LFS @rev), yaks-3696 (backfill). Archaeology follow-ups under yaks-64c4: yaks-bda5, yaks-c059.
+
+#### 2026-11-21T21:35:17Z
+
+*herd-files*
+
+Decision (Joel, 2026-11-21): the commands are `yaks release changes|dok|changelog` (not `yaks changes`); the TUI shear pre-fills the change line with the yak's title for the human to edit.
