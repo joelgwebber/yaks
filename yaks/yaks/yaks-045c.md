@@ -1,11 +1,11 @@
 ---
 id: yaks-045c
 title: 'yaks release changes: compute a release''s yaks from its commit range, --check for missing change lines; land warns'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:24Z'
+updated: '2026-11-21T22:26:25Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -82,3 +82,15 @@ Observation (not a defect): the brief expected the default `yaks release changes
 *rel-1*
 
 Summary: new src/release.rs (range resolution, membership, report, text/--json, --check), Command::Release/ReleaseCmd::Changes in main.rs, land warning in land.rs (missing_change_line), Farm::code_repo pub(crate), dead_code allow removed from changeline.rs. Tests: 9 unit tests in release.rs, tests/release_changes.rs (8), tests/land_change_warning.rs (1). Docs: docs/cli.md (release section, land warning), README row, yaks-coordinating skill (6 Landing step 1 + 5), RELEASING.md. Gate: cargo fmt --check clean; cargo test -p yaks green (1315 unit + all integration).
+
+#### 2026-11-21T22:26:25Z
+
+*rel-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHdNjJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-21T22:26:25Z
+
+*rel-1 · kind: change*
+
+`yaks release changes [<range>] [--json] [--check]` lists the yaks a release's commits name, by change line and section, with the gaps, open yaks and commits naming no yak; `--check` exits 1 on a gap. `yaks land` warns when it records a landing on a shorn yak with no change line.
