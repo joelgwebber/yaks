@@ -2,9 +2,9 @@
 //! It reads the farm and reports what a person or an agent should look at,
 //! and never edits.
 //!
-//! Eleven kinds of finding. Four are `doctor`'s own issues, reused as they are
+//! Twelve kinds of finding. Four are `doctor`'s own issues, reused as they are
 //! (`dok-problem`, `broken-link`, `schema-mismatch`, `merge-conflict`); three
-//! are ported from Hearth's `internal/check/scan.go`, and four are yaks's own:
+//! are ported from Hearth's `internal/check/scan.go`, and five are yaks's own:
 //!
 //! - `stale`: a dok past its `stale_after` (its own, else its schema's);
 //! - `uncited`: a source nothing in the farm cites;
@@ -19,6 +19,9 @@
 //!   is gone. Evidence, not a verdict: an agent reads the dok against the code
 //!   and sets `verified:`. Needs a code checkout; without one the checks are
 //!   skipped with one note ([`Report::notes`]), which is not a finding.
+//! - `stale-release` (yaks-c708): a release dok whose generated block differs
+//!   from what `yaks release dok` would write now, over the `range:` it records.
+//!   Needs the code checkout too; without one, a note.
 
 use crate::farm::{Farm, IssueKind};
 use crate::links::{self, Link};
@@ -44,6 +47,7 @@ pub enum Kind {
     StrayLayout,
     CodeMoved,
     CodeGone,
+    StaleRelease,
 }
 
 impl Kind {
@@ -61,6 +65,7 @@ impl Kind {
             Kind::StrayLayout => "stray-layout",
             Kind::CodeMoved => "code-moved",
             Kind::CodeGone => "code-gone",
+            Kind::StaleRelease => "stale-release",
         }
     }
 
@@ -94,6 +99,9 @@ shows: one sentence on when to read it)"
             }
             Kind::CodeGone => {
                 "Cited code is gone (a `code:` path it cites is not in the code repo)"
+            }
+            Kind::StaleRelease => {
+                "Release dok out of date (its generated block no longer matches its yaks: rerun `yaks release dok <version>`)"
             }
         }
     }
@@ -162,8 +170,18 @@ pub fn run_at(farm: &Farm, now: DateTime<Utc>, code: Option<PathBuf>) -> Result<
     out.extend(similar_kinds(&all_doks, &all_schemas));
     out.extend(no_description(&all_doks));
     out.extend(stray_layout(root));
-    let (moved, notes) = code_changes(&Space::new(root, code), &all_doks);
+    let (stale_releases, release_note) =
+        crate::release::stale_blocks(root, code.as_deref(), &all_doks);
+    out.extend(stale_releases.into_iter().map(|(path, version)| Finding {
+        kind: Kind::StaleRelease,
+        message: format!(
+            "release dok {path} is out of date with its yaks: run `yaks release dok {version}`"
+        ),
+        ids: vec![path],
+    }));
+    let (moved, mut notes) = code_changes(&Space::new(root, code), &all_doks);
     out.extend(moved);
+    notes.extend(release_note);
     Ok(Report {
         findings: out,
         notes,

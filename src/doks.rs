@@ -135,7 +135,8 @@ impl Dok {
 
 /// Why `rel` (a farm-relative path) is not a valid place for a new dok, or
 /// `None` when it is: `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every
-/// part lowercase letters, digits and `-` (a kebab name), at least one part
+/// part lowercase letters, digits and `-` (a kebab name, which may hold a dot
+/// inside, as a version does), at least one part
 /// below the doks root, ending in `.md`.
 pub fn path_problem(rel: &str) -> Option<String> {
     let parts: Vec<&str> = rel.split('/').collect();
@@ -155,17 +156,19 @@ pub fn path_problem(rel: &str) -> Option<String> {
     let Some(stem) = file.strip_suffix(".md") else {
         return Some("a dok file ends in .md".to_string());
     };
+    // A dot is allowed inside a name, for a version (`releases/v0.0.41.md`).
     let kebab = |s: &str| {
         !s.is_empty()
-            && !s.starts_with('-')
-            && !s.ends_with('-')
+            && !s.starts_with(['-', '.'])
+            && !s.ends_with(['-', '.'])
+            && !s.contains("..")
             && s.chars()
-                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '.')
     };
     for part in dirs.iter().chain(std::iter::once(&stem)) {
         if !kebab(part) {
             return Some(format!(
-                "`{part}` is not a lowercase-kebab name (a-z, 0-9 and -)"
+                "`{part}` is not a lowercase-kebab name (a-z, 0-9, - and a dot inside)"
             ));
         }
     }
@@ -563,6 +566,10 @@ mod tests {
         assert!(path_problem("doks/x y.md").is_some());
         assert!(path_problem("doks/").is_some());
         assert!(path_problem("sources/doks/x.md").is_some());
+        // A version names a release dok: dots inside a name, never at its edge.
+        assert_eq!(path_problem("doks/releases/v0.0.41.md"), None);
+        assert!(path_problem("doks/releases/.v1.md").is_some());
+        assert!(path_problem("doks/releases/v1..2.md").is_some());
     }
 
     #[test]

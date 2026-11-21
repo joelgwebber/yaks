@@ -72,7 +72,13 @@ The worker's model is a cost decision, and the coordinator makes it per yak. The
 2. **Re-run the gate yourself** and reproduce the key scenario with your own build. A claim you cannot reproduce is rejected, not annotated: `git revert` the landing and regrow the yak.
 3. **Read the diff** for quality and for every surface the change touches (docs, skills, README, `--help`, in-app help); make fixes as your own follow-up commits.
 4. `yaks doctor`, then `yaks commit`. Never write a claim into a yak that you did not observe.
-5. **Cutting a release:** before the version bump, `yaks release changes --check` lists the yaks the release's commits name, by change line, and exits 1 on a shorn yak with no line (an ancestor's line covers its children); fix the gaps, then bump and tag.
+5. **Cutting a release:** before the version bump, `yaks release changes --check` lists the yaks the release's commits name, by change line, and exits 1 on a shorn yak with no line (an ancestor's line covers its children); fix the gaps. Then `yaks release dok <version>` (before or after the tag) writes the release dok
+   `doks/releases/<version>.md`: replace its headlines placeholder with what
+   matters (a screenshot too: pin images with `@<sha>`, so the release keeps
+   showing the picture it shipped with), and leave the block between
+   `<!-- yaks:changes -->` and `<!-- /yaks:changes -->` alone. Rerun it after
+   correcting a change line (it rewrites only the block); `yaks check` lists a
+   release dok whose block is out of date. Then bump and tag.
 
 ## 7. Asks
 

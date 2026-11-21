@@ -2425,6 +2425,37 @@ impl Farm {
         crate::doks::save(&self.root, &dok)
     }
 
+    /// Write the release dok at `path` (yaks-c708) under the farm lock: `make`
+    /// gets the dok as it is now (`None`: there is none) and returns the one to
+    /// write, so the read and the write are one step. `schemas/release.md` is
+    /// created first when the farm has none. Nothing is written when the dok
+    /// would not change.
+    pub fn release_dok_save(
+        &self,
+        path: &str,
+        make: &dyn Fn(Option<crate::doks::Dok>) -> Result<crate::doks::Dok>,
+    ) -> Result<crate::release::Saved> {
+        use crate::release::Saved;
+        let _lock = store::lock(&self.root)?;
+        let existing = crate::doks::load(&self.root, path)?;
+        let dok = make(existing.clone())?;
+        if existing
+            .as_ref()
+            .is_some_and(|e| e.render() == dok.render())
+        {
+            return Ok(Saved::Unchanged);
+        }
+        if crate::schemas::load(&self.root, crate::release::DOK_KIND).is_none() {
+            crate::schemas::define(&self.root, &crate::release::schema())?;
+        }
+        crate::doks::save(&self.root, &dok)?;
+        Ok(if existing.is_some() {
+            Saved::Updated
+        } else {
+            Saved::Created
+        })
+    }
+
     /// Save a session note (yaks-17f5): checks the body, fills `## Saved`
     /// from `saved` when the body has none, and writes it under `sessions/`,
     /// under the farm lock. Its name, `day:` and `written:` are all UTC.

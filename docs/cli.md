@@ -97,6 +97,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`), then the doks and session notes that link it. Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
 | `commits <id> [--fetch] [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), the branches they record (`--fetch` fetches first), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `release changes [<range>] [--json] [--check]` | What a release's commit range names: shorn yaks by change line and section, shorn yaks with none (gaps), open yaks the commits name, commits naming no yak. `--check` exits 1 on a gap. [Details](#release) |
+| `release dok <version> [<range>] [--dry-run]` | Write the release dok `doks/releases/<version>.md` with a generated block of its changes (kind `release`); a rerun rewrites only the block. [Details](#release) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
 
@@ -258,7 +259,7 @@ A dok is markdown with YAML frontmatter in OKF's shape: `type:` (`note`, the def
 
 - `dok list [<prefix>]` prints path, type and title, sorted by path, with the dok's `description:` (its index line: when to read it) on the line below when it has one; `<prefix>` narrows it (`doks/topics`, `yaks/doks`). `--json` adds a `description` (null when none) to each dok, as `dok show --json` does. `yaks check` lists doks with none.
 - `dok show <path>` prints the file; `--json` gives `path`, `hash`, `type`, `title`, `description` (null when none), `herd` (null for the farm-wide doks), `fields` parsed, and `body`. The file's **hash** (the first 12 hex digits of the sha256 of its bytes) goes to stderr as `hash: <h>` in text mode, so stdout stays the file.
-- `dok new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a dok. The path must be `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`). It is stamped `created:` with the time it was made (UTC, as a yak's), unless `--set created=...` gives one; nothing stamps an `updated:`, which hand edits would leave stale.
+- `dok new <path> [--type T] [--title T] [--set key=value ...] [--body TEXT | --body-file PATH]` creates a dok. The path must be `doks/<parts>.md` or `<herd>/doks/<parts>.md`, every part lowercase-kebab (`a-z`, `0-9`, `-`, and a `.` inside a name, for a version); an existing file is refused. The title defaults to the file name (`heat-pump.md` → `Heat pump`). It is stamped `created:` with the time it was made (UTC, as a yak's), unless `--set created=...` gives one; nothing stamps an `updated:`, which hand edits would leave stale.
 - `dok set <path> [--set key=value ...] [--unset key ...] [--body ... | --body-file ... | --old TEXT --new TEXT] [--if-hash H]` edits fields (rewriting only those keys), replaces the body, or replaces one exact piece of it. An empty value removes a field. It prints `Updated <path>` (or `No changes to <path>`) and `hash: <h>`, the file's new hash.
   - `--old`/`--new` (or `--old-file`/`--new-file`; `-` reads stdin for one of them, trailing newlines are dropped, `--new ''` deletes) replace `--old` in the body, which must match exactly once: no match, or several, is refused saying how many, and nothing is written. An agent edits one passage without rewriting the body.
   - `--if-hash H` refuses (exit 1, nothing written) unless the file's hash is still `H`, naming the current hash: an edit built from a stale `dok show` never overwrites a newer body. Chain edits by the hash `dok set` prints. It combines with any other flag.
@@ -847,6 +848,7 @@ Hearth's nightly check minus what needs a model: what a person or an agent shoul
 - `similar-kinds`: dok kinds, among the `type:` values in use and the names of `schemas/*.md`, that differ only by case, hyphens or a plural (`project`, `projects`, `work-project`). Pick one and `dok set` the others.
 - `no-description`: a dok with no `description:` in its frontmatter (absent, empty or not plain text), one finding per dok path. The description is the dok's index line, one sentence on when to read it, and [`dok list`](#dok) shows it under the title. Session notes and schemas are not doks and are not checked; a file with no frontmatter at all is a `dok-problem`, not listed twice. To clear it, `yaks dok set <path> --set 'description=When to read this.'`.
 - `code-moved`: a dok that cites `code:<path>` (an inline link in its body, or a `code:` entry of its frontmatter `sources:` or `code:` list) where the code repo has commits to that path since the dok was written. For a pinned link (`code:path@<sha>`) that is every commit touching the path in `<sha>..HEAD`, unless the dok's `verified:` is no earlier than the newest of them (it was re-checked after the code last moved). For an unpinned link it is the commits since the dok's `verified:`, else since its last commit on the farm branch (a dok with neither is skipped). A `verified:` date covers its whole day (UTC). Any count above zero is reported, with the number: `doks/x.md cites code:src/a.rs: 3 commits to it since it was verified 2026-11-01`; there is no threshold. Commits that only touch the path in the farm branch are not counted. This is evidence, not a verdict: `check` never decides the dok is wrong. To clear it, read the dok against the code, fix what drifted, then `yaks dok set <path> --set verified=<date>`. The report ends with that hint.
+- `stale-release`: a release dok (`type: release`) whose generated block differs from what [`release dok`](#release) would write now, over the `range:` it records: `release dok doks/releases/v0.0.41.md is out of date with its yaks: run `yaks release dok v0.0.41``. A change line corrected since, or a yak that now has one, is the usual cause. Like the code kinds it needs the code checkout; without one it is skipped with its own `note:` (`N release doks not checked against their yaks`), not a finding.
 - `stray-layout`: a file under `.yaks/` in a farm that moved to the branch root at schema 9, left by a writer who had not synced before the migration (`.yaks/hearth/yaks/hearth-ffff.md should be at hearth/yaks/hearth-ffff.md`). No other command sees it; `git mv` it to the same path without `.yaks/`. The stub (`.yaks/README.md`, `.yaks/schema`) is not reported.
 - `code-gone`: an unpinned `code:<path>` whose file is not in the code checkout (`doks/x.md cites code:src/a.rs, which is gone from the code repo`), whatever `verified:` says. A pinned link names history, so a file deleted since is `code-moved` (the deleting commit counts) instead. Same fix: update or drop the link, then set `verified:`.
 - **No code checkout:** the two code kinds need the code repo, found as `peek` finds it (the checkout you run from, else the farm's host checkout). With none reachable they are skipped and ONE `note: ...` line says so; a note is not a finding and leaves the exit code alone (with `--json` it goes to stderr, so stdout stays the array). A pin the checkout does not have is a note too.
@@ -1039,6 +1041,45 @@ and `commits_without_yak`.
 `--check` prints the report, then exits 1 when there is a gap, ending with a
 line that says so (with `--json` the line goes to stderr, so stdout stays one
 document). Run it before the version bump; see `RELEASING.md`.
+
+`release dok <version> [<range>] [--dry-run]`
+
+Write the release's dok, `doks/releases/<version>.md` (`doks/releases/v0.0.41.md`),
+from the same report. It is kind `release`, with the fields `version`, `tag`
+(when the tag exists), `date` (the tag's day, else today in the farm's zone) and
+`range` (the resolved `A..B`); `schemas/release.md` (`version` required, `tag`,
+`date`, `range`, `yanked`) is written the first time. A dok name may hold dots
+inside, so a version names a file.
+
+**The range** is `<range>` when given (`A..B`, or a tag as for `release
+changes`); else, when `<version>` is an existing release tag, that tag's range
+(the release before it, up to it); else, for a release about to be cut, the
+latest release tag up to `HEAD`.
+
+**The body** of a new dok is a `# <title>` heading, a placeholder comment for
+the headlines (what matters, a screenshot, what an upgrade needs; pin an image
+with `@<sha>` so the release keeps the picture it shipped with), then the
+**block** between `<!-- yaks:changes -->` and `<!-- /yaks:changes -->`:
+
+- one `## Added` / `## Changed` / `## Deprecated` / `## Removed` / `## Fixed` /
+  `## Security` heading per section that has entries, in that order;
+- each entry is its change line and a link to its yak's file,
+  `- Adds X. ([yaks-1234](/yaks/yaks/yaks-1234.md))`, with the yaks covered by
+  it (or with a line of their own, nested under it) as sub-bullets by title;
+- `## Not described`: shorn yaks with no change line, by title and marked
+  `(no change line)`. Open and dead yaks, `--no-change` yaks and commits naming
+  no yak are not in the block: `release changes` shows them.
+
+**A rerun rewrites only the block**, and the derived fields `range`, `tag` and
+`date` (the date only once the version is tagged); the prose, the title and every
+other field (`yanked`, a hand-added one) stay as edited. A dok with no block
+markers is refused rather than overwritten. Nothing is written, and no commit
+made, when the dok would not change; otherwise it is one farm commit under the
+farm lock. `--dry-run` prints the dok it would write.
+
+Correcting a change line (`yaks update <id> --note ... --meta kind=change`) and
+rerunning updates the release. [`yaks check`](#check) lists a release dok whose
+block differs from what this command would write now (`stale-release`).
 
 ### `land`
 

@@ -19,6 +19,17 @@ has no change line (`--no-change` counts as one). Fix the gaps with
 default range is the last `v*` tag to `HEAD` (`git config yaks.releaseTags`
 changes the glob).
 
+### Before tagging: write the release dok
+
+`yaks release dok <version>` (e.g. `v0.0.41`; the tag need not exist yet)
+writes `doks/releases/<version>.md` in the farm: a `release` dok with the
+version, date and range, a placeholder for the headlines, and the changes block
+between `<!-- yaks:changes -->` and `<!-- /yaks:changes -->` (`--dry-run` prints
+it). Replace the placeholder with what matters in this release, with a
+screenshot pinned as `@<sha>`. Rerunning it after a change line is corrected
+rewrites only the block; `yaks check` lists a release dok whose block is out of
+date. Publishing the farm (`yaks sync`) is the human's call.
+
 ### Before tagging: try the build locally
 
 `cargo install --path .` installs the tree you are about to tag into

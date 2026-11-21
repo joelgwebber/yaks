@@ -1703,6 +1703,42 @@ enum ReleaseCmd {
         #[arg(long)]
         check: bool,
     },
+    /// Write the release's dok, `doks/releases/<version>.md`, with a
+    /// generated block of its changes.
+    ///
+    /// The dok is kind `release` (fields `version`, `tag`, `date`, `range`,
+    /// `yanked`; `schemas/release.md` is written the first time). A new one
+    /// holds a `# <title>` heading, a placeholder for the headlines (replace
+    /// it: what matters, a screenshot, what an upgrade needs; pin images with
+    /// `@<sha>`), then the block between `<!-- yaks:changes -->` and
+    /// `<!-- /yaks:changes -->`.
+    ///
+    /// The block is `yaks release changes` written for readers: each change
+    /// line under its section (Keep a Changelog's order, only the ones with
+    /// entries) linking its yak's file, a covered yak nested under the entry
+    /// that covers it, and shorn yaks with no change line under `## Not
+    /// described`, marked `(no change line)`. Open and dead yaks, `--no-change`
+    /// yaks and commits naming no yak are left out: `release changes` shows
+    /// them. A rerun rewrites only the block and the derived fields `range`,
+    /// `tag` and `date` (the tag's day once the version is tagged); prose and
+    /// every other field stay as edited. A change line corrected later
+    /// reaches the release by rerunning it, and `yaks check` lists a release
+    /// dok whose block is out of date.
+    ///
+    /// The range is `<range>` (`A..B` or a tag) when given; else, when
+    /// `<version>` is a release tag, the release before it up to it; else (a
+    /// release about to be cut) the latest release tag up to HEAD. It runs in
+    /// the code repository, as `release changes` does.
+    Dok {
+        /// The release's version, as it is or will be tagged: `v0.0.41`. Names
+        /// the dok (`doks/releases/v0.0.41.md`).
+        version: String,
+        /// `A..B` or a tag `T`, overriding the version's own range.
+        range: Option<String>,
+        /// Print the dok that would be written; write nothing.
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[derive(Subcommand)]
@@ -2594,6 +2630,17 @@ fn main() -> Result<()> {
             }
         }
         Command::Release { action } => match action {
+            ReleaseCmd::Dok {
+                version,
+                range,
+                dry_run,
+            } => release::dok_cli(
+                &farm,
+                &env::current_dir()?,
+                &version,
+                range.as_deref(),
+                dry_run,
+            )?,
             ReleaseCmd::Changes { range, json, check } => {
                 let code =
                     release::cli(&farm, &env::current_dir()?, range.as_deref(), json, check)?;

@@ -9,6 +9,12 @@
 //! each yak's recorded commits in, a [`Report`] out); the git side is
 //! [`resolve_range`] and [`commits_in`], and [`cli`] ties them to the farm and
 //! prints.
+//!
+//! `yaks release dok` (yaks-c708, design §4) renders a report as the changes
+//! block of a release dok, `doks/releases/<version>.md`, and rewrites only
+//! that block on a rerun: [`block`], [`plan`] and [`apply`]. `yaks check`
+//! compares each release dok's block with what [`block`] would write now
+//! ([`stale_block`]).
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -17,7 +23,10 @@ use anyhow::{Context, Result, bail};
 use serde_json::{Value, json};
 
 use crate::changeline::{self, Change};
+use crate::doks::{self, Dok};
 use crate::farm::Farm;
+use crate::fields::Value as Fv;
+use crate::locate::Space;
 use crate::model::{Status, Task};
 use crate::{json as json_out, refs, store, yakcommits};
 
@@ -54,6 +63,12 @@ impl Range {
             Some(f) => format!("{f}..{}", self.to),
             None => self.to.clone(),
         }
+    }
+
+    /// The range as `resolve_range` reads it back: `A..B`, `..B` from the
+    /// start of history. What a release dok's `range:` field holds.
+    fn arg(&self) -> String {
+        format!("{}..{}", self.from.as_deref().unwrap_or_default(), self.to)
     }
 
     fn label(&self) -> String {
@@ -391,6 +406,29 @@ fn entry_text(r: &Report, i: &Item, depth: usize, out: &mut String) {
     }
 }
 
+/// The sections of a report in Keep a Changelog's order, then any
+/// hand-written section none of them follows (sorted).
+fn section_order(r: &Report) -> Vec<&str> {
+    let mut sections: Vec<&str> = changeline::SECTIONS.to_vec();
+    let mut extra: Vec<&str> = r
+        .in_group(Group::Change)
+        .filter_map(|i| i.change.as_ref().map(|c| c.section.as_str()))
+        .filter(|s| !changeline::SECTIONS.contains(s))
+        .collect();
+    extra.sort_unstable();
+    extra.dedup();
+    sections.extend(extra);
+    sections
+}
+
+/// The entries of section `s` that nest under no other entry.
+fn top_entries<'a>(r: &'a Report, s: &str) -> Vec<&'a Item> {
+    r.in_group(Group::Change)
+        .filter(|i| i.under.is_none())
+        .filter(|i| i.change.as_ref().is_some_and(|c| c.section == s))
+        .collect()
+}
+
 /// The report as text.
 pub fn report_text(r: &Report) -> String {
     let mut out = format!(
@@ -401,22 +439,9 @@ pub fn report_text(r: &Report) -> String {
         r.items.len(),
         if r.items.len() == 1 { "" } else { "s" },
     );
-    // Keep a Changelog's order; a hand-written section none of them follows.
-    let mut sections: Vec<&str> = changeline::SECTIONS.to_vec();
-    let mut extra: Vec<&str> = r
-        .in_group(Group::Change)
-        .filter_map(|i| i.change.as_ref().map(|c| c.section.as_str()))
-        .filter(|s| !changeline::SECTIONS.contains(s))
-        .collect();
-    extra.sort_unstable();
-    extra.dedup();
-    sections.extend(extra);
+    let sections = section_order(r);
     for s in sections {
-        let top: Vec<&Item> = r
-            .in_group(Group::Change)
-            .filter(|i| i.under.is_none())
-            .filter(|i| i.change.as_ref().is_some_and(|c| c.section == s))
-            .collect();
+        let top = top_entries(r, s);
         if top.is_empty() {
             continue;
         }
@@ -471,17 +496,10 @@ pub fn report_text(r: &Report) -> String {
     out
 }
 
-/// Run `yaks release changes` from `cwd`: print the report, return the exit
-/// status (1 with `check` when a shorn yak in the range has no change line and
-/// no ancestor's line covers it).
-pub fn cli(farm: &Farm, cwd: &Path, range: Option<&str>, json: bool, check: bool) -> Result<i32> {
-    let Some(repo) = farm.code_repo(cwd) else {
-        bail!("release changes reads a release from the code repository: run it in your checkout");
-    };
-    let range = resolve_range(&repo, range)?;
-    let commits = commits_in(&repo, &range)?;
-    let tasks = store::load(farm.root(), &crate::farm::EVERY)?;
-    let space = crate::locate::Space::new(farm.root(), Some(repo.clone()));
+/// The report for `range` of `repo`, over `tasks`: the commits are read from
+/// git, and a yak's recorded `commit:` notes resolve through `space`.
+fn report_in(tasks: &[Task], space: &Space, repo: &Path, range: Range) -> Result<Report> {
+    let commits = commits_in(repo, &range)?;
     let recorded = |t: &Task| -> Vec<String> {
         if !t.body.contains("commit") {
             return Vec::new();
@@ -491,7 +509,20 @@ pub fn cli(farm: &Farm, cwd: &Path, range: Option<&str>, json: bool, check: bool
             .map(|r| r.commit)
             .collect()
     };
-    let report = build(range, &tasks, &commits, &recorded);
+    Ok(build(range, tasks, &commits, &recorded))
+}
+
+/// Run `yaks release changes` from `cwd`: print the report, return the exit
+/// status (1 with `check` when a shorn yak in the range has no change line and
+/// no ancestor's line covers it).
+pub fn cli(farm: &Farm, cwd: &Path, range: Option<&str>, json: bool, check: bool) -> Result<i32> {
+    let Some(repo) = farm.code_repo(cwd) else {
+        bail!("release changes reads a release from the code repository: run it in your checkout");
+    };
+    let range = resolve_range(&repo, range)?;
+    let tasks = store::load(farm.root(), &crate::farm::EVERY)?;
+    let space = Space::new(farm.root(), Some(repo.clone()));
+    let report = report_in(&tasks, &space, &repo, range)?;
     let gaps = report.gaps();
     if json {
         json_out::print(&report_json(&report))?;
@@ -517,6 +548,383 @@ pub fn cli(farm: &Farm, cwd: &Path, range: Option<&str>, json: bool, check: bool
         println!("\ncheck: ok, every shorn yak in the range has a change line or is covered");
     }
     Ok(0)
+}
+
+// ---- release doks --------------------------------------------------------
+
+/// The line opening the generated block of a release dok.
+pub const BLOCK_START: &str = "<!-- yaks:changes -->";
+/// The line closing it.
+pub const BLOCK_END: &str = "<!-- /yaks:changes -->";
+/// The kind of a release dok (its schema is `schemas/release.md`).
+pub const DOK_KIND: &str = "release";
+
+/// The placeholder a new release dok holds for the person cutting the
+/// release to replace with headlines.
+const HEADLINES: &str = "<!-- Headlines: what matters in this release, with a screenshot if there is one (pin images with @<sha>). -->";
+
+/// The schema of release doks, written the first time one is.
+pub fn schema() -> crate::schemas::Define {
+    let field = |name: &str, kind: &str, required: bool| crate::schemas::FieldSpec {
+        name: name.into(),
+        kind: kind.into(),
+        required,
+    };
+    crate::schemas::Define {
+        kind: DOK_KIND.into(),
+        fields: vec![
+            field("version", "text", true),
+            field("tag", "text", false),
+            field("date", "date", false),
+            field("range", "text", false),
+            field("yanked", "bool", false),
+        ],
+        title: Some("Release".into()),
+        description: Some(format!(
+            "One release: its headlines, then its changes between {BLOCK_START} and {BLOCK_END}, which `yaks release dok` rewrites from the yaks"
+        )),
+        stale_after: None,
+        replace: false,
+    }
+}
+
+/// The farm-relative path of the release dok of `version`.
+pub fn dok_path(version: &str) -> String {
+    format!("{}/releases/{version}.md", doks::DOKS_DIR)
+}
+
+/// A yak's file, as the farm-root link a markdown host follows.
+fn yak_link(id: &str) -> String {
+    format!("/{}/yaks/{id}.md", store::herd_of(id))
+}
+
+fn linked(text: &str, id: &str) -> String {
+    format!("{text} ([{id}]({}))", yak_link(id))
+}
+
+/// One entry of the block, and the yaks nested in it as sub-bullets: a yak
+/// with a line of its own shows it, a covered yak shows its title.
+fn block_entry(r: &Report, i: &Item, depth: usize, out: &mut String) {
+    let text = match (i.group, &i.change) {
+        (Group::Change, Some(c)) => c.text.trim(),
+        _ => i.task.title.as_str(),
+    };
+    out.push_str(&format!(
+        "{}- {}\n",
+        "  ".repeat(depth),
+        linked(text, &i.task.id)
+    ));
+    let mut kids: Vec<&Item> = r
+        .items
+        .iter()
+        .filter(|c| c.under.as_deref() == Some(i.task.id.as_str()))
+        .collect();
+    kids.sort_by_key(|k| oldest_first(k));
+    for child in kids {
+        block_entry(r, child, depth + 1, out);
+    }
+}
+
+/// The order entries read in within a section: the oldest yak first (ids are
+/// random, so their order says nothing), the id breaking a tie.
+fn oldest_first(i: &Item) -> (Option<String>, String) {
+    (i.task.created.clone(), i.task.id.clone())
+}
+
+/// The generated block of a release dok, markers included: the change lines
+/// by section in Keep a Changelog's order (families nested), then the shorn
+/// yaks with no line under `## Not described`. Open and dead yaks, yaks
+/// recorded `--no-change` and commits naming no yak are for `yaks release
+/// changes` and `yaks check`, not for readers of the release. Nothing in it
+/// varies with the commits' hashes, so rewriting it twice changes nothing.
+pub fn block(r: &Report) -> String {
+    let mut out = format!("{BLOCK_START}\n");
+    let mut any = false;
+    for s in section_order(r) {
+        let top = top_entries(r, s);
+        if top.is_empty() {
+            continue;
+        }
+        any = true;
+        out.push_str(&format!("\n## {}\n\n", title_case(s)));
+        let mut top = top;
+        top.sort_by_key(|i| oldest_first(i));
+        for i in top {
+            block_entry(r, i, 0, &mut out);
+        }
+    }
+    let gaps = r.gaps();
+    if !gaps.is_empty() {
+        any = true;
+        out.push_str("\n## Not described\n\n");
+        let mut gaps = gaps;
+        gaps.sort_by_key(|i| oldest_first(i));
+        for i in gaps {
+            out.push_str(&format!(
+                "- {} (no change line)\n",
+                linked(&i.task.title, &i.task.id)
+            ));
+        }
+    }
+    if !any {
+        out.push_str("\n_No change lines in this range._\n");
+    }
+    out.push_str(&format!("\n{BLOCK_END}\n"));
+    out
+}
+
+/// The byte span of the block in `body`, markers included (the end marker's
+/// line break too).
+fn block_span(body: &str) -> Option<(usize, usize)> {
+    let start = body.find(BLOCK_START)?;
+    let end = start + body[start..].find(BLOCK_END)? + BLOCK_END.len();
+    let end = if body[end..].starts_with('\n') {
+        end + 1
+    } else {
+        end
+    };
+    Some((start, end))
+}
+
+/// What a release dok's own fields are derived from.
+#[derive(Debug, Clone)]
+pub struct Derived {
+    pub title: String,
+    pub version: String,
+    /// The tag, when `version` is one.
+    pub tag: Option<String>,
+    /// The tag's date, else today (the farm's zone).
+    pub date: String,
+    /// The resolved range, `A..B`.
+    pub range: String,
+}
+
+/// The dok to write for `d`: a new one (heading, headlines placeholder,
+/// block), or `existing` with its derived fields (`range`, `tag`, and `date`
+/// once tagged) brought up to date and its block rewritten, nothing else
+/// touched. Does not write.
+pub fn dok_for(root: &Path, existing: Option<Dok>, d: &Derived, block: &str) -> Result<Dok> {
+    let path = dok_path(&d.version);
+    let Some(mut dok) = existing else {
+        let mut fields = vec![
+            (
+                "description".to_string(),
+                Fv::Str(format!(
+                    "What changed in {}: the headlines, then every change by section",
+                    d.version
+                )),
+            ),
+            (
+                "created".into(),
+                Fv::Plain(chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()),
+            ),
+            ("version".into(), Fv::Plain(d.version.clone())),
+        ];
+        if let Some(t) = &d.tag {
+            fields.push(("tag".into(), Fv::Plain(t.clone())));
+        }
+        fields.push(("date".into(), Fv::Plain(d.date.clone())));
+        fields.push(("range".into(), Fv::Plain(d.range.clone())));
+        let body = format!("# {}\n\n{HEADLINES}\n\n{block}", d.title);
+        return doks::new_dok(root, &path, Some(DOK_KIND), Some(&d.title), &fields, &body);
+    };
+    if dok.kind() != DOK_KIND {
+        bail!(
+            "{} is a {} dok, not a release dok; move it aside to write the release",
+            dok.path,
+            dok.kind()
+        );
+    }
+    let Some((a, b)) = block_span(&dok.body) else {
+        bail!(
+            "{} has no generated block: put the lines {BLOCK_START} and {BLOCK_END} where it goes, then rerun",
+            dok.path
+        );
+    };
+    dok.body = format!("{}{block}{}", &dok.body[..a], &dok.body[b..]);
+    dok.fields.set("range", &Fv::Plain(d.range.clone()));
+    if let Some(t) = &d.tag {
+        dok.fields.set("tag", &Fv::Plain(t.clone()));
+    }
+    // An untagged release's date is when it was started; the tag's is when it
+    // happened.
+    if d.tag.is_some() || !dok.fields.contains("date") {
+        dok.fields.set("date", &Fv::Plain(d.date.clone()));
+    }
+    Ok(dok)
+}
+
+/// Whether `version` is a tag of `repo`.
+fn tag_exists(repo: &Path, version: &str) -> bool {
+    git(
+        repo,
+        &[
+            "rev-parse",
+            "--verify",
+            "-q",
+            &format!("refs/tags/{version}^{{commit}}"),
+        ],
+    )
+    .is_ok_and(|o| o.status.success())
+}
+
+/// The calendar day (in `zone`) of the commit `rev` names.
+fn commit_day(repo: &Path, rev: &str, zone: crate::zone::Zone) -> Option<String> {
+    let out = git(repo, &["log", "-1", "--format=%cI", rev, "--"]).ok()?;
+    let when =
+        chrono::DateTime::parse_from_rfc3339(String::from_utf8_lossy(&out.stdout).trim()).ok()?;
+    Some(zone.date_of(when.with_timezone(&chrono::Utc)).to_string())
+}
+
+/// Run `yaks release dok`: write (or with `dry_run` print) the release dok of
+/// `version`, over `range` or, without one, the version's own range (a tag:
+/// the release before it up to it; not a tag yet: the latest release tag up
+/// to `HEAD`).
+pub fn dok_cli(
+    farm: &Farm,
+    cwd: &Path,
+    version: &str,
+    range: Option<&str>,
+    dry_run: bool,
+) -> Result<()> {
+    let Some(repo) = farm.code_repo(cwd) else {
+        bail!("release dok reads a release from the code repository: run it in your checkout");
+    };
+    let path = dok_path(version);
+    if let Some(why) = doks::path_problem(&path) {
+        bail!("{version}: not usable as a release dok name ({why})");
+    }
+    let tagged = tag_exists(&repo, version);
+    let range = match (range, tagged) {
+        (Some(r), _) => resolve_range(&repo, Some(r))?,
+        (None, true) => resolve_range(&repo, Some(version))?,
+        (None, false) => resolve_range(&repo, None)?,
+    };
+    let tasks = store::load(farm.root(), &crate::farm::EVERY)?;
+    let space = Space::new(farm.root(), Some(repo.clone()));
+    let report = report_in(&tasks, &space, &repo, range)?;
+    let zone = farm.zone();
+    let config = farm.config();
+    let derived = Derived {
+        title: match config.prefix_declared {
+            true => format!("{} {version}", config.prefix),
+            false => version.to_string(),
+        },
+        version: version.to_string(),
+        tag: tagged.then(|| version.to_string()),
+        date: tagged
+            .then(|| commit_day(&repo, version, zone))
+            .flatten()
+            .unwrap_or_else(|| zone.today().to_string()),
+        range: report.range.arg(),
+    };
+    let new_block = block(&report);
+    let make = |existing: Option<Dok>| dok_for(farm.root(), existing, &derived, &new_block);
+    if dry_run {
+        let existing = farm.dok(&path)?;
+        let verb = if existing.is_some() {
+            "update"
+        } else {
+            "create"
+        };
+        let dok = make(existing)?;
+        eprintln!(
+            "dry run: would {verb} {path} (range {}); nothing written",
+            derived.range
+        );
+        print!("{}", dok.render());
+        return Ok(());
+    }
+    let saved = farm.release_dok_save(&path, &make)?;
+    let gaps = report.gaps().len();
+    println!(
+        "{} {path} (range {})",
+        match saved {
+            Saved::Created => "Created",
+            Saved::Updated => "Updated",
+            Saved::Unchanged => "Already up to date:",
+        },
+        derived.range
+    );
+    if saved == Saved::Created {
+        println!(
+            "Replace the headlines placeholder above the block with what matters in this release."
+        );
+    }
+    if gaps > 0 {
+        println!(
+            "{gaps} shorn yak{} {} no change line (listed under \"Not described\"): add one with `yaks update <id> --note \"<line>\" --meta kind=change`, then rerun.",
+            if gaps == 1 { "" } else { "s" },
+            if gaps == 1 { "has" } else { "have" },
+        );
+    }
+    Ok(())
+}
+
+/// What [`dok_cli`] did to the dok.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Saved {
+    Created,
+    Updated,
+    Unchanged,
+}
+
+/// Release doks whose generated block no longer matches their yaks, for
+/// `yaks check`: `(dok path, version)` of each, and a note when the doks could
+/// not be checked (no code checkout). Each dok is compared over the `range:`
+/// it records. A release dok with no `range:`, or no block, is skipped: there
+/// is nothing a rerun would be comparing against.
+pub fn stale_blocks(
+    farm_root: &Path,
+    code: Option<&Path>,
+    all_doks: &[Dok],
+) -> (Vec<(String, String)>, Option<String>) {
+    let releases: Vec<&Dok> = all_doks
+        .iter()
+        .filter(|d| {
+            d.kind() == DOK_KIND && block_span(&d.body).is_some() && d.str_field("range").is_some()
+        })
+        .collect();
+    if releases.is_empty() {
+        return (Vec::new(), None);
+    }
+    let code = code.filter(|c| crate::gitrepo::commit_of(c, "HEAD").is_some());
+    let Some(code) = code else {
+        let n = releases.len();
+        return (
+            Vec::new(),
+            Some(format!(
+                "{n} release dok{} not checked against {}: no code checkout is reachable (run from one)",
+                if n == 1 { "" } else { "s" },
+                if n == 1 { "its yaks" } else { "their yaks" },
+            )),
+        );
+    };
+    let Ok(tasks) = store::load(farm_root, &crate::farm::EVERY) else {
+        return (Vec::new(), None);
+    };
+    let space = Space::new(farm_root, Some(code.to_path_buf()));
+    let mut stale = Vec::new();
+    for d in releases {
+        let range = d.str_field("range").unwrap_or_default();
+        let Ok(range) = resolve_range(code, Some(&range)) else {
+            continue;
+        };
+        let Ok(report) = report_in(&tasks, &space, code, range) else {
+            continue;
+        };
+        let (Some((a, b)), now) = (block_span(&d.body), block(&report)) else {
+            continue;
+        };
+        if d.body[a..b] != now {
+            let version = d.str_field("version").unwrap_or_else(|| {
+                let stem = d.path.rsplit('/').next().unwrap_or(&d.path);
+                stem.strip_suffix(".md").unwrap_or(stem).to_string()
+            });
+            stale.push((d.path.clone(), version));
+        }
+    }
+    (stale, None)
 }
 
 #[cfg(test)]
@@ -671,5 +1079,70 @@ mod tests {
     fn version_bumps_are_a_named_rule() {
         assert!(is_version_bump("Bump version to 0.0.40."));
         assert!(!is_version_bump("Fix: bump version parsing"));
+    }
+
+    #[test]
+    fn a_release_dok_without_a_code_checkout_is_a_note_not_a_finding() {
+        let dok = Dok::parse(
+            "doks/releases/v1.md",
+            &format!("---\ntype: release\nrange: v0..v1\n---\n{BLOCK_START}\nold\n{BLOCK_END}\n"),
+        );
+        let (stale, note) = stale_blocks(Path::new("/nonexistent-farm"), None, &[dok]);
+        assert!(stale.is_empty());
+        assert!(note.unwrap().contains("1 release dok not checked"));
+        // No release dok: nothing to say.
+        assert_eq!(
+            stale_blocks(Path::new("/nonexistent-farm"), None, &[]),
+            (vec![], None)
+        );
+    }
+
+    #[test]
+    fn the_block_lists_entries_nested_families_and_gaps_only() {
+        let tasks = vec![
+            task("y-fix", Status::Shorn, "bug", None, Some(LINE)),
+            task("y-umbr", Status::Shorn, "feature", None, Some(LINE)),
+            task("y-kid", Status::Shorn, "task", Some("y-umbr"), None),
+            task("y-gap", Status::Shorn, "task", None, None),
+            task("y-int", Status::Shorn, "task", None, Some(NONE)),
+            task("y-open", Status::Shaving, "task", None, None),
+        ];
+        let commits = vec![commit(
+            1,
+            "x",
+            "y-fix y-umbr y-kid y-gap y-int y-open stray",
+        )];
+        let b = block(&build(range(), &tasks, &commits, &|_| vec![]));
+        let want = "<!-- yaks:changes -->\n\
+\n## Added\n\n- line of y-umbr ([y-umbr](/y/yaks/y-umbr.md))\n  - title y-kid ([y-kid](/y/yaks/y-kid.md))\n\
+\n## Fixed\n\n- line of y-fix ([y-fix](/y/yaks/y-fix.md))\n\
+\n## Not described\n\n- title y-gap ([y-gap](/y/yaks/y-gap.md)) (no change line)\n\
+\n<!-- /yaks:changes -->\n";
+        assert_eq!(b, want);
+    }
+
+    #[test]
+    fn only_the_block_between_the_markers_is_replaced() {
+        let d = Derived {
+            title: "t".into(),
+            version: "v1".into(),
+            tag: None,
+            date: "2026-01-01".into(),
+            range: "v0..HEAD".into(),
+        };
+        let text = format!(
+            "---\ntype: release\nversion: v1\ndate: 2025-01-01\nrange: old\nnote: kept\n---\n# T\n\nprose\n\n{BLOCK_START}\nold\n{BLOCK_END}\n\ntail\n"
+        );
+        let dok = Dok::parse("doks/releases/v1.md", &text);
+        let out = dok_for(Path::new("/x"), Some(dok), &d, "NEW\n").unwrap();
+        assert!(
+            out.body.starts_with("# T\n\nprose\n\nNEW\n\ntail\n"),
+            "{}",
+            out.body
+        );
+        assert_eq!(out.str_field("range").as_deref(), Some("v0..HEAD"));
+        // Untagged: the date it already had stays; a hand field stays.
+        assert_eq!(out.str_field("date").as_deref(), Some("2025-01-01"));
+        assert_eq!(out.str_field("note").as_deref(), Some("kept"));
     }
 }
