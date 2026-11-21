@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:50:37Z'
+updated: '2026-11-21T21:53:42Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -66,3 +66,9 @@ Decision: the shared reader is a new tiny module `src/changeline.rs` (`ChangeNot
 Decision: TUI prefill applies to the single-yak shear only; the bulk (marked set) prompt stays an empty optional plain note, since a line describes one yak. Rejected: writing one title-seeded line on every marked yak, and refusing bulk shear. The cursor is moved to the end of the pre-filled title so typing appends.
 
 Decision: an empty `--change ""` is refused (use `--no-change`); a change note is written only when the move happens (not for AlreadyThere/refusals).
+
+#### 2026-11-21T21:53:42Z
+
+*change-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
