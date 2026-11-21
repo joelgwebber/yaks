@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:48:55Z'
+updated: '2026-11-21T21:48:56Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -42,3 +42,15 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 [peek-evidence](yaks-c955/peek-evidence.txt "peek of the pinned LFS image before (pointer) and after (170083-byte binary placeholder, matches git lfs smudge)")
 
 [tui-pinned-image-frame](yaks-c955/tui-pinned-image-frame.txt "headless TUI: following the @33f5db7f link in this yak opens the real image in the image viewer (was: text pane of the pointer)")
+
+#### 2026-11-21T21:48:56Z
+
+*lfs-1*
+
+Decision: one reader, `links::read_bytes_at(base, path, rev) -> Vec<u8>`; `read_at` (String) is a thin wrapper over it. Rejected: a second image-only git path in the TUI (would re-fork the fallback tries and the LFS rule).
+Decision: LFS detection = blob starts with `version https://git-lfs.github.com/spec/v1` and is <= 1024 bytes; smudge via `git -C <base> lfs smudge -- <path>` with the pointer on stdin. Rejected: `git show` with `-c filter.lfs...` / `git cat-file --filters` (needs the .gitattributes at that rev, fails for the farm's pre-gitattributes commits), and trusting the pointer text.
+Decision: failure (git-lfs missing, object unfetchable, smudge echoes the pointer) is an `Err` "<path>@<rev>: file is in Git LFS and could not be fetched (<why>)", not the pointer shown as text. Rejected: silently returning the pointer.
+Decision: `locate::pinned_file` (the "take out / open externally" temp copy of a pinned file) also goes through read_bytes_at, so `O`/`o` on a pinned LFS file writes the real file, not the pointer.
+Decision: TUI image at a rev = new `App::farm_image_at` (bytes -> `ImageView::from_bytes`) + `ImageView.rev` so `doc_link` keeps the pin (history/stars). Only farm paths; `code:` pinned images still open as text (out of scope, not listed in the yak).
+Evidence: unit tests `a_pin_to_an_lfs_file_reads_its_content` (real temp repo + git-lfs; fails without the smudge: returns the 131-byte pointer) and `an_lfs_pointer_that_cannot_be_smudged_says_so`; peek and headless frame attached; `cargo test -p yaks` 1530 passed 0 failed, `cargo fmt --check` clean. Note: `peek` of an image still prints `(binary file, N bytes)` (the same as an unpinned image); before it printed the pointer.
+Stray note above: an evidence link (the pinned image) written to drive the headless frame.
