@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:19:08Z'
+updated: '2026-11-21T23:19:09Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -102,3 +102,9 @@ moved: shaving -> shorn
 landed: [e1cf16c1](https://github.com/joelgwebber/yaks/commit/e1cf16c17b95e0ef6eca65075b70f6ce672be931) yaks-c708: yaks release dok writes doks/releases/<version>.md with a generated changes block; check flags a stale block
 
 [release-dok-frame](yaks-c708/release-dok-frame.txt "Coordinator's run: the real doks/releases/v0.0.41.md in the TUI (headlines kept across a rerun; the block's HTML comment markers show literally, filed as a follow-up)")
+
+#### 2026-11-21T23:19:09Z
+
+*herd-files*
+
+Landed e1cf16c1 (herd-files) + f6494008 (docs/tui.md: dok names may hold a dot). Reproduced: `yaks release dok v0.0.41` wrote the real [/doks/releases/v0.0.41.md](/doks/releases/v0.0.41.md); I replaced the placeholder with headlines; a rerun said 'Already up to date' and kept them; `yaks check` reports no stale release. Gate on the landed tree: fmt clean, 1565 passed, 0 failed. Follow-up filed: yaks-6554 (TUI shows the block's HTML comment markers).
