@@ -104,7 +104,7 @@ in `<path>`.
 | `yaks inbox` | The `needs` queue, two sections: awaiting a human (`replied` marks a plain-note reply that skipped `answer`) and awaiting an agent (marked `answered` or `requested`); `--for human\|agent`, `--json` |
 | `yaks wait` | Block until the inbox has something (`--for human\|agent`, filters), then print it like `inbox`; `--timeout 10m` exits 2 when nothing came, `--new` ignores what was already there |
 | `yaks shave <id>` | hairy → shaving (alias: `work`) |
-| `yaks shorn <id>` | shaving → shorn (alias: `close`) |
+| `yaks shorn <id> [--change "<line>"\|--no-change]` | shaving → shorn (alias: `close`); the change line is a `kind: change` note |
 | `yaks regrow <id>` | shorn → hairy (alias: `reopen`) |
 | `yaks snooze <id>… [--to +2d]` | move an open yak's `due:` (`+Nd`, `+Nw` from today, or a date; default `+1d`), leaving a note |
 | `yaks tick [--dry-run] [--within 3d] [--json]` | the scheduling round you kick off by hand: `regrow-due`, then one report: what regrew or was held, overdue and due-soon yaks, the inbox (human and agent), stale claims, a `check` count. Never syncs, runs commands or notifies |

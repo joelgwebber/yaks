@@ -457,7 +457,7 @@ With no `<file>`, lists the absolute path of each of the yak's attachments (in `
 | Command | Move |
 |---|---|
 | `shave` (alias `work`) | → shaving (start) |
-| `shorn` (alias `close`) | → shorn (done) |
+| `shorn` (alias `close`) | → shorn (done); `--change "<line>"` / `--no-change` write the [change line](#the-change-line) |
 | `regrow` (alias `reopen`) | shorn → hairy |
 | `slaughter` | → dead (abandon) |
 | `revive` | dead → hairy |
@@ -493,6 +493,24 @@ A recurring yak under a shorn parent reopens the parent first (the move note car
 The notes keep every round, so a recurring chore accumulates one shear note per occurrence, with its links.
 
 `yaks doctor` never reports `due`, `every`, `wake` or `regrown` as missing from `schemas/yak.md`.
+
+### The change line
+
+`yaks shorn <id> --change "<line>" [--section <section>]` writes the yak's
+**change line** with the shear: a note with `kind: change` whose text is one
+line of markdown saying what changed for a reader (it may link an image),
+under the same farm lock as the move. Nothing is written for a shear that is
+refused. The latest `kind: change` note wins, so a correction is a newer one
+(`yaks update <id> --note "<line>" --meta kind=change`).
+
+- `--section added|changed|deprecated|removed|fixed|security` is stored on the
+  note only when given. Without it, the section is read from the yak's type:
+  `feature` is added, `bug` is fixed, anything else is changed.
+- `--no-change` writes a `kind: change` note with `section: none` ("No
+  user-facing change."), for internal work: a refactor, a test, farm upkeep.
+  It conflicts with `--change`.
+- `--change` takes one id, since a line describes one yak; `--no-change` may
+  name several.
 
 ### Families stay consistent
 
@@ -559,6 +577,7 @@ A note without them is still valid, and unknown keys are kept. The commands that
 | `snooze` | `snooze` | |
 | `pickup` | `pickup` | |
 | `verify` | `verify` | `result` (`pass` or `fail`) |
+| `shorn --change` / `--no-change` (and the TUI shear) | `change` | `section` only when chosen (`--section`, or `none` for `--no-change`); [the change line](#the-change-line) |
 
 Add your own with `update --meta` (`kind=checkpoint`, `branch=…`), and `update --commit` for a pushed `commit` (see [`update`](#update)). The TUI shows a comment's metadata after `actor · when` in its header, `kind` first (`checkpoint · commit 47076b0`), and editing the comment keeps it. `doctor` checks the notes against `needs:` (see [`doctor`](#doctor)).
 

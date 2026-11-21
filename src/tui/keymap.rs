@@ -762,7 +762,7 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('E')], YakEdit, "Edit under the cursor: body block in place; header row: form (with the description)", hint("E:edit")),
     bind_pane(Yak, &[c('M')], YakComment, "Add a comment (in place, after the last one)", hint("M:comment")),
     bind_pane(Yak, &[c('D')], YakDep, "Add dependency", hint("D:dep")),
-    bind_pane(Yak, &[c('S')], YakState, "State (S → n shears, with an optional comment)", hint("S:state")),
+    bind_pane(Yak, &[c('S')], YakState, "State (S → n shears, with a change line)", hint("S:state")),
     bind_pane(Yak, &[c('m')], YakMark, "Mark / unmark the yak (multi-select)", NoHint),
     bind_pane(Yak, &[c('P')], YakPriority, "Priority", NoHint),
     bind_pane(Yak, &[c('Y')], YakType, "Type", NoHint),
@@ -1243,7 +1243,10 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
     (
         "Editing (the editors and pickers are modal; their keys are not in the table)",
         &[
-            ("S → n", "Shear: prompts an optional comment (Enter shears)"),
+            (
+                "S → n",
+                "Shear: prompts for the change line, the title to edit (Enter shears; empty for none)",
+            ),
             (
                 "F1",
                 "In any editor or form: its keys in a popup (a listed key goes on to the editor); also ? in a vim editor's Normal mode",

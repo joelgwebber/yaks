@@ -175,7 +175,7 @@ a character).
 | `F` | Cycle **family scope** — how much of each tree shows: auto → lone → remaining → all |
 | `Space` | Collapse / expand subtree |
 | `m` | Mark / unmark row (multi-select) |
-| `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set) |
+| `S` (with marks) | Bulk state transition over the marked set (shearing asks for one optional comment for the set, a plain note on each) |
 | `` ` `` / `V` | View picker / save filter as a view |
 | `*` | Star / unstar what the pane shows (any file, image, directory or commit), else the yak or the document row under the cursor, else a Starred place row (see [Starred](#starred)) |
 | `W` | Commit the farm (`yaks commit`; also in the detail pane). The result is the notification: `committed <sha> <message>`, `nothing to commit`, or the error |
@@ -208,7 +208,7 @@ the register and the scroll and cursor from before; the status bar shows
 | `c` / `C` | New root / child yak |
 | `E` | Edit what the cursor is on: a body row (the description or a comment) turns that block into an editor **in place**; a header row (`Title:`, `Type:`, `Priority:`, `Tags:`, `Source:`, `Herd:`) opens the form on that field (`Status:` opens the state picker) |
 | `P` / `Y` / `T` / `S` | Priority / type / tags / state. State moves keep families consistent like the CLI's ([Families stay consistent](cli.md#families-stay-consistent)): shaving also shaves hairy ancestors, and a move that would leave open work under a shorn or dead yak is refused |
-| `S` → `n` | Shear: a one-line prompt asks for an optional comment, recorded as a note on the yak before it moves to shorn (so `yaks doctor --strict` sees evidence). `Enter` on an empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, the one comment goes on every yak that moves. |
+| `S` → `n` | Shear: a one-line prompt for the yak's **change line**, pre-filled with its title for you to edit (the cursor is after it). `Enter` shears and writes the text as a `kind: change` note, like `yaks shorn --change` (the section comes from the yak's type; see [`shorn`](cli.md#the-change-line)); the title is never saved unless you press `Enter` on it. An empty line shears with no note; `Ctrl-C` (or `Esc` in emacs mode, a double-`Esc` in vim) cancels and leaves the yak as it was. With marks, a line cannot describe a set, so the prompt starts empty and asks for an optional comment, recorded as a plain note on every yak that moves. |
 | `D` / `R` | Add dependency / reparent |
 | `H` | Move to another herd (multi-herd farms) |
 | `M` | Add a comment (note): an empty editor under a `▸ you · now` header after the last comment, in place |

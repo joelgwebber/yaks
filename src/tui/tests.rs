@@ -2202,38 +2202,74 @@ mod live {
         assert_eq!(app.notification.as_deref(), Some("t0 → shorn"));
     }
 
+    /// The one-yak shear prompt's text, as typed so far.
+    fn shear_prompt_text(app: &App) -> String {
+        match &app.overlay {
+            Overlay::Edit(ed) => {
+                assert!(matches!(ed.action, EditAction::Shear(_)));
+                ed.text()
+            }
+            _ => panic!("expected the shear prompt"),
+        }
+    }
+
+    /// The `kind: change` notes of `id` as `(section, text)`.
+    fn change_notes(app: &App, id: &str) -> Vec<(Option<String>, String)> {
+        crate::store::parse_notes(&app.task(id).unwrap().body)
+            .into_iter()
+            .filter(|n| n.kind() == Some("change"))
+            .map(|n| (n.get("section").map(str::to_string), n.text.trim().into()))
+            .collect()
+    }
+
     #[test]
-    fn state_pick_shear_records_the_optional_comment() {
-        // yaks-27c6: shearing via the picker prompts for a comment; a typed
-        // one lands as a note on the (now shorn) yak.
+    fn state_pick_shear_prefills_the_title_as_the_change_line() {
+        // yaks-bcb8: the prompt starts with the title; Enter unedited writes
+        // it as the yak's `kind: change` note, with no stored section.
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "Sn");
-        match &app.overlay {
-            Overlay::Edit(ed) => assert!(matches!(ed.action, EditAction::Shear(_))),
-            _ => panic!("expected the shear-comment prompt"),
-        }
+        assert_eq!(shear_prompt_text(&app), "solo");
         // The prompt alone shears nothing.
         assert_eq!(app.task("t0").unwrap().status, Status::Hairy);
-        press(&mut app, "done via tui");
         enter(&mut app);
         assert!(matches!(app.overlay, Overlay::None));
-        let t = app.task("t0").unwrap();
-        assert_eq!(t.status, Status::Shorn);
-        assert!(t.body.contains("done via tui"), "{}", t.body);
+        assert_eq!(app.task("t0").unwrap().status, Status::Shorn);
+        assert_eq!(change_notes(&app, "t0"), vec![(None, "solo".to_string())]);
         assert_eq!(app.notification.as_deref(), Some("t0 → shorn"));
     }
 
     #[test]
-    fn state_pick_shear_with_empty_comment_adds_no_note() {
+    fn state_pick_shear_writes_the_edited_change_line() {
         let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
         let mut app = App::with_farm(farm).unwrap();
         press(&mut app, "Sn");
-        press(&mut app, "   "); // whitespace only counts as empty
+        press(&mut app, " now faster");
+        assert_eq!(shear_prompt_text(&app), "solo now faster");
+        enter(&mut app);
+        assert_eq!(app.task("t0").unwrap().status, Status::Shorn);
+        assert_eq!(
+            change_notes(&app, "t0"),
+            vec![(None, "solo now faster".to_string())]
+        );
+    }
+
+    #[test]
+    fn state_pick_shear_with_empty_line_adds_no_note() {
+        let (_dir, farm) = temp_farm(&[task("t0", "solo", Status::Hairy, 3, None)]);
+        let mut app = App::with_farm(farm).unwrap();
+        press(&mut app, "Sn");
+        for _ in 0.."solo".len() {
+            handle_key(
+                &mut app,
+                KeyEvent::new(KeyCode::Backspace, KeyModifiers::NONE),
+            );
+        }
+        assert_eq!(shear_prompt_text(&app), "");
         enter(&mut app);
         let t = app.task("t0").unwrap();
         assert_eq!(t.status, Status::Shorn);
-        // Only the transition's own `moved:` note, no comment.
+        // Only the transition's own `moved:` note, no change line.
         assert_eq!(crate::store::parse_notes(&t.body).len(), 1, "{}", t.body);
     }
 
@@ -2341,6 +2377,7 @@ mod live {
         }
         app.overlay = Overlay::None;
         app.commit_shear(ShearTarget::One("z0".into()), "all done");
+        assert!(change_notes(&app, "z0").is_empty());
         let notice = app.notification.clone();
         app.reload(); // read what is on disk, not the cached rows
         app.notification = notice;

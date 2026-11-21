@@ -9,6 +9,7 @@ mod autocommit;
 mod branchfarm;
 mod branchlog;
 mod brief;
+mod changeline;
 mod changes;
 mod check;
 mod clipboard;
@@ -882,10 +883,33 @@ enum Command {
     /// before their parents, in any order given), or graduate them out of the
     /// family first with `yaks reparent <child> --parent <other>` or
     /// `--unparent`. A refused id exits non-zero after the rest of the batch.
+    ///
+    /// `--change "<line>"` writes the yak's change line with the shear: a
+    /// note with `kind: change`, one line of markdown saying what changed for
+    /// a reader of the changelog (it may link an image). It goes under the
+    /// same lock as the move, and the latest change note wins, so a
+    /// correction is a newer one (`yaks update <id> --note "<line>" --meta
+    /// kind=change`). `--section` names the changelog section; without it the
+    /// section comes from the yak's type (feature added, bug fixed, else
+    /// changed). `--no-change` records that there is none to tell (a
+    /// refactor, a test, farm upkeep): a change note with `section: none`.
+    /// `--change` takes one id, since a line describes one yak;
+    /// `--no-change` may name several.
     #[command(visible_alias = "close")]
     Shorn {
         #[arg(required = true, num_args = 1..)]
         ids: Vec<String>,
+        /// The change line for the changelog (one yak only).
+        #[arg(long, value_name = "LINE", conflicts_with = "no_change")]
+        change: Option<String>,
+        /// Which changelog section the line belongs to; default from the
+        /// yak's type.
+        #[arg(long, value_name = "SECTION", requires = "change", value_parser = changeline::SECTIONS)]
+        section: Option<String>,
+        /// There is no user-facing change: write a change note with
+        /// `section: none`.
+        #[arg(long)]
+        no_change: bool,
         /// Attribute the move to this actor (stamped as `[actor]` on its
         /// `moved: <from> -> <to>` log entry). Resolved like `update --as`:
         /// $YAKS_ACTOR, then `git config yaks.actor`, then the harness
@@ -3166,9 +3190,32 @@ fn main() -> Result<()> {
                 "already being shaved",
                 "Shaving",
                 actor.as_deref(),
+                None,
             )?
         }
-        Command::Shorn { ids, as_actor } => {
+        Command::Shorn {
+            ids,
+            as_actor,
+            change,
+            section,
+            no_change,
+        } => {
+            let note = if no_change {
+                Some(changeline::ChangeNote::none())
+            } else if let Some(line) = change {
+                if ids.len() > 1 {
+                    anyhow::bail!(
+                        "--change takes one yak: a change line describes one yak \
+                         (use `--no-change` for a batch of internal work)"
+                    );
+                }
+                if line.trim().is_empty() {
+                    anyhow::bail!("--change needs a line; `--no-change` says there is none");
+                }
+                Some(changeline::ChangeNote::line(&line, section.as_deref()))
+            } else {
+                None
+            };
             let actor = actor::resolve(as_actor.as_deref());
             transition_many(
                 &farm,
@@ -3177,6 +3224,7 @@ fn main() -> Result<()> {
                 "already shorn",
                 "Shorn!",
                 actor.as_deref(),
+                note.as_ref(),
             )?
         }
         Command::Regrow { ids, as_actor } => {
@@ -3188,6 +3236,7 @@ fn main() -> Result<()> {
                 "already hairy",
                 "Regrown:",
                 actor.as_deref(),
+                None,
             )?
         }
         Command::Tick {
@@ -3271,6 +3320,7 @@ fn main() -> Result<()> {
                 "already hairy",
                 "Revived:",
                 actor.as_deref(),
+                None,
             )?
         }
         Command::Dep { action } => match action {
@@ -3886,8 +3936,9 @@ fn transition(
     already: &str,
     done: &str,
     actor: Option<&str>,
+    change: Option<&changeline::ChangeNote>,
 ) -> Result<bool> {
-    let (outcome, lifted) = match farm.transition_lifting(id, dest, actor) {
+    let (outcome, lifted) = match farm.transition_noting(id, dest, actor, change) {
         Ok(o) => o,
         Err(e)
             if e.downcast_ref::<farm::UnfinishedChildren>().is_some()
@@ -3930,11 +3981,12 @@ fn transition_many(
     already: &str,
     done: &str,
     actor: Option<&str>,
+    change: Option<&changeline::ChangeNote>,
 ) -> Result<()> {
     let ids = farm.batch_order(ids, dest)?;
     let mut any_failed = false;
     for id in &ids {
-        if !transition(farm, id, dest, already, done, actor)? {
+        if !transition(farm, id, dest, already, done, actor, change)? {
             any_failed = true;
         }
     }

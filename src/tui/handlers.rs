@@ -7,6 +7,7 @@
 
 use super::linenav::{LineNav, Viewport};
 use super::*;
+use crate::changeline::ChangeNote;
 
 #[cfg(test)]
 thread_local! {
@@ -2965,32 +2966,55 @@ impl App {
         self.notification = Some(msg);
     }
 
-    /// Shearing from a state picker first asks for an optional comment, so a
-    /// TUI shear can carry the evidence note `doctor --strict` looks for
-    /// (yaks-27c6). Enter on an empty line shears with no note; cancel
-    /// (Ctrl-C, or Esc in emacs) leaves the yak(s) as they were.
+    /// Shearing from a state picker first asks for the change line
+    /// (yaks-bcb8): a single yak's prompt starts with its title, for the
+    /// human to edit, and Enter writes the text as the yak's `kind: change`
+    /// note with the shear. A line describes one yak, so a marked set's
+    /// prompt stays an optional comment, recorded as a plain note on each
+    /// (the evidence note `doctor --strict` looks for, yaks-27c6). Enter on
+    /// an empty line shears with no note; cancel (Ctrl-C, or Esc in emacs)
+    /// leaves the yak(s) as they were.
     pub(crate) fn open_shear_comment(&mut self, target: ShearTarget) {
-        let what = match &target {
-            ShearTarget::One(id) => id.clone(),
-            ShearTarget::Bulk(ids) => format!("{} marked", ids.len()),
+        let (label, initial) = match &target {
+            ShearTarget::One(id) => (
+                format!(
+                    "Shear {id} — change line (edit; empty for none · Enter shears · Ctrl-C cancel): "
+                ),
+                self.task(id).map(|t| t.title.clone()).unwrap_or_default(),
+            ),
+            ShearTarget::Bulk(ids) => (
+                format!(
+                    "Shear {} marked — optional comment (Enter shears · Ctrl-C cancel): ",
+                    ids.len()
+                ),
+                String::new(),
+            ),
         };
-        self.overlay = Overlay::Edit(Editor::new(
+        let editor = Editor::new(
             self.editor_vim(),
             true,
-            format!("Shear {what} — optional comment (Enter shears · Ctrl-C cancel): "),
-            "",
+            label,
+            &initial,
             EditAction::Shear(target),
-        ));
+        );
+        // The title is a start to edit: type after it, not before it.
+        editor.state.borrow_mut().cursor = edtui::Index2::new(0, initial.chars().count());
+        self.overlay = Overlay::Edit(editor);
     }
 
-    /// Commit a shear-comment prompt: the non-empty note goes on each yak
-    /// before its move, then the yak(s) move to shorn.
+    /// Commit a shear prompt: one yak's text is its change line, written with
+    /// the move; a marked set's non-empty text is a note on each yak before
+    /// its move, then the yak(s) move to shorn.
     pub(crate) fn commit_shear(&mut self, target: ShearTarget, text: &str) {
-        let note = text.trim();
-        let note = (!note.is_empty()).then_some(note);
+        let text = text.trim();
         match target {
-            ShearTarget::One(id) => self.transition_one(&id, Status::Shorn, note),
-            ShearTarget::Bulk(ids) => self.bulk_transition(&ids, Status::Shorn, note),
+            ShearTarget::One(id) => {
+                let change = (!text.is_empty()).then(|| ChangeNote::line(text, None));
+                self.transition_one(&id, Status::Shorn, change.as_ref())
+            }
+            ShearTarget::Bulk(ids) => {
+                self.bulk_transition(&ids, Status::Shorn, (!text.is_empty()).then_some(text))
+            }
         }
     }
 
@@ -3011,20 +3035,16 @@ impl App {
         .map(|_| ())
     }
 
-    /// Move one yak to `dest`, first recording `note` on it when given.
-    pub(crate) fn transition_one(&mut self, id: &str, dest: Status, note: Option<&str>) {
+    /// Move one yak to `dest`, writing `change` with the move when given.
+    pub(crate) fn transition_one(&mut self, id: &str, dest: Status, change: Option<&ChangeNote>) {
         let actor = crate::actor::resolve(None);
         // A refused move must not leave its note behind (yaks-35a4).
         if let Some(Err(e)) = self.farm.as_ref().map(|h| h.check_transition(id, dest)) {
             self.notification = Some(format!("error: {e}"));
             return;
         }
-        if let Err(e) = self.note_before_move(id, note, actor.as_deref()) {
-            self.notification = Some(format!("error: {e}"));
-            return;
-        }
         let Some(h) = &self.farm else { return };
-        match h.transition_lifting(id, dest, actor.as_deref()) {
+        match h.transition_noting(id, dest, actor.as_deref(), change) {
             Ok((MoveOutcome::Moved, lifted)) => {
                 self.reload();
                 let mut msg = format!("{id} → {}", status_word(dest));

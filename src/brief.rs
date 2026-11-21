@@ -229,8 +229,8 @@ fn finish(b: &Brief) -> String {
         "the evidence the claim note names is in a note".to_string()
     };
     let shear = format!(
-        "1. Finish only after the evidence exists: {proof}, and your summary is in a note (`yaks shorn` takes no note): short, the shape of the fix and the evidence (linked or attached), not a bare \"done\" and not a design doc.\n\
-         2. `yaks shorn {id}` (there is no `shear` subcommand)."
+        "1. Finish only after the evidence exists: {proof}, and your summary is in a note (`yaks shorn` takes a change line, not a summary): short, the shape of the fix and the evidence (linked or attached), not a bare \"done\" and not a design doc.\n\
+         2. `yaks shorn {id} --change \"<one line for the changelog: what changed for a reader>\"` (`--no-change` for internal work; there is no `shear` subcommand)."
     );
     match b.publication {
         Publication::Published { branch } => format!(

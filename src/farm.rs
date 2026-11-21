@@ -3156,6 +3156,21 @@ impl Farm {
         dest: Status,
         actor: Option<&str>,
     ) -> Result<(MoveOutcome, Vec<String>)> {
+        self.transition_noting(id, dest, actor, None)
+    }
+
+    /// [`Farm::transition_lifting`], also writing `change` as a `kind: change`
+    /// note (yaks-bcb8) right after the move, under the same lock. Nothing is
+    /// written for a move that does not happen (a refusal, a yak already
+    /// there): the line describes the shear, and a correction later is a
+    /// newer note.
+    pub fn transition_noting(
+        &self,
+        id: &str,
+        dest: Status,
+        actor: Option<&str>,
+        change: Option<&crate::changeline::ChangeNote>,
+    ) -> Result<(MoveOutcome, Vec<String>)> {
         let _lock = store::lock(&self.root)?;
         self.check_transition(id, dest)?;
         let lifted = if dest == Status::Shaving {
@@ -3173,6 +3188,21 @@ impl Farm {
                 {
                     moved.push(a.clone());
                 }
+            }
+            if let Some(change) = change
+                && let Some(mut t) = store::load_task_by_id(&self.root, id)?
+            {
+                let now = store::now_iso();
+                t.body = store::append_note_meta_in(
+                    self.shape(),
+                    &t.body,
+                    &now,
+                    actor,
+                    &change.meta(),
+                    &change.text,
+                );
+                t.updated = Some(now);
+                store::write::save(&self.root, &t)?;
             }
         }
         Ok((outcome, moved))
