@@ -5,7 +5,7 @@ status: shorn
 type: idea
 priority: 4
 created: '2026-11-17T21:41:19Z'
-updated: '2026-11-19T03:42:34Z'
+updated: '2026-11-21T22:31:15Z'
 depends_on:
 - yaks-84fe
 tags:
@@ -176,3 +176,9 @@ Coordinator review (herd-files): landed as `91d46c73`.
   - `url` on a member refuses, saying why.
   - Headless TUI: the attachments tree unfolds into both archives, `Enter` opens a member in the viewer, and `o` returns to the same folds. [Frames](yaks-93ee/coord-93ee-frames.txt).
 - Read the diff: safety rules are in `entries` only (`clean_member`, symlink and hardlink members skipped, bounded reads); the index is cached per path, mtime and size; `Place::Member` round-trips to a path through the archive; the temp copy for `e`/`o` is keyed by the archive's identity and read-only. No changes needed.
+
+#### 2026-11-21T22:31:15Z
+
+*herd-files · kind: change · section: added*
+
+Archive attachments (`.zip`, `.tar`, `.tar.gz`, `.tgz`) browse read-only like directories, and links reach files inside them (`<id>/code.zip/src/main.rs#L2`).
