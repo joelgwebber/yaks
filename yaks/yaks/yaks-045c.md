@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:52Z'
+updated: '2026-11-21T22:31:25Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -100,3 +100,5 @@ moved: shaving -> shorn
 *herd-files · kind: landed · commit: 5d8a524c4fc530ff50546570768bfc79b7d9b00a · source: e1dad561f3b78f23b0ab9c5c8a2e19357c845457 · branch: main*
 
 landed: [5d8a524c](https://github.com/joelgwebber/yaks/commit/5d8a524c4fc530ff50546570768bfc79b7d9b00a) yaks-045c: yaks release changes (range membership from commits, --check), land warns on a shorn yak with no change line
+
+[unreleased](yaks-045c/unreleased.txt "Coordinator's run at 5d8a524c after back-filling change lines for this session's yaks: --check passes")

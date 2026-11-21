@@ -1,0 +1,22 @@
+Changes v0.0.40..HEAD: 14 commits, 12 yaks
+
+Added
+- `yaks release changes [<range>] [--json] [--check]` lists the yaks a release's commits name, by change line and section, with the gaps, open yaks and commits naming no yak; `--check` exits 1 on a gap. `yaks land` warns when it records a landing on a shorn yak with no change line. (yaks-045c; 5d8a524c)
+- `*` stars whatever the pane shows: a yak, a dok, a source, an attachment, a directory or a file inside an archive. (yaks-4381; 973a47e1 9a09c201 58eb9a62)
+- Archive attachments (`.zip`, `.tar`, `.tar.gz`, `.tgz`) browse read-only like directories, and links reach files inside them (`<id>/code.zip/src/main.rs#L2`). (yaks-93ee; 9a09c201 91d46c73)
+- `yaks shorn --change "<line>"` records a yak's change line (and `--no-change` says there is none); the TUI shear prompt offers the title to edit as that line. (yaks-bcb8; c20ad225 d63203fc)
+
+Changed
+- Links take a line or range in any spelling (`path:10`, `:10-14`, `#L10-L14`), on every link kind; a range opens narrowed to those lines (`w` widens), and a single line opens the whole file at that line. (yaks-15dc; 412882e4)
+
+Fixed
+- `yaks commit` and `yaks land` see a pending merge or cherry-pick in a repository using the reftable ref format (`init.defaultRefFormat=reftable`). (yaks-0a0a; 09fe62f3)
+- Links to a dok's or source's directory (`x/sketches/`) resolve: `peek` reads them and `doctor` no longer reports them as `../`. (yaks-1d2b; 84ffb8b7)
+- A markdown file opened through a `code:` link renders as markdown. (yaks-9f55; 412882e4)
+- Following a link to a dok's heading lands on that heading the first time the viewer opens, not at the bottom. (yaks-b4d7; b9f31552)
+- Links pinned to a commit (`path@<rev>`) show files stored in Git LFS (images included) instead of their LFS pointer. (yaks-c955; d2a9936c)
+
+Security
+- `yaks attach <dir>` and `yaks source add <dir>` no longer follow symlinks out of the tree; a link is listed as skipped. (yaks-8218; 543403df 22b1c30d)
+
+No user-facing change (1): yaks-84fe
