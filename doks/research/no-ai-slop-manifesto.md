@@ -73,7 +73,7 @@ Every note carries an actor, which is good. Whether that actor is a person or an
 
 The skills and the brief ask for a note "at least every 30 minutes" so that "your latest note is how others tell a busy worker from a dead one" ([code:src/brief.rs@57c1d281#L215](code:src/brief.rs@57c1d281#L215)). That makes a note do two jobs: a signal for `yaks sheds` and a message for a person. A heartbeat is output by design. It lands in the same pane, at the same weight, as a `Decision:` note.
 
-Scale: the farm holds about 297,000 words of notes. Notes stamped by Joel come to about 4,500 (1.5%). The busiest agent actors write medians of 30 to 140 words a note and p90s of 300 to 380. None of that is wrong in itself, but the ratio is the manifesto's asymmetry in our own house.
+Scale: the farm holds about 297,000 words of notes. Notes stamped by Joel come to about 4,500 (1.5%). The busiest agent actors write medians of 20 to 140 words a note, and a tenth of their notes run past 130 to 380 words. None of that is wrong in itself, but the ratio is the manifesto's asymmetry in our own house.
 
 ### 4. The instructions are themselves a reading load
 
