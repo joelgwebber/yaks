@@ -75,8 +75,8 @@ Counted on 2026-11-21 over the code branch's tags (`v0.0.1` 2026-08-23 to `v0.0.
 Commits naming a yak in their subject, per release range:
 
 - `v0.0.1`–`v0.0.4`: none (0 of 99): there is no yak to link, so a backfill has only commit subjects for these.
-- `v0.0.5`–`v0.0.20`: most (419 of 474, about 88%).
-- `v0.0.21`–`v0.0.40`: nearly all (232 of 248, about 94%).
+- `v0.0.5`–`v0.0.20`: most (418 of 480, about 87%).
+- `v0.0.21`–`v0.0.40`: nearly all (242 of 256, about 95%).
 
 So computing membership from commit messages works for almost all of the history, and the commits that name no yak are what a release check should list.
 
