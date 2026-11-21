@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-19T23:42:03Z'
-updated: '2026-11-19T23:52:19Z'
+updated: '2026-11-21T22:31:11Z'
 tags:
 - git
 - cli
@@ -44,3 +44,9 @@ Evidence:
 *herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-21T22:31:11Z
+
+*herd-files · kind: change · section: fixed*
+
+`yaks commit` and `yaks land` see a pending merge or cherry-pick in a repository using the reftable ref format (`init.defaultRefFormat=reftable`).
