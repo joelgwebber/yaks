@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:26:03Z'
+updated: '2026-11-21T22:26:04Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -52,3 +52,5 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 [default-check](yaks-045c/default-check.txt "real run on this repo: default-check")
 
 [default](yaks-045c/default.json "yaks release changes --json (v0.0.40..HEAD)")
+
+[gate](yaks-045c/gate.txt "cargo test -p yaks output (all green)")

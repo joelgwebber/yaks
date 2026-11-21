@@ -1,0 +1,1880 @@
+   Compiling yaks v0.0.40 (/Users/joel/src/yaks/.delta/worktrees/8c177wnt6s3h/yaks)
+warning: unused variable: `wa`
+   --> tests/init_modes.rs:210:9
+    |
+210 |     let wa = worktree_of(&a, "yaks").unwrap();
+    |         ^^ help: if this is intentional, prefix it with an underscore: `_wa`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `yaks` (test "init_modes") generated 1 warning (run `cargo fix --test "init_modes" -p yaks` to apply 1 suggestion)
+warning: method `source_add` is never used
+    --> src/farm.rs:2579:12
+     |
+1043 | impl Farm {
+     | --------- method in this implementation
+...
+2579 |     pub fn source_add(&self, req: &crate::sources::Request) -> Result<...
+     |            ^^^^^^^^^^
+     |
+     = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `notes_new_shape` is never used
+   --> src/migrate.rs:280:8
+    |
+280 | pub fn notes_new_shape(_: &Ctx, body: &str) -> (String, usize) {
+    |        ^^^^^^^^^^^^^^^
+
+warning: function `add_on` is never used
+   --> src/sources.rs:666:4
+    |
+666 | fn add_on(root: &Path, req: &Request, today: &str) -> Result<Saved> {
+    |    ^^^^^^
+
+warning: function `assemble` is never used
+  --> src/tui/content.rs:89:8
+   |
+89 | pub fn assemble(blocks: &[Block]) -> String {
+   |        ^^^^^^^^
+
+warning: unused variable: `f`
+    --> src/sources.rs:2069:13
+     |
+2069 |         let f = base.join("page.md");
+     |             ^ help: if this is intentional, prefix it with an underscore: `_f`
+     |
+     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+   --> src/tui/takeout.rs:814:13
+    |
+814 |         let mut run = |app: &mut App, c: char| -> String {
+    |             ----^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `farm_branch_at_8_pub` is never used
+    --> src/migrate.rs:1863:19
+     |
+1863 |     pub(super) fn farm_branch_at_8_pub(tag: &str) -> (std::path::PathB...
+     |                   ^^^^^^^^^^^^^^^^^^^^
+
+warning: `yaks` (bin "yaks") generated 4 warnings
+warning: `yaks` (bin "yaks" test) generated 5 warnings (2 duplicates) (run `cargo fix --bin "yaks" -p yaks --tests` to apply 2 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.49s
+     Running unittests src/main.rs (target/debug/deps/yaks-111a638a2b3a3cee)
+
+running 1335 tests
+test actor::tests::yaks_thread_wins_over_the_delta_thread_id ... ok
+test actor::tests::no_delta_env_means_no_harness_actor ... ok
+test brief::tests::a_shell_unsafe_binary_path_is_quoted ... ok
+test actor::tests::delta_thread_id_is_used_when_title_missing_or_blank ... ok
+test actor::tests::a_title_that_starts_with_a_worker_name_gives_just_the_name ... ok
+test actor::tests::explicit_beats_env_beats_harness_beats_git ... ok
+test actor::tests::checkout_config_sits_between_env_and_the_harness ... ok
+test actor::tests::delta_title_is_preferred_over_thread_id ... ok
+test actor::tests::harness_title_collapses_whitespace_and_truncates_to_40_chars ... ok
+test brief::tests::a_branch_brief_never_stages_the_farm_and_keeps_ids_in_messages ... ok
+test brief::tests::a_private_brief_keeps_yak_ids_out_of_git ... ok
+test brief::tests::a_worker_name_that_is_not_shell_safe_is_refused ... ok
+test brief::tests::every_brief_names_the_yak_the_actor_prefix_and_the_final_message ... ok
+test brief::tests::the_brief_says_how_an_answered_ask_is_picked_up ... ok
+test actor::tests::every_actor_round_trips_through_the_note_stamp ... ok
+test brief::tests::only_an_unclaimed_yak_gets_the_claim_warning ... ok
+test brief::tests::the_evidence_section_follows_the_gate ... ok
+test brief::tests::a_yak_verify_wins_over_the_config_default ... ok
+test changeline::tests::change_note_meta_writes_section_only_when_given ... ok
+test changeline::tests::no_change_note_is_none ... ok
+test changeline::tests::section_comes_from_the_type_unless_the_note_says ... ok
+test check::tests::a_dok_without_a_usable_description_is_flagged_once_by_path ... ok
+test changeline::tests::the_latest_change_note_wins ... ok
+test check::tests::a_file_left_under_the_old_layout_is_flagged_but_not_the_stub ... ok
+test brief::tests::a_yaks_dir_farm_is_private_and_named_on_every_command ... ok
+test branchfarm::tests::farm_home_honours_xdg_data_home_then_home ... ok
+test check::tests::an_unpinned_link_with_neither_verified_nor_a_farm_commit_is_skipped ... ok
+test check::tests::kinds_normalize_by_plural_and_hyphen ... ok
+test check::tests::no_code_checkout_is_one_note_and_no_finding ... ok
+test check::tests::source_refs_find_a_file_named_at_the_end_of_a_sentence ... ok
+test check::tests::source_refs_find_ids_in_links_and_prose_only_at_a_word_edge ... ok
+test check::tests::the_code_kinds_have_stable_labels ... ok
+test check::tests::a_pin_the_checkout_does_not_have_is_a_note ... ok
+test brief::tests::an_unknown_id_prints_nothing_on_stdout_and_exits_nonzero ... ok
+test check::tests::a_removed_file_is_gone_unpinned_and_history_when_pinned ... ok
+test check::tests::a_pinned_link_with_no_later_commit_to_its_path_is_quiet ... ok
+test check::tests::a_pinned_link_counts_the_commits_to_its_path_since_the_pin ... ok
+test commit::tests::long_id_lists_are_capped_in_the_message ... ok
+test brief::tests::an_explicit_yaks_dir_wins_and_is_made_absolute ... ok
+test brief::tests::a_private_branch_farm_gets_the_private_finish_but_no_yaks_dir ... ok
+test brief::tests::the_config_verify_default_becomes_the_gate ... ok
+test commit::tests::root_layout_paths_read_as_yaks_doks_and_sessions ... ok
+test conflicts::tests::markers_outside_fences_are_found ... ok
+test conflicts::tests::recorded_fields_are_read ... ok
+test doks::tests::a_plain_value_is_an_exact_match_on_any_item ... ok
+test doks::tests::an_untouched_dok_round_trips_byte_for_byte ... ok
+test doks::tests::compare_is_numeric_for_numbers_and_textual_for_dates ... ok
+test doks::tests::contains_ignores_case_and_reads_any_item ... ok
+test brief::tests::an_unclaimed_yak_still_prints_with_a_warning_on_stderr ... ok
+test doks::tests::dok_fields_read_through_the_same_tests ... ok
+test doks::tests::empty_means_missing_or_empty ... ok
+test doks::tests::new_dok_fills_type_and_title_and_refuses_existing_files ... ok
+test doks::tests::not_equal_matches_a_missing_field_and_a_list_without_the_value ... ok
+test doks::tests::paths_must_sit_under_a_doks_root_in_kebab_case ... ok
+test doks::tests::discovery_finds_farm_and_herd_doks_and_skips_the_rest ... ok
+test entries::tests::a_listing_is_dirs_first_and_leaves_out_git_and_symlinks ... ok
+test entries::tests::a_directory_lists_an_archive_as_one_file_that_unfolds ... ok
+test entries::tests::an_archive_over_the_size_cap_stays_a_plain_file ... ok
+test entries::tests::safe_paths_never_climb_out_or_into_git ... ok
+test entries::tests::zip_tar_and_tgz_list_read_and_refuse_hostile_members ... ok
+test commit::tests::an_untracked_farm_fails_clearly ... ok
+test farm::tests::answer_done_clears_needs_without_handing_off ... ok
+test check::tests::an_unpinned_link_counts_commits_since_verified ... ok
+test check::tests::frontmatter_sources_and_code_lists_are_read_like_body_links ... ok
+test farm::tests::an_evidence_document_links_its_sibling_attachments_by_bare_name ... ok
+test farm::tests::a_farm_writes_the_note_shape_of_its_schema ... ok
+test brief::tests::run_prints_a_branch_brief_with_no_yaks_dir ... ok
+test farm::tests::attachment_name_sanitizes_and_keeps_extension ... ok
+test farm::tests::attachments_resolve_in_the_yaks_directory ... ok
+test farm::tests::attach_many_links_each_file_in_order ... ok
+test farm::tests::attach_encodes_a_name_with_spaces_and_rename_follows_it ... ok
+test farm::tests::backrefs_find_children_deps_and_mentions_but_not_lookalikes ... ok
+test farm::tests::answer_edge_cases_no_needs_and_second_answer ... ok
+test farm::tests::create_rejects_a_malformed_prefix ... ok
+test farm::tests::create_routes_to_the_requested_prefix_over_the_config_default ... ok
+test farm::tests::create_applies_herd_default_type_from_config ... ok
+test farm::tests::answer_hands_to_agent_and_only_pickup_clears_it ... ok
+test farm::tests::create_without_a_prefix_uses_the_config_default ... ok
+test farm::tests::commands_write_kind_metadata_and_keep_the_body_text ... ok
+test farm::tests::create_routes_via_repo_herd_and_explicit_wins ... ok
+test farm::tests::doctor_clean_farm_has_no_issues ... ok
+test farm::tests::create_with_no_explicit_or_default_herd_errors ... ok
+test farm::tests::doctor_flags_an_invalid_status ... ok
+test farm::tests::doctor_flags_dangling_parent_and_depends_on ... ok
+test farm::tests::description_with_base_conflicts_on_a_concurrent_rewrite ... ok
+test farm::tests::doctor_flags_one_id_in_two_files ... ok
+test farm::tests::doctor_flags_needs_that_disagrees_with_the_latest_kinded_note ... ok
+test farm::tests::doctor_flags_a_misplaced_yak_file_and_docs_is_not_a_herd ... ok
+test commit::tests::nothing_to_commit_when_the_farm_is_clean ... ok
+test farm::tests::doctor_strict_flags_shorn_yak_whose_verify_did_not_pass ... ok
+test farm::tests::inbox_shows_blocked_yaks_regardless_of_status ... ok
+test farm::tests::doctor_strict_flags_shorn_yak_without_a_note ... ok
+test farm::tests::description_with_base_keeps_a_concurrent_note ... ok
+test commit::tests::dry_run_reports_without_staging_or_committing ... ok
+test farm::tests::merge_dry_run_reports_but_writes_nothing ... ok
+test farm::tests::lock_ignores_itself_without_clobbering_an_existing_gitignore ... ok
+test farm::tests::attach_links_images_with_a_bang_and_other_files_without ... ok
+test farm::tests::merge_refuses_on_id_collision_and_writes_nothing ... ok
+test farm::tests::merge_declares_the_incoming_herd_in_config ... ok
+test farm::tests::doctor_strict_does_not_count_transition_entries_as_evidence ... ok
+test farm::tests::merge_copies_a_disjoint_farm_preserving_status ... ok
+test farm::tests::open_refuses_an_old_layout_farm ... ok
+test farm::tests::merge_herd_declaration_is_idempotent_and_dry_run_writes_nothing ... ok
+test check::tests::verified_after_the_newest_commit_clears_a_pinned_link_and_before_it_does_not ... ok
+test farm::tests::rebase_description_cases ... ok
+test farm::tests::refs_flags_danglers_and_validated_mentions ... ok
+test farm::tests::refs_none_for_missing_task ... ok
+test changes::tests::a_pending_cherry_pick_is_seen_in_either_ref_format ... ok
+test farm::tests::merge_refuses_an_old_layout_source_and_copies_a_flat_one ... ok
+test farm::tests::needs_changes_write_no_transition_entry ... ok
+test farm::tests::rename_dry_run_leaves_files_untouched ... ok
+test farm::tests::rename_many_migrates_a_prefix_batch_across_statuses ... ok
+test farm::tests::rename_attachment_moves_file_and_rewrites_links ... ok
+test farm::tests::rename_prefix_dry_run_does_not_flip_config_or_move_files ... ok
+test commit::tests::commits_farm_changes_and_leaves_code_alone ... ok
+test farm::tests::rename_rejects_collision_with_existing_id ... ok
+test commit::tests::hook_output_is_captured_and_reported_on_failure ... ok
+test farm::tests::rename_prefix_migrates_matching_ids_and_flips_config ... ok
+test farm::tests::rename_prefix_does_not_deadlock_on_the_farm_lock ... ok
+test farm::tests::rename_moves_the_attachment_dir_and_fixes_links ... ok
+test farm::tests::rename_rewrites_every_reference_surface ... ok
+test farm::tests::migrate_upgrades_a_schema_4_farm_to_herd_dirs_once ... ok
+test farm::tests::pickup_refuses_other_states_and_ask_flips_agent_back ... ok
+test fields::tests::a_hash_inside_a_value_is_not_a_comment ... ok
+test fields::tests::cli_values ... ok
+test fields::tests::set_rewrites_only_that_entry_and_appends_new_keys ... ok
+test fields::tests::unsupported_yaml_round_trips_without_a_value ... ok
+test fields::tests::untouched_frontmatter_round_trips_byte_for_byte ... ok
+test fields::tests::values_parse_from_the_subset_real_farms_use ... ok
+test fields::tests::written_values_read_back_equal ... ok
+test filter::tests::default_scope_excludes_dead ... ok
+test filter::tests::herds_filter_matches_on_id_prefix ... ok
+test filter::tests::needs_only_keeps_only_blocked_yaks ... ok
+test filter::tests::parent_of_scopes_to_descendants ... ok
+test filter::tests::parent_of_with_all_includes_dead_descendants ... ok
+test filter::tests::ready_only_excludes_a_needs_block ... ok
+test filter::tests::ready_only_is_hairy_with_resolved_deps ... ok
+test filter::tests::run_on_keeps_bodies_with_joined_lines ... ok
+test filter::tests::search_is_case_insensitive_over_id_title_body ... ok
+test filter::tests::tangled_only_is_hairy_with_unresolved_deps ... ok
+test filter::tests::transitive_deps_detect_cycles ... ok
+test find::tests::bad_patterns_are_errors ... ok
+test find::tests::literal_ignores_case_by_default_and_reports_the_char_offset ... ok
+test find::tests::long_lines_are_cut_around_the_match ... ok
+test find::tests::nested_repeats_stay_linear ... ok
+test find::tests::regex_basics ... ok
+test find::tests::regex_case_folding_follows_the_flag ... ok
+test find::tests::regex_classes_counts_and_boundaries ... ok
+test find::tests::scopes_are_directory_names_or_path_prefixes ... ok
+test farm::tests::pickup_drop_request_removes_the_request_note_and_never_an_answer ... ok
+test farm::tests::update_writes_the_edit_meta_under_the_note ... ok
+test farm::tests::shorn_refuses_a_parent_over_unfinished_children ... ok
+test gitrepo::tests::alternates_resolve_a_relative_line_against_the_objects_dir ... ok
+test farm::tests::rename_attachment_refuses_collision_and_missing ... ok
+test hosting::tests::gitea_and_forgejo_templates ... ok
+test hosting::tests::github_templates ... ok
+test hosting::tests::gitlab_subgroups_keep_their_whole_path ... ok
+test hosting::tests::gitlab_templates ... ok
+test hosting::tests::host_urls_read_back_as_commits_and_pinned_files ... ok
+test hosting::tests::hosts_are_detected_by_name_and_declared_for_custom_domains ... ok
+test hosting::tests::remote_spellings_name_one_repository ... ok
+test hosting::tests::unsupported_and_local_remotes_are_refused_with_a_reason ... ok
+test json::tests::task_value_omits_extra_when_empty ... ok
+test json::tests::task_value_surfaces_extra_when_present ... ok
+test farm::tests::shave_lifts_hairy_ancestors ... ok
+test farm::tests::request_hands_to_agent_refuses_human_and_appends_on_agent ... ok
+test farm::tests::nothing_opens_under_a_finished_parent ... ok
+test farm::tests::transition_batch_moves_valid_ids_and_flags_missing ... ok
+test farm::tests::doctor_needs_drift_is_quiet_when_commands_wrote_both ... ok
+test farm::tests::slaughter_guards_and_family_sweeps ... ok
+test commit::tests::other_staged_files_stay_staged_and_out_of_the_commit ... ok
+test gitrepo::tests::a_delta_clone_finds_the_human_checkout_through_its_alternates ... ok
+test gitrepo::tests::a_managed_bare_host_has_no_checkout ... ok
+test commit::tests::refuses_during_a_merge_and_stages_nothing ... ok
+test gitrepo::tests::a_primary_checkout_and_its_worktree_are_their_own_host ... ok
+test gitrepo::tests::worktree_of_branch_finds_the_checkout_from_a_clone_too ... ok
+test land::tests::an_unknown_commit_and_a_non_repository_are_errors ... ok
+test land::tests::a_conflicting_merge_falls_back_to_cherry_pick_and_names_the_files ... ok
+test land::tests::an_ancestor_whose_change_was_edited_over_later_cannot_be_confirmed ... ok
+test land::tests::an_unexplained_edit_is_refused_and_kept ... ok
+test land::tests::a_worker_commit_staging_a_root_layout_yak_file_is_refused ... ok
+test land::tests::an_already_landed_ancestor_says_landed_and_adds_no_commit ... ok
+test land::tests::a_worker_commit_with_yak_files_is_refused_when_head_tracks_none ... ok
+test land::tests::an_untracked_leftover_that_differs_from_the_workers_file_stops_the_land ... ok
+test links::tests::a_bare_name_in_an_attachment_is_a_sibling ... ok
+test links::tests::a_colon_line_suffix_is_a_line_anchor ... ok
+test links::tests::a_directory_attachment_and_its_files_are_attachments ... ok
+test links::tests::a_farm_path_may_name_a_directory ... ok
+test links::tests::a_note_link_names_one_note_by_its_timestamp ... ok
+test land::tests::a_shallow_repository_gets_the_note ... ok
+test land::tests::a_rewritten_base_lands_by_cherry_pick ... ok
+test land::tests::a_dry_run_changes_nothing ... ok
+test links::tests::a_yak_and_its_attachment_by_path_from_the_farm_root ... ok
+test links::tests::a_pin_from_before_the_doks_rename_reads_the_old_wiki_path ... ok
+test land::tests::an_unrelated_shallow_boundary_does_not_trigger_the_note ... ok
+test links::tests::commit_links ... ok
+test links::tests::dest_round_trips_through_parse ... ok
+test links::tests::exists_and_peek_accept_a_farm_directory ... ok
+test links::tests::exists_checks_directories_and_extensionless_paths_but_not_placeholders ... ok
+test links::tests::extract_finds_links_with_lines_and_skips_code ... ok
+test links::tests::legacy_code_links_are_valid_only_in_yaks ... ok
+test links::tests::peek_reads_lines_sections_and_summaries ... ok
+test links::tests::slugs_and_sections_follow_github ... ok
+test links::tests::the_grammar ... ok
+test links::tests::the_latest_note_link_of_a_new_shape_body_is_a_host_path ... ok
+test locate::tests::a_member_links_back_names_a_read_only_copy_and_has_no_host_url ... ok
+test locate::tests::a_path_through_an_archive_resolves_to_a_member_or_a_directory ... ok
+test locate::tests::a_source_directory_reads_as_its_source_file ... ok
+test locate::tests::peek_reads_a_member_at_its_lines_and_lists_an_archive_directory ... ok
+test locate::tests::resolve_applies_the_alias_and_keeps_the_rest ... ok
+test land::tests::force_discard_drops_the_edit_and_lands ... ok
+test markdown_lint::tests::a_note_heading_in_an_old_description_is_flagged ... ok
+test markdown_lint::tests::flags_lines_that_join ... ok
+test markdown_lint::tests::leaves_well_formed_markdown_alone ... ok
+test markdown_lint::tests::note_headers_do_not_count ... ok
+test markdown_lint::tests::note_headers_do_not_count_in_the_new_shape_either ... ok
+test mergedriver::tests::a_description_changed_both_ways_keeps_both_between_markers ... ok
+test mergedriver::tests::a_description_changed_on_one_side_wins ... ok
+test mergedriver::tests::a_dok_body_both_sides_changed_keeps_markers_and_valid_frontmatter ... ok
+test mergedriver::tests::a_dok_field_both_sides_set_keeps_ours_and_records_theirs ... ok
+test mergedriver::tests::a_dok_merges_fields_by_rule_and_body_as_text ... ok
+test mergedriver::tests::a_file_without_frontmatter_merges_as_text ... ok
+test mergedriver::tests::a_non_yak_input_falls_back_to_ours_and_reports_none_merged ... ok
+test mergedriver::tests::a_note_both_sides_hold_is_kept_once_and_base_notes_stay ... ok
+test mergedriver::tests::a_scalar_changed_both_ways_keeps_ours_and_records_a_note ... ok
+test mergedriver::tests::an_empty_base_merges_as_both_sides_adding_the_file ... ok
+test mergedriver::tests::an_extra_list_field_both_sides_changed_merges_as_a_set ... ok
+test links::tests::a_pin_from_before_the_layout_move_reads_the_dot_yaks_path ... ok
+test mergedriver::tests::description_edits_to_different_lines_both_land ... ok
+test locate::tests::the_code_repos_own_host_urls_read_as_commits_and_code ... ok
+test mergedriver::tests::labels_add_on_one_side_and_remove_on_the_other ... ok
+test mergedriver::tests::metadata_and_mixed_sides_merge_to_one_shape ... ok
+test mergedriver::tests::one_side_changing_a_scalar_wins_without_a_conflict ... ok
+test mergedriver::tests::prs_added_on_both_sides_both_survive ... ok
+test mergedriver::tests::run_merges_a_dok_by_its_path ... ok
+test mergedriver::tests::run_writes_ours_and_exits_one_for_a_non_yak ... ok
+test mergedriver::tests::several_conflicting_fields_are_one_note_one_line_each ... ok
+test mergedriver::tests::the_new_note_shape_merges_like_the_old ... ok
+test mergedriver::tests::two_different_notes_are_both_kept_in_time_order ... ok
+test mergedriver::tests::unknown_frontmatter_keys_merge_per_key ... ok
+test migrate10::tests::a_second_run_finds_nothing_to_do ... ok
+test migrate10::tests::references_follow_and_pins_and_code_stay ... ok
+test migrate10::tests::sources_become_one_file_each_and_a_tree_moves_up ... ok
+test migrate::tests::a_bare_yak_id_becomes_the_path_a_host_can_follow ... ok
+test mergedriver::tests::ensure_registered_writes_the_rule_and_config_once ... ok
+test links::tests::an_lfs_pointer_that_cannot_be_smudged_says_so ... ok
+test migrate::tests::a_herd_named_like_a_new_reserved_dir_refuses_the_migration ... ok
+test mergedriver::tests::ensure_registered_follows_the_farm_layout ... ok
+test migrate::tests::an_attachment_link_becomes_the_form_that_works_from_where_it_sits ... ok
+test migrate::tests::attachment_link_names_with_spaces_are_encoded ... ok
+test migrate::tests::header_fixup_inserts_the_blank_line_once ... ok
+test migrate::tests::header_fixup_leaves_empty_comments_and_prose_rules_alone ... ok
+test migrate::tests::labels_become_tags_renames_only_the_top_level_key ... ok
+test migrate::tests::link_fixup_ignores_foreign_links_and_code_fences ... ok
+test migrate::tests::link_fixup_unbangs_non_images_only ... ok
+test migrate::tests::only_real_yak_ids_are_touched ... ok
+test migrate::tests::schema_8_refuses_before_moving_when_a_destination_exists ... ok
+test migrate::tests::sessions_and_sources_links_name_the_real_path_and_the_slugged_directory ... ok
+test migrate::tests::the_link_step_is_idempotent ... ok
+test migrate::tests::the_schema_9_plan_finds_every_kind_and_writes_nothing ... ok
+test migrate::tests::wiki_links_become_doks_links_only_where_they_are_farm_links ... ok
+test model::label_tests::canonical_label_rejects_commas_and_spaces ... ok
+test model::label_tests::label_edit_diffs_against_normalized_current ... ok
+test model::label_tests::normalize_flattens_many_args_and_dedupes_in_order ... ok
+test model::label_tests::normalize_splits_on_commas_and_whitespace ... ok
+test migrate::tests::a_schema_7_farm_gets_the_wiki_move_and_goes_on_to_the_current_schema_once ... ok
+test land::tests::runs_from_a_subdirectory_of_the_checkout ... ok
+test land::tests::yak_files_land_when_head_tracks_a_root_layout_farm ... ok
+test land::tests::yak_files_land_when_head_tracks_a_yaks_directory ... ok
+test preflight::tests::a_yaks_dir_farm_skips_git_state_but_still_runs_other_checks ... ok
+test land::tests::the_squash_keeps_the_workers_author_and_date ... ok
+test links::tests::code_base_is_the_code_checkout_for_both_layouts ... ok
+test land::tests::the_evil_merge_that_dropped_the_workers_change_is_refused ... ok
+test land::tests::squashes_onto_a_moved_head_and_clears_the_applied_state ... ok
+test links::tests::a_pin_to_an_lfs_file_reads_its_content ... ok
+test land::tests::landing_the_same_worker_twice_adds_no_empty_commit ... ok
+test preflight::tests::a_clean_farm_is_ok ... ok
+test preflight::tests::a_branch_farm_with_a_merge_conflict_still_fails ... ok
+test migrate::tests::a_dirty_or_behind_farm_branch_refuses_before_writing_anything ... ok
+test preflight::tests::a_branch_farm_with_uncommitted_yaks_warns_once_and_does_not_fail ... ok
+test preflight::tests::changes_outside_the_farm_are_not_flagged ... ok
+test preflight::tests::a_new_artifacts_dir_puts_its_yak_in_scope ... ok
+test preflight::tests::invalid_status_value_fails ... ok
+test preflight::tests::default_scope_is_the_yaks_in_the_change_and_all_is_farm_wide ... ok
+test preflight::tests::bare_local_fails_and_names_the_pr_branch_fallback ... ok
+test preflight::tests::empty_managed_style_bare_local_fails ... ok
+test preflight::tests::local_that_is_a_real_checkout_with_main_passes ... ok
+test preflight::tests::yak_ids_come_from_root_layout_paths_too ... ok
+test preflight::tests::yak_ids_come_from_yak_files_and_attachment_dirs_only ... ok
+test preflight::tests::missing_local_remote_fails_only_when_asked ... ok
+test preflight::tests::local_pointing_at_the_git_dir_of_a_checkout_passes_and_is_checked_for_dirt ... ok
+test preflight::tests::one_id_in_two_files_fails ... ok
+test privatefarm::tests::outside_a_repository_is_an_error ... ok
+test preflight::tests::verify_check_passes_and_fails_on_the_last_verify_note ... ok
+test recur::tests::a_daily_evening_reminder_stays_in_the_evening_after_the_clocks_go_back ... ok
+test recur::tests::a_date_is_overdue_once_its_day_has_passed ... ok
+test recur::tests::a_date_is_the_farms_day_not_utcs ... ok
+test recur::tests::a_long_gap_is_found_without_walking_it ... ok
+test recur::tests::a_monthly_yak_on_the_31st_clamps_and_comes_back_through_a_dst_change ... ok
+test recur::tests::a_regrown_yak_regrows_at_its_due_without_drifting ... ok
+test recur::tests::a_time_that_does_not_exist_moves_on_and_then_comes_back ... ok
+test recur::tests::daily_across_both_2026_us_transitions ... ok
+test recur::tests::due_rows_keep_dated_yaks_in_date_order ... ok
+test recur::tests::durations_read_iso_8601_in_order ... ok
+test recur::tests::every_refuses_zero_and_words ... ok
+test recur::tests::fields_are_checked_as_they_are_set ... ok
+test recur::tests::finished_yaks_are_never_overdue ... ok
+test recur::tests::input_reads_relative_days_and_weeks_from_today ... ok
+test recur::tests::months_count_from_the_start_so_month_end_keeps_its_day ... ok
+test recur::tests::only_shorn_yaks_with_a_reading_every_are_candidates ... ok
+test recur::tests::regrown_alone_is_an_anchor_counted_from_one ... ok
+test recur::tests::regrows_for_the_latest_occurrence_and_counts_the_skipped ... ok
+test recur::tests::relative_days_count_from_the_given_day ... ok
+test recur::tests::rows_say_due_and_overdue ... ok
+test recur::tests::the_first_occurrence_skips_nothing_and_a_future_one_waits ... ok
+test recur::tests::the_new_note_shape_counts_from_the_shear_too ... ok
+test recur::tests::weekly_across_both_2026_us_transitions ... ok
+test recur::tests::when_reads_dates_and_datetimes_only ... ok
+test recur::tests::with_no_dates_it_counts_from_the_shear ... ok
+test recur::tests::without_a_named_zone_steps_stay_where_utc_stepping_did ... ok
+test refs::tests::has_ref_shape_screens_candidates ... ok
+test refs::tests::interior_dot_in_a_legacy_id_is_kept ... ok
+test refs::tests::reserved_qualifier_colon_scans_local_id_for_now ... ok
+test refs::tests::resolve_is_validation_based_not_prefix_based ... ok
+test refs::tests::rewrite_preserves_a_trailing_period ... ok
+test refs::tests::rewrite_reports_no_change_when_absent ... ok
+test refs::tests::rewrite_touches_only_whole_tokens_and_keeps_brackets ... ok
+test refs::tests::scan_finds_only_known_ids_in_order ... ok
+test refs::tests::scan_offsets_point_at_the_id_in_chars ... ok
+test refs::tests::scan_text_clean_when_no_real_ids ... ok
+test refs::tests::scan_text_reports_line_and_col_across_lines ... ok
+test refs::tests::trailing_period_is_not_part_of_the_id ... ok
+test refs::tests::wikilinks_normalize_to_bare_refs ... ok
+test release::tests::a_recorded_commit_names_a_yak_by_prefix ... ok
+test release::tests::groups_gaps_coverage_and_loose_commits ... ok
+test release::tests::text_nests_families_and_orders_sections ... ok
+test release::tests::version_bumps_are_a_named_rule ... ok
+test render::tests::a_path_a_farm_path_and_an_attachment_resolve ... ok
+test render::tests::it_writes_a_png_at_the_scale_asked ... ok
+test rollup::tests::classify_trackers ... ok
+test rollup::tests::groups_with_ancestor_inheritance_and_unsourced ... ok
+test rows::tests::a_new_column_is_appended_to_the_header_separator_and_every_row ... ok
+test rows::tests::a_new_row_goes_at_the_end_when_the_rows_are_not_sorted ... ok
+test rows::tests::a_pipe_in_a_cell_is_escaped_and_reads_back ... ok
+test rows::tests::a_sorted_table_gets_the_row_in_place_and_the_end_when_it_sorts_last ... ok
+test rows::tests::a_table_ending_the_body_without_a_newline_stays_valid ... ok
+test rows::tests::address_splits_at_the_first_hash ... ok
+test rows::tests::cells_split_on_unescaped_pipes ... ok
+test rows::tests::delete_removes_one_row_and_leaves_the_rest_alone ... ok
+test rows::tests::refusals_say_what_to_do ... ok
+test rows::tests::the_body_outside_the_table_is_untouched_whatever_it_holds ... ok
+test rows::tests::updating_a_row_changes_only_its_line ... ok
+test schemas::tests::checks_warn_on_missing_wrong_and_undeclared ... ok
+test schemas::tests::edit_distance_counts_edits ... ok
+test schemas::tests::parses_hearths_format ... ok
+test schemas::tests::table_rows_follow_the_header ... ok
+test schemas::tests::yak_schema_carries_known_tags ... ok
+test sessions::tests::a_gist_reads_as_prose ... ok
+test sessions::tests::a_long_title_is_cut_at_a_word ... ok
+test sessions::tests::build_names_and_counts ... ok
+test sessions::tests::default_since_reads_written_and_falls_back_to_reviewed ... ok
+test sessions::tests::saved_goes_before_lessons ... ok
+test sessions::tests::saved_lists_yak_notes_by_link ... ok
+test sessions::tests::the_body_needs_its_sections_and_verdicts ... ok
+test sheds::tests::a_claim_nobody_has_written_to_is_the_movers ... ok
+test sheds::tests::a_sheds_row_shows_its_latest_checkpoint_from_any_yak ... ok
+test sheds::tests::a_yak_that_is_not_shaving_is_nobodys_claim ... ok
+test sheds::tests::ago_reads_like_a_chat_timestamp ... ok
+test sheds::tests::an_asking_yak_ranks_its_actor_first_even_when_idle ... ok
+test sheds::tests::an_empty_farm_says_so ... ok
+test sheds::tests::for_names_the_claimant_before_it_has_written_anything ... ok
+test sheds::tests::json_carries_everyone_and_the_farm_freshness ... ok
+test preflight::tests::verify_check_uses_the_config_default_for_the_yaks_labels ... ok
+test sheds::tests::only_writes_since_the_latest_move_into_shaving_count ... ok
+test sheds::tests::liveness_is_active_stale_or_idle_and_orders_the_rest ... ok
+test sheds::tests::the_most_recent_writer_since_the_move_is_working_on_it ... ok
+test sheds::tests::recent_is_capped_with_a_pointer_to_json ... ok
+test sheds::tests::the_new_note_shape_reads_the_same_sheds ... ok
+test sheds::tests::the_text_table_lists_attention_first_and_counts_the_idle ... ok
+test skills::symlink_guard_tests::repo_skills_are_well_formed ... ok
+test skills::tests::a_skills_dir_outside_a_yaks_checkout_is_not_the_source_tree ... ok
+test skills::tests::a_skills_extra_file_installs_executable_and_stays_current ... ok
+test skills::symlink_guard_tests::a_symlink_onto_the_source_tree_is_never_written ... ok
+test skills::tests::an_edited_script_is_reported_and_kept_unless_forced ... ok
+test skills::tests::a_stale_project_install_is_announced_once_per_version ... ok
+test skills::tests::an_unrecordable_notice_is_not_printed ... ok
+test skills::tests::an_untouched_script_from_an_older_yaks_is_upgraded_without_force ... ok
+test skills::tests::autosync_never_touches_a_project_local_install ... ok
+test skills::tests::bundled_skills_use_only_spec_frontmatter_keys ... ok
+test skills::tests::bundled_source_is_never_itself_stamped ... ok
+test skills::tests::an_untouched_retired_skill_is_stale_in_the_notice_and_stale_of ... ok
+test skills::tests::default_target_is_project_local_at_the_git_top_level ... ok
+test skills::tests::dir_flag_wins_over_everything ... ok
+test skills::tests::in_a_yaks_checkout_the_default_target_is_refused_and_names_the_way_out ... ok
+test skills::tests::install_keeps_and_reports_an_edited_or_unstamped_retired_skill ... ok
+test skills::tests::install_removes_an_untouched_retired_skill ... ok
+test skills::tests::install_writes_all_then_is_idempotent_then_forces ... ok
+test skills::tests::land_is_repo_local_and_never_bundled ... ok
+test skills::tests::install_writes_every_bundled_skill_and_nothing_else ... ok
+test skills::tests::outside_a_git_repo_the_default_falls_back_to_the_user_dir ... ok
+test skills::tests::refuses_to_install_into_the_yaks_source_tree ... ok
+test skills::tests::older_binary_holds_instead_of_downgrading ... ok
+test skills::tests::stale_install_is_upgraded_without_force ... ok
+test skills::tests::stamp_records_extra_file_digests_and_round_trips ... ok
+test skills::tests::stamp_round_trips_and_stays_spec_legal ... ok
+test skills::tests::rerunning_install_after_the_notice_makes_it_current_and_quiet ... ok
+test skills::tests::states_absent_current_modified_and_unmanaged ... ok
+test skills::tests::status_reports_a_present_retired_skill_as_retired ... ok
+test skills::tests::the_file_list_matches_the_source_directories ... ok
+test skills::tests::the_advice_is_the_same_command_for_every_stale_skill ... ok
+test skills::tests::the_marker_lives_in_a_linked_worktrees_own_git_dir ... ok
+test skills::tests::the_notice_is_silent_in_a_yaks_source_checkout ... ok
+test preflight::tests::unknown_id_fails_and_unshorn_ids_are_ignored ... ok
+test skills::tests::user_flag_targets_the_user_dir_even_inside_a_repo ... ok
+test skills::tests::version_comparison_is_numeric_not_lexical ... ok
+test skills::tests::untouched_prestamp_install_is_adopted_without_force ... ok
+test sources::tests::a_bare_id_finds_a_slugged_directory ... ok
+test sources::tests::a_directory_keeps_its_tree_in_the_sibling_and_links_it ... ok
+test sources::tests::a_directory_keeps_dot_files_and_says_what_it_skipped ... ok
+test sources::tests::a_duplicated_id_resolves_by_the_exact_name_only ... ok
+test sources::tests::a_json_original_is_kept_and_its_body_is_fenced ... ok
+test sources::tests::a_file_saves_once_with_text_and_a_hearth_shaped_note ... ok
+test sources::tests::a_local_file_records_its_name_never_a_path_or_host ... ok
+test skills::tests::the_notice_is_silent_unless_a_skill_is_cleanly_stale ... ok
+test sources::tests::an_html_original_is_kept_beside_the_savers_text_as_the_body ... ok
+test sources::tests::an_unslugged_file_still_resolves_by_its_id ... ok
+test sources::tests::dedup_reads_the_sha_not_the_directory_name ... ok
+test sources::tests::dedup_same_bytes_different_title_neither_renames_nor_adds ... ok
+test sources::tests::dedup_same_bytes_on_another_day ... ok
+test preflight::tests::dirty_checkout_on_main_fails_but_untracked_files_and_other_branches_do_not ... ok
+test sources::tests::dedup_same_bytes_same_title ... ok
+test sources::tests::names_are_made_safe ... ok
+test sources::tests::farm_paths_by_the_bare_id_resolve_through_the_slug ... ok
+test sources::tests::new_sources_are_named_id_then_slug ... ok
+test sources::tests::html_alone_is_not_text_and_says_how_to_convert ... ok
+test sources::tests::plain_add_never_refreshes_and_refresh_needs_a_url ... ok
+test sources::tests::part_of_by_the_bare_id_is_stored_as_the_real_path ... ok
+test sources::tests::plan_slugs_over_a_real_farm ... ignored
+test sources::tests::plan_slugs_leaves_a_duplicated_id_for_a_person ... ok
+test sources::tests::refresh_refuses_an_ambiguous_url ... ok
+test sources::tests::refresh_keeps_the_directory_when_the_title_changes ... ok
+test sources::tests::plan_slugs_names_each_unslugged_directory_and_is_idempotent ... ok
+test sources::tests::rewrite_ref_points_an_old_id_at_its_new_path ... ok
+test sources::tests::list_rows_nest_parts_and_mark_uncited_and_superseded ... ok
+test sources::tests::refresh_with_text_only_drops_a_kept_original ... ok
+test sources::tests::same_title_different_bytes_is_a_second_source_with_no_slug_clash ... ok
+test sources::tests::slugs_follow_the_title_rule ... ok
+test sources::tests::refresh_updates_a_source_in_place_keyed_by_its_url ... ok
+test sources::tests::text_is_refused_for_binary_and_a_missing_file ... ok
+test sources::tests::set_text_gives_a_saved_source_its_text_later ... ok
+test sources::tests::same_bytes_with_another_title_says_so_and_set_title_changes_it ... ok
+test sources::tests::text_only_is_refused_for_what_is_not_one_text_file ... ok
+test sources::tests::text_on_a_directory_is_its_body ... ok
+test sources::tests::text_only_refreshes_in_place ... ok
+test sources::tests::text_only_keeps_the_text_once_and_nothing_else ... ok
+test sources::tests::the_id_with_its_slug_finds_it_and_a_wrong_slug_does_not ... ok
+test status::tests::a_branch_header_is_read_as_a_standing ... ok
+test sources::tests::two_different_files_whose_sha8_collide_are_refused_not_overwritten ... ok
+test sources::tests::walk_dir_never_follows_a_symlink_and_lists_it_as_skipped ... ok
+test preflight::tests::non_bare_local_without_main_fails ... ok
+test sources::tests::walk_dir_returns_files_and_skipped_and_checks_the_limits ... ok
+test farm::tests::concurrent_updates_to_one_yak_keep_every_note ... ok
+test privatefarm::tests::hook_honors_core_hooks_path ... ok
+test preflight::tests::missing_local_path_fails ... ok
+test privatefarm::tests::a_foreign_pre_push_hook_is_left_alone_and_reported ... ok
+test status::tests::a_staged_status_change_reads_as_a_staged_move ... ok
+test privatefarm::tests::guard_follows_a_configured_farm_branch_and_turning_the_flag_off ... ok
+test status::tests::describe_ignores_the_updated_stamp_and_transition_notes ... ok
+test status::tests::an_untracked_farm ... ok
+test status::tests::a_farm_branch_with_no_upstream_is_not_published ... ok
+test status::tests::an_in_tree_farm_has_no_sync_state ... ok
+test preflight::tests::push_main_checks_the_invoking_checkout_not_a_live_farms_worktree ... ok
+test status::tests::clean_farm ... ok
+test status::tests::code_changes_are_counted_not_listed ... ok
+test status::tests::created_yak ... ok
+test status::tests::a_field_edit_is_an_edit_even_with_a_note ... ok
+test status::tests::flat_attachment_reports_artifacts ... ok
+test status::tests::a_farm_branch_only_behind_says_so ... ok
+test status::tests::flat_edit_without_a_status_change_is_not_a_move ... ok
+test status::tests::flat_status_change_plus_note_reports_both ... ok
+test preflight::tests::non_path_local_urls_are_reported_not_resolved ... ok
+test status::tests::flat_status_change_reads_as_a_move ... ok
+test status::tests::moved_yak_with_its_transition_note_is_just_a_move ... ok
+test status::tests::new_artifact_and_config_change ... ok
+test status::tests::merge_in_progress_says_commit_will_refuse ... ok
+test status::tests::new_notes_are_counted ... ok
+test status::tests::only_the_updated_stamp_changing_still_reads_as_edited ... ok
+test status::tests::removed_yak ... ok
+test migrate::tests::a_farm_branch_moves_to_the_branch_root_in_two_commits_a_move_and_a_rewrite ... ok
+test privatefarm::tests::private_blocks_both_pushes_of_the_farm_and_off_restores ... ok
+test status::tests::json_shape ... ok
+test status::tests::several_kinds_of_change_share_one_line ... ok
+test status::tests::staged_versus_unstaged ... ok
+test status::tests::status_writes_nothing ... ok
+test store::discover_tests::a_branch_with_the_farm_at_its_root_is_found_and_is_a_farm_branch ... ok
+test store::discover_tests::farm_root_in_tells_the_layouts_apart ... ok
+test status::tests::sync_state_writes_nothing ... ok
+test store::discover_tests::init_writes_a_farm_at_a_branch_root_and_refuses_an_existing_one ... ok
+test store::discover_tests::outside_git_only_yaks_dir_finds_a_farm ... ok
+test store::discover_tests::remote_urls_normalize_to_host_and_path ... ok
+test status::tests::status_agrees_with_the_commit_message ... ok
+test store::discover_tests::yaks_dir_empty_is_unset_and_a_bad_value_or_a_file_is_an_error ... ok
+test store::discover_tests::a_local_branch_with_no_worktree_is_bootstrapped_and_a_deleted_one_is_recreated ... ok
+test store::graph_tests::dep_add_remove_lifecycle ... ok
+test store::graph_tests::reparent_rules ... ok
+test store::init_tests::init_creates_dirs_config_and_schema ... ok
+test store::init_tests::init_refuses_to_clobber_existing_farm ... ok
+test store::layout_tests::a_missing_status_reads_as_hairy_and_an_invalid_one_keeps_the_fallback ... ok
+test store::layout_tests::a_status_move_edits_the_file_in_place ... ok
+test store::layout_tests::a_yak_round_trips_at_one_flat_path_with_its_status_field ... ok
+test store::layout_tests::an_old_layout_farm_is_recognised_by_its_marker_or_a_yak_file_in_a_status_dir ... ok
+test store::layout_tests::paths_resolve_to_their_owning_yak ... ok
+test store::layout_tests::the_flat_loader_ignores_status_directories ... ok
+test store::log_parse_tests::a_fenced_example_of_a_note_is_not_a_note ... ok
+test store::log_parse_tests::an_unclosed_fence_does_not_swallow_later_notes ... ok
+test store::log_parse_tests::append_note_round_trips_actor_and_stays_back_compatible ... ok
+test store::log_parse_tests::drop_latest_request_cuts_only_the_latest_request_block ... ok
+test store::log_parse_tests::lines_under_the_marker_that_are_not_metadata_stay_text ... ok
+test store::log_parse_tests::note_metadata_round_trips_and_plain_notes_are_unchanged ... ok
+test store::log_parse_tests::parse_notes_ignores_prose_without_the_marker ... ok
+test store::log_parse_tests::parse_notes_splits_timestamped_blocks ... ok
+test store::log_parse_tests::parse_since_relative_and_absolute ... ok
+test store::move_tests::config_ignores_comments_inside_blocks ... ok
+test store::move_tests::config_parses_herds_and_cascades_global_to_herd ... ok
+test store::move_tests::config_parses_verify_map_and_block_closes ... ok
+test store::move_tests::config_resolve_verify_precedence ... ok
+test store::move_tests::declare_herds_inserts_in_block_and_preserves_overrides ... ok
+test store::move_tests::declare_herds_seeds_a_new_block_with_existing_herds ... ok
+test store::move_tests::move_edits_status_in_place_and_bumps_updated ... ok
+test store::move_tests::move_is_noop_when_already_there_and_reports_missing ... ok
+test store::note_shape_tests::a_body_never_mixes_shapes_when_appended_to ... ok
+test store::note_shape_tests::a_farm_writes_the_shape_its_schema_says ... ok
+test store::note_shape_tests::a_heading_inside_a_fence_or_with_other_text_is_not_a_note ... ok
+test store::note_shape_tests::a_note_whose_text_has_headings_parses_by_the_timestamp_heading_only ... ok
+test store::note_shape_tests::a_text_that_opens_with_an_italic_line_is_not_taken_for_one ... ok
+test store::note_shape_tests::awkward_actors_and_values_round_trip ... ok
+test store::note_shape_tests::both_shapes_parse_to_the_same_entries ... ok
+test store::note_shape_tests::convert_notes_converts_old_to_new_and_is_idempotent ... ok
+test store::note_shape_tests::convert_notes_leaves_a_body_it_cannot_carry_alone ... ok
+test store::note_shape_tests::convert_one_yak_to_a_file ... ignored
+test store::note_shape_tests::drop_latest_request_works_in_the_new_shape ... ok
+test store::discover_tests::a_farm_worktree_at_the_shared_home_is_adopted_by_the_same_repository_only ... ok
+test store::note_shape_tests::the_new_shape_is_a_heading_an_italic_line_and_the_text ... ok
+test store::note_tests::append_note_on_empty_body_has_no_leading_blank ... ok
+test store::note_tests::append_note_separates_from_existing_body ... ok
+test store::note_tests::with_description_replaces_the_description_and_keeps_the_notes_verbatim ... ok
+test store::replied_tests::a_plain_note_by_someone_else_after_the_ask_is_a_reply ... ok
+test store::replied_tests::agent_why_follows_the_latest_ask_or_request_marker ... ok
+test store::replied_tests::an_earlier_ask_is_superseded_by_the_latest_one ... ok
+test store::replied_tests::moved_and_pickup_entries_are_not_replies ... ok
+test store::replied_tests::only_a_yak_awaiting_a_human_with_a_known_asker_can_be_replied ... ok
+test store::replied_tests::the_askers_own_latest_note_is_not_a_reply ... ok
+test status::tests::a_published_farm_branch_is_up_to_date_then_ahead_then_behind_and_ahead ... ok
+test store::tests::attachment_link_titled_writes_an_escaped_title ... ok
+test store::tests::farm_relative_reads_both_layouts ... ok
+test store::tests::min_version_warns_only_an_older_yaks ... ok
+test store::tests::nested_keys_of_an_unknown_field_never_shadow_built_in_ones ... ok
+test store::tests::plain_when_safe ... ok
+test store::tests::prs_do_not_disturb_unknown_frontmatter ... ok
+test store::tests::prs_round_trip_as_a_block_list_after_source_and_parse_inline ... ok
+test store::tests::quoting_escapes_apostrophes_and_round_trips ... ok
+test store::tests::real_farms_round_trip ... ignored
+test store::tests::round_trip_preserves_all_fields ... ok
+test store::tests::sync_interval_parses_seconds_and_units_and_off ... ok
+test store::tests::timestamps_quoted_priority_plain_id_plain ... ok
+test store::tests::timezone_is_a_farm_wide_iana_name_and_a_bad_one_falls_back_with_a_warning ... ok
+test store::tests::unknown_frontmatter_survives_a_round_trip ... ok
+test store::tests::verify_field_round_trips ... ok
+test tests::fmt_row_marks_needs_blocked ... ok
+test tests::fmt_row_ready_has_no_needs_marker ... ok
+test tests::path_filter_form_selects_like_list ... ok
+test tests::path_is_stable_across_a_transition ... ok
+test tests::path_resolves_a_yak_in_each_status_dir ... ok
+test tests::path_takes_several_ids_in_order ... ok
+test tests::path_unknown_id_fails_but_still_prints_known_ones ... ok
+test tests::path_with_nothing_prints_the_farm_root_and_refuses_ids_plus_filter ... ok
+test tests::resolve_text_passes_inline_and_absent_through ... ok
+test tests::resolve_text_reads_stdin_once ... ok
+test tests::resolve_text_refuses_a_terminal_stdin_instead_of_hanging ... ok
+test store::discover_tests::git_dirs_with_one_origin_share_a_farm_home ... ok
+test tick::tests::a_claim_whose_holder_went_quiet_is_stale ... ok
+test tick::tests::a_quiet_farm_says_so_and_a_busy_one_leads_with_counts ... ok
+test tick::tests::a_yak_already_in_the_inbox_is_not_also_due_soon ... ok
+test tick::tests::findings_count_and_a_dry_run_are_said ... ok
+test tick::tests::overdue_and_due_soon_are_open_yaks_sorted_by_due ... ok
+test tick::tests::spans_read_back_the_way_they_are_written ... ok
+test tick::tests::the_inbox_splits_by_who_is_awaited ... ok
+test tui::cache::tests::missing_file_is_empty ... ok
+test tui::cache::tests::round_trip_collapsed ... ok
+test tui::cache::tests::round_trip_family_overrides ... ok
+test tui::cache::tests::slug_is_stable_and_short ... ok
+test tui::cache::tests::state_under_the_pre_move_key_is_adopted_once ... ok
+test tui::commitview::tests::patch_lines_number_each_line_on_the_new_side ... ok
+test tui::content::tests::a_comment_that_opens_with_an_italic_line_survives_in_the_new_shape ... ok
+test tui::content::tests::a_fenced_example_of_a_new_note_is_not_a_comment ... ok
+test tui::content::tests::a_fenced_example_of_a_note_is_not_a_comment ... ok
+test tui::content::tests::assemble_drops_emptied_comment ... ok
+test tui::content::tests::bare_rule_stays_in_description ... ok
+test tui::content::tests::both_shapes_parse_to_the_same_blocks_and_round_trip ... ok
+test tui::content::tests::comment_only_body_has_empty_description ... ok
+test tui::content::tests::editing_a_comment_in_place_keeps_the_shape_and_the_header ... ok
+test tui::content::tests::empty_body_is_one_empty_description ... ok
+test tui::content::tests::metadata_round_trips_and_stays_out_of_the_text ... ok
+test tui::content::tests::parses_and_round_trips_the_actor_stamp ... ok
+test tui::content::tests::parses_both_comment_shapes_to_the_same_blocks ... ok
+test tui::content::tests::plain_description_no_comments ... ok
+test tui::content::tests::round_trips_append_note_bodies ... ok
+test tui::content::tests::splits_description_and_comments ... ok
+test tui::detail::detail_tests::answered_needs_is_a_plain_field_not_a_warning ... ok
+test tui::detail::detail_tests::created_and_updated_use_the_clock ... ok
+test tui::detail::detail_tests::extra_renders_read_only_other_fields_section ... ok
+test tui::detail::detail_tests::header_fields_and_reverse_deps ... ok
+test tui::detail::detail_tests::herd_line_shows_only_on_a_multi_herd_farm ... ok
+test tui::detail::detail_tests::needs_block_renders_after_status_when_set ... ok
+test tui::detail::detail_tests::requested_needs_says_requested ... ok
+test tui::detail::tests::body_link_span_points_at_the_id ... ok
+test tui::detail::tests::build_attaches_markdown_spans_to_body_lines ... ok
+test tui::detail::tests::comment_label_lists_kind_first_then_the_other_keys ... ok
+test tui::detail::tests::comments_render_under_a_header_with_their_block_index ... ok
+test tui::detail::tests::links_parent_deps_children_and_body_refs ... ok
+test tui::detail::tests::the_code_rows_list_a_yaks_commits_newest_first_and_its_branches ... ok
+test tui::detail::tests::url_in_body_is_a_link ... ok
+test tui::detail::tests::wrap_preserves_indent_and_hard_breaks_long_words ... ok
+test tui::detail::tests::wrap_remaps_link_columns_onto_the_row ... ok
+test tui::detail::tests::wrap_remaps_markdown_spans_onto_rows ... ok
+test tui::detail::tests::wrap_splits_on_words_and_marks_continuations ... ok
+test tui::detail::tests::wrap_zero_width_is_noop ... ok
+test tests::run_verify_command_reports_pass_and_fail ... ok
+test store::discover_tests::a_stale_root_layout_farm_reads_the_upstream_schema_at_the_root ... ok
+test store::discover_tests::the_dot_yaks_layout_has_the_dot_yaks_prefix ... ok
+test store::discover_tests::a_stale_farm_whose_upstream_is_migrated_is_told_to_fast_forward ... ok
+test tui::dirview::tests::a_dok_and_a_source_have_a_files_row ... ok
+test tui::dirview::tests::archives_are_recognised_by_extension ... ok
+test store::schema_tests::schema_gate ... ok
+test tui::dirview::tests::a_missing_directory_says_so ... ok
+test store::note_shape_tests::real_yak_bodies_convert_to_the_same_notes ... ok
+test store::discover_tests::a_farm_branch_without_a_worktree_is_an_error_naming_the_fix ... ok
+test tui::dirview::tests::enter_folds_a_directory_and_esc_closes_the_view ... ok
+test tui::docshots::docshots ... ignored, asset generator; run with --ignored to refresh docs/assets/*.svg
+test tui::docshots::docshots_code ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-code-*.svg
+test tui::docshots::docshots_commit ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-commit-*.svg
+test tui::docshots::docshots_dir_view ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-dir-view*.svg
+test tui::docshots::docshots_edit_inplace ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-edit-inplace*.svg
+test tui::docshots::docshots_image_caption ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-image-caption.svg
+test tui::docshots::docshots_image_inline ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-image-inline*.svg
+test tui::docshots::docshots_image_viewer ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-image-viewer.svg
+test tui::docshots::docshots_md_palette ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-md-palette.svg
+test tui::docshots::docshots_md_render ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-md-render*.svg
+test tui::docshots::docshots_md_syntax ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-md-syntax*.svg
+test tui::docshots::docshots_session ... ignored, asset generator; run with --ignored to refresh docs/assets/session*
+test tui::docshots::docshots_surfaces ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-surfaces.svg
+test tui::docshots::docshots_yak_peek ... ignored, asset generator; run with --ignored to refresh docs/assets/tui-yak-peek.svg
+test tui::dirview::tests::a_link_into_an_archive_opens_the_viewer_or_the_tree ... ok
+test tui::dirview::tests::a_link_cannot_climb_out_of_the_farm_or_into_git ... ok
+test tui::dirview::tests::a_link_to_a_directory_opens_the_tree_dirs_first_and_o_comes_back ... ok
+test tui::doks_tab::tests::a_legacy_working_set_entry_is_the_same_star_as_its_destination ... ok
+test tui::doks_tab::tests::a_document_row_is_no_yak_and_yak_keys_do_nothing_on_it ... ok
+test tui::doks_tab::tests::a_source_and_a_session_note_can_be_starred ... ok
+test tui::dirview::tests::the_tree_unfolds_into_an_archive_and_a_member_opens_read_only ... ok
+test tui::dirview::tests::enter_on_an_archive_never_calls_the_os_opener ... ok
+test tui::doks_tab::tests::a_stale_starred_dok_is_skipped ... ok
+test store::discover_tests::a_fresh_clone_gets_the_farm_worktree_on_first_use ... ok
+test tui::doks_tab::tests::a_session_note_is_listed_and_opens_like_a_dok ... ok
+test tui::doks_tab::tests::a_source_is_read_only ... ok
+test store::discover_tests::a_checkout_with_no_farm_finds_the_farm_branch_worktree ... ok
+test tui::dirview::tests::the_detail_pane_has_an_attachments_row_only_when_there_are_files ... ok
+test tui::doks_tab::tests::a_source_opens_as_one_page_with_its_provenance_and_its_text ... ok
+test tui::doks_tab::tests::an_empty_doks_view_still_takes_the_document_keys ... ok
+test tui::dirview::tests::take_out_on_a_member_gives_the_path_through_the_archive_and_a_read_only_copy ... ok
+test tui::doks_tab::tests::enter_on_a_document_row_opens_the_viewer ... ok
+test tui::doks_tab::tests::an_edit_on_disk_shows_after_a_reload ... ok
+test tui::doks_tab::tests::a_dok_without_frontmatter_or_changed_on_disk_is_not_saved ... ok
+test tui::doks_tab::tests::a_viewer_keypress_builds_its_rows_once_per_width_and_text ... ok
+test tui::doks_tab::tests::star_in_the_doks_tab_lists_the_dok_in_starred_and_again_removes_it ... ok
+test tui::doks_tab::tests::star_with_a_dok_open_stars_that_dok ... ok
+test tui::doks_tab::tests::the_doks_tab_sits_after_starred_and_before_sheds ... ok
+test tui::doks_tab::tests::it_lists_doks_then_sources_then_sessions_and_counts_doks ... ok
+test tui::drafts::tests::a_draft_round_trips_through_its_file ... ok
+test tui::drafts::tests::an_unreadable_or_foreign_version_file_is_no_draft ... ok
+test tui::drafts::tests::keys_do_not_share_a_file ... ok
+test tui::drafts::tests::the_sweep_drops_old_drafts_and_those_of_gone_yaks ... ok
+test tui::doks_tab::tests::enter_opens_a_dok_with_its_frontmatter_above_the_body ... ok
+test tui::editor::theme_tests::editor_markers_svg ... ignored
+test tui::editor::theme_tests::editor_theme_does_not_paint_a_background ... ok
+test tui::editor::theme_tests::comment_overlay_paints_no_black_cells ... ok
+test tui::editor::theme_tests::markers_are_dim_on_the_cursor_row_and_hidden_elsewhere ... ok
+test tui::doks_tab::tests::doks_tab_frames ... ok
+test tui::doks_tab::tests::enter_on_a_starred_dok_opens_it ... ok
+test tui::doks_tab::tests::j_moves_the_lists_cursor_and_the_selected_document_follows ... ok
+test tui::doks_tab::tests::yak_keys_are_inert_on_the_doks_tab ... ok
+test tui::doks_tab::tests::slash_filters_the_list_and_esc_reverts ... ok
+test tui::farmsync::tests::due_only_when_on_idle_and_the_interval_has_passed ... ok
+test tui::farmsync::tests::env_switch_reads_like_a_flag ... ok
+test tui::doks_tab::tests::e_edits_a_dok_as_raw_frontmatter_and_body_and_saves_it ... ok
+test store::discover_tests::an_in_tree_dot_yaks_is_never_read ... ok
+test tui::follow::tests::a_followed_dok_closes_back_to_where_the_first_was_opened_from ... ok
+test tui::follow::tests::a_link_from_a_yak_lands_on_its_heading_in_the_first_frame ... ok
+test tui::doks_tab::tests::n_creates_a_dok_then_edits_it ... ok
+test tui::follow::tests::a_bare_source_id_link_opens_the_slugged_file ... ok
+test store::discover_tests::bootstrap_refuses_a_shared_clone_and_an_occupied_home_and_no_branch_means_no_farm ... ok
+test tui::farmsync::tests::a_farm_with_no_remote_never_starts_a_sync ... ok
+test tui::follow::tests::a_markdown_link_to_a_yak_from_a_dok_opens_the_yak ... ok
+test tui::follow::tests::a_missing_dok_says_so_and_stays_put ... ok
+test tui::follow::tests::links_in_a_dok_resolve_by_the_link_grammar ... ok
+test tui::follow::tests::a_source_link_opens_the_source_and_attachments_join_the_history ... ok
+test tui::follow::tests::an_in_dok_anchor_and_a_line_range_land_on_their_rows ... ok
+test tui::follow::tests::a_source_link_opens_its_source_file ... ok
+test tui::follow::tests::p_hides_and_shows_the_peek_in_a_dok_opened_from_the_doks_tab ... ok
+test tui::follow::tests::p_hides_and_shows_the_peek_in_a_dok_opened_from_a_yak_link ... ok
+test tui::follow::tests::showing_the_peek_scrolls_a_cursor_it_would_cover_back_into_view ... ok
+test tui::follow::tests::p_hides_and_shows_the_peek_in_the_yak_pane_and_the_flag_is_the_viewers ... ok
+test tui::follow::tests::the_detail_pane_follows_a_farm_link_and_peeks_it_in_a_pane ... ok
+test tui::handlers::copy_path_tests::y_without_a_selection_copies_the_documents_path ... ok
+test tui::headless::tests::detail_pins_sticky_header_once_scrolled ... ok
+test tui::headless::tests::diff_mode_full_then_delta ... ok
+test tui::headless::tests::paging_basis_tracks_viewport_height ... ok
+test tui::headless::tests::snapshot_has_header_and_grid ... ok
+test tui::history::tests::a_deleted_view_falls_back_to_the_subjects_status_view ... ok
+test tui::follow::tests::enter_opens_a_dok_at_its_heading_and_o_comes_back ... ok
+test tui::history::tests::a_link_out_of_a_recent_search_comes_back_with_the_query_cursor_and_line ... ok
+test tui::history::tests::a_link_to_the_yak_already_shown_pushes_nothing ... ok
+test tui::history::tests::a_view_switch_is_a_jump_and_o_returns_to_the_previous_view ... ok
+test tui::follow::tests::the_yak_pane_peek_is_only_for_a_focused_pane_and_gives_the_page_back ... ok
+test tui::history::tests::a_yak_slaughtered_meanwhile_is_gone_and_one_that_changed_state_moved ... ok
+test tui::history::tests::backing_out_of_a_detail_returns_to_the_list_it_was_opened_from ... ok
+test tui::follow::tests::a_pinned_link_opens_the_dok_as_it_was ... ok
+test store::discover_tests::yaks_farm_names_another_repositorys_farm_branch ... ok
+test tui::history::tests::o_and_i_work_from_the_list_too ... ok
+test tui::history::tests::a_yak_link_from_a_dok_on_the_doks_tab_shows_the_yak_outside_the_list ... ok
+test tui::history::tests::the_history_keeps_the_last_hundred ... ok
+test tui::imagesize::tests::cells_both_fit_inside_the_box_keeping_aspect ... ok
+test tui::imagesize::tests::cells_clamp_to_the_pane ... ok
+test tui::imagesize::tests::cells_default_caps_the_height ... ok
+test tui::imagesize::tests::cells_default_never_enlarges ... ok
+test tui::imagesize::tests::cells_default_shrinks_to_pane_width ... ok
+test tui::imagesize::tests::cells_height_only ... ok
+test tui::imagesize::tests::cells_never_below_one_by_one ... ok
+test tui::imagesize::tests::cells_width_only ... ok
+test tui::imagesize::tests::split_alt_equals_in_ordinary_text_is_not_a_size ... ok
+test tui::imagesize::tests::split_alt_forms ... ok
+test tui::imagesize::tests::split_alt_token_must_be_last ... ok
+test tui::imagesize::tests::split_alt_trailing_space_and_non_ascii ... ok
+test tui::imagesize::tests::split_alt_units ... ok
+test tui::imagesize::tests::split_alt_zero_and_junk_are_not_sizes ... ok
+test tui::imageview::tests::fit_shrinks_but_never_enlarges_and_fit_width_may_enlarge ... ok
+test tui::imageview::tests::the_window_stays_inside_the_picture ... ok
+test tui::follow::tests::the_viewer_following_a_dok_link_with_a_peek ... ok
+test tui::keymap::overrides::tests::a_family_that_does_not_read_is_reported_and_the_next_source_wins ... ok
+test tui::keymap::overrides::tests::a_user_override_is_the_users_word_whatever_the_family ... ok
+test tui::keymap::overrides::tests::every_key_in_the_table_parses_from_its_label ... ok
+test tui::keymap::overrides::tests::function_keys_read_and_write_as_f_n ... ok
+test tui::keymap::overrides::tests::an_override_replaces_the_commands_keys_in_every_context ... ok
+test tui::keymap::overrides::tests::overrides_of_tags_and_type_are_by_command_name_not_by_key ... ok
+test tui::keymap::overrides::tests::the_reference_and_the_hint_show_the_effective_keys ... ok
+test tui::keymap::overrides::tests::the_section_reads_flow_block_and_scalar_forms ... ok
+test tui::keymap::overrides::tests::two_commands_may_trade_keys ... ok
+test tui::keymap::overrides::tests::what_cannot_be_used_is_reported_and_left_out ... ok
+test tui::keymap::tests::braces_change_views_everywhere ... ok
+test tui::keymap::tests::each_contexts_hint_is_what_it_was ... ok
+test tui::keymap::overrides::tests::the_family_is_the_users_keys_scalar_else_their_vim_mode_else_the_farms ... ok
+test tui::keymap::tests::every_command_is_bound_and_named_once ... ok
+test tui::keymap::tests::every_binding_is_in_a_help_section ... ok
+test tui::keymap::tests::every_helped_binding_is_in_the_help_overlay ... ok
+test tui::keymap::tests::find_and_block_keys_in_each_family ... ok
+test tui::keymap::tests::h_and_l_never_open_or_close_the_pane ... ok
+test tui::keymap::tests::h_v_n_r_and_q_have_one_meaning_everywhere ... ok
+test tui::keymap::tests::lookup_prefers_a_binding_for_the_rows_kind ... ok
+test tui::keymap::tests::lookup_prefers_a_modifier_binding_and_ignores_extra_modifiers ... ok
+test tui::keymap::tests::no_lowercase_key_changes_an_existing_yak ... ok
+test tui::keymap::tests::no_two_bindings_in_a_context_and_kind_share_a_key ... ok
+test tui::keymap::tests::standard_mode_turns_the_vim_keys_off_and_the_arrows_do_the_work ... ok
+test tui::keymap::tests::the_editor_tables_cover_both_families_and_every_key_parses ... ok
+test tui::history::tests::a_dok_is_read_again_and_its_cursor_clamped_on_return ... ok
+test tui::keymap::tests::every_command_stays_bound_in_standard_mode ... ok
+test tui::keymap::tests::the_popup_is_grouped_by_what_a_command_is_for ... ok
+test tui::keymap::tests::the_standard_hint_names_the_arrows ... ok
+test tui::keymap::tests::the_viewers_take_the_global_keys_but_not_the_view_picker ... ok
+test tui::linenav::tests::find_matches_cycle_and_selection_yanks_rejoined_text ... ok
+test tui::linenav::tests::goto_puts_the_cursor_on_a_row_in_view ... ok
+test tui::linenav::tests::tab_cycles_link_rows_and_wraps ... ok
+test tui::linenav::tests::tab_visits_every_link_on_a_row_and_link_at_follows_it ... ok
+test tui::linenav::tests::the_cursor_steps_and_clamps_and_scrolls_into_view ... ok
+test tui::markdown::tests::blockquote_dims_marker_and_italicises_text ... ok
+test tui::markdown::tests::bold_and_italic_dim_their_markers ... ok
+test tui::markdown::tests::empty_line_has_no_spans ... ok
+test tui::markdown::tests::fence_lines_are_never_hidden ... ok
+test tui::markdown::tests::fenced_block_colors_until_close ... ok
+test tui::markdown::tests::heading_dims_hashes_and_styles_text_by_level ... ok
+test tui::markdown::tests::inline_code_spans_the_backticks ... ok
+test tui::markdown::tests::known_language_lines_are_syntax_coloured_fence_lines_stay_dim ... ok
+test tui::markdown::tests::link_text_is_styled_and_brackets_and_url_are_markers ... ok
+test tui::markdown::tests::list_marker_is_colored_and_content_scanned ... ok
+test tui::markdown::tests::snake_case_is_not_emphasis ... ok
+test tui::markdown::tests::off_cursor_lines_hide_every_marker_but_keep_widths ... ok
+test tui::markdown::tests::spaced_asterisks_are_not_emphasis ... ok
+test tui::markdown::tests::strikethrough_dims_its_tildes ... ok
+test tui::mdrender::tests::a_wrapped_image_belongs_to_its_first_row ... ok
+test tui::mdrender::tests::an_image_title_is_its_caption ... ok
+test tui::mdrender::tests::an_image_in_a_top_level_paragraph_is_flagged ... ok
+test tui::mdrender::tests::blank_line_separates_paragraphs_and_hard_break_breaks ... ok
+test tui::mdrender::tests::attachment_links_get_a_paperclip_and_images_keep_the_picture ... ok
+test tui::mdrender::tests::code_blocks_do_not_wrap_and_rows_map_to_source_lines ... ok
+test tui::mdrender::tests::emphasis_markers_are_hidden_and_styled_across_a_soft_break ... ok
+test tui::mdrender::tests::fenced_code_gets_a_label_row_and_a_block_id_per_block ... ok
+test tui::mdrender::tests::footnote_definition_wraps_under_its_label_and_maps_to_source ... ok
+test tui::mdrender::tests::footnote_definitions_move_to_the_end_under_a_rule ... ok
+test tui::mdrender::tests::footnote_references_number_in_order_of_first_use_and_link ... ok
+test tui::mdrender::tests::ea13_fixture_snapshot ... ok
+test tui::mdrender::tests::image_size_token_is_hidden_and_carried_on_the_row ... ok
+test tui::mdrender::tests::known_fence_languages_are_syntax_coloured_and_unknown_stay_flat ... ok
+test tui::mdrender::tests::links_collapse_to_text_and_keep_targets ... ok
+test tui::mdrender::tests::links_to_repo_files_are_source_targets ... ok
+test tui::mdrender::tests::loose_list_items_get_blank_rows_between ... ok
+test tui::mdrender::tests::ordered_list_lazy_continuation_hangs ... ok
+test tui::mdrender::tests::quote_keeps_its_bar_when_wrapped_and_holds_nested_blocks ... ok
+test tui::mdrender::tests::rule_heading_and_table ... ok
+test tui::mdrender::tests::soft_breaks_join_into_one_paragraph ... ok
+test tui::mdrender::tests::task_list_and_alert ... ok
+test tui::mdrender::tests::unreferenced_footnote_definition_still_renders_numbered_after ... ok
+test tui::mdrender::tests::url_drops_trailing_paren_and_punctuation ... ok
+test tui::mdrender::tests::url_in_markdown_link_stops_before_the_closing_paren ... ok
+test tui::mdrender::tests::url_keeps_balanced_parens ... ok
+test tui::mdrender::tests::wide_glyph_prefix_wraps_within_the_width ... ok
+test tui::mdrender::tests::wrapped_list_item_hangs_under_its_marker ... ok
+test tui::memo::bench::keystroke_bench ... ignored, timing, not correctness
+test tui::mouse::tests::a_click_in_the_block_editor_moves_the_text_cursor ... ok
+test tui::keymap::tests::the_popup_lists_the_contexts_bound_keys ... ok
+test tui::mouse::tests::a_click_in_the_focused_form_field_moves_its_text_cursor ... ok
+test tui::mouse::tests::a_click_on_a_chip_selects_it ... ok
+test tui::mouse::tests::a_click_outside_the_block_editor_text_leaves_the_cursor ... ok
+test tui::mouse::tests::a_click_on_a_form_row_focuses_it ... ok
+test tui::mouse::tests::click_list_row_respects_scroll_offset ... ok
+test tui::mouse::tests::a_drag_in_the_block_editor_selects ... ok
+test tui::mouse::tests::click_tab_switches_view ... ok
+test tui::mouse::tests::horizontal_wheel_scrolls_the_block_under_the_pointer ... ok
+test tui::mouse::tests::click_selects_list_row_then_opens_detail ... ok
+test tui::mouse::tests::mouse_ignored_while_overlay_open ... ok
+test tui::mouse::tests::wheel_scrolls_detail_and_click_moves_line_cursor ... ok
+test tui::palette::tests::alert_kinds_have_distinct_colours ... ok
+test tui::palette::tests::bullets_cycle_by_depth ... ok
+test tui::palette::tests::headings_are_distinct_levels_and_not_pane_labels ... ok
+test tui::palette::tests::only_the_16_ansi_colours_are_used ... ok
+test tui::history::tests::j_and_k_in_a_doks_dok_step_through_the_list ... ok
+test tui::sheds_tab::tests::a_new_snapshot_keeps_the_cursor_on_the_same_yak_under_its_shed ... ok
+test tui::history::tests::o_from_a_dok_opened_on_a_doks_row_returns_to_the_row_then_the_view ... ok
+test tui::sheds_tab::tests::a_yak_the_farm_lacks_is_not_listed ... ok
+test tui::sheds_tab::tests::enter_on_a_yak_child_opens_the_yak_and_j_moves_on ... ok
+test tui::mouse::tests::wheel_scrolls_the_list_and_drags_the_cursor ... ok
+test tui::sheds_tab::tests::idle_sheds_start_collapsed_and_space_opens_them ... ok
+test tui::sheds_tab::tests::j_from_a_shed_root_lands_on_its_first_yak ... ok
+test tui::sheds_tab::tests::rows_are_sheds_with_the_yaks_they_touched_below ... ok
+test tui::sheds_tab::tests::a_shed_row_shows_the_shed_and_a_yak_row_the_yak ... ok
+test tui::sheds_tab::tests::no_scan_runs_off_the_tab ... ok
+test tui::sheds_tab::tests::search_keeps_only_the_matching_yaks_and_their_sheds ... ok
+test tui::sheds_tab::tests::tab_count_is_sheds_wanting_a_look ... ok
+test tui::sheds_tab::tests::the_query_filters_the_rows_and_the_count_of_busy_sheds ... ok
+test tui::sheds_tab::tests::typing_a_search_filters_the_sheds_view ... ok
+test tui::sheds_tab::tests::space_collapses_a_shed_and_again_expands_it ... ok
+test tui::sheds_tab::tests::y_copies_the_shed_name_and_r_rescans ... ok
+test tui::sheds_tab::tests::yak_keys_work_on_a_yak_child_and_not_on_a_shed ... ok
+test tui::sheds_tab::tests::sheds_tab_frames ... ok
+test tui::sheds_tab::tests::a_background_scan_arrives_without_blocking ... ok
+test tui::source::tests::editor_arguments_by_editor ... ok
+test tui::source::tests::everything_else_is_not_a_source_link ... ok
+test tui::source::tests::labels ... ok
+test tui::source::tests::line_fragments_follow_github ... ok
+test tui::source::tests::pinned_links_use_the_blob_shape ... ok
+test tui::source::tests::plain_relative_paths_are_repo_files ... ok
+test tui::surface::tests::a_band_sits_between_background_and_foreground_on_both_themes ... ok
+test tui::surface::tests::detection_order_is_override_then_terminal_then_colorfgbg_then_dark ... ok
+test tui::surface::tests::unset_is_the_dark_greys_the_snapshots_rely_on ... ok
+test tui::surface::tests::without_truecolor_the_band_is_a_256_grey_or_cube_index ... ok
+test tui::syntax::tests::a_file_is_coloured_by_its_extension ... ok
+test tui::syntax::tests::block_comments_nest_and_carry_across_lines ... ok
+test tui::syntax::tests::info_strings_and_aliases ... ok
+test tui::syntax::tests::js_template_literals_and_java_annotations ... ok
+test tui::syntax::tests::json_keys_values_and_literals ... ok
+test tui::syntax::tests::multiline_strings_carry_over ... ok
+test tui::syntax::tests::python_triple_strings_and_comments ... ok
+test tui::syntax::tests::rust_char_literals_are_strings_not_lifetimes ... ok
+test tui::syntax::tests::rust_tokens ... ok
+test tui::syntax::tests::sh_comments_variables_and_strings ... ok
+test tui::syntax::tests::strings_keep_escapes_and_hide_keywords ... ok
+test tui::syntax::tests::toml_tables_keys_and_values ... ok
+test tui::syntax::tests::unicode_columns_are_chars ... ok
+test tui::syntax::tests::yaml_keys ... ok
+test tui::follow::tests::the_peek_pane_shows_the_section_under_the_cursor ... ok
+test tui::sheds_tab::tests::u_on_the_sheds_view_requests_a_sync ... ok
+test tui::mouse::tests::a_click_in_the_list_closes_an_open_dok_and_selects_the_row ... ok
+test status::tests::the_one_call_standing_matches_sync_state ... ok
+test tui::doks_tab::tests::a_dok_save_is_one_commit_on_the_farm_branch ... ok
+test tui::history::tests::every_kind_of_document_round_trips_through_its_destination ... ok
+test tui::takeout::tests::enter_on_a_code_link_opens_the_viewer_at_its_lines_coloured ... ok
+test tui::takeout::tests::a_commit_this_checkout_lacks_is_one_line_never_a_blank_pane_or_panic ... ok
+test tui::takeout::tests::a_markdown_code_file_renders_as_markdown ... ok
+test tui::takeout::tests::a_pinned_code_link_shows_the_file_as_it_was_then ... ok
+test tui::source::tests::a_farm_branch_resolves_source_links_in_the_code_checkout_not_the_farm_worktree ... ok
+test tui::farmsync::tests::a_private_farm_pulls_but_does_not_push ... ok
+test tui::tests::a_broken_inline_image_is_not_retried_every_frame_and_draws_nothing ... ok
+test tui::tests::a_link_to_a_yak_the_list_has_moves_the_cursor_and_keeps_the_view ... ok
+test tui::takeout::tests::a_line_range_opens_narrowed_in_every_kind_of_file ... ok
+test tui::tests::a_markdown_attachment_draws_its_sibling_images_in_place ... ok
+test tui::tests::a_slash_in_the_pane_sets_the_register_and_not_the_list_query ... ok
+test tui::tests::a_user_override_rebinds_a_command_and_the_popup_and_hint_show_it ... ok
+test tui::takeout::tests::o_back_from_a_code_file_returns_to_the_yak ... ok
+test tui::farmsync::tests::an_open_overlay_or_queued_op_holds_the_sync_until_idle ... ok
+test tui::tests::a_plain_text_attachment_is_shown_verbatim_and_scrolls ... ok
+test tui::tests::a_dok_in_the_viewer_draws_attachment_and_farm_root_images_in_place ... ok
+test tui::tests::a_viewer_opens_with_the_register_set_in_a_yak ... ok
+test tui::tests::an_empty_query_lists_known_tags_first_then_by_count ... ok
+test tui::tests::an_image_alone_in_a_paragraph_reserves_rows_in_the_detail_pane ... ok
+test tui::tests::an_explicit_size_sets_the_reserved_rows ... ok
+test tui::source::tests::a_pinned_link_opens_a_read_only_copy_only_when_the_file_changed ... ok
+test tui::takeout::tests::the_code_viewer_is_read_only ... ok
+test tui::takeout::tests::plain_text_has_no_colour_but_its_gutter ... ok
+test tui::tests::an_overdue_date_shows_red_on_the_list_row_and_in_the_detail ... ok
+test tui::tests::an_attachment_changed_on_disk_meanwhile_is_not_overwritten ... ok
+test tui::tests::an_svg_png_is_cached_by_content_and_reused ... ok
+test tui::tests::an_inline_image_is_drawn_clipped_at_the_pane_edge_and_scrolls ... ok
+test tui::tests::answer_editor_open ... ok
+test tui::tests::answered_yak_is_not_rendered_as_awaiting_a_human ... ok
+test tui::tests::an_image_attachment_offers_no_edit ... ok
+test tui::tests::b_opens_references_picker_over_incoming_yaks_and_enter_goes ... ok
+test tui::tests::b_with_no_incoming_references_says_so ... ok
+test tui::tests::ask_and_answer_editors_name_the_verb_and_the_save ... ok
+test tui::takeout::tests::o_opens_the_menu_from_the_pane_the_viewer_a_doks_row_and_a_yak_row ... ok
+test tui::tests::block_edit::a_tall_editor_is_capped_and_scrolls_inside ... ok
+test tui::tests::an_image_or_binary_attachment_still_opens_externally ... ok
+test tui::tests::block_edit::a_comment_header_shows_its_metadata_and_an_edit_keeps_it ... ok
+test tui::tests::an_svg_attachment_is_drawn_in_place ... ok
+test tui::tests::block_edit::an_empty_new_comment_is_not_saved ... ok
+test tui::tests::block_edit::a_conflicting_save_writes_nothing_and_keeps_the_text ... ok
+test tui::tests::an_image_among_text_is_drawn_under_its_paragraph ... ok
+test tui::tests::an_undecodable_image_attachment_falls_back_to_the_os_opener ... ok
+test tui::tests::block_edit::ctrl_s_without_edits_changes_nothing ... ok
+test tui::tests::block_edit::ctrl_s_saves_only_that_block ... ok
+test tui::tests::an_image_in_a_list_or_with_inline_images_off_stays_a_link_row ... ok
+test tui::tests::block_edit::e_on_a_comment_row_opens_the_editor_on_the_source_line_under_the_cursor ... ok
+test tui::tests::block_edit::ctrl_c_without_edits_cancels_at_once ... ok
+test tui::farmsync::tests::a_pulled_newer_schema_makes_the_tui_read_only ... ok
+test tui::tests::block_edit::e_on_a_header_row_still_opens_the_form ... ok
+test tui::tests::bracketed_paste_bulk_inserts_into_the_description ... ok
+test tui::tests::build_universe_pulls_ghost_descendants ... ok
+test tui::tests::block_edit::after_saving_the_line_cursor_stays_on_the_same_source_line ... ok
+test tui::tests::change_line_routes_through_editor ... ok
+test tui::tests::block_edit::esc_esc_with_edits_asks_to_confirm_and_n_returns_to_the_editor ... ok
+test tui::tests::code_block_shows_language_label_and_clips_with_a_marker ... ok
+test tui::tests::collapsed_root_hides_children ... ok
+test tui::tests::block_edit::e_on_the_description_edits_block_zero ... ok
+test tui::tests::block_edit::rows_above_the_editor_stay_put ... ok
+test tui::tests::an_image_title_is_a_caption_under_the_picture ... ok
+test tui::tests::block_edit::typing_grows_the_editor_and_keeps_it_on_screen ... ok
+test tui::takeout::tests::the_menu_keys_copy_paths_and_open ... ok
+test tui::farmsync::tests::a_commit_pushed_from_another_clone_appears_after_a_tick ... ok
+test tui::tests::clicking_an_inline_image_selects_its_link_row_and_a_second_click_opens_it ... ok
+test tui::tests::block_edit::saving_the_description_leaves_the_comments_alone ... ok
+test tui::tests::cancelling_an_attachment_edit_leaves_the_file_unchanged ... ok
+test tui::tests::block_edit::saving_keeps_a_note_appended_meanwhile ... ok
+test tui::tests::create_form ... ok
+test tui::tests::create_form_herd_picker_cycles_the_target_in_a_multi_herd_farm ... ok
+test tui::tests::create_form_long_title_scrolls_horizontally ... ok
+test tui::tests::create_form_normal_j_navigates_rows ... ok
+test tui::tests::block_edit::m_adds_a_comment_at_the_end ... ok
+test tui::tests::create_has_no_herd_target_in_a_single_herd_farm ... ok
+test tui::tests::create_targets_the_reference_herd_in_a_multi_herd_farm ... ok
+test tui::tests::ctrl_n_p_navigate_content_blocks_in_detail ... ok
+test tui::tests::default_views_and_tab_cycling ... ok
+test tui::tests::dep_picker_overlay ... ok
+test tui::tests::create_form_source_field ... ok
+test tui::tests::detail_find_ctrl_c_restores ... ok
+test tui::tests::detail_find_enter_commits_the_cycled_match ... ok
+test tui::tests::detail_body_wraps_at_narrow_width ... ok
+test tui::tests::detail_find_esc_enters_normal_in_vim ... ok
+test tui::tests::detail_find_enter_lands_cursor_on_match ... ok
+test tui::tests::detail_find_esc_restores_pre_find_position ... ok
+test tui::tests::detail_find_matches_and_cycles ... ok
+test tui::tests::detail_header_lists_prs_as_links ... ok
+test tui::tests::detail_find_overlay ... ok
+test tui::tests::detail_jumplist_follows_to_task ... ok
+test tui::tests::detail_shows_children_and_links ... ok
+test tui::tests::detail_tab_cycles_link_lines ... ok
+test tui::tests::detail_visual_selection_and_esc_clears ... ok
+test tui::tests::drawer_cancel_restores_saved ... ok
+test tui::tests::drawer_clear_empties_filter ... ok
+test tui::tests::drawer_herd_chip_scopes_the_filter_in_a_multi_herd_farm ... ok
+test tui::tests::drawer_inbox_chip_composes_with_status_scope ... ok
+test tui::tests::drawer_normal_jk_navigates_and_carries_mode ... ok
+test tui::tests::drawer_text_row_esc_enters_normal_in_vim ... ok
+test tui::tests::drawer_text_row_typing_sets_search ... ok
+test tui::tests::drawer_toggle_applies_live_and_commits ... ok
+test tui::tests::detail_last_line_is_visible_with_a_blank_row_below ... ok
+test tui::tests::e_on_source_line_opens_form_on_the_source_row ... ok
+test tui::tests::e_on_title_line_opens_form_on_the_title_row ... ok
+test tui::tests::edit_form_panel ... ok
+test tui::tests::editor_header_shows_mode_tag ... ok
+test tui::tests::editor_renders_markdown_highlights ... ok
+test tui::tests::empty_search_commit_still_says_cleared ... ok
+test tui::tests::enter_continues_lists_and_quotes_in_the_comment_editor ... ok
+test tui::tests::enter_does_not_continue_in_a_single_line_field ... ok
+test tui::takeout::tests::g_is_the_host_link_or_one_line_naming_yaks_host ... ok
+test tui::tests::e_in_the_viewer_edits_the_attachment_and_saves_it_back ... ok
+test tui::tests::enter_on_a_markdown_attachment_opens_the_viewer_rendered ... ok
+test tui::tests::enter_on_a_yak_id_in_the_viewer_opens_that_yak ... ok
+test tui::tests::esc_cancels_picker ... ok
+test tui::tests::enter_on_an_image_attachment_shows_it_in_the_pane ... ok
+test tui::tests::esc_in_the_find_box_restores_the_previous_register ... ok
+test tui::tests::esc_reverts_modified_filter_to_view ... ok
+test tui::tests::family_indicator_on_tab_row ... ok
+test tui::tests::family_remaining_default_hides_completed_leaf ... ok
+test tui::tests::filter_drawer_overlay ... ok
+test tui::farmsync::tests::a_failing_remote_says_so_once_not_every_tick ... ok
+test tui::tests::follow_link_reveals_collapsed_target ... ok
+test tui::tests::follow_link_to_a_dead_yak_shows_it_in_the_pane_and_leaves_the_list ... ok
+test tui::tests::following_a_footnote_reference_jumps_to_its_definition_and_o_returns ... ok
+test tui::tests::following_a_link_and_o_i_keep_the_register ... ok
+test tui::tests::following_a_link_to_a_missing_note_opens_the_yak_at_the_top ... ok
+test tui::tests::enter_on_an_svg_attachment_rasterizes_it_into_the_pane ... ok
+test tui::tests::full_detail_header_shows_the_status_emoji ... ok
+test tui::tests::following_a_note_link_lands_on_that_note_and_o_returns ... ok
+test tui::tests::goto_lands_even_when_an_ad_hoc_search_hides_the_target ... ok
+test tui::tests::h_collapses_an_expanded_row_then_goes_to_the_parent ... ok
+test tui::tests::h_and_the_left_arrow_never_leave_the_pane_and_esc_always_does ... ok
+test tui::tests::h_scrolls_back_and_at_zero_stays_in_the_pane ... ok
+test tui::tests::hash_from_detail_pane_matches_title_too ... ok
+test tui::tests::esc_from_a_dok_opened_from_a_yak_detail_returns_to_that_detail ... ok
+test tui::tests::hash_opens_goto_picker_and_enter_jumps_to_detail ... ok
+test tui::tests::help_opens_and_closes ... ok
+test tui::tests::find_in_the_viewer_highlights_matches_and_n_cycles_them ... ok
+test tui::tests::help_overlay ... ok
+test tui::tests::commit_view::a_missing_commit_says_so_and_offers_the_host_link_and_fetch ... ok
+test tui::tests::inbox_view_lists_needs_blocked_across_statuses ... ok
+test tui::tests::inline_search_ctrl_c_restores_previous ... ok
+test tui::tests::inline_search_esc_enters_normal_in_vim ... ok
+test tui::tests::inline_search_field_and_recolor ... ok
+test tui::tests::inline_search_updates_filter_live ... ok
+test tui::tests::is_multi_herd_reflects_distinct_id_prefixes ... ok
+test tui::tests::join_lines_vim_adds_space ... ok
+test tui::tests::keys::a_listed_key_goes_to_the_editor_and_an_unlisted_one_is_dropped ... ok
+test tui::tests::keys::a_listed_key_in_the_popup_runs_and_closes_it ... ok
+test tui::tests::keys::braces_change_views_from_the_list ... ok
+test tui::tests::keys::ctrl_down_and_up_jump_content_blocks_in_both_families ... ok
+test tui::tests::keys::enter_goes_in_and_esc_comes_out_and_h_and_l_stay_where_they_are ... ok
+test tui::tests::keys::esc_and_an_unlisted_key_only_close_the_popup ... ok
+test tui::tests::keys::f1_in_the_list_is_the_popup_too_and_f1_in_a_prompt_does_nothing ... ok
+test tui::tests::commit_view::a_commits_menu_offers_only_the_hash_and_the_host_link ... ok
+test tui::tests::keys::f3_steps_the_pane_matches_in_both_families ... ok
+test tui::tests::hash_in_a_dok_opens_the_goto_picker_and_choosing_a_yak_closes_the_dok ... ok
+test tui::tests::keys::in_the_pane_a_brace_keeps_it_open_on_the_new_views_selected_row ... ok
+test tui::tests::keys::l_expands_a_collapsed_row_then_steps_to_its_first_child_and_h_goes_back ... ok
+test tui::tests::keys::question_mark_opens_the_popup_in_vim_normal_only ... ok
+test tui::tests::keys::standard_mode_turns_the_vim_keys_off_in_the_list_and_the_pane ... ok
+test tui::tests::keys::standard_mode_uses_the_emacs_editor_and_ctrl_f_finds ... ok
+test tui::tests::keys::the_editor_popup_lists_the_active_familys_keys ... ok
+test tui::tests::keys::f1_opens_the_popup_over_every_kind_of_editor_and_it_comes_back ... ok
+test tui::tests::keys::the_hint_says_enter_and_esc_for_the_pane ... ok
+test tui::tests::keys::the_standard_list_hint_names_the_arrows ... ok
+test tui::tests::keys::the_popup_is_grouped_on_the_list ... ok
+test tui::tests::keys_popup ... ok
+test tui::tests::l_scrolls_only_the_block_under_the_cursor_and_h_returns ... ok
+test tui::tests::label_editor_field ... ok
+test tui::tests::list_scroll_up_moves_viewport_minimally ... ok
+test tui::tests::help_opens_over_a_dok_and_closing_it_returns_to_the_dok ... ok
+test tui::tests::known_tags_rank_before_tags_in_use ... ok
+test tui::tests::live::a_create_draft_belongs_to_its_parent ... ok
+test tui::tests::half_block_frames_show_the_window_at_fit_and_zoomed_and_panned ... ok
+test tui::tests::live::a_due_that_does_not_read_keeps_the_form_open_and_says_why ... ok
+test tui::tests::hjkl_and_arrows_pan_a_zoomed_image_and_esc_closes_it ... ok
+test tui::tests::commit_view::a_notes_commit_and_source_are_short_links_that_keep_the_full_hash ... ok
+test tui::tests::commit_view::enter_on_a_commit_link_shows_the_commit ... ok
+test tui::tests::keys::in_a_viewer_braces_close_it_and_open_the_new_views_row ... ok
+test tui::tests::live::a_draft_of_a_yak_that_changed_since_warns ... ok
+test tui::tests::commit_view::a_pasted_host_commit_url_opens_the_commit_view ... ok
+test tui::tests::live::a_clean_form_flushes_nothing_and_clears_an_old_draft ... ok
+test tui::tests::live::answer_editor_empty_save_and_cancel ... ok
+test tui::tests::live::answer_editor_saves_a_multi_line_answer ... ok
+test tui::tests::live::bulk_slaughter_skips_yaks_with_children ... ok
+test tui::tests::live::attach_file_writes_artifact_and_links_body ... ok
+test tui::tests::live::clean_cancel_skips_the_confirm ... ok
+test tui::tests::live::ask_editor_saves_a_multi_line_question ... ok
+test tui::tests::live::colon_q_bang_discards_the_comment ... ok
+test tui::tests::live::colon_unknown_command_notifies_and_stays_open ... ok
+test tui::tests::commit_view::o_takes_the_commit_out_g_the_host_url_p_the_hash ... ok
+test tui::tests::live::bulk_state_transition_shorns_the_marked_set ... ok
+test tui::tests::live::colon_q_bang_deletes_a_kept_draft ... ok
+test tui::tests::live::bulk_shear_takes_children_before_their_parent ... ok
+test tui::tests::live::bulk_shear_comment_goes_on_every_moved_yak ... ok
+test tui::tests::live::block_edit_deletes_an_emptied_comment ... ok
+test tui::tests::live::colon_w_saves_the_create_form ... ok
+test tui::tests::commit_view::a_squashed_worker_commit_says_landed_as_and_links_to_it ... ok
+test tui::tests::live::create_cancelled_with_esc ... ok
+test tui::tests::live::create_empty_title_ctrl_s_is_noop ... ok
+test tui::tests::live::create_form_still_has_its_description_block ... ok
+test tui::tests::live::create_form_backtab_from_description_focuses_previous_field ... ok
+test tui::tests::live::colon_wq_commits_the_comment ... ok
+test tui::tests::live::create_child_sets_parent ... ok
+test tui::tests::live::committing_the_form_clears_its_draft ... ok
+test tui::tests::live::create_form_source_is_saved ... ok
+test tui::tests::live::create_form_drops_unconvertible_editor_key_without_panic ... ok
+test tui::tests::live::comment_appends_timestamped_note ... ok
+test tui::tests::live::declining_the_discard_confirm_returns_to_the_editor ... ok
+test tui::tests::live::creating_the_yak_clears_the_create_draft ... ok
+test tui::tests::live::dead_is_loaded_but_hidden_until_filtered ... ok
+test tui::tests::live::detail_pane_mirrors_multi_select_mark ... ok
+test tui::tests::live::dep_add_via_picker ... ok
+test tui::tests::live::create_root_via_form ... ok
+test tui::tests::live::create_form_saves_its_description ... ok
+test tui::tests::live::ctrl_r_reverts_a_restored_form_to_the_yak ... ok
+test tui::tests::live::discarding_deletes_the_draft ... ok
+test tui::tests::live::create_form_sets_priority_and_labels ... ok
+test tui::tests::live::dismissing_a_dirty_form_asks_keep_discard_or_back ... ok
+test tui::tests::commit_view::enter_on_a_file_unfolds_its_diff_and_on_a_diff_line_opens_the_file_at_that_commit ... ok
+test tui::tests::live::dep_cycle_target_is_excluded ... ok
+test tui::tests::live::edit_form_cancel_leaves_task_unchanged ... ok
+test tui::tests::live::double_esc_cancels_the_comment_editor ... ok
+test tui::tests::live::double_esc_cancels_the_edit_form_from_a_content_row ... ok
+test tui::tests::live::edit_form_has_the_description_row_seeded_without_the_comments ... ok
+test tui::tests::live::edit_form_shows_herd_row_seeded_to_current_herd ... ok
+test tui::tests::live::edit_form_changes_type_and_priority ... ok
+test tui::tests::live::enter_at_the_prompt_keeps_the_draft_too ... ok
+test tui::tests::live::edit_form_without_edits_is_not_dirty_and_keeps_the_body ... ok
+test tui::tests::live::fuzzy_picker_esc_enters_normal_then_ctrl_c_cancels ... ok
+test tui::tests::live::edit_form_saves_the_header_and_a_changed_description_together ... ok
+test tui::tests::commit_view::space_unfolds_a_files_diff_inline_and_enter_on_a_line_opens_it_there ... ok
+test tui::tests::live::edit_form_sets_an_empty_description_and_keeps_the_notes ... ok
+test tui::tests::live::esc_at_the_prompt_goes_back_and_writes_nothing ... ok
+test tui::tests::live::fuzzy_normal_jk_moves_selection ... ok
+test tui::tests::live::edit_form_herd_change_renames_on_commit ... ok
+test tui::tests::live::edit_form_description_conflict_writes_nothing ... ok
+test tui::tests::live::keeping_an_edit_draft_restores_every_field ... ok
+test tui::tests::live::edit_form_source_set_and_clear ... ok
+test tui::tests::live::edit_form_title_edit_leaves_the_body_byte_identical ... ok
+test tui::tests::live::keeping_a_create_draft_restores_it_on_the_next_c ... ok
+test tui::tests::live::herd_pick_moves_yak_to_another_herd ... ok
+test tui::tests::live::herd_pick_single_herd_is_a_hint_noop ... ok
+test tui::tests::live::lone_esc_stays_in_the_comment_editor ... ok
+test tui::tests::live::labels_edit_commits ... ok
+test tui::tests::live::paste_attach_prompts_for_a_name ... ok
+test tui::tests::live::keeping_a_comment_draft_restores_it_on_the_next_m ... ok
+test tui::tests::live::herd_pick_works_from_the_detail_pane ... ok
+test tui::tests::live::quitting_with_a_dirty_form_open_keeps_it ... ok
+test tui::tests::live::reload_preserving_selection_picks_up_external_add ... ok
+test tui::tests::live::priority_pick_updates_and_reloads ... ok
+test tui::tests::live::priority_change_follows_selection_to_new_slot ... ok
+test tui::tests::live::priority_change_out_of_view_closes_detail ... ok
+test tui::tests::live::labels_edit_normalizes_commas_and_spaces ... ok
+test tui::tests::live::slaughter_declined_keeps_task ... ok
+test tui::tests::live::reparent_via_picker ... ok
+test tui::tests::live::reparent_clear_to_root ... ok
+test tui::tests::live::state_pick_same_status_is_noop ... ok
+test tui::tests::live::rename_attachment_from_detail_link ... ok
+test tui::tests::live::slaughter_family_declined_keeps_family ... ok
+test tui::tests::live::state_pick_shear_cancel_leaves_the_yak ... ok
+test tui::tests::live::the_schedule_rows_make_a_form_dirty ... ok
+test tui::tests::live::slaughter_confirm_moves_to_dead ... ok
+test tui::tests::commit_view::history_re_reads_the_commit_view_with_its_cursor ... ok
+test tui::tests::live::refused_shear_leaves_no_comment_and_regrow_takes_parents_first ... ok
+test tui::tests::main_split_clamps_detail_width_and_goes_modal_when_narrow ... ok
+test tui::tests::mark_toggles_selection_and_renders_gutter_dot ... ok
+test tui::tests::live::request_editor_saves_a_multi_line_request ... ok
+test tui::tests::live::slaughter_family_confirm_moves_family_to_dead ... ok
+test tui::tests::memo::a_missed_touch_is_caught_by_the_test_assertion - should panic ... ok
+test tui::tests::memo::changing_the_selection_rebuilds_the_lines_once_and_not_the_rows ... ok
+test tui::tests::live::sending_a_comment_clears_its_draft ... ok
+test tui::tests::memo::chip_goes_compact_when_the_tabs_leave_little_room ... ok
+test tui::tests::live::state_pick_shear_writes_the_edited_change_line ... ok
+test tui::tests::memo::chip_is_absent_when_the_farm_is_clean_and_up_to_date ... ok
+test tui::tests::live::state_pick_shear_with_empty_line_adds_no_note ... ok
+test tui::tests::memo::chip_says_not_published_without_an_upstream ... ok
+test tui::tests::memo::chip_shows_ahead_and_behind ... ok
+test tui::tests::memo::chip_sits_right_of_a_notification ... ok
+test tui::tests::memo::chip_yields_when_the_tabs_leave_no_room ... ok
+test tui::tests::memo::help_lists_the_commit_and_sync_keys ... ok
+test tui::tests::memo::chip_shows_the_uncommitted_count ... ok
+test tui::tests::memo::only_behind_is_a_warning ... ok
+test tui::tests::memo::every_input_change_shows_up_in_the_next_read ... ok
+test tui::tests::memo::w_and_u_do_nothing_without_a_farm ... ok
+test tui::tests::memo::the_clock_minute_invalidates_relative_dates ... ok
+test tui::tests::memo::help_overlay_shows_the_farm_keys ... ok
+test tui::tests::memo::a_detail_keypress_rebuilds_the_rows_and_lines_at_most_once ... ok
+test tui::tests::n_in_a_list_with_no_query_applies_the_register_as_the_query ... ok
+test tui::tests::n_is_the_next_match_and_n_the_previous_on_every_row ... ok
+test tui::tests::memo::a_plain_redraw_and_a_cursor_move_inside_the_pane_rebuild_nothing ... ok
+test tui::tests::nav_back_on_empty_history_is_noop ... ok
+test tui::tests::nav_history_back_and_forward ... ok
+test tui::tests::n_past_the_last_match_moves_to_the_next_matching_yak ... ok
+test tui::tests::needs_badge_renders_on_a_blocked_row ... ok
+test tui::tests::modal_detail_shows_back_affordance_only_when_covering_the_list ... ok
+test tui::tests::notification_clears_on_next_key_and_next_mouse_event ... ok
+test tui::tests::live::the_create_form_sets_due_every_and_wake ... ok
+test tui::tests::next_comment_scrolls_a_short_comment_wholly_into_view ... ok
+test tui::tests::paste_bench ... ignored
+test tui::tests::paste_into_a_single_line_field_flattens_newlines ... ok
+test tui::tests::paste_into_search_updates_the_live_filter ... ok
+test tui::tests::paste_outside_a_text_field_is_not_a_command_stream ... ok
+test tui::tests::picker_activates_selected_view ... ok
+test tui::tests::picker_deletes_custom_but_not_builtin ... ok
+test tui::tests::picker_move_keeps_active_view ... ok
+test tui::tests::picker_rename_returns_to_picker ... ok
+test tui::tests::picker_unpin_removes_from_tab_bar ... ok
+test tui::tests::nav_history_restores_cursor_and_scroll ... ok
+test tui::tests::live::state_pick_shear_prefills_the_title_as_the_change_line ... ok
+test tui::tests::next_comment_longer_than_the_viewport_puts_its_header_at_the_top ... ok
+test tui::tests::pinned_header_has_a_rule_under_it_and_pushes_content_down_two_rows ... ok
+test tui::tests::live::type_pick_updates_and_reloads ... ok
+test tui::tests::live::the_edit_form_shows_changes_and_clears_the_schedule_fields ... ok
+test tui::tests::paging_and_g_never_land_inside_an_inline_image ... ok
+test tui::tests::previous_comment_goes_to_the_header_first_then_the_one_before ... ok
+test tui::tests::priority_palette_matches_python ... ok
+test tui::tests::priority_picker_overlay ... ok
+test tui::tests::pump_drains_a_keystroke_burst_before_the_next_redraw ... ok
+test tui::tests::pump_stops_draining_once_the_app_quits ... ok
+test tui::tests::live::z_snoozes_the_selected_yak_and_records_a_note ... ok
+test tui::tests::query::a_flat_views_count_follows_its_statuses ... ok
+test tui::tests::query::a_query_matching_only_a_dok_body_finds_it_on_doks_and_all ... ok
+test tui::tests::query::a_saved_views_own_search_ands_with_the_query ... ok
+test tui::tests::query::esc_clears_the_query_then_reverts_the_facets ... ok
+test tui::tests::query::tab_counts_apply_the_query ... ok
+test tui::tests::query::the_all_view_lists_dead_yaks_then_doks_and_sources ... ok
+test tui::tests::query::the_chip_shows_the_query_and_the_all_count ... ok
+test tui::tests::query::the_drawer_status_chips_scope_flat_views ... ok
+test tui::tests::query::the_query_survives_a_view_switch_and_does_not_mark_the_tab ... ok
+test tui::tests::recent_view_is_flat_over_all_tasks ... ok
+test tui::tests::ref_picker_cancel_keeps_the_typed_prefix ... ok
+test tui::tests::rendered_body_reflows_and_yank_copies_the_source_markdown ... ok
+test tui::tests::rendering_a_code_block_does_not_rebuild_rows_per_row ... ok
+test tui::tests::reparent_picker_overlay ... ok
+test tui::tests::picking_a_tag_before_a_separator_steps_over_it_instead_of_adding_one ... ok
+test tui::tests::save_view_creates_and_activates_custom_view ... ok
+test tui::tests::request_editor_open ... ok
+test tui::tests::scroll_into_view_is_stable_and_minimal ... ok
+test tui::tests::search_commit_leaves_no_stale_filter_toast ... ok
+test tui::tests::single_esc_from_normal_closes_the_picker ... ok
+test tui::tests::scroll_clamps_at_the_widest_row_and_resets_when_the_cursor_leaves ... ok
+test tui::tests::single_line_emacs_esc_cancels_immediately ... ok
+test tui::tests::single_line_vim_reaches_normal_mode ... ok
+test tui::tests::slaughter_confirm_overlay ... ok
+test tui::tests::star_toggles_and_starred_view_lists_it ... ok
+test tui::tests::slaughter_family_confirm_overlay ... ok
+test tui::tests::starred_marker_and_tab_bar ... ok
+test tui::tests::state_picker_overlay ... ok
+test tui::tests::status_bar_shows_path_lines_and_pin_of_a_source_link ... ok
+test tui::tests::status_bar_shows_the_destination_of_the_link_under_the_cursor ... ok
+test tui::tests::substitute_routes_through_editor ... ok
+test tui::tests::status_notification_drops_below_tabs_when_it_would_overlap ... ok
+test tui::tests::tab_after_a_dok_link_opens_the_dok_picker_and_replaces_the_token ... ok
+test tui::tests::tab_after_a_herd_dok_link_completes_with_the_herd_path ... ok
+test tui::tests::tab_after_a_non_dok_path_is_a_plain_tab ... ok
+test tui::tests::live::state_pick_transitions_and_reloads ... ok
+test tui::tests::o_in_the_image_viewer_opens_the_take_out_menu_and_o_opens_externally ... ok
+test tui::tests::tab_after_prefix_autocompletes_and_replaces_the_typed_token ... ok
+test tui::tests::tab_in_a_content_block_without_context_does_not_navigate ... ok
+test tui::tests::live::z_with_nothing_typed_is_a_day_and_a_bad_date_keeps_the_prompt ... ok
+test tui::tests::tab_after_a_picked_tag_moves_to_the_next_field ... ok
+test tui::tests::tab_in_the_drawer_tags_row_completes_and_the_pick_reruns_the_filter ... ok
+test tui::tests::live::z_over_marked_rows_snoozes_the_open_ones_and_counts_the_finished ... ok
+test tui::tests::tab_after_a_partial_tag_opens_the_picker_and_cancel_keeps_the_text ... ok
+test tui::tests::q_quits_from_a_dok_and_the_family_scope_is_f ... ok
+test tui::tests::tab_onto_an_off_screen_table_link_scrolls_it_into_view_and_back ... ok
+test tui::tests::tab_in_the_t_editor_completes_a_tag_and_a_pick_moves_past_it ... ok
+test tui::tests::the_detail_cursor_follows_find_matches ... ok
+test tui::tests::plus_and_minus_zoom_by_steps_from_the_fit_size ... ok
+test tui::tests::the_detail_footer_shows_which_match_it_is_on ... ok
+test tui::tests::the_due_view_survives_a_saved_views_file_that_predates_it ... ok
+test tui::tests::the_due_view_lists_open_dated_yaks_soonest_first ... ok
+test tui::tests::the_line_cursor_steps_over_an_inline_image_in_one_move ... ok
+test tui::tests::tab_in_the_viewer_moves_to_the_next_link_and_enter_follows_it ... ok
+test tui::tests::tab_in_the_viewer_scrolls_a_wide_table_link_into_view ... ok
+test tui::tests::the_register_survives_j_and_k_and_highlights_the_next_yak ... ok
+test tui::tests::place_stars::a_legacy_working_set_file_still_stars_and_unstars_its_dok ... ok
+test tui::tests::the_overdue_chip_counts_open_late_yaks_on_every_tab ... ok
+test tui::tests::tag_picker_replaces_only_the_partial_tag ... ok
+test tui::tests::tab_on_a_complete_drawer_tags_row_still_moves_to_the_next_row ... ok
+test tui::tests::tilde_x_and_r_route_through_editor ... ok
+test tui::tests::tree_with_ghost_family ... ok
+test tui::tests::type_picker_overlay ... ok
+test tui::tests::typing_prefix_dash_autocompletes_in_the_create_form_description ... ok
+test tui::tests::unfocused_description_preview_wraps ... ok
+test tui::tests::view_picker_overlay ... ok
+test tui::tests::vim_new_content_opens_in_insert_mode ... ok
+test tui::tests::vim_normal_mode_paste_inserts_literally_not_as_commands ... ok
+test tui::tests::vim_seeded_content_opens_in_normal_mode ... ok
+test tui::tests::place_stars::a_place_row_takes_out_its_file_and_its_keys_are_its_own ... ok
+test tui::tests::wrapped_detail_field_continuation_is_not_label_coloured ... ok
+test tui::tests::x_and_shift_x_delete_chars ... ok
+test tui::tests::yank_of_a_scrolled_code_row_copies_the_full_source_line ... ok
+test tui::tests::switching_view_or_moving_to_another_row_closes_the_dok ... ok
+test tui::tests::the_list_stays_drawn_beside_an_open_dok ... ok
+test tui::tree::tests::a_content_filter_keeps_the_status_scope ... ok
+test tui::tree::tests::collapse_hides_descendants_and_counts ... ok
+test tui::tree::tests::content_filter_focuses_matches_and_dims_ancestors ... ok
+test tui::tree::tests::content_filter_includes_descendants_of_matches ... ok
+test tui::tree::tests::family_scope_governs_descendants ... ok
+test tui::tree::tests::remaining_keeps_completed_connectors_to_open_work ... ok
+test tui::views_store::tests::a_legacy_dok_path_and_its_destination_are_one_star ... ok
+test tui::views_store::tests::a_new_builtin_lands_beside_its_neighbour_in_a_saved_order ... ok
+test tui::views_store::tests::a_saved_wiki_tab_keeps_its_place_as_the_doks_tab ... ok
+test tui::views_store::tests::can_unpin_keeps_last_tab ... ok
+test tui::views_store::tests::legacy_state_is_copied_without_overwriting ... ok
+test tui::views_store::tests::move_view_swaps_within_bounds ... ok
+test tui::views_store::tests::reconcile_appends_missing_builtins_and_keeps_custom ... ok
+test tui::views_store::tests::the_working_set_file_round_trips_yak_ids_and_dok_paths ... ok
+test tui::views_store::tests::toggle_working_set_adds_then_removes ... ok
+test tui::when::tests::calendar_days_follow_the_offset ... ok
+test tui::when::tests::clock_fixed_and_system ... ok
+test tui::when::tests::rules_table ... ok
+test wait::tests::new_counts_a_row_that_left_and_came_back ... ok
+test wait::tests::new_ignores_rows_present_at_start_but_sees_a_needs_flip ... ok
+test wait::tests::new_times_out_when_only_old_rows_remain ... ok
+test tui::tests::the_image_viewer_starts_fit_and_shows_it_in_the_status_line ... ok
+test wait::tests::returns_immediately_when_the_inbox_has_a_row ... ok
+test wait::tests::times_out_when_nothing_matches_the_audience ... ok
+test wait::tests::zero_timeout_checks_once ... ok
+test weight::tests::kinds_follow_the_farm_layout ... ok
+test weight::tests::kinds_follow_the_root_layout_too ... ok
+test weight::tests::rules_are_case_insensitive_and_scoped_to_the_farm ... ok
+test weight::tests::rules_at_the_branch_root_are_the_old_rules_without_the_prefix ... ok
+test yakcommits::tests::a_reader_turns_host_urls_into_commits ... ok
+test yakcommits::tests::fields_and_links_once_each_and_branches_but_not_landed_ones ... ok
+test zone::tests::a_day_is_the_zones_not_utcs ... ok
+test zone::tests::a_repeated_hour_is_the_first_and_a_skipped_one_moves_on ... ok
+test zone::tests::names_are_iana_and_unknown_ones_refused ... ok
+test zone::tests::the_offset_follows_daylight_saving ... ok
+test tui::tests::place_stars::starred_yaks_docs_and_places_list_in_that_order_and_a_stale_star_is_skipped ... ok
+test tui::tests::the_viewer_with_its_cursor_on_a_link ... ok
+test tui::tests::the_viewers_n_wraps ... ok
+test tui::tests::the_viewer_moves_a_line_cursor_like_the_detail_pane ... ok
+test tui::tests::tab_on_an_empty_tags_field_or_after_a_comma_moves_to_the_next_field ... ok
+test tui::tests::with_a_dok_open_u_requests_a_sync_and_the_dok_stays_open ... ok
+test tui::tests::memo::w_on_a_clean_farm_says_so_and_u_on_a_non_branch_farm_errors_in_one_line ... ok
+test tui::tests::the_tui_regrows_a_recurring_yak_on_load_and_on_the_tick ... ok
+test tui::tests::zooming_keeps_the_middle_of_the_window_in_place ... ok
+test tui::tests::zero_is_actual_size_w_fits_the_width_and_f_fits_the_pane ... ok
+test wait::tests::wakes_when_another_writer_answers_mid_wait ... ok
+test tui::tests::memo::w_commits_a_dirty_team_farm_and_the_chip_goes ... ok
+test tui::tests::place_stars::every_kind_of_place_stars_from_the_pane_lists_opens_and_unstars ... ok
+
+test result: ok. 1315 passed; 0 failed; 20 ignored; 0 measured; 0 filtered out; finished in 22.53s
+
+     Running tests/attach_dir.rs (target/debug/deps/attach_dir-e3538bc3981a1d51)
+
+running 6 tests
+test a_directory_with_nothing_to_store_and_a_caption_are_refused ... ok
+test a_symlink_in_a_directory_is_skipped_and_reported_not_followed ... ok
+test no_link_stores_without_touching_the_body_and_name_renames_the_directory ... ok
+test over_the_limit_refuses_and_writes_nothing ... ok
+test a_directory_on_a_dok_goes_in_the_doks_directory ... ok
+test a_directory_keeps_its_layout_on_a_yak_and_is_linked_once ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.14s
+
+     Running tests/attribution.rs (target/debug/deps/attribution-55d702718acf7658)
+
+running 10 tests
+test whoami_reports_yaks_thread_over_the_delta_thread_id ... ok
+test move_actor_from_the_flag ... ok
+test move_actor_from_yaks_actor ... ok
+test move_actor_falls_back_to_the_git_user ... ok
+test move_thread_is_yaks_thread_over_the_delta_thread_id ... ok
+test slaughter_family_attributes_every_yak_moved ... ok
+test move_actor_from_delta_thread_title_then_id ... ok
+test a_file_without_move_entries_still_works_and_doctor_accepts_the_marker ... ok
+test shave_then_shorn_leave_two_attributed_entries_and_log_lists_them ... ok
+test every_moving_command_takes_as ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.60s
+
+     Running tests/autocommit.rs (target/debug/deps/autocommit-43d008c9ebf19b2a)
+
+running 7 tests
+test the_opt_out_leaves_writes_uncommitted ... ok
+test each_write_is_one_commit_with_its_actor ... ok
+test a_write_spawns_few_git_processes ... ok
+test a_hand_edit_is_committed_first_and_other_dirty_files_are_left_alone ... ok
+test commit_as_stamps_a_hand_edit_for_touched_and_undo ... ok
+test commit_refuses_during_a_cherry_pick_in_either_ref_format ... ok
+test undo_reverts_an_actors_commits_and_keeps_the_rest ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.44s
+
+     Running tests/bare_host.rs (target/debug/deps/bare_host-b815e59234a432d5)
+
+running 1 test
+test a_clone_of_a_bare_host_creates_the_farm_worktree_in_the_host ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.91s
+
+     Running tests/body_input.rs (target/debug/deps/body_input-2c9212be084da251)
+
+running 11 tests
+test inline_and_file_for_the_same_flag_is_an_error ... ok
+test missing_or_unreadable_file_names_the_path ... ok
+test dash_for_both_note_and_description_is_an_error ... ok
+test file_dash_means_stdin ... ok
+test dash_note_with_a_description_file_is_fine ... ok
+test create_description_from_stdin_and_file ... ok
+test empty_stdin_or_file_is_an_error_not_an_empty_note ... ok
+test update_applies_the_same_text_to_every_id ... ok
+test inline_text_is_unchanged ... ok
+test ask_and_answer_take_stdin_and_file ... ok
+test update_description_and_note_from_stdin_and_file ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.46s
+
+     Running tests/change_line.rs (target/debug/deps/change_line-4aba42342ac7decd)
+
+running 6 tests
+test shorn_change_writes_a_kind_change_note_with_no_stored_section ... ok
+test a_change_line_for_a_yak_already_shorn_is_not_dropped_silently ... ok
+test a_refused_shear_writes_no_change_note ... ok
+test change_and_no_change_conflict_and_several_ids_refuse_change ... ok
+test shorn_change_section_is_stored_only_when_given ... ok
+test shorn_no_change_writes_section_none ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.15s
+
+     Running tests/check.rs (target/debug/deps/check-6c6c6e9adda6a384)
+
+running 8 tests
+test a_clean_farm_exits_zero ... ok
+test a_dok_with_no_verified_date_counts_from_its_last_commit ... ok
+test uncited_reads_a_slugged_source_by_its_id ... ok
+test source_mark_refuses_what_it_cannot_honour ... ok
+test a_dok_citing_code_that_moved_since_its_last_commit_is_a_finding ... ok
+test a_source_and_its_parts_count_as_one_and_marks_keep_it_off_the_list ... ok
+test every_kind_of_finding_is_reported_with_exit_one ... ok
+test source_mark_sets_and_clears_what_check_honours ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.50s
+
+     Running tests/cli.rs (target/debug/deps/cli-ab73fff6475bb89f)
+
+running 32 tests
+test next ... ok
+test list_all ... ok
+test list ... ok
+test list_json ... ok
+test list_filtered ... ok
+test next_json ... ok
+test refs ... ok
+test rollup ... ok
+test parent_of ... ok
+test refs_incoming_json ... ok
+test refs_incoming_none ... ok
+test rollup_json ... ok
+test rollup_keys ... ok
+test show_json ... ok
+test headless_session ... ok
+test search ... ok
+test refs_incoming ... ok
+test headless_state_header_tracks_focus ... ok
+test show ... ok
+test stats_json ... ok
+test tangled ... ok
+test tangled_json ... ok
+test stats ... ok
+test a_schema_3_farm_refuses_to_open_and_names_the_release_that_migrates_it ... ok
+test scan_ids_flags_real_ids_and_is_clean_otherwise ... ok
+test create_positional_title_and_json ... ok
+test list_needs_filters_to_blocked ... ok
+test attach_name_and_rename_attachment ... ok
+test labels_normalized_on_create_update_bulk_and_doctor ... ok
+test slaughter_guard_and_family ... ok
+test update_bulk_and_partial_failure ... ok
+test bulk_dry_run_commit_and_refusals ... ok
+
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.27s
+
+     Running tests/commits.rs (target/debug/deps/commits-477c1b171247c9a7)
+
+running 10 tests
+test land_dry_run_says_what_it_would_record_and_writes_nothing ... ok
+test commits_marks_a_recorded_sha_the_code_repo_lacks ... ok
+test commits_greps_the_code_repo_not_the_farm_branch ... ok
+test land_yak_flag_names_yaks_a_private_farm_keeps_out_of_messages ... ok
+test commits_reports_a_checkpoint_sha_that_is_not_on_the_branch ... ok
+test land_links_the_commit_on_the_code_repos_host ... ok
+test update_commit_records_the_full_sha_and_checks_it_is_pushed ... ok
+test commits_fetch_lists_the_recorded_branch_and_marks_the_checkpoint ... ok
+test land_records_the_landed_and_worker_shas_and_commits_reads_them ... ok
+test a_failed_fetch_is_one_line_per_branch_and_the_exit_stays_zero ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.93s
+
+     Running tests/dash_c.rs (target/debug/deps/dash_c-2ec044ab026081c0)
+
+running 7 tests
+test missing_path_is_an_error_naming_it ... ok
+test init_honors_c ... ok
+test repeated_c_composes_relative_to_the_previous ... ok
+test show_from_a_sub_directory_of_the_repo ... ok
+test flag_after_the_subcommand_also_works ... ok
+test list_from_an_unrelated_cwd ... ok
+test sheds_json_matches_running_in_that_checkout ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.13s
+
+     Running tests/doks.rs (target/debug/deps/doks-888f0da4f4ea5de7)
+
+running 5 tests
+test refusals_and_doctor ... ok
+test new_set_show_list_and_query ... ok
+test query_where_compares_dates_and_finds_missing_fields ... ok
+test stale_if_hash_is_refused_and_old_new_edits_chain_by_hash ... ok
+test row_set_and_delete_round_trip_through_query_rows ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.79s
+
+     Running tests/fields.rs (target/debug/deps/fields-a8622eab9318cd63)
+
+running 7 tests
+test create_set_wins_over_the_sugar_flags_and_an_empty_value_sets_nothing ... ok
+test create_set_refuses_built_in_and_malformed_keys_and_writes_nothing ... ok
+test create_set_writes_fields_in_the_creates_one_commit ... ok
+test set_writes_scalars_lists_and_maps_and_json_reads_them_back ... ok
+test create_key_with_set_leaves_an_existing_yaks_fields_alone ... ok
+test set_refuses_built_in_and_malformed_keys_and_writes_nothing ... ok
+test set_rewrites_one_field_and_leaves_hand_written_ones_alone ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.64s
+
+     Running tests/find.rs (target/debug/deps/find-dac66c93abeb2042)
+
+running 10 tests
+test sessions_is_a_reserved_herd_name ... ok
+test finds_each_kind_with_path_line_and_title ... ok
+test json_has_path_kind_title_line_text ... ok
+test exit_one_without_a_match_and_empty_json_array ... ok
+test case_is_ignored_unless_asked ... ok
+test regex_is_opt_in ... ok
+test a_directory_sources_tree_is_searched_in_place ... ok
+test kind_flag_limits_what_is_searched ... ok
+test scope_keeps_a_directory_or_a_path_prefix ... ok
+test binary_files_and_originals_are_skipped ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.01s
+
+     Running tests/init_modes.rs (target/debug/deps/init_modes-c188a00f72c83850)
+
+running 13 tests
+test init_outside_git_is_a_clear_error ... ok
+test init_flag_misuse_is_refused_before_any_change ... ok
+test init_refuses_a_shared_clone_and_changes_nothing ... ok
+test init_ignores_an_in_tree_dot_yaks ... ok
+test init_skills_go_in_the_code_checkout_not_the_farm ... ok
+test farm_refuses_a_repo_without_a_farm_or_this_same_repo_and_changes_nothing ... ok
+test init_creates_an_orphan_farm_worktree_at_farm_home ... ok
+test init_installs_every_bundled_skill_unless_told_not_to ... ok
+test farm_works_from_a_git_worktree_and_a_shared_clone_of_the_sharing_repo ... ok
+test init_rerun_is_a_no_op ... ok
+test init_records_a_chosen_branch_name ... ok
+test init_with_an_existing_origin_farm_only_adds_its_worktree ... ok
+test farm_points_this_repo_at_another_repos_farm_branch ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.86s
+
+     Running tests/land_change_warning.rs (target/debug/deps/land_change_warning-37183073b7c84396)
+
+running 1 test
+test landing_a_shorn_yak_with_no_change_line_warns_and_still_lands ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.10s
+
+     Running tests/land_continue.rs (target/debug/deps/land_continue-7552436fe85dd559)
+
+running 6 tests
+test the_flags_are_exclusive_and_a_sha_is_required_otherwise ... ok
+test abort_restores_the_tree_and_forgets_the_state ... ok
+test continue_keeps_the_yak_flag_of_the_first_run ... ok
+test a_pick_finished_with_git_is_still_recorded_by_continue ... ok
+test continue_while_conflicts_remain_changes_nothing_and_can_be_retried ... ok
+test continue_finishes_the_pick_and_records_the_landing ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.96s
+
+     Running tests/links.rs (target/debug/deps/links-1d3d9be8a135f92e)
+
+running 6 tests
+test doctor_reports_broken_and_upward_links ... ok
+test a_dok_directory_holding_doks_is_not_an_attachment_directory ... ok
+test refs_incoming_lists_doks_and_session_notes ... ok
+test a_note_link_from_update_peeks_and_is_checked ... ok
+test peek_refs_and_mv ... ok
+test attach_to_a_dok_and_mv_it ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.80s
+
+     Running tests/merge_driver.rs (target/debug/deps/merge_driver-2b5a4ad5a3daf98d)
+
+running 5 tests
+test a_non_yak_file_still_conflicts_in_git ... ok
+test a_dok_edited_on_both_sides_merges_and_is_listed_as_a_conflict ... ok
+test without_the_driver_the_same_merge_conflicts ... ok
+test git_rebase_with_the_driver_yields_a_valid_yak ... ok
+test git_merge_with_the_driver_yields_a_valid_yak ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+
+     Running tests/needs_loop.rs (target/debug/deps/needs_loop-85a15da16d8c0c3d)
+
+running 8 tests
+test pickup_errors_name_the_state ... ok
+test request_kind_writes_the_instruction_then_the_note ... ok
+test needs_changes_do_not_write_moved_entries ... ok
+test answered_shorn_yak_stays_in_the_inbox_until_picked_up ... ok
+test request_hands_to_agent_through_the_inbox ... ok
+test whole_loop_ask_reply_answer_next_pickup ... ok
+test answer_edge_cases_through_the_cli ... ok
+test bulk_request_dry_runs_then_queues_and_skips_awaiting_human ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.02s
+
+     Running tests/note_meta.rs (target/debug/deps/note_meta-a52c5f6f428d4b1c)
+
+running 4 tests
+test update_meta_rejects_a_bad_key_a_missing_equals_and_a_missing_note ... ok
+test doctor_flags_needs_drift_against_the_latest_kinded_note ... ok
+test update_meta_writes_lines_under_the_marker_and_show_json_lists_them ... ok
+test conventional_commands_write_kinds_and_verify_writes_the_result ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.90s
+
+     Running tests/prs.rs (target/debug/deps/prs-4cbd6494a5890ab4)
+
+running 3 tests
+test create_takes_repeatable_pr ... ok
+test no_prs_means_no_prs_key_in_json_or_text ... ok
+test update_adds_and_removes_prs_and_adding_twice_is_a_no_op ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.60s
+
+     Running tests/recur.rs (target/debug/deps/recur-0bab902d5266feca)
+
+running 14 tests
+test an_unknown_zone_warns_once_and_doctor_reports_it_and_the_machine_zone_is_used ... ok
+test dry_run_says_who_would_be_woken_and_writes_nothing ... ok
+test a_datetime_due_keeps_its_offset_and_a_daily_yak_keeps_its_wall_clock_across_dst ... ok
+test a_zone_decides_what_today_is_for_relative_and_date_only_dues ... ok
+test wake_human_asks_and_answer_done_clears_it ... ok
+test due_takes_relative_days_and_weeks_and_stores_a_date ... ok
+test snooze_refuses_finished_yaks_and_bad_dates_and_does_the_rest ... ok
+test wake_is_checked_and_a_bad_one_holds_the_yak ... ok
+test a_weekly_yak_regrows_once_for_the_latest_occurrence_and_then_rests ... ok
+test snooze_moves_due_from_today_and_leaves_a_note ... ok
+test without_wake_regrow_only_reopens_and_an_open_question_is_left_alone ... ok
+test dead_yaks_never_regrow_and_a_shorn_parent_reopens_with_its_child ... ok
+test due_lists_sorts_marks_overdue_and_refuses_bad_values ... ok
+test wake_agent_puts_the_regrown_yak_in_the_agent_inbox_every_round ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.20s
+
+     Running tests/release_changes.rs (target/debug/deps/release_changes-bce9c5b85962313f)
+
+running 8 tests
+test a_range_names_its_yaks_by_message_and_by_note_and_groups_them ... ok
+test it_needs_a_code_checkout ... ok
+test json_has_the_range_each_yak_and_the_commits_naming_none ... ok
+test a_merge_commit_does_not_name_a_yak ... ok
+test the_default_range_is_the_latest_release_tag_to_head ... ok
+test check_exits_1_on_a_gap_after_printing_the_report_and_0_once_it_has_a_line ... ok
+test yaks_release_tags_overrides_the_glob ... ok
+test a_single_tag_means_the_previous_release_tag_to_it ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.75s
+
+     Running tests/root_layout.rs (target/debug/deps/root_layout-f778a56acb7351d2)
+
+running 2 tests
+test every_change_is_committed_on_the_farm_branch_with_its_verb ... ok
+test status_and_commit_name_each_yak_and_sync_sees_a_dirty_farm ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.76s
+
+     Running tests/run_on.rs (target/debug/deps/run_on-3d8084f626a6cead)
+
+running 1 test
+test list_run_on_keeps_only_joined_lines ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.15s
+
+     Running tests/schemas.rs (target/debug/deps/schemas-598d37cabb15e593)
+
+running 2 tests
+test defaults_warnings_types_rows_and_yak_fields ... ok
+test dok_define_writes_a_schema_dok_types_reads_and_merges_into_it ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.11s
+
+     Running tests/sessions.rs (target/debug/deps/sessions-f4de9dad6cd91e4e)
+
+running 3 tests
+test a_session_note_records_yaks_thread_over_the_delta_thread_id ... ok
+test attach_to_a_session_note ... ok
+test a_session_note_cites_what_the_session_wrote_and_is_reviewed_once ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.83s
+
+     Running tests/sheds.rs (target/debug/deps/sheds-7b7c758f5ef74ee9)
+
+running 1 test
+test each_actor_is_credited_with_its_own_writes_from_any_checkout ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.74s
+
+     Running tests/skills_install.rs (target/debug/deps/skills_install-154c06c5ab42246d)
+
+running 3 tests
+test a_yaks_checkout_refuses_the_default_and_names_the_way_out ... ok
+test installs_every_skill_project_local_by_default ... ok
+test user_flag_and_no_git_repo_use_the_home_directory ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/skills_notice.rs (target/debug/deps/skills_notice-2c97e6c7fcb87f9e)
+
+running 3 tests
+test a_stale_coordination_skill_gets_the_same_advice ... ok
+test the_notice_is_silent_for_json_the_switch_and_the_skills_command ... ok
+test a_stale_install_is_announced_once_then_install_fixes_it ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.27s
+
+     Running tests/source_key.rs (target/debug/deps/source_key-868f8d86bc71e8af)
+
+running 6 tests
+test create_key_conflicts_with_source_and_refuses_an_empty_key ... ok
+test create_key_text_output_says_whether_it_created ... ok
+test concurrent_keyed_creates_make_exactly_one_yak ... ok
+test create_key_creates_once_and_then_finds ... ok
+test create_key_finds_shorn_and_dead_yaks_and_never_resurrects_them ... ok
+test list_source_matches_exactly_and_composes_with_all ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.64s
+
+     Running tests/sources.rs (target/debug/deps/sources-c80f671d56f4eca2)
+
+running 2 tests
+test source_add_dedups_and_lists ... ok
+test promote_moves_an_attachment_and_rewrites_its_links ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.16s
+
+     Running tests/status.rs (target/debug/deps/status-ee9a028573da2298)
+
+running 2 tests
+test json_names_the_yak_and_what_changed ... ok
+test clean_then_dirty_with_check_exit_codes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.48s
+
+     Running tests/sync.rs (target/debug/deps/sync-e96b379e77f610e8)
+
+running 6 tests
+test a_yaks_dir_farm_is_refused ... ok
+test a_private_farm_syncs_locally_but_never_pushes ... ok
+test first_sync_publishes_the_branch_with_the_driver_rule_and_sets_its_upstream ... ok
+test half_syncs_skip_their_step ... ok
+test a_conflict_the_driver_cannot_settle_aborts_and_changes_nothing ... ok
+test concurrent_edits_to_one_yak_converge_from_both_machines ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.59s
+
+     Running tests/tag_warn.rs (target/debug/deps/tag_warn-6ff94a350d04e2ef)
+
+running 5 tests
+test create_warns_on_an_unknown_tag_and_still_creates ... ok
+test at_most_five_known_tags_are_named ... ok
+test a_farm_without_known_tags_is_silent ... ok
+test known_tags_are_silent_however_they_are_spelled ... ok
+test update_and_bulk_warn_on_an_unknown_added_tag ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s
+
+     Running tests/tick.rs (target/debug/deps/tick-e711c30353951b5b)
+
+running 6 tests
+test an_empty_farm_says_nothing_needs_you ... ok
+test a_bad_within_is_refused_before_anything_is_written ... ok
+test findings_are_counted_not_listed ... ok
+test dry_run_reports_what_would_regrow_and_writes_nothing ... ok
+test a_held_yak_is_reported_and_within_widens_the_window ... ok
+test tick_regrows_then_reports_and_a_second_tick_regrows_nothing ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.40s
+
+     Running tests/url.rs (target/debug/deps/url-718255b4158a95bd)
+
+running 3 tests
+test a_source_link_peeks_and_doctor_flags_a_broken_one ... ok
+test url_refuses_with_a_reason ... ok
+test farm_files_link_on_the_farm_branch_and_code_on_the_code_branch ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.97s
+
+     Running tests/wait.rs (target/debug/deps/wait-a276456dccd0b89f)
+
+running 4 tests
+test hit_prints_what_inbox_prints ... ok
+test new_ignores_a_row_present_at_start ... ok
+test a_background_answer_wakes_the_waiter ... ok
+test timeout_exits_2_with_nothing_on_stdout ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.26s
+
+     Running tests/weight.rs (target/debug/deps/weight-f70b794d38b651a9)
+
+running 2 tests
+test weight_counts_commits_and_the_tree_by_kind ... ok
+test lfs_stores_new_binary_attachments_as_pointers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.24s
+
