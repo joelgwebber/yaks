@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:54:36Z'
+updated: '2026-11-21T22:31:17Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -80,3 +80,9 @@ landed: [d2a9936c](https://github.com/joelgwebber/yaks/commit/d2a9936c79920d735d
 *herd-files*
 
 Landed d2a9936c (herd-files). Reproduced with my build: `yaks peek` on manifesto-2.png@33f5db7f and on yaks-a4d8/lfs-test.png@1d0a4386 prints `(binary file, 170083 bytes)` (was the pointer before this build); headless TUI following the pinned link opens doc=image (herd-pinned.txt). Gate on the landed tree: fmt clean, 1530 passed, 0 failed. Diff read: one reader (`links::read_bytes_at`), `locate::pinned_file` routed through it too.
+
+#### 2026-11-21T22:31:17Z
+
+*herd-files · kind: change · section: fixed*
+
+Links pinned to a commit (`path@<rev>`) show files stored in Git LFS (images included) instead of their LFS pointer.
