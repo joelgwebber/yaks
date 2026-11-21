@@ -76,6 +76,9 @@ type Section = toque::keys::Section<Cmd>;
 /// (`f:filter  /:search`, or `f:filter  Esc:clear`).
 const FILTER_HINT: Hint = Hint::Custom("filter");
 
+/// What the `?` popup says about the keys it had no room for.
+pub(crate) const POPUP_MORE: &str = "the full reference has them all";
+
 mod editor;
 mod overrides;
 
@@ -1697,6 +1700,7 @@ mod tests {
             &km.popup_entries(Ctx::List, Some(Yak)),
             200,
             40,
+            POPUP_MORE,
         ));
         for t in titles {
             assert!(lines.contains(t), "{t}:\n{lines}");

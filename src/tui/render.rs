@@ -18,7 +18,8 @@ use edtui::{EditorState, EditorView};
 
 use super::blockedit;
 use super::keymap::{
-    PopupSubject, editor_groups, editor_title, help_content, help_hint, popup_lines, rows_groups,
+    POPUP_MORE, PopupSubject, editor_groups, editor_title, help_content, help_hint, popup_lines,
+    rows_groups,
 };
 use super::palette;
 use super::{
@@ -124,7 +125,7 @@ fn render_keys_popup(app: &App, frame: &mut Frame, mid: Rect) {
     };
     let width = mid.width.saturating_sub(2) as usize;
     let max_rows = (mid.height as usize).saturating_sub(5).max(1);
-    let lines = popup_lines(&groups, width, max_rows);
+    let lines = popup_lines(&groups, width, max_rows, POPUP_MORE);
     let height = (lines.len() as u16 + 1).min(mid.height);
     let area = Rect {
         y: mid.y + mid.height - height,
