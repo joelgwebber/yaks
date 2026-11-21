@@ -52,3 +52,9 @@ Decision: dok names may hold a dot inside (`doks/releases/v0.0.41.md`). `doks::p
 *rdok-1*
 
 Decision: `yaks check` compares each release dok over the `range:` it records, not over a recomputed range. A release dok with no `range:` or no block markers is skipped. Rejected: recomputing the default range (`HEAD` moves, so a tagged release's block would look stale after the next commit). A range ending `..HEAD` (an unreleased dok) is stale when more yaks land: intended, rerun it. Finding kind `stale-release`; without a code checkout, one note like the code kinds.
+
+#### 2026-11-21T23:10:00Z
+
+*rdok-1*
+
+Decision: entry order within a section is oldest yak first (created, then id). Yak ids are random, and the report's id sort gave a meaningless, unstable order. Rejected: id order (random); commit order (a yak with several commits has no single position).
