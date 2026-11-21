@@ -33,3 +33,22 @@ Claim (herd-files): worker change-1 (Sonnet). Scope: `Command::Shorn` and its di
 Start: 2026-11-21T21:39:26Z. Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-bcb8.md. Checkout: /Users/joel/src/yaks/.delta/worktrees/w0zafkp7n7b5/yaks.
 
 [shear-prompt-frame](yaks-bcb8/shear-prompt-frame.txt "Headless TUI frame: S then n on a shaving yak titled Live; the prompt is the change line, pre-filled with the title, cursor after it")
+
+#### 2026-11-21T21:50:36Z
+
+*change-1*
+
+Progress: implementation done; scratch-farm CLI run (`yaks init`, features/tasks, `YAKS_DIR` via `XDG_DATA_HOME` temp):
+
+```
+$ yaks shorn yak-6aff --change "Adds a widget you can click."   # type: feature
+$ yaks shorn yak-d56d --no-change
+$ yaks show yak-6aff --json   (last note)
+ {"meta": {"kind": "change"}, "text": "Adds a widget you can click."}   # no section stored
+$ yaks show yak-d56d --json   (last note)
+ {"meta": {"kind": "change", "section": "none"}, "text": "No user-facing change."}
+$ yaks shorn yak-6aff yak-d56d --change x
+Error: --change takes one yak: a change line describes one yak (use `--no-change` for a batch of internal work)   # exit 1
+```
+
+TUI frame of the pre-filled prompt attached.
