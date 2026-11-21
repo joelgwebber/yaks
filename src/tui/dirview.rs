@@ -433,7 +433,7 @@ pub(crate) fn render_dir(app: &App, v: &DirView, frame: &mut Frame, area: Rect) 
                 Span::styled(right, Style::new().fg(Color::DarkGray)),
             ]);
             if i == v.cursor {
-                line = line.style(Style::new().bg(super::surface::selected()));
+                line = line.style(Style::new().bg(toque::theme::selected()));
             }
             line
         })

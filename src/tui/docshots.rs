@@ -650,12 +650,12 @@ fn docshots_md_palette() {
 #[test]
 #[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-surfaces.svg"]
 fn docshots_surfaces() {
-    use crate::tui::surface::with_terminal;
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
     use ratatui::buffer::Buffer;
     use ratatui::layout::Rect;
     use ratatui::style::Color;
+    use toque::theme::with_terminal;
 
     let (w, h) = (96u16, 20u16);
     let mut app = app_at(w, h);

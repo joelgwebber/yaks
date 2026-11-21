@@ -16,7 +16,7 @@
 //!   slab on a light one, and `Reset`-relative tints do not exist. Code is set
 //!   apart by colour and the renderer's gutter instead. The one place a
 //!   background is wanted, the selection band, takes it from the terminal's own
-//!   colours (`super::surface`, yaks-48e9), never a fixed grey.
+//!   colours (`toque::theme`, yaks-48e9), never a fixed grey.
 //! - **Body headings never look like pane chrome.** The pane's own labels
 //!   (`Children:`, `Depends on:`) are [`pane_label`] (cyan, bold). Headings use
 //!   magenta / blue / plain-bold-italic, which no label uses, and differ from one

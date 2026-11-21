@@ -254,7 +254,7 @@ pub(crate) fn render_view_picker(app: &App, sel: usize, frame: &mut Frame, area:
         state.select(Some(sel.min(app.views.len() - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        List::new(items).highlight_style(Style::new().bg(toque::theme::selected())),
         body,
         &mut state,
     );
@@ -413,7 +413,7 @@ pub(crate) fn render_nav_rows<'a>(
                 .map(|(mi, (_, col, len))| (*col, *len, Some(mi) == nav.matched))
                 .collect();
             let in_sel = sel.is_some_and(|(lo, hi)| i >= lo && i <= hi);
-            let line_bg = (i == nav.line || in_sel).then(super::surface::selected);
+            let line_bg = (i == nav.line || in_sel).then(toque::theme::selected);
             render_dline(dl, cur.as_ref(), i, &lm, line_bg, hscroll(dl), width)
         })
         .collect()
@@ -473,7 +473,7 @@ pub(crate) fn render_chip_row(
         };
         if current_row && cursor_idx == j {
             style = style
-                .bg(super::surface::selected())
+                .bg(toque::theme::selected())
                 .add_modifier(Modifier::BOLD);
         }
         spans.push(Span::raw(" "));
@@ -894,9 +894,9 @@ pub(crate) fn render_list(app: &App, frame: &mut Frame, area: Rect) {
         Style::new().fg(Color::Reset)
     };
     let hl = if focused {
-        fg.bg(super::surface::selected())
+        fg.bg(toque::theme::selected())
     } else {
-        fg.bg(super::surface::band())
+        fg.bg(toque::theme::band())
     };
     frame.render_stateful_widget(List::new(items).highlight_style(hl), area, &mut state);
     app.list_offset.set(state.offset());
@@ -1138,7 +1138,7 @@ pub(crate) fn list_item<'a>(
 /// frontmatter, so you never lose track of which yak you're reading. Filled with
 /// a faint background band so it reads as a header rather than a content row.
 pub(crate) fn pinned_header_line(task: &Task, starred: bool, width: u16) -> Line<'static> {
-    let bg = super::surface::band();
+    let bg = toque::theme::band();
     let w = width as usize;
     let emoji = task.status.emoji(); // display width 2
     let type_s = format!("{:8}", task.kind);
@@ -1433,7 +1433,7 @@ pub(crate) fn render_dline<'a>(
             // Python C_LINK_SEL: blue on the subtle 237 background, emphasised.
             Style::new()
                 .fg(Color::Blue)
-                .bg(super::surface::selected())
+                .bg(toque::theme::selected())
                 .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
         } else {
             Style::new()
