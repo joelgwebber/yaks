@@ -22,3 +22,9 @@ Decisions 2 and 3 of [the changelog design](/doks/design/changelog.md#2-release-
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-21T22:02:42Z
+
+*herd-files*
+
+Claim (herd-files): worker rel-1 (Sonnet), base c20ad225. Scope: new src/release.rs (membership + report), `Command::Release` with subcommand `changes` in src/main.rs (leave room for `dok` and `changelog` later), a warning in src/land.rs after a landing, docs (docs/cli.md, README command table, yaks-coordinating skill's landing section + RELEASING.md note). Reuse src/changeline.rs (`latest`) and the commit-naming rule of src/yakcommits.rs. Out of scope: release doks, CHANGELOG.md. Evidence: integration tests on a temp repo with tags; a real run of `yaks release changes v0.0.39..v0.0.40` and `yaks release changes` (last tag..HEAD) on this repo, output attached. Judge: herd-files at landing.
