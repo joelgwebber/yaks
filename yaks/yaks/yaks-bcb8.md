@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:35:47Z'
+updated: '2026-11-21T21:35:48Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -19,3 +19,9 @@ Decision 1 of [the changelog design](/doks/design/changelog.md#1-the-change-line
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-21T21:35:48Z
+
+*herd-files*
+
+Claim (herd-files): worker change-1 (Sonnet). Scope: `Command::Shorn` and its dispatch in src/main.rs (add --change/--no-change), the Farm method that writes the shear (src/farm.rs: a change note written with the move, under the same lock), the TUI shear prompt (src/tui: S → n pre-fills the comment with a change line seeded from the title; Joel 2026-11-21: pre-fill with the title for the human to edit), and docs/skills/brief text. Out of scope: release commands (yaks-045c). Evidence: CLI run on a scratch farm showing the note in `yaks show --json`, a TUI headless frame of the pre-filled prompt, tests that fail before. Judge: herd-files at landing.
