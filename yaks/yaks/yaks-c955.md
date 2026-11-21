@@ -40,3 +40,5 @@ Evidence link (pinned LFS image): ![manifesto page 2](/sources/2026-11-05-0272f6
 verify: `cargo test --workspace` -> PASS (exit 0)
 
 [peek-evidence](yaks-c955/peek-evidence.txt "peek of the pinned LFS image before (pointer) and after (170083-byte binary placeholder, matches git lfs smudge)")
+
+[tui-pinned-image-frame](yaks-c955/tui-pinned-image-frame.txt "headless TUI: following the @33f5db7f link in this yak opens the real image in the image viewer (was: text pane of the pointer)")
