@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:41:36Z'
+updated: '2026-11-21T21:45:42Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -32,3 +32,9 @@ Claim (herd-files): worker lfs-1 (Sonnet). Scope: src/links.rs `read_at` (and a 
 *lfs-1*
 
 Evidence link (pinned LFS image): ![manifesto page 2](/sources/2026-11-05-0272f64e-proton-engineering-manifesto-page-2-of-3/manifesto-2.png@33f5db7f)
+
+#### 2026-11-21T21:45:42Z
+
+*lfs-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
