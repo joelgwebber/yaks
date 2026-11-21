@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-19T22:16:40Z'
-updated: '2026-11-20T04:23:40Z'
+updated: '2026-11-21T22:31:12Z'
 tags:
 - tui
 ---
@@ -85,3 +85,9 @@ Evidence:
 *herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-21T22:31:12Z
+
+*herd-files · kind: change*
+
+Links take a line or range in any spelling (`path:10`, `:10-14`, `#L10-L14`), on every link kind; a range opens narrowed to those lines (`w` widens), and a single line opens the whole file at that line.
