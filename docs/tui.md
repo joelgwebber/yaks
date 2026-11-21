@@ -1029,7 +1029,7 @@ dok list`, `yaks source list` and `yaks session list` read).
   nothing is written until a second `Ctrl-S`. A source is a snapshot and a
   pinned version a past one: `E` refuses both.
 - **`c` creates a dok**: type its path (`doks/topics/x.md`, or a herd's
-  `<herd>/doks/...`; `.md` is added; parts are lowercase-kebab), and the dok
+  `<herd>/doks/...`; `.md` is added; parts are lowercase-kebab, a dot allowed inside a name), and the dok
   is written as `yaks dok new` would (kind `note`, a title from the file name,
   a schema's defaults), then opened in the editor for its body. A bad or taken
   path keeps the prompt open with the reason.
