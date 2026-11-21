@@ -68,10 +68,11 @@ The worker's model is a cost decision, and the coordinator makes it per yak. The
 
 ## 6. Landing
 
-1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It records a `kind: landed` note (the landed and worker SHAs) on each yak the commit message names, plus any `--yak <id>`; `yaks commits <id>` lists them. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm. When the cherry-pick stops on conflicts, resolve and `git add` the files, then `yaks land --continue` (not `git cherry-pick --continue`: only it records the landing; `yaks land --abort` gives up).
+1. **Land by SHA:** `yaks land <sha> --dry-run`, then `yaks land <sha>`. It lands one single-parent squash commit (or a cherry-pick when the base moved), checks the result against `git merge-tree`, and never pushes. It records a `kind: landed` note (the landed and worker SHAs) on each yak the commit message names, plus any `--yak <id>`; `yaks commits <id>` lists them. It refuses while your tree has changes the commit does not explain, a SHA whose change a merge dropped, and a commit that stages `.yaks/` beside a branch farm. When the cherry-pick stops on conflicts, resolve and `git add` the files, then `yaks land --continue` (not `git cherry-pick --continue`: only it records the landing; `yaks land --abort` gives up). When it records on a yak that is shorn with no change line, it warns (`warning: <id> is shorn with no change line; ...`): ask the worker for the line now (`yaks update <id> --note "<line>" --meta kind=change`, or `--no-change`) while its context is fresh.
 2. **Re-run the gate yourself** and reproduce the key scenario with your own build. A claim you cannot reproduce is rejected, not annotated: `git revert` the landing and regrow the yak.
 3. **Read the diff** for quality and for every surface the change touches (docs, skills, README, `--help`, in-app help); make fixes as your own follow-up commits.
 4. `yaks doctor`, then `yaks commit`. Never write a claim into a yak that you did not observe.
+5. **Cutting a release:** before the version bump, `yaks release changes --check` lists the yaks the release's commits name, by change line, and exits 1 on a shorn yak with no line (an ancestor's line covers its children); fix the gaps, then bump and tag.
 
 ## 7. Asks
 

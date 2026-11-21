@@ -10,6 +10,15 @@ installs only the one matching the host's os/cpu, and `bin/yaks.js` execs it.
 Users get it via `npm i -g @j15r/yaks` (command stays `yaks`) or
 `npx @j15r/yaks`.
 
+### Before tagging: check the change lines
+
+`yaks release changes --check` (in the code checkout) lists the yaks the
+release's commits name, grouped by change line, and exits 1 when a shorn yak
+has no change line (`--no-change` counts as one). Fix the gaps with
+`yaks update <id> --note "<line>" --meta kind=change`, then bump and tag. The
+default range is the last `v*` tag to `HEAD` (`git config yaks.releaseTags`
+changes the glob).
+
 ### Before tagging: try the build locally
 
 `cargo install --path .` installs the tree you are about to tag into

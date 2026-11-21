@@ -96,6 +96,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `refs <id>` | The yaks a task points at (parent, deps, id mentions), flagging danglers. |
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`), then the doks and session notes that link it. Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
 | `commits <id> [--fetch] [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), the branches they record (`--fetch` fetches first), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
+| `release changes [<range>] [--json] [--check]` | What a release's commit range names: shorn yaks by change line and section, shorn yaks with none (gaps), open yaks the commits name, commits naming no yak. `--check` exits 1 on a gap. [Details](#release) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
 
@@ -993,6 +994,52 @@ Four sections, in this order (the second only when a note records a branch):
 
 `--json` prints the same as `{id, code_repo, recorded, fetch, branches, named, farm_history}`: `branches` entries are `{branch, remote, tracking, base, fetched, fetch_error, error, commits: [{sha, short, subject, checkpoint}], checkpoints: [{commit, ts, actor, state}]}` with `state` one of `on_branch`, `in_base`, `not_on_branch` (`error` says why there is no log: no tracking ref, no base); `recorded` entries carry `kind`, `commit`, `source`, `branch`, `ts`, `actor` and `found` (`{sha, short, subject}` or `null`); `named` and `farm_history` are lists of `{sha, short, subject}`.
 
+### `release`
+
+`release changes [<range>] [--json] [--check]`
+
+What a release contains, computed from git and the farm each time and never
+stored. It runs in the code repository (the git top-level of the directory yaks
+was started from, `-C` respected), over the checked-out history.
+
+**The range** is `A..B`, or one tag `T` (the release before `T`, up to `T`), or,
+by default, the latest release tag reachable from `HEAD` up to `HEAD`. Release
+tags match `v*` unless `git config yaks.releaseTags <glob>` says otherwise
+(read through the host repository like other `yaks.*` settings). The release
+before `T` is the nearest release tag reachable from `T`'s first parent; with
+none, the range starts at the beginning of history.
+
+**Membership.** A yak is in the range when a non-merge commit there names it:
+the message holds the yak's full id (a yak that exists in the farm, any herd
+prefix; one `git log` over the range, scanned once), or one of the yak's notes
+records the commit as a `commit:` field (what `yaks land` and `update --commit`
+write; shas compared by prefix). Nothing is written to the farm.
+
+**The report** groups what the range turns up:
+
+- shorn yaks with a change line, by section in Keep a Changelog's order (added,
+  changed, deprecated, removed, fixed, security), each with its line and the
+  commits that name it. A yak whose ancestor also has a line in the range is
+  listed under that ancestor;
+- shorn yaks recorded with [`--no-change`](#the-change-line): counted, ids
+  listed;
+- **gaps**: shorn yaks with no change note. A child whose nearest ancestor in
+  the range has a change line is listed under it as covered, not a gap;
+- yaks still hairy, shaving or dead that commits name, with their status:
+  partial or reverted work, not entries;
+- commits naming no yak (short sha and subject), except version bumps (a subject
+  starting `Bump version`).
+
+`--json` returns the resolved `range` (`from` is null at the start of history),
+the commit count, every yak (`id`, `title`, `type`, `status`, `parent`, `group`
+as `change`, `no_change`, `covered`, `gap` or `unfinished`, `change`, `section`,
+`covered_by`, and its `commits` as `sha`, `short`, `subject`), the `gaps` ids,
+and `commits_without_yak`.
+
+`--check` prints the report, then exits 1 when there is a gap, ending with a
+line that says so (with `--json` the line goes to stderr, so stdout stays one
+document). Run it before the version bump; see `RELEASING.md`.
+
 ### `land`
 
 `land <sha> [--dry-run] [--force-discard] [--yak <id>]...`, `land --continue [--yak <id>]...`, `land --abort`
@@ -1012,6 +1059,13 @@ A SHA already in HEAD with its change present, or a worker landed before (the me
 **Records the landing on the yak.** After a landing that made a commit, `land` opens the farm of the checkout (if one resolves) and appends a note to every yak id the landed commit's message names (the same scanner as `yaks scan-ids`, against the farm's real ids) and to each `--yak <id>` (repeatable; a private farm keeps ids out of messages, so name the yak explicitly). The note carries metadata `kind: landed`, `commit: <full landed sha>`, `source: <full worker sha>` and `branch: <branch HEAD is on>`, with the body `landed: [<short sha>](<link>) <subject>`, where the link is the code repo's host commit URL (`https://github.com/o/r/commit/<full sha>`, so it is a link on GitHub too, and yaks reads it back as the commit) when the repo has a recognised host, else `commit:<full sha>`; stamped with the usual actor, under the farm lock. Only the landed sha is durable (a worker's sha dies on squash or rebase), which is why both are kept. An id the farm does not have is warned about and skipped; landing is never undone by a recording problem. A SHA that was already in HEAD records itself (`commit` is that sha, no `source`); landing the same commit twice records once, and a run that adds no commit records nothing. `yaks commits <id>` reads these notes back first.
 
 `--dry-run` reports every step and changes nothing; it says which yaks it would record on.
+
+After recording on a yak that is shorn and has no `kind: change` note at all,
+`land` warns (the landing stands and the exit status is unchanged): `warning:
+<id> is shorn with no change line; add one: yaks update <id> --note "<line>"
+--meta kind=change (or --no-change on shear)`. The worker's context is still
+around at this point, so it is the cheap time to ask for the line;
+[`release changes --check`](#release) is the backstop. The dry run warns too.
 
 Ends with `landed: <oneline>` and `doctor: <last line of yaks doctor>` when a farm resolves.
 

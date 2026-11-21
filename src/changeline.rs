@@ -6,10 +6,6 @@
 //! someone chose one (`--section`, or `none` for `--no-change`); [`latest`]
 //! derives the rest from the yak's type each time it is read.
 
-// `latest` and `Change` are read by the release changelog (yaks-045c); until
-// it lands only the tests do.
-#![allow(dead_code)]
-
 use crate::model::Task;
 use crate::store;
 

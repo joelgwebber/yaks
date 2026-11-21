@@ -37,6 +37,7 @@ mod preflight;
 mod privatefarm;
 mod recur;
 mod refs;
+mod release;
 mod render;
 mod rollup;
 mod rows;
@@ -255,6 +256,11 @@ enum Command {
         /// Machine output: `recorded`, `branches`, `named` and `farm_history`.
         #[arg(long)]
         json: bool,
+    },
+    /// What a release contains, computed from its commits (never stored).
+    Release {
+        #[command(subcommand)]
+        action: ReleaseCmd,
     },
     /// Run a yak's `verify:` command and record PASS/FAIL as a note.
     ///
@@ -1656,6 +1662,50 @@ enum Command {
 }
 
 #[derive(Subcommand)]
+enum ReleaseCmd {
+    /// List the yaks a release's commit range names, and check their change lines.
+    ///
+    /// The range is `A..B`, or a single tag `T` (the release before `T`, up to
+    /// `T`); by default the latest release tag reachable from HEAD, up to HEAD.
+    /// Release tags match `v*` unless `git config yaks.releaseTags <glob>` says
+    /// otherwise; the release before `T` is the nearest release tag reachable
+    /// from `T`'s first parent (none: the start of history). It runs in the
+    /// code repository (the git top-level of the directory yaks was started
+    /// from, respecting `-C`), over the checked-out history.
+    ///
+    /// Membership is computed here, never stored. A yak is in the range when a
+    /// non-merge commit there names it: the commit message holds the yak's
+    /// full id (any herd prefix, a yak that exists in the farm), or one of the
+    /// yak's notes records the commit in a `commit:` field (what `yaks land`
+    /// and `update --commit` write; compared by sha prefix).
+    ///
+    /// The report groups what the range turns up: shorn yaks with a change
+    /// line, by section in Keep a Changelog's order (a child with a line of
+    /// its own is listed under its nearest ancestor that has one); shorn yaks
+    /// recorded with `--no-change` (counted and listed by id); shorn yaks with
+    /// no change note, the gaps (a child whose nearest ancestor in the range
+    /// has a change line is listed as covered, not a gap); yaks still hairy or
+    /// shaving, or dead, that commits name (listed with their status, not
+    /// entries); and commits naming no yak, except version bumps (a subject
+    /// starting `Bump version`).
+    ///
+    /// With `--check`, exit 1 after the report when there is a gap.
+    Changes {
+        /// `A..B` or a tag `T` (default: the latest release tag..HEAD).
+        range: Option<String>,
+        /// Machine output: the resolved `range`, every yak with its `group`,
+        /// `change`, `section`, `covered_by` and `commits`, the `gaps`, and
+        /// `commits_without_yak`.
+        #[arg(long)]
+        json: bool,
+        /// Exit 1 when a shorn yak in the range has no change line and no
+        /// ancestor's line covers it.
+        #[arg(long)]
+        check: bool,
+    },
+}
+
+#[derive(Subcommand)]
 enum DepAction {
     /// Add DEP_ID as a dependency of ID.
     Add { id: String, dep_id: String },
@@ -2543,6 +2593,15 @@ fn main() -> Result<()> {
                 Some(c) => render_commits(&c),
             }
         }
+        Command::Release { action } => match action {
+            ReleaseCmd::Changes { range, json, check } => {
+                let code =
+                    release::cli(&farm, &env::current_dir()?, range.as_deref(), json, check)?;
+                if code != 0 {
+                    std::process::exit(code);
+                }
+            }
+        },
         Command::Verify { ids, as_actor } => {
             let actor = actor::resolve(as_actor.as_deref());
             let cfg = farm.config();

@@ -954,11 +954,30 @@ fn record(
                     }
                     (LandedOutcome::Recorded, false) => format!("recorded the landing on {id}"),
                 });
+                if outcome == LandedOutcome::Recorded {
+                    if let Some(w) = missing_change_line(&farm, &id) {
+                        s.say(w);
+                    }
+                }
             }
         }
         Err(e) => s.say(format!("warning: could not record the landing: {e:#}")),
     }
     Ok(())
+}
+
+/// The warning for a landed yak that is shorn and has no change note at all
+/// (yaks-045c, design `/doks/design/changelog.md` §3): the worker's context is
+/// still around, so this is the cheap moment to ask for the line. The release
+/// check (`yaks release changes --check`) is the backstop.
+fn missing_change_line(farm: &Farm, id: &str) -> Option<String> {
+    let task = store::load_task_by_id(farm.root(), id).ok()??;
+    (task.status == crate::model::Status::Shorn && crate::changeline::latest(&task).is_none())
+        .then(|| {
+            format!(
+                "warning: {id} is shorn with no change line; add one: yaks update {id} --note \"<line>\" --meta kind=change (or --no-change on shear)"
+            )
+        })
 }
 
 /// The worker's message with `Squashed-from: <full sha>` as a trailer.

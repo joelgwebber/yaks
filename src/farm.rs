@@ -1916,7 +1916,7 @@ impl Farm {
     /// The code repository for a `yaks commits` run from `cwd`: its git
     /// top-level, unless that is the farm's own worktree (a branch farm), which
     /// holds no code, or `cwd` is not in git at all.
-    fn code_repo(&self, cwd: &Path) -> Option<PathBuf> {
+    pub(crate) fn code_repo(&self, cwd: &Path) -> Option<PathBuf> {
         let out = std::process::Command::new("git")
             .arg("-C")
             .arg(cwd)
