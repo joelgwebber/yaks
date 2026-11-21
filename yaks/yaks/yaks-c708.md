@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:12:49Z'
+updated: '2026-11-21T23:12:55Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -76,3 +76,9 @@ Decision: shared the block's membership with `release changes` (one `report_in`,
 *rdok-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-21T23:12:55Z
+
+*rdok-1*
+
+Summary: yaks release dok <version> [<range>] [--dry-run] writes doks/releases/<version>.md (kind release, schema on first use, one farm commit, rerun rewrites only the block and range/tag/date); yaks check flags stale-release; docs, README, RELEASING.md and the yaks-coordinating skill updated. Gate: cargo fmt --check clean; cargo test -p yaks green (41 result lines ok); verify PASS.
