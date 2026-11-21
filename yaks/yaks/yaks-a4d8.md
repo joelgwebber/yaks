@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-21T23:18:01Z'
+updated: '2026-11-21T23:20:41Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -59,3 +59,9 @@ yaks-045c landed 5d8a524c (rel-1); local main 5d8a524c, installed. Coordinator b
 *herd-files*
 
 Release dok for the next release: [v0.0.41](/doks/releases/v0.0.41.md).
+
+#### 2026-11-21T23:20:41Z
+
+*herd-files*
+
+yaks-c708 landed e1cf16c1 + f6494008 (rdok-1); local main f6494008, installed. Real release dok written: /doks/releases/v0.0.41.md. Follow-up yaks-6554 (TUI shows HTML comment markers). Batch 4 (base f6494008): clog-1 on yaks-7278 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHe7GpIBxBCA0aLJyrhJPreUvVwLftHG).
