@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:56Z'
-updated: '2026-11-21T21:57:16Z'
+updated: '2026-11-21T22:01:49Z'
 parent: yaks-a4d8
 tags:
 - cli
@@ -96,3 +96,5 @@ moved: shaving -> shorn
 *herd-files · kind: landed · commit: d63203fc54e1e56d8148e06fe8879432e23481b2 · source: 68d90322ed8978a2fa5e9ab25290154337fdf213 · branch: main*
 
 landed: [d63203fc](https://github.com/joelgwebber/yaks/commit/d63203fc54e1e56d8148e06fe8879432e23481b2) yaks-bcb8: yaks shorn --change/--no-change write a kind: change note; the TUI shear prompt offers the title as the change line
+
+[shear-prompt](yaks-bcb8/shear-prompt.txt "Coordinator's reproduction: S → n pre-fills the title as the change line; typing ' (TUI)' + Enter wrote kind: change 'Live preview (TUI)'")

@@ -1,0 +1,2 @@
+=== frame 3 · 110x12 · focus=list · view=🪒 Shaving · cursor=0 · rows=1 · sel=yak-2977 · blocked=- · collapsed=0 · filter=(all) · overlay=edit ===
+Shear yak-2977 — change line (edit; empty for none · Enter shears · Ctrl-C cancel): Live preview        INSERT
