@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-16T21:20:31Z'
-updated: '2026-11-20T00:07:10Z'
+updated: '2026-11-21T22:31:16Z'
 tags:
 - tui
 ---
@@ -43,3 +43,9 @@ moved: shaving -> shorn
 *herd-files*
 
 Evidence frame: [the `#middle` link lands on its heading](yaks-b4d7/coord-b4d7-anchor-lands.txt) (release build, headless). Committed as `b9f31552`.
+
+#### 2026-11-21T22:31:16Z
+
+*herd-files · kind: change · section: fixed*
+
+Following a link to a dok's heading lands on that heading the first time the viewer opens, not at the bottom.
