@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-21T21:20:57Z'
-updated: '2026-11-21T22:11:17Z'
+updated: '2026-11-21T22:26:00Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-bcb8
@@ -36,3 +36,9 @@ Claim (herd-files): worker rel-1 (Sonnet), base c20ad225. Scope: new src/release
 Start 2026-11-21T22:03:58Z. Top-level: /Users/joel/src/yaks/.delta/worktrees/8c177wnt6s3h/yaks (base c20ad225). Farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-045c.md.
 
 Plan: src/release.rs (range resolution, one `git log` over the range, membership by message scan with refs::scan_text + `commit:` notes via yakcommits::collect, report + text/json rendering); Command::Release{action: ReleaseCmd::Changes} in main.rs; warning in land.rs::record; docs.
+
+#### 2026-11-21T22:26:00Z
+
+*rel-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
