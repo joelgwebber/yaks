@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-21T21:36:36Z'
+updated: '2026-11-21T22:03:22Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -41,3 +41,9 @@ Decision (Joel, 2026-11-21): the commands are `yaks release changes|dok|changelo
 *herd-files*
 
 Batch 1 (herd-files, base 412882e4): change-1 on yaks-bcb8 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHb1KJIBxBCA0aLJyrhJPreUvVwLftHG); lfs-1 on yaks-c955 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHb29ZIBxBCA0aLJyrhJPreUvVwLftHG). Next: yaks-045c after bcb8 lands. LFS render test page for Joel's browser check: yaks-a4d8/lfs-render-test.md (farm 1d0a4386, not yet synced).
+
+#### 2026-11-21T22:03:22Z
+
+*herd-files*
+
+Batch 1 landed: yaks-c955 d2a9936c (lfs-1), yaks-bcb8 d63203fc + coordinator follow-up c20ad225 (change-1); pushed to local main c20ad225 and installed. Batch 2 (base c20ad225): rel-1 on yaks-045c (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHdNjJIBxBCA0aLJyrhJPreUvVwLftHG).
