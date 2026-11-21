@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-21T21:20:58Z'
-updated: '2026-11-21T23:12:55Z'
+updated: '2026-11-21T23:13:21Z'
 parent: yaks-a4d8
 depends_on:
 - yaks-045c
@@ -94,3 +94,9 @@ moved: shaving -> shorn
 *rdok-1 · kind: change*
 
 `yaks release dok <version>` writes the release dok `doks/releases/<version>.md` (kind `release`) with a generated block of its changes by section, families nested and each entry linking its yak; a rerun rewrites only the block, and `yaks check` flags a release dok whose block is out of date. Dok names may now hold dots (`v0.0.41.md`).
+
+#### 2026-11-21T23:13:21Z
+
+*herd-files · kind: landed · commit: e1cf16c17b95e0ef6eca65075b70f6ce672be931 · source: ee9788ffdaeb5d09c73a2892a5a356dfebfe922f · branch: main*
+
+landed: [e1cf16c1](https://github.com/joelgwebber/yaks/commit/e1cf16c17b95e0ef6eca65075b70f6ce672be931) yaks-c708: yaks release dok writes doks/releases/<version>.md with a generated changes block; check flags a stale block
