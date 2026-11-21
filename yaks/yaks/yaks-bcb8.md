@@ -103,7 +103,7 @@ landed: [d63203fc](https://github.com/joelgwebber/yaks/commit/d63203fc54e1e56d81
 
 *herd-files*
 
-Landed d63203fc (herd-files), plus my follow-up 0ec… (see `yaks commits`): `shorn --change` on a yak that is already shorn printed only "is already shorn" and dropped the line; it now warns with the `yaks update <id> --note "<line>" --meta kind=change` correction (test `a_change_line_for_a_yak_already_shorn_is_not_dropped_silently`).
+Landed d63203fc (herd-files), plus my follow-up c20ad225: `shorn --change` on a yak that is already shorn printed only "is already shorn" and dropped the line; it now warns with the `yaks update <id> --note "<line>" --meta kind=change` correction (test `a_change_line_for_a_yak_already_shorn_is_not_dropped_silently`).
 
 Reproduced with my build on a scratch farm:
 
