@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:35:47Z'
+updated: '2026-11-21T21:35:48Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -20,3 +20,9 @@ Decision 6 of [the changelog design](/doks/design/changelog.md#6-images-followin
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-21T21:35:48Z
+
+*herd-files*
+
+Claim (herd-files): worker lfs-1 (Sonnet). Scope: src/links.rs `read_at` (and a binary-safe sibling if images are read as bytes elsewhere: find where the TUI image viewer and `yaks peek` read @rev files). Out of scope: anything else. Evidence: a test with a real LFS pointer in a temp repo (skip if git-lfs missing), and a TUI headless/peek run on this farm's pinned image. Judge: herd-files at landing.
