@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 2
 created: '2026-11-21T21:20:59Z'
-updated: '2026-11-21T21:49:27Z'
+updated: '2026-11-21T21:54:35Z'
 parent: yaks-a4d8
 tags:
 - links
@@ -72,3 +72,5 @@ moved: shaving -> shorn
 *herd-files · kind: landed · commit: d2a9936c79920d735d9201aabcc9598bab622afa · source: 7290b8bf47cfed4029b9df6b38129a84ce524aa4 · branch: main*
 
 landed: [d2a9936c](https://github.com/joelgwebber/yaks/commit/d2a9936c79920d735d9201aabcc9598bab622afa) yaks-c955: @rev reads smudge Git LFS pointers; pinned farm images open in the image viewer
+
+[herd-pinned](yaks-c955/herd-pinned.txt "Coordinator's reproduction at d2a9936c: the @33f5db7f link in yaks-c955 opens the real LFS image")
