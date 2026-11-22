@@ -305,6 +305,53 @@ fn a_pinned_image_becomes_the_hosts_raw_url_and_links_keep_working() {
     assert!(!text.contains("raw.githubusercontent"), "{text}");
 }
 
+/// The host facts a link needs are asked once per run, not per link
+/// (yaks-bfb2): a release linking twelve yaks spawns about one git process
+/// per link (whether its file is on the remote), not the dozen each it took
+/// when every link re-read the remote, branch, host and HEAD.
+#[test]
+fn many_links_cost_about_one_git_call_each() {
+    let r = Repo::new("spawns");
+    r.commit("initial");
+    r.git(&["tag", "v0.1.0"]);
+    for i in 0..12 {
+        let id = r.create(&format!("Change {i}"), "feature", None);
+        r.run(&["shorn", &id, "--change", &format!("Adds {i}.")]);
+        r.commit(&format!("{id}: change {i}"));
+    }
+    r.git(&["tag", "v0.2.0"]);
+    publish(&r);
+    let trace = r.dir.with_extension("git-trace");
+    let _ = std::fs::remove_file(&trace);
+    let out = assert_cmd::Command::cargo_bin("yaks")
+        .unwrap()
+        .current_dir(&r.dir)
+        .env("XDG_DATA_HOME", common::data_home(&r.dir))
+        .env("YAKS_SKILLS_AUTOSYNC", "0")
+        .env("GIT_TRACE", &trace)
+        .args(["release", "changelog", "--release", "v0.2.0"])
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let text = String::from_utf8(out.stdout).unwrap();
+    assert_eq!(
+        text.matches("](https://github.com/o/r/blob/").count(),
+        12,
+        "{text}"
+    );
+    let spawns = std::fs::read_to_string(&trace)
+        .unwrap()
+        .matches("built-in: git")
+        .count();
+    // 12 per-link checks + discovery and release planning (48 when written);
+    // it was 158 when every link asked everything again.
+    assert!(spawns <= 60, "git ran {spawns} times for 12 links");
+}
+
 #[test]
 fn links_drop_to_text_when_the_farm_branch_is_not_on_the_remote() {
     let (r, feat, ..) = two_releases("unpublished");

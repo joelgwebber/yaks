@@ -18,6 +18,8 @@ use crate::links::{Anchor, Link, Peek};
 use crate::{gitrepo, hosting, links, store};
 use anyhow::{Result, bail};
 use std::borrow::Cow;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -187,9 +189,40 @@ pub struct Web {
 }
 
 /// What a link resolves against: the farm root and the code checkout.
+///
+/// A `Space` is also the batch: the git facts [`Space::web_url`] needs that do
+/// not depend on the link (a repository's remote and host, whether the farm
+/// is private, HEAD, whether a commit or branch is on the remote) are asked
+/// once per `Space` and remembered for its life (yaks-bfb2: a changelog of
+/// fifty links was 630 git calls). Make a fresh `Space` to see a push or a
+/// fetch; whether each file is on the remote is still asked per link.
 pub struct Space {
     pub farm: PathBuf,
     pub code: Option<PathBuf>,
+    memo: RefCell<Memo>,
+}
+
+/// The git facts a [`Space`] has asked, keyed by repository directory.
+#[derive(Default)]
+struct Memo {
+    branch: HashMap<PathBuf, Option<String>>,
+    hosting: HashMap<(PathBuf, Option<String>), Hosting>,
+    private: HashMap<PathBuf, bool>,
+    commit: HashMap<(PathBuf, String), Option<String>>,
+    remote_has: HashMap<(PathBuf, String, String), bool>,
+    remote_branch: HashMap<(PathBuf, String, String), bool>,
+}
+
+/// [`gitrepo::hosting_repo`]'s answer, its error kept as text to be cloned.
+type Hosting = Result<(String, hosting::Repo), String>;
+
+/// `map[key]`, computing and remembering it with `ask` the first time.
+fn memo<K: std::hash::Hash + Eq, V: Clone>(
+    map: &mut HashMap<K, V>,
+    key: K,
+    ask: impl FnOnce() -> V,
+) -> V {
+    map.entry(key).or_insert_with(ask).clone()
 }
 
 impl Space {
@@ -197,7 +230,51 @@ impl Space {
         Space {
             farm: farm.to_path_buf(),
             code,
+            memo: RefCell::default(),
         }
+    }
+
+    // -- the remembered git facts of `web_url` (yaks-bfb2) ------------------
+
+    fn current_branch(&self, dir: &Path) -> Option<String> {
+        memo(&mut self.memo.borrow_mut().branch, dir.into(), || {
+            gitrepo::current_branch(dir)
+        })
+    }
+
+    fn hosting_repo(&self, dir: &Path, branch: Option<&str>) -> Result<(String, hosting::Repo)> {
+        let key = (dir.to_path_buf(), branch.map(String::from));
+        memo(&mut self.memo.borrow_mut().hosting, key, || {
+            gitrepo::hosting_repo(dir, branch).map_err(|e| format!("{e:#}"))
+        })
+        .map_err(anyhow::Error::msg)
+    }
+
+    fn is_private(&self, top: &Path) -> bool {
+        memo(&mut self.memo.borrow_mut().private, top.into(), || {
+            crate::privatefarm::is_private(top)
+        })
+    }
+
+    fn commit_of(&self, dir: &Path, rev: &str) -> Option<String> {
+        let key = (dir.to_path_buf(), rev.to_string());
+        memo(&mut self.memo.borrow_mut().commit, key, || {
+            gitrepo::commit_of(dir, rev)
+        })
+    }
+
+    fn remote_has(&self, dir: &Path, remote: &str, sha: &str) -> bool {
+        let key = (dir.to_path_buf(), remote.to_string(), sha.to_string());
+        memo(&mut self.memo.borrow_mut().remote_has, key, || {
+            gitrepo::remote_has(dir, remote, sha)
+        })
+    }
+
+    fn remote_branch_exists(&self, dir: &Path, remote: &str, branch: &str) -> bool {
+        let key = (dir.to_path_buf(), remote.to_string(), branch.to_string());
+        memo(&mut self.memo.borrow_mut().remote_branch, key, || {
+            gitrepo::remote_branch_exists(dir, remote, branch)
+        })
     }
 
     /// What `link` names. The one place that knows a link can name a
@@ -495,10 +572,10 @@ impl Space {
             let Some(code) = &self.code else {
                 bail!("commit:{sha}: no code checkout to link from (run from one)");
             };
-            let branch = gitrepo::current_branch(code);
-            let (remote, repo) = gitrepo::hosting_repo(code, branch.as_deref())?;
-            let full = gitrepo::commit_of(code, sha).unwrap_or_else(|| sha.clone());
-            let note = (!gitrepo::remote_has(code, &remote, &full)).then(|| {
+            let branch = self.current_branch(code);
+            let (remote, repo) = self.hosting_repo(code, branch.as_deref())?;
+            let full = self.commit_of(code, sha).unwrap_or_else(|| sha.clone());
+            let note = (!self.remote_has(code, &remote, &full)).then(|| {
                 format!(
                     "{} is not on {remote} as last fetched: the link leads nowhere until it is pushed",
                     &full[..full.len().min(7)]
@@ -516,9 +593,9 @@ impl Space {
             if rev.is_none() && !code.join(rel).is_file() {
                 bail!("code:{rel}: no such file in {}", code.display());
             }
-            let branch = gitrepo::current_branch(code);
-            let (remote, repo) = gitrepo::hosting_repo(code, branch.as_deref())?;
-            return file_web(
+            let branch = self.current_branch(code);
+            let (remote, repo) = self.hosting_repo(code, branch.as_deref())?;
+            return self.file_web(
                 code,
                 &remote,
                 &repo,
@@ -538,15 +615,15 @@ impl Space {
             }
         }
         let (top, prefix) = self.farm_top()?;
-        if crate::privatefarm::is_private(&top) {
+        if self.is_private(&top) {
             bail!(
                 "this farm is private (`git config yaks.private` is true): it never leaves this \
                  machine, so there is no link to give. `yaks private --off` undoes it"
             );
         }
         let branch = store::farm_branch(&self.farm);
-        let (remote, repo) = gitrepo::hosting_repo(&top, branch.as_deref())?;
-        file_web(
+        let (remote, repo) = self.hosting_repo(&top, branch.as_deref())?;
+        self.file_web(
             &top,
             &remote,
             &repo,
@@ -557,94 +634,96 @@ impl Space {
             &anchor,
         )
     }
-}
 
-#[allow(clippy::too_many_arguments)]
-fn file_web(
-    dir: &Path,
-    remote: &str,
-    repo: &hosting::Repo,
-    branch: Option<&str>,
-    rev: Option<&str>,
-    pin: bool,
-    repo_path: &str,
-    anchor: &Option<Anchor>,
-) -> Result<Web> {
-    let frag = match anchor {
-        None => Frag::None,
-        Some(Anchor::Lines(a, b)) => Frag::Lines(*a, *b),
-        Some(Anchor::Heading(h)) => Frag::Heading(h.clone()),
-    };
-    let mut note = None;
-    let (commit, branch_name);
-    let r = if let Some(rev) = rev {
-        // An explicit pin: the commit as written, expanded when git knows it.
-        commit = gitrepo::commit_of(dir, rev).unwrap_or_else(|| rev.to_string());
-        if !gitrepo::remote_has(dir, remote, &commit) {
+    #[allow(clippy::too_many_arguments)]
+    fn file_web(
+        &self,
+        dir: &Path,
+        remote: &str,
+        repo: &hosting::Repo,
+        branch: Option<&str>,
+        rev: Option<&str>,
+        pin: bool,
+        repo_path: &str,
+        anchor: &Option<Anchor>,
+    ) -> Result<Web> {
+        let frag = match anchor {
+            None => Frag::None,
+            Some(Anchor::Lines(a, b)) => Frag::Lines(*a, *b),
+            Some(Anchor::Heading(h)) => Frag::Heading(h.clone()),
+        };
+        let mut note = None;
+        let (commit, branch_name);
+        let r = if let Some(rev) = rev {
+            // An explicit pin: the commit as written, expanded when git knows it.
+            commit = self.commit_of(dir, rev).unwrap_or_else(|| rev.to_string());
+            if !self.remote_has(dir, remote, &commit) {
+                note = Some(format!(
+                    "{} is not on {remote} as last fetched: the link leads nowhere until it is pushed",
+                    &commit[..commit.len().min(7)]
+                ));
+            }
+            Ref::Commit(&commit)
+        } else {
+            // No pin written: the branch, a stable link; `--pin` asks for the
+            // commit, which the remote must already have to be worth giving.
+            let pushed_head = self
+                .commit_of(dir, "HEAD")
+                .filter(|h| self.remote_has(dir, remote, h));
+            let live_branch = branch.filter(|b| self.remote_branch_exists(dir, remote, b));
+            let (want_commit, fallback_note) = match (pin, pushed_head, live_branch) {
+                (true, Some(h), _) => (Some((h, None)), None),
+                (true, None, Some(b)) => (
+                    None,
+                    Some(format!(
+                        "HEAD is not on {remote} as last fetched (this checkout is ahead), so there \
+                     is no commit to link; linking the branch {b} instead"
+                    )),
+                ),
+                (false, _, Some(_)) => (None, None),
+                (false, Some(h), None) => (
+                    Some((
+                        h.clone(),
+                        Some(format!(
+                            "{remote} has no branch to name; linking the commit {}",
+                            &h[..7]
+                        )),
+                    )),
+                    None,
+                ),
+                (_, _, None) => bail!(
+                    "neither the branch nor HEAD is on {remote} as last fetched, so there is \
+                 nothing to link to: push it first (`yaks sync` for a farm, `git push` for code)"
+                ),
+            };
+            match want_commit {
+                Some((h, n)) => {
+                    commit = h;
+                    note = n;
+                    Ref::Commit(&commit)
+                }
+                None => {
+                    note = fallback_note;
+                    branch_name = live_branch.expect("a live branch").to_string();
+                    Ref::Branch(&branch_name)
+                }
+            }
+        };
+        // The file may be new since the last push: say so rather than hand out a 404.
+        let at = match r {
+            Ref::Commit(c) => c.to_string(),
+            Ref::Branch(b) => format!("{remote}/{b}"),
+        };
+        if note.is_none() && !gitrepo::has_path(dir, &at, repo_path) {
             note = Some(format!(
-                "{} is not on {remote} as last fetched: the link leads nowhere until it is pushed",
-                &commit[..commit.len().min(7)]
+                "{repo_path} is not in {at} (not pushed yet?): the link leads nowhere until it is"
             ));
         }
-        Ref::Commit(&commit)
-    } else {
-        // No pin written: the branch, a stable link; `--pin` asks for the
-        // commit, which the remote must already have to be worth giving.
-        let pushed_head =
-            gitrepo::commit_of(dir, "HEAD").filter(|h| gitrepo::remote_has(dir, remote, h));
-        let live_branch = branch.filter(|b| gitrepo::remote_branch_exists(dir, remote, b));
-        let (want_commit, fallback_note) = match (pin, pushed_head, live_branch) {
-            (true, Some(h), _) => (Some((h, None)), None),
-            (true, None, Some(b)) => (
-                None,
-                Some(format!(
-                    "HEAD is not on {remote} as last fetched (this checkout is ahead), so there \
-                     is no commit to link; linking the branch {b} instead"
-                )),
-            ),
-            (false, _, Some(_)) => (None, None),
-            (false, Some(h), None) => (
-                Some((
-                    h.clone(),
-                    Some(format!(
-                        "{remote} has no branch to name; linking the commit {}",
-                        &h[..7]
-                    )),
-                )),
-                None,
-            ),
-            (_, _, None) => bail!(
-                "neither the branch nor HEAD is on {remote} as last fetched, so there is \
-                 nothing to link to: push it first (`yaks sync` for a farm, `git push` for code)"
-            ),
-        };
-        match want_commit {
-            Some((h, n)) => {
-                commit = h;
-                note = n;
-                Ref::Commit(&commit)
-            }
-            None => {
-                note = fallback_note;
-                branch_name = live_branch.expect("a live branch").to_string();
-                Ref::Branch(&branch_name)
-            }
-        }
-    };
-    // The file may be new since the last push: say so rather than hand out a 404.
-    let at = match r {
-        Ref::Commit(c) => c.to_string(),
-        Ref::Branch(b) => format!("{remote}/{b}"),
-    };
-    if note.is_none() && !gitrepo::has_path(dir, &at, repo_path) {
-        note = Some(format!(
-            "{repo_path} is not in {at} (not pushed yet?): the link leads nowhere until it is"
-        ));
+        Ok(Web {
+            url: repo.file_url(r, repo_path, &frag),
+            note,
+        })
     }
-    Ok(Web {
-        url: repo.file_url(r, repo_path, &frag),
-        note,
-    })
 }
 
 fn git(base: &Path, args: &[&str]) -> std::io::Result<std::process::Output> {
