@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:27:27Z'
+updated: '2026-11-22T17:30:06Z'
 tags:
 - git
 - init
@@ -80,3 +80,9 @@ moved: shaving -> shorn
 *init-1 · kind: change*
 
 yaks init now writes a fresh farm at the branch root (config.yaml, schema, <herd>/yaks/) instead of under .yaks/; an existing .yaks/ farm keeps its layout.
+
+#### 2026-11-22T17:30:06Z
+
+*herd-files · kind: landed · commit: fe2b473d5a3afa6be57acab9fbbc0d4dedf28dcb · source: 91c5f6f92c29a8dfcdf292fddf86d4f36c8a773e · branch: main*
+
+landed: [fe2b473d](https://github.com/joelgwebber/yaks/commit/fe2b473d5a3afa6be57acab9fbbc0d4dedf28dcb) yaks-cae0: yaks init writes a fresh farm at the branch root, not under .yaks/
