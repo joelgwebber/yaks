@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-10-12T01:54:23Z'
-updated: '2026-10-27T02:36:17Z'
+updated: '2026-11-22T00:10:34Z'
 tags:
 - release
 ---
@@ -67,3 +67,9 @@ moved: shaving -> shorn
 picked up
 
 Confirmed with Joel directly (chat) and verified myself: v0.0.15 is fully released, all 6 packages live. Closing out.
+
+#### 2026-11-22T00:10:34Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
