@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:26:33Z'
+updated: '2026-11-22T17:34:08Z'
 tags:
 - git
 - cli
@@ -94,3 +94,9 @@ landed: [876170b5](https://github.com/joelgwebber/yaks/commit/876170b5364117109b
 *herd-files*
 
 Landed 876170b5 (herd-files). Reproduced on the real farm with my build: 15 rounds of a backgrounded `yaks update` racing `yaks commit`, 0 failures (before, this farm failed this way about six times a session). The probe notes were then reverted with `yaks undo` (d8df0a18); `--as` on them did not set the commit trailer, filed separately. Gate below.
+
+#### 2026-11-22T17:34:08Z
+
+*herd-files · kind: change*
+
+`yaks commit` no longer fails with "nothing to commit" when another write's commit lands first: it holds the farm lock while it stages, and an empty stage is nothing to commit.
