@@ -573,7 +573,9 @@ grammar (the one `yaks peek` and `yaks doctor` use), described in
 reference shows as a dim `[n]` (numbered in order of first use) that `Enter`
 follows to its definition; definitions collect at the end of their block
 (description or comment) under a short dim rule, and `o` returns to the
-reference. The description and each comment render separately, each comment under a
+reference. An HTML comment (`<!-- ... -->`, on a line of its own or inline, one
+line or several) is hidden, as on GitHub; any other HTML shows as literal text,
+and a comment inside a code span or fence is code and stays. The description and each comment render separately, each comment under a
 `▸ author · when` header. Yanking rendered rows (`v` … `y`) copies their source
 markdown, not the displayed text. The editor still shows the raw source.
 

@@ -167,6 +167,13 @@ struct Renderer<'k> {
     code: Option<(Lang, syntax::State)>,
     /// The no-wrap block id rows are tagged with while `verbatim` is set.
     block: Option<usize>,
+    /// The HTML block being read: its first source line and its text so far.
+    /// It is laid out when it ends, so a block of only comments leaves no row
+    /// and owes no blank (see [`hide_comments`]).
+    html: Option<(usize, String)>,
+    /// An inline comment was just skipped: a space it leaves beside another
+    /// collapses, as it does in HTML.
+    after_comment: bool,
     /// Next free no-wrap block id.
     next_block: usize,
     /// Table under construction: rows of cells of chars, plus alignments.
@@ -226,6 +233,8 @@ pub fn render_in<'k>(
         verbatim: None,
         code: None,
         block: None,
+        html: None,
+        after_comment: false,
         next_block: 0,
         table: None,
         footnote_nums: footnote_numbers(&events),
@@ -261,6 +270,47 @@ fn footnote_numbers(events: &[(Event, Range<usize>)]) -> HashMap<String, usize> 
     nums
 }
 
+/// Whether inline HTML `t` is a whole comment (`<!-- ... -->`). Renders as
+/// nothing, as it does on GitHub; every other HTML shows as literal text.
+fn is_comment(t: &str) -> bool {
+    t.starts_with("<!--") && t.ends_with("-->")
+}
+
+/// The lines of an HTML block that show: comments (`<!-- ... -->`, possibly
+/// across lines, an unterminated one running to the end) are cut out, and a
+/// line that held a comment and nothing else goes with it. Each line comes
+/// with its index in the block. The one place a comment is hidden in a block.
+fn hide_comments(text: &str) -> Vec<(usize, String)> {
+    let mut open = false;
+    let mut out = Vec::new();
+    for (k, l) in text
+        .strip_suffix('\n')
+        .unwrap_or(text)
+        .split('\n')
+        .enumerate()
+    {
+        let (mut rest, mut kept, mut cut) = (l, String::new(), open);
+        loop {
+            if open {
+                match rest.find("-->") {
+                    Some(i) => (rest, open) = (&rest[i + 3..], false),
+                    None => break,
+                }
+            } else if let Some(i) = rest.find("<!--") {
+                kept.push_str(&rest[..i]);
+                (rest, open, cut) = (&rest[i + 4..], true, true);
+            } else {
+                kept.push_str(rest);
+                break;
+            }
+        }
+        if !(cut && kept.trim().is_empty()) {
+            out.push((k, kept));
+        }
+    }
+    out
+}
+
 impl Renderer<'_> {
     fn line_of(&self, byte: usize) -> usize {
         self.line_starts
@@ -291,12 +341,15 @@ impl Renderer<'_> {
 
     fn event(&mut self, ev: &Event, range: Range<usize>, next: Option<&Event>) {
         let line = self.line_of(range.start);
+        let after_comment = std::mem::take(&mut self.after_comment);
         match ev {
             Event::Start(tag) => self.start(tag, line, next),
             Event::End(tag) => self.end(tag),
             Event::Text(t) => {
                 if let Some(style) = self.verbatim {
                     self.verbatim_text(t, line, style);
+                } else if after_comment && self.buf.last().is_some_and(|c| c.ch == ' ') {
+                    self.push_text(t.trim_start_matches(' '), line);
                 } else {
                     self.push_text(t, line);
                 }
@@ -305,7 +358,11 @@ impl Renderer<'_> {
                 let st = self.style().patch(code());
                 self.push_linked(t, line, st, true);
             }
-            Event::Html(t) => self.verbatim_text(t, line, Style::new()),
+            Event::Html(t) => match &mut self.html {
+                Some((_, text)) => text.push_str(t),
+                None => self.verbatim_text(t, line, Style::new()),
+            },
+            Event::InlineHtml(t) if is_comment(t) => self.after_comment = true,
             Event::InlineHtml(t) | Event::InlineMath(t) | Event::DisplayMath(t) => {
                 let st = self.style();
                 self.push_linked(t, line, st, false);
@@ -420,10 +477,7 @@ impl Renderer<'_> {
                 }
                 self.open_block(palette::code_block());
             }
-            Tag::HtmlBlock => {
-                self.block_start();
-                self.open_block(Style::new());
-            }
+            Tag::HtmlBlock => self.html = Some((line, String::new())),
             Tag::List(start) => {
                 self.block_start();
                 self.lists.push(List {
@@ -562,7 +616,23 @@ impl Renderer<'_> {
                     self.footnotes.push((n, def));
                 }
             }
-            TagEnd::CodeBlock | TagEnd::HtmlBlock => {
+            TagEnd::HtmlBlock => {
+                if let Some((line, text)) = self.html.take() {
+                    let lines = hide_comments(&text);
+                    // Only comments: nothing to show, so no row and no blank.
+                    if !lines.is_empty() {
+                        self.block_start();
+                        self.open_block(Style::new());
+                        for (k, l) in lines {
+                            self.verbatim_text(&l, line + k, Style::new());
+                        }
+                        self.verbatim = None;
+                        self.block = None;
+                        self.pending_blank = true;
+                    }
+                }
+            }
+            TagEnd::CodeBlock => {
                 self.code = None;
                 self.verbatim = None;
                 self.block = None;
@@ -1595,5 +1665,49 @@ mod tests {
         assert_eq!(urls(u), vec![(0, u.len(), Target::Url(u.into()))]);
         let line = format!("see ({u}).");
         assert_eq!(urls(&line), vec![(5, u.len(), Target::Url(u.into()))]);
+    }
+}
+
+#[cfg(test)]
+mod comment_tests {
+    use super::*;
+
+    fn texts(md: &str) -> Vec<String> {
+        let known = HashSet::new();
+        render(md, 80, &known).into_iter().map(|r| r.text).collect()
+    }
+
+    #[test]
+    fn block_comment_renders_as_nothing_without_doubling_blanks() {
+        assert_eq!(
+            texts("above\n\n<!-- yaks:changes -->\n\nbody\n\n<!-- /yaks:changes -->\n\nbelow"),
+            vec!["above", "", "body", "", "below"]
+        );
+        assert_eq!(texts("<!-- only -->"), Vec::<String>::new());
+        assert_eq!(texts("a\n<!-- x -->\nb"), vec!["a", "", "b"]);
+    }
+
+    #[test]
+    fn multi_line_block_comment_renders_as_nothing() {
+        assert_eq!(texts("<!--\nfoo\n\nbar\n-->\n\npara"), vec!["para"]);
+    }
+
+    #[test]
+    fn inline_comment_renders_as_nothing() {
+        assert_eq!(texts("text <!-- note --> more"), vec!["text more"]);
+        assert_eq!(texts("text <!-- a\nb --> more"), vec!["text more"]);
+    }
+
+    #[test]
+    fn comment_in_code_stays_literal() {
+        assert_eq!(texts("`<!-- c -->`"), vec!["<!-- c -->"]);
+        assert_eq!(texts("```\n<!-- c -->\n```"), vec!["<!-- c -->"]);
+    }
+
+    #[test]
+    fn other_html_stays_literal() {
+        assert_eq!(texts("<b>x</b>"), vec!["<b>x</b>"]);
+        assert_eq!(texts("<div>\nhi\n</div>"), vec!["<div>", "hi", "</div>"]);
+        assert_eq!(texts("<div><!-- c -->hi</div>"), vec!["<div>hi</div>"]);
     }
 }
