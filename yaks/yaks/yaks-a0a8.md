@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-13T22:39:42Z'
-updated: '2026-09-13T23:44:36Z'
+updated: '2026-11-22T00:10:31Z'
 tags:
 - release
 verify: cargo test --workspace
@@ -24,3 +24,9 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 *Joel Webber*
 
 Version lockstep set to 0.0.8: Cargo.toml + npm/yaks/package.json (the two files release.yml's lockstep check compares against the tag); Cargo.lock refreshed by 'cargo build --release', which now reports 'Compiling yaks v0.0.8' and './target/release/yaks --version' prints 'yaks 0.0.8'. Levers: 'yaks verify yaks-a0a8' (cargo test --workspace) PASS -- 242 unit + 25 cli + 7 toque + 1 doctest, 0 failed, 1 ignored (the on-demand docshots generator). 'node npm/yaks/test-mapping.mjs' ok (launcher host->package mapping + optionalDependencies consistent). 'yaks doctor' all clear. Note: toque stays at 0.1.0 -- release.yml publishes only the six npm packages, not the crate.
+
+#### 2026-11-22T00:10:31Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
