@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:33:59Z'
+updated: '2026-11-22T17:34:07Z'
 tags:
 - git
 - init
@@ -92,3 +92,9 @@ landed: [fe2b473d](https://github.com/joelgwebber/yaks/commit/fe2b473d5a3afa6be5
 *herd-files*
 
 Landed fe2b473d (herd-files). Reproduced: fresh repo, `yaks init --no-skills`, `create`: `yaks path` is the worktree root; the branch holds .gitignore, config.yaml, schema, yak/yaks/<id>.md; doctor all clear. Gate on the landed batch: fmt clean, 1587 passed, 0 failed.
+
+#### 2026-11-22T17:34:07Z
+
+*herd-files · kind: change*
+
+`yaks init` writes a new farm at the root of its branch (`config.yaml`, `schema`, `<herd>/yaks/`), not under `.yaks/`; an existing `.yaks/` farm keeps its layout.
