@@ -105,4 +105,4 @@ Decision 2 gives yaks-64c4 its chronological spine: a yak's release, and a relea
 ## Open questions
 
 - [ ] Does a relative LFS image inside a markdown file viewed on GitHub at `blob/<sha>/…` render, or only `raw/<sha>` URLs? (decides whether the projection may keep relative image links)
-- [ ] The command name: `yaks release changes|dok|changelog` is the proposal; `yaks changes` is the shorter alternative.
+- [x] The command name: `yaks release changes|dok|changelog` (Joel, 2026-11-21; built as yaks-045c, yaks-c708, yaks-7278).
