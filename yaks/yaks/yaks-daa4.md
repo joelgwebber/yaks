@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:18:56Z'
+updated: '2026-11-22T17:19:15Z'
 tags:
 - docs
 - tui
@@ -76,3 +76,9 @@ moved: shaving -> shorn
 *shots-1 · kind: change*
 
 Doc screenshots refreshed for the current TUI, with new frames for browsing a zip attachment and for a narrowed line range
+
+#### 2026-11-22T17:19:15Z
+
+*shots-1*
+
+Correction to the embeds Decision above: all three new frames ARE embedded in docs/tui.md (line-range at the narrowed-range paragraph; archive-tree and archive-member after the 'Archives read as read-only directories' paragraph). Landed as commit 563697854e42 (one commit, source+docs+SVGs). Not run: yaks-docs parity grep for a CLI/key change (none: docs and scenes only).
