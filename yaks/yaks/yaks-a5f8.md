@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-11-02T16:44:16Z'
-updated: '2026-11-02T17:10:43Z'
+updated: '2026-11-22T00:10:42Z'
 parent: yaks-44b3
 tags:
 - release
@@ -61,3 +61,9 @@ thread: ksQQeB1CvWFdQrqkwpKQFhpMEJLOADtlxpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:42Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
