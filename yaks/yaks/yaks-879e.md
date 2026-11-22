@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:20:24Z'
+updated: '2026-11-22T17:20:35Z'
 tags:
 - git
 - cli
@@ -64,3 +64,9 @@ Coordinator datapoint, 2026-11-22 ~17:10Z, real farm: `yaks update yaks-6554 --n
 *commit-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-22T17:20:35Z
+
+*commit-1*
+
+Coordinator's datapoint (plain `update` then `yaks commit`, no LFS): a sequential pair cannot race itself, but the real farm has several agents and a TUI writing at once, so a writer's autocommit landing between `commit`'s status read and its `git add` is the same race (the farm lock fix); and any case where status reads a change that `git add` then finds identical to HEAD (racily-clean stat) is what the post-add `git diff --cached --quiet` check covers. I could not reproduce a purely sequential failure in a scratch farm (touch, rewrite, LFS PNG attach, then commit x3: all clean). Summary: lock around commit's read+stage, git-verdict check after `git add`, docs/cli.md + clap help updated; gate green.
