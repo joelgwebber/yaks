@@ -39,7 +39,6 @@ mod render;
 mod runtime;
 mod sheds_tab;
 mod source;
-mod surface;
 mod syntax;
 mod takeout;
 #[cfg(test)]
@@ -561,7 +560,7 @@ impl App {
         // The user's key overrides (`keys:` in their config.yaml). Read here,
         // not in `new`, so a snapshot test never depends on the machine.
         // The family is the user's (`keys:`, else `vim_mode:`), else the farm's.
-        let (keymap, notice) = Keymap::load_user(Family::from_vim_mode(cfg.vim_mode));
+        let (keymap, notice) = keymap::load_user(Family::from_vim_mode(cfg.vim_mode));
         app.keymap = keymap;
         if let Some(notice) = notice {
             app.notification = Some(notice);

@@ -23,7 +23,7 @@ You are the **yakherd**: the one agent that claims yaks, briefs workers, lands t
 
 ## 2. The shape: claim, fan out, land, reconcile
 
-1. **Claim.** Create or pick the leaf yaks, `yaks shave` each, and write a claim note: owner name, scope by file and symbol, out of scope, evidence contract, judge (section 4).
+1. **Claim.** Create or pick the leaf yaks, `yaks shave` each, and write a claim note: owner name, scope by file and symbol, out of scope, evidence contract (a UI change names the state its rendered frame must show), judge (section 4).
 2. **Fan out.** One worker per yak, each from your freshest state, each with a brief (section 5).
 3. **Land.** Only you land, one worker at a time, by the SHA in its final message, then check it (section 6).
 4. **Reconcile.** A yak still `shaving` after the batch is stalled: `regrow` it or re-run it. Shear the umbrella once every child is shorn or dead; a child that isn't done graduates out first (the `yaks` skill's "Families"). `yaks doctor`, `yaks commit`.

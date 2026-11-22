@@ -8,7 +8,12 @@
 //! ([`help_content`]) and the bottom bar ([`help_hint`]) are generated from
 //! the same table, so a key cannot be bound without being listed, and the
 //! four cannot drift. The [`Keymap`] is the table with the user's `keys:`
-//! overrides applied ([`overrides`]); every read of a key goes through it.
+//! overrides applied (`overrides`); every read of a key goes through it.
+//!
+//! The mechanism (keys and their labels, the families, the lookup, overrides,
+//! the popup and reference layout, and the rule checks the tests call) is
+//! `toque::keys`, shared with canon's TUI (yaks-2e7c); this module is yaks'
+//! own commands, contexts, table, sections and extras.
 //!
 //! A [`Cmd`] is one intent, not one handler: `move.down` moves whichever
 //! surface has focus, and `run_cmd` picks the target from the context. A key
@@ -30,7 +35,7 @@
 //!
 //! One key family for the whole TUI (yaks-7c6e): [`Family::Vim`] or
 //! [`Family::Standard`], chosen once in the user's config. A key that belongs
-//! to only one family ([`VIM_ONLY`], [`STANDARD_ONLY`]) is off in the other:
+//! to only one family (toque's `VIM_ONLY`, `STANDARD_ONLY`) is off in the other:
 //! the table lists every key, and [`Keymap::keys`] filters them, so the
 //! lookup, the `?` popup, the reference and the hint all agree. The keys both
 //! families share (arrows, `PgUp`/`PgDn`, `Home`/`End`, `Enter`, `Esc`, the
@@ -39,7 +44,7 @@
 //! The key rules, with the tests that enforce them (also in `AGENTS.md`):
 //!
 //! - **Case is a tier.** Lowercase looks and moves; Shift changes an existing
-//!   yak; Ctrl is the app and the farm. [`Cmd::mutates`] says which commands
+//!   yak; Ctrl is the app and the farm. `Cmd::writes` says which commands
 //!   write, and `no_lowercase_key_changes_an_existing_yak` fails on one that
 //!   sits on a lowercase key (bar the listed exceptions).
 //! - **One key, one intent, in both families.** `every_command_stays_bound_in_standard_mode`.
@@ -51,13 +56,34 @@
 //! own keys are edtui's, listed by hand for the `F1` popup ([`editor_groups`]).
 
 use super::*;
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use ratatui::text::Line;
+
+// The mechanism is toque's (yaks-2e7c): keys, families, the lookup, overrides
+// and the help layout. This module is yaks' commands, contexts and table.
+pub(crate) use toque::keys::{Family, Key, PopupGroups, popup_lines};
+use toque::keys::{c, ctrl, ctrl_k, k, shift};
+
+/// What a binding adds to the bottom hint bar (toque's [`toque::keys::Hint`]).
+pub(crate) type Hint = toque::keys::Hint;
+/// One row of the table.
+pub(crate) type Binding = toque::keys::Binding<Cmd>;
+/// The keys in effect: the table, filtered by the key family, with the user's
+/// `keys:` overrides applied.
+pub(crate) type Keymap = toque::keys::Keymap<Cmd>;
+type Section = toque::keys::Section<Cmd>;
+
+/// The filter drawer's hint, which depends on whether a filter is active
+/// (`f:filter  /:search`, or `f:filter  Esc:clear`).
+const FILTER_HINT: Hint = Hint::Custom("filter");
+
+/// What the `?` popup says about the keys it had no room for.
+pub(crate) const POPUP_MORE: &str = "the full reference has them all";
 
 mod editor;
 mod overrides;
 
 pub(crate) use editor::{EditorAt, editor_groups, editor_lists, editor_title, rows_groups};
+pub(crate) use overrides::load_user;
 
 /// Declares [`Cmd`] with each variant's dotted name, and keeps `ALL` and
 /// `name` in step with it (a new variant cannot be left out of either).
@@ -71,11 +97,11 @@ macro_rules! commands {
 
         impl Cmd {
             /// Every command.
-            pub(crate) const ALL: &'static [Cmd] = &[$(Cmd::$variant,)*];
+            const LIST: &'static [Cmd] = &[$(Cmd::$variant,)*];
 
             /// The stable dotted name: what a `keys:` override in the user
             /// config names, and what the `?` popup prints.
-            pub(crate) fn name(self) -> &'static str {
+            fn dotted(self) -> &'static str {
                 match self {
                     $(Cmd::$variant => $name,)*
                 }
@@ -169,12 +195,38 @@ commands! {
     DokEdit => "dok.edit",
 }
 
-impl Cmd {
-    /// The command a dotted name (`view.next`) stands for.
-    pub(crate) fn from_name(name: &str) -> Option<Cmd> {
-        Cmd::ALL.iter().copied().find(|c| c.name() == name)
+impl toque::keys::Command for Cmd {
+    type Ctx = Ctx;
+    type Kind = RowKind;
+    const ALL: &'static [Cmd] = Cmd::LIST;
+    const GROUPS: &'static [&'static str] = &[
+        Group::Move.title(),
+        Group::Open.title(),
+        Group::Find.title(),
+        Group::Change.title(),
+        Group::View.title(),
+        Group::Farm.title(),
+        Group::App.title(),
+    ];
+
+    fn name(self) -> &'static str {
+        self.dotted()
     }
 
+    fn group_title(self) -> &'static str {
+        self.group().title()
+    }
+
+    fn mutates(self) -> bool {
+        self.writes()
+    }
+
+    fn bindings() -> &'static [Binding] {
+        BINDINGS
+    }
+}
+
+impl Cmd {
     /// The `?` popup's group for it. Exhaustive, so a new command must pick one.
     pub(crate) fn group(self) -> Group {
         match self {
@@ -205,8 +257,7 @@ impl Cmd {
     /// yak, a dok or a view. The case rule (lowercase looks, Shift changes) is
     /// tested over these (only the test reads it). Exhaustive, so a new
     /// command must say.
-    #[cfg_attr(not(test), allow(dead_code))]
-    pub(crate) fn mutates(self) -> bool {
+    fn writes(self) -> bool {
         match self {
             YakMark | YakState | YakPriority | YakType | YakTags | YakSlaughter | YakNew
             | YakNewChild | YakEdit | YakDep | YakReparent | YakHerd | YakStar | YakComment
@@ -239,18 +290,8 @@ pub(crate) enum Group {
 }
 
 impl Group {
-    /// The popup's order.
-    pub(crate) const ALL: [Group; 7] = [
-        Group::Move,
-        Group::Open,
-        Group::Find,
-        Group::Change,
-        Group::View,
-        Group::Farm,
-        Group::App,
-    ];
-
-    pub(crate) fn title(self) -> &'static str {
+    /// The popup's title, which is also its order in [`Command::GROUPS`].
+    pub(crate) const fn title(self) -> &'static str {
         match self {
             Group::Move => "Move",
             Group::Open => "Open and follow",
@@ -259,62 +300,6 @@ impl Group {
             Group::View => "View and filter",
             Group::Farm => "Farm",
             Group::App => "App",
-        }
-    }
-}
-
-/// The key family (yaks-7c6e): `keys: vim` or `keys: standard` in the user's
-/// config. It decides which of the table's keys are on.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub(crate) enum Family {
-    /// `hjkl`, `d`/`u`, `g`/`G`, `Ctrl-N`/`Ctrl-P`; edtui's vim mode in editors.
-    #[default]
-    Vim,
-    /// Arrows, `PgUp`/`PgDn`, `Home`/`End`, `Ctrl-F` find; edtui's emacs mode.
-    Standard,
-}
-
-/// The keys only the vim family has: off outside the editor in standard.
-const VIM_ONLY: &[Key] = &[
-    c('h'),
-    c('j'),
-    c('k'),
-    c('l'),
-    c('d'),
-    c('u'),
-    c('g'),
-    c('G'),
-    ctrl('n'),
-    ctrl('p'),
-];
-
-/// The keys only the standard family has: off in vim.
-const STANDARD_ONLY: &[Key] = &[ctrl('f')];
-
-impl Family {
-    /// The family a config value names (`vim`, `standard`).
-    pub(crate) fn from_name(name: &str) -> Option<Family> {
-        match name.trim() {
-            "vim" => Some(Family::Vim),
-            "standard" => Some(Family::Standard),
-            _ => None,
-        }
-    }
-
-    /// The legacy `vim_mode: true|false` setting as a family.
-    pub(crate) fn from_vim_mode(vim: bool) -> Family {
-        if vim { Family::Vim } else { Family::Standard }
-    }
-
-    pub(crate) fn is_vim(self) -> bool {
-        self == Family::Vim
-    }
-
-    /// Whether the table's key `key` is on in this family.
-    fn allows(self, key: &Key) -> bool {
-        match self {
-            Family::Vim => !STANDARD_ONLY.contains(key),
-            Family::Standard => !VIM_ONLY.contains(key),
         }
     }
 }
@@ -337,8 +322,8 @@ pub(crate) enum Ctx {
     Commit,
 }
 
-impl Ctx {
-    const ALL: [Ctx; 6] = [
+impl toque::keys::Context for Ctx {
+    const ALL: &'static [Ctx] = &[
         Ctx::List,
         Ctx::Detail,
         Ctx::Viewer,
@@ -348,7 +333,7 @@ impl Ctx {
     ];
 
     /// What a message calls the surface.
-    pub(crate) fn title(self) -> &'static str {
+    fn title(self) -> &'static str {
         match self {
             Ctx::List => "list",
             Ctx::Detail => "detail pane",
@@ -358,14 +343,6 @@ impl Ctx {
             Ctx::Commit => "commit view",
         }
     }
-}
-
-/// A section of the `?` overlay: the bindings of `ctx` whose kind is in
-/// `kinds` (`None`: bound for any kind of row).
-struct Section {
-    ctx: Ctx,
-    kinds: &'static [Option<RowKind>],
-    title: &'static str,
 }
 
 /// The `?` overlay's sections, in order. Every binding is in exactly one.
@@ -422,203 +399,8 @@ const SECTIONS: [Section; 10] = [
     },
 ];
 
-impl Section {
-    fn bindings(&self) -> impl Iterator<Item = &'static Binding> + '_ {
-        BINDINGS
-            .iter()
-            .filter(|b| b.ctx == self.ctx && self.kinds.contains(&b.kind))
-    }
-}
-
-/// A key: a code and the modifiers that must be held with it.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) struct Key {
-    code: KeyCode,
-    mods: KeyModifiers,
-}
-
-impl Key {
-    fn matches(&self, k: &KeyEvent) -> bool {
-        // Ctrl never rides along on a key that does not name it: `Ctrl-N` is
-        // not `n`, so a key a family turns off (Ctrl-N, Ctrl-P) goes dead
-        // rather than falling through to its plain letter. (Ctrl with Alt is
-        // AltGr on some layouts, which types `[` and `{`: that one is plain.)
-        let ctrl_only =
-            k.modifiers.contains(KeyModifiers::CONTROL) && !k.modifiers.contains(KeyModifiers::ALT);
-        if ctrl_only && !self.mods.contains(KeyModifiers::CONTROL) {
-            return false;
-        }
-        self.code == k.code && k.modifiers.contains(self.mods)
-    }
-
-    /// How the `?` overlay writes it: `j`, `↓`, `Space`, `Ctrl-N`, `S-Tab`.
-    fn label(&self) -> String {
-        let ctrl = self.mods.contains(KeyModifiers::CONTROL);
-        let alt = self.mods.contains(KeyModifiers::ALT);
-        let name = match self.code {
-            KeyCode::Char(' ') => "Space".to_string(),
-            KeyCode::Char(c) if ctrl || alt => c.to_ascii_uppercase().to_string(),
-            KeyCode::Char(c) => c.to_string(),
-            KeyCode::Up => "↑".into(),
-            KeyCode::Down => "↓".into(),
-            KeyCode::Left => "←".into(),
-            KeyCode::Right => "→".into(),
-            KeyCode::Tab => "Tab".into(),
-            KeyCode::BackTab => "S-Tab".into(),
-            KeyCode::Enter => "Enter".into(),
-            KeyCode::Esc => "Esc".into(),
-            KeyCode::PageUp => "PgUp".into(),
-            KeyCode::PageDown => "PgDn".into(),
-            KeyCode::Home => "Home".into(),
-            KeyCode::End => "End".into(),
-            KeyCode::F(n) => format!("F{n}"),
-            other => format!("{other:?}"),
-        };
-        let mut label = String::new();
-        if ctrl {
-            label.push_str("Ctrl-");
-        }
-        if alt {
-            label.push_str("Alt-");
-        }
-        if self.mods.contains(KeyModifiers::SHIFT) {
-            label.push_str("Shift-");
-        }
-        label + &name
-    }
-
-    /// The inverse of [`Key::label`] (what a `keys:` override writes), with
-    /// `Up`/`Down`/`Left`/`Right` as ASCII spellings of the arrows. A `Ctrl-`
-    /// or `Alt-` letter is read as the lower-case key, as the table spells it.
-    pub(crate) fn parse(s: &str) -> Option<Key> {
-        let mut rest = s;
-        let mut mods = KeyModifiers::NONE;
-        loop {
-            let (r, m) = if let Some(r) = rest.strip_prefix("Ctrl-") {
-                (r, KeyModifiers::CONTROL)
-            } else if let Some(r) = rest.strip_prefix("Shift-") {
-                (r, KeyModifiers::SHIFT)
-            } else if let Some(r) = rest.strip_prefix("Alt-") {
-                (r, KeyModifiers::ALT)
-            } else {
-                break;
-            };
-            if r.is_empty() {
-                break;
-            }
-            mods |= m;
-            rest = r;
-        }
-        let mut chars = rest.chars();
-        let code = match rest {
-            "Space" => KeyCode::Char(' '),
-            "Tab" => KeyCode::Tab,
-            "S-Tab" => KeyCode::BackTab,
-            "Enter" => KeyCode::Enter,
-            "Esc" => KeyCode::Esc,
-            "\u{2191}" | "Up" => KeyCode::Up,
-            "\u{2193}" | "Down" => KeyCode::Down,
-            "\u{2190}" | "Left" => KeyCode::Left,
-            "\u{2192}" | "Right" => KeyCode::Right,
-            "PgUp" => KeyCode::PageUp,
-            "PgDn" => KeyCode::PageDown,
-            "Home" => KeyCode::Home,
-            "End" => KeyCode::End,
-            "Backspace" => KeyCode::Backspace,
-            "Delete" => KeyCode::Delete,
-            "Insert" => KeyCode::Insert,
-            _ => match (chars.next(), chars.next()) {
-                (Some(ch), None) if mods.intersects(KeyModifiers::CONTROL | KeyModifiers::ALT) => {
-                    KeyCode::Char(ch.to_ascii_lowercase())
-                }
-                (Some(ch), None) => KeyCode::Char(ch),
-                _ => {
-                    // `F3`, or `F(3)` as older configs wrote it.
-                    let n = match rest.strip_prefix("F(") {
-                        Some(r) => r.strip_suffix(')')?,
-                        None => rest.strip_prefix('F')?,
-                    };
-                    KeyCode::F(n.parse().ok()?)
-                }
-            },
-        };
-        Some(Key { code, mods })
-    }
-}
-
-const fn c(ch: char) -> Key {
-    Key {
-        code: KeyCode::Char(ch),
-        mods: KeyModifiers::NONE,
-    }
-}
-
-const fn k(code: KeyCode) -> Key {
-    Key {
-        code,
-        mods: KeyModifiers::NONE,
-    }
-}
-
-const fn ctrl(ch: char) -> Key {
-    Key {
-        code: KeyCode::Char(ch),
-        mods: KeyModifiers::CONTROL,
-    }
-}
-
-const fn ctrl_k(code: KeyCode) -> Key {
-    Key {
-        code,
-        mods: KeyModifiers::CONTROL,
-    }
-}
-
-const fn shift(code: KeyCode) -> Key {
-    Key {
-        code,
-        mods: KeyModifiers::SHIFT,
-    }
-}
-
-/// What a binding adds to the bottom hint bar.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Hint {
-    /// Nothing.
-    None,
-    /// This label (`Tab:view`), in the table's order.
-    Text(&'static str),
-    /// A label that differs by family: the vim one (`j/k:move`), then the
-    /// standard one (`↑/↓:move`).
-    Family(&'static str, &'static str),
-    /// The filter drawer's label, which depends on whether a filter is
-    /// active (`f:filter  /:search`, or `f:filter  Esc:clear`).
-    Filter,
-}
-
-/// One row of the table: in `ctx`, any of `keys` runs `cmd`. A binding in the
-/// list may name the [`RowKind`] it is for (a document row's `E` edits a dok,
-/// a yak's edits the yak); one that names none is for every kind of row.
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct Binding {
-    pub(crate) ctx: Ctx,
-    pub(crate) kind: Option<RowKind>,
-    pub(crate) keys: &'static [Key],
-    pub(crate) cmd: Cmd,
-    /// The `?` overlay's line for it; empty: not listed.
-    pub(crate) help: &'static str,
-    pub(crate) hint: Hint,
-}
-
 const fn bind(ctx: Ctx, keys: &'static [Key], cmd: Cmd, help: &'static str, hint: Hint) -> Binding {
-    Binding {
-        ctx,
-        kind: None,
-        keys,
-        cmd,
-        help,
-        hint,
-    }
+    toque::keys::bind(ctx, keys, cmd, help, hint)
 }
 
 /// A list binding for one kind of row.
@@ -629,10 +411,7 @@ const fn bind_row(
     help: &'static str,
     hint: Hint,
 ) -> Binding {
-    Binding {
-        kind: Some(kind),
-        ..bind(Ctx::List, keys, cmd, help, hint)
-    }
+    toque::keys::bind_kind(Ctx::List, kind, keys, cmd, help, hint)
 }
 
 /// A detail-pane binding for the pane of one kind of row (a yak's keys act on
@@ -644,10 +423,7 @@ const fn bind_pane(
     help: &'static str,
     hint: Hint,
 ) -> Binding {
-    Binding {
-        kind: Some(kind),
-        ..bind(Ctx::Detail, keys, cmd, help, hint)
-    }
+    toque::keys::bind_kind(Ctx::Detail, kind, keys, cmd, help, hint)
 }
 
 const fn hint(label: &'static str) -> Hint {
@@ -663,7 +439,8 @@ use Cmd::*;
 // Explicit, so it wins over the glob-imported `FarmSync` (the auto-sync state).
 use Cmd::FarmSync;
 use Ctx::*;
-use Hint::None as NoHint;
+#[allow(non_upper_case_globals)]
+const NoHint: Hint = Hint::None;
 use KeyCode::{BackTab, Down, End, Enter, Esc, F, Home, Left, PageDown, PageUp, Right, Tab, Up};
 use tree::RowKind::{self, Doc, Place, Shed, Yak};
 
@@ -717,7 +494,7 @@ static BINDINGS: &[Binding] = &[
     bind(List, &[c('i')], NavForward, "History forward: a jump you went back from", NoHint),
     bind(List, &[c('o')], NavBack, "History back: where the last jump left (a link, a view switch, #), position restored", NoHint),
     bind_row(Yak, &[c('B')], YakBackrefs, "Find references: yaks that point at this one", NoHint),
-    bind_row(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
+    bind_row(Yak, &[c('f')], FilterDrawer, "Filter drawer", FILTER_HINT),
     bind(List, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(List, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
     bind(List, &[c('?'), k(F(1))], AppHelp, HELP_LINE, hint("?:help")),
@@ -778,7 +555,7 @@ static BINDINGS: &[Binding] = &[
     bind_pane(Yak, &[c('A')], YakAttach, "Attach artifact", NoHint),
     bind_pane(Yak, &[c('r')], AttachmentRename, "Rename the attachment at the cursor", NoHint),
     bind_pane(Yak, &[c('*')], YakStar, "Star / unstar (Starred view)", NoHint),
-    bind_pane(Yak, &[c('f')], FilterDrawer, "Filter drawer", Hint::Filter),
+    bind_pane(Yak, &[c('f')], FilterDrawer, "Filter drawer", FILTER_HINT),
     bind(Detail, &[c('W')], FarmCommit, "Commit the farm (yaks commit)", NoHint),
     bind(Detail, &[c('U')], FarmSync, "Sync the farm: commit, pull, push (yaks sync)", NoHint),
     bind(Detail, &[c('?'), k(F(1))], AppHelp, HELP_LINE, NoHint),
@@ -957,147 +734,29 @@ const TAKE_OUT_ROW: &str = "Take out the row's file (the yak's file): a menu to 
 /// The `?` line of the help command: the popup first, the reference on a second press.
 const HELP_LINE: &str = "Keys of this context in a popup; ? again opens this full reference";
 
-/// The keys in effect: the table's, filtered by the key [`Family`], with the
-/// user's `keys:` overrides applied (see [`overrides`]). An override replaces
-/// a command's keys in every context it is bound in (and is the user's word:
-/// the family does not filter it). Everything that reads keys (the lookup, the
-/// `?` popup and reference, the bottom hint) goes through it, so none can show
-/// a key the lookup does not take.
-#[derive(Clone, Default, Debug)]
-pub(crate) struct Keymap {
-    pub(crate) family: Family,
-    overrides: HashMap<Cmd, Vec<Key>>,
-}
-
-/// The `?` popup's content: titled groups of (keys, name) entries.
-pub(crate) type PopupGroups = Vec<(&'static str, Vec<(String, &'static str)>)>;
-
-impl Keymap {
-    /// The keys of `b` in effect.
-    fn keys<'a>(&'a self, b: &'a Binding) -> impl Iterator<Item = &'a Key> + 'a {
-        let (keys, own) = match self.overrides.get(&b.cmd) {
-            Some(v) => (v.as_slice(), true),
-            None => (b.keys, false),
+/// The bottom bar's hints for `ctx` on a row of `kind`; `filter_active` is
+/// whether a filter or query is set, which changes the drawer's label.
+pub(crate) fn hint_for(
+    km: &Keymap,
+    ctx: Ctx,
+    kind: Option<RowKind>,
+    filter_active: bool,
+) -> String {
+    km.hint_for(ctx, kind, |_filter, km| {
+        let (find, clear) = match ctx {
+            Ctx::List => (SearchOpen, ViewRevert),
+            _ => (FindOpen, PanePeel),
         };
-        keys.iter().filter(move |k| own || self.family.allows(k))
-    }
-
-    /// `b`'s keys as `sep` joins their labels.
-    fn labels(&self, b: &Binding, sep: &str) -> String {
-        self.keys(b).map(Key::label).collect::<Vec<_>>().join(sep)
-    }
-
-    /// The command `k` runs in `ctx` on a row of `kind` (`None` outside the
-    /// list): a binding that names modifiers first (Ctrl-C before `c`), else a
-    /// plain one, ignoring any modifiers the terminal adds (an upper-case
-    /// letter arrives with Shift) but Ctrl ([`Key::matches`]). At each step a
-    /// binding for the row's kind beats one for any kind.
-    pub(crate) fn lookup(&self, ctx: Ctx, kind: Option<RowKind>, k: &KeyEvent) -> Option<Cmd> {
-        let find = |modified: bool, kind: Option<RowKind>| {
-            BINDINGS
-                .iter()
-                .filter(|b| b.ctx == ctx && b.kind == kind)
-                .find(|b| {
-                    self.keys(b)
-                        .any(|key| key.mods.is_empty() != modified && key.matches(k))
-                })
-                .map(|b| b.cmd)
+        let then = if filter_active {
+            format!("{}:clear", km.first_label(ctx, clear))
+        } else {
+            format!("{}:search", km.first_label(ctx, find))
         };
-        [true, false].into_iter().find_map(|modified| {
-            kind.and_then(|kind| find(modified, Some(kind)))
-                .or_else(|| find(modified, None))
-        })
-    }
-
-    /// The bindings that act in `ctx` on a row of `kind`, in table order: those
-    /// for this kind, and those for any kind except where one for this kind
-    /// takes their keys (a document row's `q` stands in for the list's).
-    fn visible(&self, ctx: Ctx, kind: Option<RowKind>) -> impl Iterator<Item = &'static Binding> {
-        BINDINGS.iter().filter(move |b| {
-            b.ctx == ctx
-                && match (b.kind, kind) {
-                    (None, None) => true,
-                    (None, Some(kind)) => !BINDINGS.iter().any(|o| {
-                        o.ctx == ctx
-                            && o.kind == Some(kind)
-                            && self.keys(o).any(|k| self.keys(b).any(|x| x == k))
-                    }),
-                    (b_kind, kind) => b_kind == kind,
-                }
-        })
-    }
-
-    /// The first key of `cmd` in `ctx`, as a hint writes it (`f`).
-    pub(crate) fn first_label(&self, ctx: Ctx, cmd: Cmd) -> String {
-        BINDINGS
-            .iter()
-            .find(|b| b.ctx == ctx && b.cmd == cmd)
-            .and_then(|b| self.keys(b).next())
-            .map_or_else(|| "?".into(), Key::label)
-    }
-
-    /// The bottom bar's key hints for `ctx` on a row of `kind`: each hinted
-    /// binding's label, in table order, two spaces apart. A command whose keys
-    /// are overridden shows them in place of the label's own (`Tab:view`
-    /// becomes `Ctrl-N:view`). `filter_active` is whether a filter or query is
-    /// set, which changes the drawer's label.
-    fn hint_for(&self, ctx: Ctx, kind: Option<RowKind>, filter_active: bool) -> String {
-        self.visible(ctx, kind)
-            .filter_map(|b| {
-                let label = match b.hint {
-                    Hint::None => return None,
-                    Hint::Text(t) => t,
-                    Hint::Family(vim, standard) => {
-                        if self.family.is_vim() {
-                            vim
-                        } else {
-                            standard
-                        }
-                    }
-                    Hint::Filter => {
-                        let (find, clear) = match ctx {
-                            Ctx::List => (SearchOpen, ViewRevert),
-                            _ => (FindOpen, PanePeel),
-                        };
-                        let then = if filter_active {
-                            format!("{}:clear", self.first_label(ctx, clear))
-                        } else {
-                            format!("{}:search", self.first_label(ctx, find))
-                        };
-                        return Some(format!(
-                            "{}:filter  {then}",
-                            self.first_label(ctx, FilterDrawer)
-                        ));
-                    }
-                };
-                if !self.overrides.contains_key(&b.cmd) {
-                    return Some(label.to_string());
-                }
-                let what = label.split_once(':').map_or(label, |(_, what)| what);
-                let keys = self.labels(b, "/");
-                (!keys.is_empty()).then(|| format!("{keys}:{what}"))
-            })
-            .collect::<Vec<_>>()
-            .join("  ")
-    }
-
-    /// The `?` popup's groups for `ctx` on a row of `kind`: each binding's
-    /// keys and its command's name (the name an override uses), under its
-    /// command's [`Group`], in the popup's order; a group with nothing in it
-    /// is left out.
-    pub(crate) fn popup_entries(&self, ctx: Ctx, kind: Option<RowKind>) -> PopupGroups {
-        Group::ALL
-            .into_iter()
-            .filter_map(|g| {
-                let entries: Vec<_> = self
-                    .visible(ctx, kind)
-                    .filter(|b| b.cmd.group() == g && self.keys(b).next().is_some())
-                    .map(|b| (self.labels(b, "/"), b.cmd.name()))
-                    .collect();
-                (!entries.is_empty()).then_some((g.title(), entries))
-            })
-            .collect()
-    }
+        Some(format!(
+            "{}:filter  {then}",
+            km.first_label(ctx, FilterDrawer)
+        ))
+    })
 }
 
 /// What the popup lists while an overlay is up (see
@@ -1110,136 +769,20 @@ pub(crate) enum PopupSubject {
     Rows,
 }
 
-/// One line of the popup before it is laid out in columns.
-enum PopupRow<'a> {
-    Head(&'static str),
-    Entry(&'a str, &'static str),
-}
-
-/// The `?` popup's rows: `groups` (a title, then its keys and names) laid out
-/// in columns of at most `max_rows` rows, as many as fit in `width`, filling
-/// down each column in turn (a title never ends a column, away from its
-/// entries). Entries that do not fit are counted on a last line.
-pub(crate) fn popup_lines(
-    groups: &PopupGroups,
-    width: usize,
-    max_rows: usize,
-) -> Vec<Line<'static>> {
-    const GAP: usize = 2;
-    let len = |s: &str| s.chars().count();
-    let items: Vec<PopupRow> = groups
-        .iter()
-        .flat_map(|(title, entries)| {
-            std::iter::once(PopupRow::Head(title))
-                .chain(entries.iter().map(|(k, n)| PopupRow::Entry(k, n)))
-        })
-        .collect();
-    let total_entries = items
-        .iter()
-        .filter(|r| matches!(r, PopupRow::Entry(..)))
-        .count();
-    let columns = |rows: usize| -> Vec<Vec<&PopupRow>> {
-        let mut cols: Vec<Vec<&PopupRow>> = vec![Vec::new()];
-        for it in &items {
-            let at = cols.last().map_or(0, Vec::len);
-            let orphan = matches!(it, PopupRow::Head(_)) && at + 1 >= rows;
-            if (at >= rows || orphan) && at > 0 {
-                cols.push(Vec::new());
-            }
-            if let Some(col) = cols.last_mut() {
-                col.push(it);
-            }
-        }
-        cols
-    };
-    // A column's key width and its whole width.
-    let widths = |col: &[&PopupRow]| {
-        let (mut kw, mut nw, mut hw) = (0, 0, 0);
-        for r in col {
-            match r {
-                PopupRow::Head(t) => hw = hw.max(len(t)),
-                PopupRow::Entry(k, n) => {
-                    kw = kw.max(len(k));
-                    nw = nw.max(len(n));
-                }
-            }
-        }
-        (kw, (kw + 1 + nw).max(hw))
-    };
-    let total = |rows: usize| {
-        let cols: Vec<_> = columns(rows).iter().map(|c| widths(c).1).collect();
-        cols.iter().sum::<usize>() + GAP * cols.len().saturating_sub(1)
-    };
-    if items.is_empty() || max_rows == 0 {
-        return Vec::new();
-    }
-    let rows = (1..=max_rows)
-        .find(|&r| total(r) <= width)
-        .unwrap_or(max_rows);
-    let mut cols: Vec<Vec<&PopupRow>> = Vec::new();
-    let mut used = 0;
-    for col in columns(rows) {
-        let w = widths(&col).1 + if cols.is_empty() { 0 } else { GAP };
-        if !cols.is_empty() && used + w > width {
-            break;
-        }
-        used += w;
-        cols.push(col);
-    }
-    let shown: usize = cols
-        .iter()
-        .flat_map(|c| c.iter())
-        .filter(|r| matches!(r, PopupRow::Entry(..)))
-        .count();
-    let height = cols.iter().map(Vec::len).max().unwrap_or(0);
-    let mut lines: Vec<Line<'static>> = (0..height)
-        .map(|r| {
-            let mut spans = Vec::new();
-            for (i, col) in cols.iter().enumerate() {
-                let (kw, w) = widths(col);
-                if i > 0 {
-                    spans.push(Span::raw(" ".repeat(GAP)));
-                }
-                match col.get(r) {
-                    Some(PopupRow::Head(title)) => spans.push(Span::styled(
-                        format!("{title:<w$}"),
-                        Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-                    )),
-                    Some(PopupRow::Entry(keys, name)) => {
-                        spans.push(Span::styled(
-                            format!("{keys:<kw$}"),
-                            Style::new().fg(Color::Yellow),
-                        ));
-                        spans.push(Span::raw(format!(" {name:<0$}", w - kw - 1)));
-                    }
-                    None => spans.push(Span::raw(" ".repeat(w))),
-                }
-            }
-            Line::from(spans)
-        })
-        .collect();
-    if shown < total_entries {
-        lines.push(Line::from(Span::styled(
-            format!(
-                "… {} more: the full reference has them all",
-                total_entries - shown
-            ),
-            Style::new().fg(Color::DarkGray),
-        )));
-    }
-    lines
-}
-
 pub(crate) fn help_hint(app: &App) -> String {
     let filter_active = app.filter.content_active() || app.query.is_some();
-    app.keymap
-        .hint_for(app.surface_ctx(), app.surface_kind(), filter_active)
+    hint_for(
+        &app.keymap,
+        app.surface_ctx(),
+        app.surface_kind(),
+        filter_active,
+    )
 }
 
 /// The `?` overlay's rows that are not key bindings: the editors' own keys
 /// (modal, so outside the table), what a file or link does, the farm chip.
 /// Each section is a title and its (label, text) rows.
-const EXTRAS: &[(&str, &[(&str, &str)])] = &[
+const EXTRAS: &[toque::keys::Extra] = &[
     (
         "Editing (the editors and pickers are modal; their keys are not in the table)",
         &[
@@ -1394,33 +937,7 @@ const EXTRAS: &[(&str, &[(&str, &str)])] = &[
 /// from [`BINDINGS`], then the [`EXTRAS`]. Rebuilt on demand; also used to
 /// clamp help scroll.
 pub(crate) fn help_content(km: &Keymap) -> Vec<Line<'static>> {
-    fn section(name: &str) -> Line<'static> {
-        Line::from(Span::styled(
-            name.to_string(),
-            Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-        ))
-    }
-    fn entry(key: &str, desc: &str) -> Line<'static> {
-        Line::from(vec![
-            Span::styled(format!("  {key:<16}"), Style::new().fg(Color::Yellow)),
-            Span::raw(desc.to_string()),
-        ])
-    }
-    let mut lines = Vec::new();
-    for sect in &SECTIONS {
-        lines.push(section(sect.title));
-        for b in sect.bindings().filter(|b| !b.help.is_empty()) {
-            lines.push(entry(&km.labels(b, " / "), b.help));
-        }
-        lines.push(Line::from(String::new()));
-    }
-    for (title, rows) in EXTRAS {
-        lines.push(section(title));
-        lines.extend(rows.iter().map(|(key, desc)| entry(key, desc)));
-        lines.push(Line::from(String::new()));
-    }
-    lines.pop();
-    lines
+    toque::keys::reference(km, &SECTIONS, EXTRAS)
 }
 
 impl App {
@@ -1621,6 +1138,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use toque::keys::{Command, Context};
 
     /// The table's own keys: no overrides.
     fn lookup(ctx: Ctx, kind: Option<RowKind>, k: &KeyEvent) -> Option<Cmd> {
@@ -1628,7 +1146,7 @@ mod tests {
     }
 
     fn hint_for(ctx: Ctx, kind: Option<RowKind>, filter_active: bool) -> String {
-        Keymap::default().hint_for(ctx, kind, filter_active)
+        super::hint_for(&Keymap::default(), ctx, kind, filter_active)
     }
 
     fn text(lines: &[Line<'_>]) -> String {
@@ -1649,48 +1167,19 @@ mod tests {
         groups.iter().flat_map(|(_, e)| e.clone()).collect()
     }
 
+    /// Every kind of row a binding can name, and `None` (any kind).
+    const KINDS: &[Option<RowKind>] = &[None, Some(Yak), Some(Doc), Some(Shed), Some(Place)];
+
     #[test]
     fn no_two_bindings_in_a_context_and_kind_share_a_key() {
-        let kinds = [
-            None,
-            Some(RowKind::Yak),
-            Some(RowKind::Doc),
-            Some(RowKind::Shed),
-            Some(RowKind::Place),
-        ];
-        for (ctx, kind) in Ctx::ALL.into_iter().flat_map(|c| kinds.map(|k| (c, k))) {
-            let mut seen: Vec<(Key, Cmd)> = Vec::new();
-            for b in BINDINGS.iter().filter(|b| b.ctx == ctx && b.kind == kind) {
-                for key in b.keys {
-                    if let Some((_, other)) = seen.iter().find(|(s, _)| s == key) {
-                        panic!(
-                            "{ctx:?} {kind:?}: {} is bound to {} and {}",
-                            key.label(),
-                            other.name(),
-                            b.cmd.name()
-                        );
-                    }
-                    seen.push((*key, b.cmd));
-                }
-            }
-        }
+        let problems = toque::keys::rules::no_shared_keys::<Cmd>(KINDS);
+        assert!(problems.is_empty(), "{problems:#?}");
     }
 
     #[test]
     fn every_command_is_bound_and_named_once() {
-        for cmd in Cmd::ALL {
-            assert!(
-                BINDINGS.iter().any(|b| b.cmd == *cmd),
-                "{} is bound nowhere",
-                cmd.name()
-            );
-        }
-        let mut names: Vec<&str> = Cmd::ALL.iter().map(|c| c.name()).collect();
-        names.sort();
-        let n = names.len();
-        names.dedup();
-        assert_eq!(names.len(), n, "two commands share a name");
-        assert!(names.iter().all(|n| n.contains('.')), "{names:?}");
+        let problems = toque::keys::rules::every_command_bound_and_named::<Cmd>();
+        assert!(problems.is_empty(), "{problems:#?}");
     }
 
     #[test]
@@ -1959,7 +1448,7 @@ mod tests {
         assert!(docs.contains(&("c".to_string(), "dok.new")));
         // A document row's own `q` stands in for the list's: listed once.
         assert_eq!(docs.iter().filter(|(_, n)| *n == "app.quit").count(), 1);
-        for ctx in Ctx::ALL {
+        for &ctx in Ctx::ALL {
             for kind in [None, Some(Yak), Some(Doc), Some(Shed)] {
                 for (keys, name) in flat(&km.popup_entries(ctx, kind)) {
                     let cmd = Cmd::from_name(name).unwrap();
@@ -1978,10 +1467,7 @@ mod tests {
     // -- the key rules (yaks-7c6e), as tests over the table -------------------
 
     fn standard() -> Keymap {
-        Keymap {
-            family: Family::Standard,
-            ..Keymap::default()
-        }
+        Keymap::new(Family::Standard)
     }
 
     fn ev(code: KeyCode, mods: KeyModifiers) -> KeyEvent {
@@ -1993,7 +1479,7 @@ mod tests {
     }
 
     /// Lowercase looks and moves; Shift changes an existing yak; Ctrl is the
-    /// app and the farm. A command that writes (see [`Cmd::mutates`]) must not
+    /// app and the farm. A command that writes (see `Cmd::writes`) must not
     /// sit on an unshifted key, bar the documented exceptions, which add or
     /// mark rather than change (or sit behind a prompt).
     #[test]
@@ -2010,33 +1496,8 @@ mod tests {
             (YakStar, "`*` stars, a mark in the working set"),
             (AttachmentRename, "`r` renames behind its own prompt"),
         ];
-        let lowercase = |k: &Key| {
-            matches!(k.code, KeyCode::Char(ch) if !ch.is_uppercase())
-                && !k
-                    .mods
-                    .intersects(KeyModifiers::CONTROL | KeyModifiers::SHIFT)
-        };
-        for b in BINDINGS.iter().filter(|b| b.cmd.mutates()) {
-            for key in b.keys.iter().filter(|k| lowercase(k)) {
-                assert!(
-                    exceptions.iter().any(|(cmd, _)| *cmd == b.cmd),
-                    "{} ({:?}) is on the lowercase key {}: Shift changes things, lowercase only looks",
-                    b.cmd.name(),
-                    b.ctx,
-                    key.label()
-                );
-            }
-        }
-        // An exception that no longer sits on a lowercase key is stale.
-        for (cmd, why) in exceptions {
-            assert!(
-                BINDINGS
-                    .iter()
-                    .any(|b| b.cmd == cmd && b.keys.iter().any(lowercase)),
-                "{} is no longer on a lowercase key: drop its exception ({why})",
-                cmd.name()
-            );
-        }
+        let problems = toque::keys::rules::lowercase_only_looks::<Cmd>(&exceptions);
+        assert!(problems.is_empty(), "{problems:#?}");
     }
 
     /// Standard mode is the same commands on other keys: whatever a command
@@ -2044,40 +1505,8 @@ mod tests {
     /// key left on is one of them.
     #[test]
     fn every_command_stays_bound_in_standard_mode() {
-        let (vim, std) = (Keymap::default(), standard());
-        for b in BINDINGS {
-            assert!(
-                vim.keys(b).next().is_none() || std.keys(b).next().is_some(),
-                "{} ({:?}, {:?}) has no key in standard mode (it has {})",
-                b.cmd.name(),
-                b.ctx,
-                b.kind,
-                vim.labels(b, "/")
-            );
-            for key in std.keys(b) {
-                assert!(
-                    !VIM_ONLY.contains(key),
-                    "{} keeps the vim-only key {}",
-                    b.cmd.name(),
-                    key.label()
-                );
-            }
-            for key in vim.keys(b) {
-                assert!(!STANDARD_ONLY.contains(key), "{}", b.cmd.name());
-            }
-        }
-        // And per context: every command a context lists in vim is listed in standard.
-        for ctx in Ctx::ALL {
-            for kind in [None, Some(Yak), Some(Doc), Some(Shed)] {
-                let names = |km: &Keymap| -> Vec<&'static str> {
-                    km.popup_entries(ctx, kind)
-                        .into_iter()
-                        .flat_map(|(_, e)| e.into_iter().map(|(_, n)| n))
-                        .collect()
-                };
-                assert_eq!(names(&vim), names(&std), "{ctx:?} {kind:?}");
-            }
-        }
+        let problems = toque::keys::rules::every_command_bound_in_both_families::<Cmd>(KINDS);
+        assert!(problems.is_empty(), "{problems:#?}");
     }
 
     #[test]
@@ -2294,7 +1723,7 @@ mod tests {
                 "App"
             ]
         );
-        for ctx in Ctx::ALL {
+        for &ctx in Ctx::ALL {
             for kind in [None, Some(Yak), Some(Doc), Some(Shed)] {
                 for (title, entries) in km.popup_entries(ctx, kind) {
                     for (_, name) in entries {
@@ -2309,6 +1738,7 @@ mod tests {
             &km.popup_entries(Ctx::List, Some(Yak)),
             200,
             40,
+            POPUP_MORE,
         ));
         for t in titles {
             assert!(lines.contains(t), "{t}:\n{lines}");
@@ -2317,13 +1747,13 @@ mod tests {
 
     #[test]
     fn the_standard_hint_names_the_arrows() {
-        let hint = standard().hint_for(Ctx::List, Some(Yak), false);
+        let hint = super::hint_for(&standard(), Ctx::List, Some(Yak), false);
         assert!(
             hint.starts_with("Tab:view  \u{2191}/\u{2193}:move  Enter:detail"),
             "{hint}"
         );
         assert!(!hint.contains("j/k"), "{hint}");
-        let detail = standard().hint_for(Ctx::Detail, Some(Yak), false);
+        let detail = super::hint_for(&standard(), Ctx::Detail, Some(Yak), false);
         assert!(
             detail.starts_with("Esc:list  \u{2191}/\u{2193}:move"),
             "{detail}"

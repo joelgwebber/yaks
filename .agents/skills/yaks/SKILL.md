@@ -146,7 +146,7 @@ Shear against evidence, not vibes: "it compiles" or a self-report is not enough.
 
 - **A command proves it:** store it with `yaks update <id> --verify '<cmd>'` and run `yaks verify <id>`, which records PASS/FAIL as a note anyone can re-run. `yaks doctor --strict` flags a shorn yak whose `verify:` did not last pass.
 - **A web UI change:** a screenshot of the changed state, attached. `sightmap browser`, when available, can find the component and capture just it.
-- **A TUI change:** a text frame of the changed state at least; a rendered screenshot if the TUI library can produce one. An SVG frame becomes a PNG you can open with `yaks render <svg> -o <png>` (a file, or an attachment link).
+- **A TUI change:** one rendered frame of the changed state, attached, beside any text frames: people review a picture, not a log. A toque-driven TUI writes one from its headless script with `svg target/x.svg` (or `png`); `yaks attach <id> target/x.svg`. `yaks render <svg> -o <png>` makes a PNG you can open (a file, or an attachment link). A dok that describes a UI embeds one too.
 - **Code:** link the code that matters (`[fn parse](code:src/foo.rs#L12-L40)`); a short snippet only when it is the point.
 - **Logs and long output:** the few lines that show the result, fenced; attach the rest.
 - Update every surface that describes a user-facing change (in-app help, `--help`, docs) in the same change.

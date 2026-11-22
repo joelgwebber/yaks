@@ -477,7 +477,7 @@ pub(crate) fn render_commit(app: &App, v: &CommitView, frame: &mut Frame, area: 
             }
             let mut line = Line::from(spans);
             if i == cursor && r.item.is_some() {
-                line = line.style(Style::new().bg(super::surface::selected()));
+                line = line.style(Style::new().bg(toque::theme::selected()));
             }
             line
         })

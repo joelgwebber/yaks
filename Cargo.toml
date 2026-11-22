@@ -30,7 +30,7 @@ edtui = { git = "https://github.com/joelgwebber/edtui", branch = "yaks-integrati
 # crates.io yet; Cargo.lock pins the exact commit.
 # `png`: rasterize svg attachments (embedded fonts, no system fonts) for the
 # image viewer, yaks-4e9c.
-toque = { git = "https://github.com/joelgwebber/toque", branch = "main", features = ["png"] }
+toque = { git = "https://github.com/joelgwebber/toque", branch = "main", features = ["png", "theme", "keys", "image"] }
 notify = "6"
 arboard = { version = "3", features = ["wayland-data-control"] }
 png = "0.17"
@@ -38,7 +38,6 @@ unicode-width = "0.2"
 pulldown-cmark = { version = "0.13", default-features = false }
 ratatui-image = { version = "11.1", default-features = false, features = ["crossterm"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
-terminal-colorsaurus = "1.0.3"
 sha2 = { version = "0.10", default-features = false }
 chrono-tz = { version = "0.10", default-features = false }
 # Read-only browsing inside archive attachments (yaks-93ee): .zip, .tar,

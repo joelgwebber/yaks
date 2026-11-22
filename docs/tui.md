@@ -1145,6 +1145,9 @@ UI (no live-terminal capture), via:
 cargo test -p yaks docshots -- --ignored   # writes docs/assets/*.svg
 ```
 
+For one frame of a live state (evidence for a yak, say), end a headless script with `svg <path>`
+(or `png <path>`): `printf 'key j\nsvg target/x.svg\nquit\n' | yaks tui --headless`.
+
 `docshots_session` (same command, it matches the filter) also scripts a real protocol
 session (`key Tab`, `key j`, `key l`) and writes `docs/assets/session.txt` (the text
 transcript) plus `session-N.svg` for each frame. [toque](https://github.com/joelgwebber/toque)'s

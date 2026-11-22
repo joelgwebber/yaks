@@ -272,7 +272,7 @@ pub(crate) fn render_fuzzy_results(app: &App, fp: &FuzzyPick, frame: &mut Frame,
         state.select(Some(fp.sel.min(total - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        List::new(items).highlight_style(Style::new().bg(toque::theme::selected())),
         body,
         &mut state,
     );
@@ -303,7 +303,7 @@ fn render_dok_results(fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
         state.select(Some(fp.sel.min(cands.len() - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        List::new(items).highlight_style(Style::new().bg(toque::theme::selected())),
         body,
         &mut state,
     );
@@ -335,7 +335,7 @@ fn render_tag_results(fp: &FuzzyPick, frame: &mut Frame, area: Rect) {
         state.select(Some(fp.sel.min(cands.len() - 1)));
     }
     frame.render_stateful_widget(
-        List::new(items).highlight_style(Style::new().bg(super::surface::selected())),
+        List::new(items).highlight_style(Style::new().bg(toque::theme::selected())),
         body,
         &mut state,
     );
