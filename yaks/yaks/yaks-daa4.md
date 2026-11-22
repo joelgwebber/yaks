@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:19:40Z'
+updated: '2026-11-22T17:34:00Z'
 tags:
 - docs
 - tui
@@ -88,3 +88,9 @@ Correction to the embeds Decision above: all three new frames ARE embedded in do
 *herd-files · kind: landed · commit: c763a3939b7198053084cd7928a07d734f70b585 · source: 563697854e4289d562525af87761ed82c9b832e8 · branch: main*
 
 landed: [c763a393](https://github.com/joelgwebber/yaks/commit/c763a3939b7198053084cd7928a07d734f70b585) yaks-daa4: refresh every docshot; add archive-browsing and line-range scenes
+
+#### 2026-11-22T17:34:00Z
+
+*herd-files*
+
+Landed c763a393 (herd-files). Rasterized and read tui-archive-tree, tui-archive-member, tui-line-range: they show what docs/tui.md says. Filed yaks-7ed9: archive member and directory headers name the farm path (yak/yaks/yak-1a2b/...) where an attachment reads yak-1a2b/file.
