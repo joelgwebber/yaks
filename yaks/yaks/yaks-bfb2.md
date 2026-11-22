@@ -1,11 +1,11 @@
 ---
 id: yaks-bfb2
 title: 'release changelog: one web_url costs ~12 git calls; cache per-run remote facts so a 41-release CHANGELOG.md isn''t 64 s'
-status: hairy
+status: shaving
 type: task
 priority: 3
 created: '2026-11-22T00:12:59Z'
-updated: '2026-11-22T00:15:36Z'
+updated: '2026-11-22T23:12:42Z'
 tags:
 - perf
 - release
@@ -19,3 +19,9 @@ Measured at 6ae40a60 with every release dok backfilled: `yaks release changelog 
 *herd-files*
 
 Graduated from yaks-a4d8 (the changelog umbrella) when it was shorn: a performance follow-up, not part of the feature.
+
+#### 2026-11-22T23:12:42Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
