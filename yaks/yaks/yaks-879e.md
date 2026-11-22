@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T16:40:42Z'
+updated: '2026-11-22T16:41:02Z'
 tags:
 - git
 - cli
@@ -18,3 +18,9 @@ Seen repeatedly on 2026-11-21/22 (herd-files): after a `yaks update`/`attach` th
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-22T16:41:02Z
+
+*herd-files*
+
+Claim (herd-files): worker commit-1 (Sonnet), base 6ae40a60, batch before v0.0.41. Scope: src/commit.rs, src/changes.rs (read), tests. Judge: herd-files at landing.
