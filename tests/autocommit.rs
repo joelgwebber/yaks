@@ -69,12 +69,10 @@ impl Farm {
         v["id"].as_str().unwrap().to_string()
     }
 
-    /// The farm worktree (the farm root's parent).
+    /// The farm's worktree: a fresh farm is the branch root (yaks-cae0), so
+    /// it is what `yaks path` prints.
     fn wt(&self) -> PathBuf {
         PathBuf::from(self.run("me", &["path"]).trim())
-            .parent()
-            .unwrap()
-            .to_path_buf()
     }
 
     fn git(&self, args: &[&str]) -> String {
@@ -142,7 +140,7 @@ fn a_hand_edit_is_committed_first_and_other_dirty_files_are_left_alone() {
     let b = f.create("me", "Untouched");
     append(&path_of(&f, &a), "\nhand line\n");
     append(&path_of(&f, &b), "\nwork in progress\n");
-    std::fs::write(f.wt().join(".yaks/scratch.txt"), "draft").unwrap();
+    std::fs::write(f.wt().join("scratch.txt"), "draft").unwrap();
     f.run("bot", &["update", &a, "--note", "bot note"]);
     let s = f.subjects();
     assert_eq!(s[0], format!("yaks: updated {a}"));
@@ -304,8 +302,8 @@ fn commit_as_stamps_a_hand_edit_for_touched_and_undo() {
         "agent",
         &["dok", "new", "doks/other.md", "--title", "Other"],
     );
-    let notes = f.wt().join(".yaks/doks/notes.md");
-    let other = f.wt().join(".yaks/doks/other.md");
+    let notes = f.wt().join("doks/notes.md");
+    let other = f.wt().join("doks/other.md");
 
     // A plain commit of a hand edit carries no trailer: nobody touched it.
     append(&other, "\nby a person\n");

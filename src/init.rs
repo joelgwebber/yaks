@@ -1,7 +1,7 @@
 //! `yaks init`: start a farm, or join another repository's, and install the
 //! skills. Every farm is a **farm branch** (yaks-73f4): an orphan branch
-//! holding only `.yaks/`, checked out once per machine in a worktree outside
-//! every checkout ([`store::farm_home`]). Nothing is ever written into the
+//! holding only the farm at its root, checked out once per machine in a
+//! worktree outside every checkout ([`store::farm_home`]). Nothing is ever written into the
 //! code checkout's tree but the skills.
 //!
 //! Two shapes:
@@ -281,7 +281,7 @@ fn branch_holds_farm(top: &Path, rev: &str) -> bool {
 /// [`store::farm_home`], found by discovery from every checkout of the
 /// repository. Reuses the branch when it exists (a worktree is added if none
 /// has it: [`branchfarm::bootstrap`]), else starts a new orphan branch holding
-/// only `.yaks/`, committing the new farm files on it. Nothing is pushed.
+/// only the farm files at its root, committing them on it. Nothing is pushed.
 /// Returns the farm root.
 ///
 /// Every refusal is checked before the first change.
@@ -385,9 +385,9 @@ fn ensure_branch_farm(top: &Path, args: &Args, rep: &mut Report) -> Result<PathB
         rep.done(format!("config: set yaks.branch = {branch}"));
     }
 
-    // A fresh farm is written to `.yaks/` (the migration yak flips this
-    // default); an existing branch keeps the layout it has.
-    let root = store::farm_root_in(&worktree).unwrap_or_else(|| worktree.join(".yaks"));
+    // A fresh farm is written at the worktree root (schema 9+, yaks-cae0); an
+    // existing branch keeps the layout it has, including a pre-9 `.yaks/`.
+    let root = store::farm_root_in(&worktree).unwrap_or_else(|| worktree.clone());
     ensure_farm(&root, &cfg, args, rep)?;
     // The farm's first commit: config, schema and .gitignore (a farm branch
     // commits per change, yaks-a838). The lock's snapshot sees them as

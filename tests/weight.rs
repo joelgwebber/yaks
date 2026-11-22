@@ -41,9 +41,6 @@ impl Farm {
 
     fn wt(&self) -> PathBuf {
         PathBuf::from(self.run(&["path"]).trim())
-            .parent()
-            .unwrap()
-            .to_path_buf()
     }
 
     fn attach(&self, id: &str, name: &str, bytes: usize) {
@@ -122,7 +119,7 @@ fn lfs_stores_new_binary_attachments_as_pointers() {
     assert!(tracked.contains("after.PNG"), "{tracked}");
     assert!(tracked.contains("before.png"), "converted: {tracked}");
     // The committed blob is a pointer; the checkout holds the bytes.
-    let path = format!(".yaks/yak/yaks/{id}/after.PNG");
+    let path = format!("yak/yaks/{id}/after.PNG");
     let blob = git(&wt, &["show", &format!("HEAD:{path}")]);
     assert!(
         blob.starts_with("version https://git-lfs.github.com/spec/v1"),

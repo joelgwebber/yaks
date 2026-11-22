@@ -127,8 +127,11 @@ fn init_creates_an_orphan_farm_worktree_at_farm_home() {
     assert!(out.contains(&wt.display().to_string()), "{out}");
     // Orphan: the worktree holds only the farm, and the branch's one commit
     // (the new farm's files, yaks-a838) shares no history with the code branch.
-    assert_eq!(entries(&wt), vec![".git", ".yaks"]);
-    assert!(wt.join(".yaks/config.yaml").is_file());
+    // (`.lock` is the ignored farm lock.)
+    assert_eq!(
+        entries(&wt),
+        vec![".git", ".gitignore", ".lock", "config.yaml", "schema"]
+    );
     let o = Command::new("git")
         .args(["-C", wt.to_str().unwrap(), "log", "--format=%s"])
         .output()
@@ -147,10 +150,56 @@ fn init_creates_an_orphan_farm_worktree_at_farm_home() {
     assert_eq!(status(&r), "");
     assert!(!r.join(".yaks").exists());
     let path = okx(&r, &["path"]);
-    assert_eq!(path.trim(), wt.join(".yaks").display().to_string());
+    assert_eq!(path.trim(), wt.display().to_string());
     okx(&r, &["create", "--title", "first yak"]);
     assert!(okx(&r, &["list"]).contains("first yak"));
     assert_eq!(status(&r), "");
+}
+
+/// yaks-cae0: a fresh farm is written at the branch root (schema 9+), never
+/// under `.yaks/`, and every command finds it there.
+#[test]
+fn init_writes_a_fresh_farm_at_the_branch_root() {
+    let r = repo("branch-root-layout");
+    okx(&r, &["init", "--no-skills"]);
+    let wt = worktree_of(&r, "yaks").expect("the farm branch has a worktree");
+    let tree = git(&r, &["ls-tree", "-r", "--name-only", "yaks"]);
+    let files: Vec<&str> = tree.lines().collect();
+    assert!(files.contains(&"config.yaml"), "{tree}");
+    assert!(files.contains(&"schema"), "{tree}");
+    assert!(files.contains(&".gitignore"), "{tree}");
+    assert!(
+        files.iter().all(|f| !f.starts_with(".yaks")),
+        "no .yaks/ on the farm branch:\n{tree}"
+    );
+    assert!(!wt.join(".yaks").exists());
+    assert!(
+        std::fs::read_to_string(wt.join(".gitignore"))
+            .unwrap()
+            .lines()
+            .any(|l| l == ".lock")
+    );
+    assert_eq!(okx(&r, &["path"]).trim(), wt.display().to_string());
+    okx(&r, &["create", "--title", "root yak"]);
+    assert!(okx(&r, &["list"]).contains("root yak"));
+    let tree = git(&r, &["ls-tree", "-r", "--name-only", "yaks"]);
+    let herd = std::fs::read_to_string(wt.join("config.yaml"))
+        .unwrap()
+        .lines()
+        .find_map(|l| l.strip_prefix("herd: ").map(str::to_string))
+        .unwrap();
+    assert!(
+        tree.lines()
+            .any(|f| f.starts_with(&format!("{herd}/yaks/")) && f.ends_with(".md")),
+        "the yak lives at <herd>/yaks/<id>.md:\n{tree}"
+    );
+    assert!(!tree.lines().any(|f| f.starts_with(".yaks")), "{tree}");
+    // Nothing for doctor to complain about on a fresh farm.
+    let doc = okx(&r, &["doctor"]);
+    assert!(
+        !doc.contains("stray-layout") && !doc.to_lowercase().contains("problem"),
+        "{doc}"
+    );
 }
 
 #[test]
@@ -180,10 +229,7 @@ fn init_records_a_chosen_branch_name() {
     );
     let wt = worktree_of(&r, "personal-joel").expect("worktree on the chosen branch");
     assert!(worktree_of(&r, "yaks").is_none());
-    assert_eq!(
-        okx(&r, &["path"]).trim(),
-        wt.join(".yaks").display().to_string()
-    );
+    assert_eq!(okx(&r, &["path"]).trim(), wt.display().to_string());
     // Re-running without --branch uses the recorded name: a no-op.
     let out = okx(&r, &["init", "--no-skills"]);
     assert!(out.contains("Nothing to change"), "{out}");
@@ -221,7 +267,7 @@ fn init_with_an_existing_origin_farm_only_adds_its_worktree() {
     assert!(worktree_of(&b, "yaks").is_none());
     let out = okx(&b, &["init", "--no-skills"]);
     let wb = worktree_of(&b, "yaks").expect("worktree added for the existing branch");
-    assert!(wb.join(".yaks/config.yaml").is_file(), "{out}");
+    assert!(wb.join("config.yaml").is_file(), "{out}");
     assert!(okx(&b, &["list"]).contains("from origin"));
     // Only the worktree was added: the history is the pushed one (the new
     // farm, then the create), no more.
@@ -238,10 +284,7 @@ fn init_ignores_an_in_tree_dot_yaks() {
     std::fs::write(r.join(".yaks/config.yaml"), "herd: old\n").unwrap();
     okx(&r, &["init", "--no-skills"]);
     let wt = worktree_of(&r, "yaks").expect("the farm branch has a worktree");
-    assert_eq!(
-        okx(&r, &["path"]).trim(),
-        wt.join(".yaks").display().to_string()
-    );
+    assert_eq!(okx(&r, &["path"]).trim(), wt.display().to_string());
 }
 
 #[test]

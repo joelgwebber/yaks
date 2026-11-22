@@ -334,7 +334,7 @@ pub(crate) fn farm_worktree(dir: &Path, branch: &str) -> Option<PathBuf> {
 /// - **Root layout:** the branch root IS the farm root (`config.yaml`,
 ///   `schema`, `<herd>/yaks/` at the top, no `.yaks/` directory).
 /// - **`.yaks/` layout:** the farm sits in a `.yaks/` directory (every farm
-///   before the layout move, and what `yaks init` still writes).
+///   before the layout move; `yaks init` no longer writes it, yaks-cae0).
 ///
 /// Decision (yaks-6ffd), made here and nowhere else: a `config.yaml` at the
 /// worktree top means the root layout, and wins over a `.yaks/` directory

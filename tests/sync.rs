@@ -61,9 +61,6 @@ impl Machine {
     /// The farm worktree, wherever discovery put it.
     fn farm(&self) -> PathBuf {
         PathBuf::from(self.yaks(&["path"]).trim())
-            .parent()
-            .unwrap()
-            .to_path_buf()
     }
 }
 
@@ -115,7 +112,7 @@ fn origin_and_a(tag: &str) -> (PathBuf, Machine, String) {
         .env_remove("YAKS_DIR")
         .env("XDG_DATA_HOME", &a.data)
         .env("YAKS_SKILLS_AUTOSYNC", "0")
-        .args(["init", "--herd", "t"])
+        .args(["init", "--herd", "t", "--no-skills"])
         .output()
         .unwrap();
     assert!(init.status.success(), "{init:?}");
@@ -196,9 +193,8 @@ fn concurrent_edits_to_one_yak_converge_from_both_machines() {
     assert!(out.contains("pulled 2 commit(s)"), "{out}");
     assert!(out.contains("pushed 2 commit(s)"), "{out}");
     a.yaks(&["sync"]);
-    let file = |m: &Machine| {
-        std::fs::read_to_string(m.farm().join(format!(".yaks/t/yaks/{id}.md"))).unwrap()
-    };
+    let file =
+        |m: &Machine| std::fs::read_to_string(m.farm().join(format!("t/yaks/{id}.md"))).unwrap();
     let (fa, fb) = (file(&a), file(&b));
     assert_eq!(fa, fb, "both machines hold the same yak");
     assert!(fa.contains("from A") && fa.contains("from B"), "{fa}");
@@ -225,7 +221,7 @@ fn half_syncs_skip_their_step() {
     assert!(!remote_heads(&base).contains("refs/heads/yaks"));
     // --no-commit with a dirty farm: no commit, no pull, push what is committed.
     // A yaks write commits itself (yaks-a838), so dirty it by hand.
-    let path = a.farm().join(format!(".yaks/t/yaks/{id}.md"));
+    let path = a.farm().join(format!("t/yaks/{id}.md"));
     let text = std::fs::read_to_string(&path).unwrap();
     std::fs::write(&path, format!("{text}\nlocal only\n")).unwrap();
     let out = a.yaks(&["sync", "--no-commit"]);
@@ -264,7 +260,7 @@ fn a_conflict_the_driver_cannot_settle_aborts_and_changes_nothing() {
     let b = clone_b(&base);
     // config.yaml is not a yak: the driver does not touch it.
     let edit = |m: &Machine, v: &str| {
-        let p = m.farm().join(".yaks/config.yaml");
+        let p = m.farm().join("config.yaml");
         let text = std::fs::read_to_string(&p).unwrap();
         std::fs::write(&p, text.replace("default_priority: 3", v)).unwrap();
     };
@@ -286,7 +282,7 @@ fn a_conflict_the_driver_cannot_settle_aborts_and_changes_nothing() {
     let after = git(&farm, &["rev-parse", "HEAD"]);
     assert_ne!(before, after, "B's edit was committed before the pull");
     assert!(
-        std::fs::read_to_string(farm.join(".yaks/config.yaml"))
+        std::fs::read_to_string(farm.join("config.yaml"))
             .unwrap()
             .contains("default_priority: 2")
     );

@@ -312,11 +312,12 @@ fn create_positional_title_and_json() {
     assert!(!id.is_empty(), "empty id in JSON: {json_out}");
     assert_eq!(v["title"], "from json");
     let path = v["path"].as_str().expect("path string");
-    // Schema 6: `<herd>/yaks/<id>.md` (the default herd here is `yak`).
+    // `<herd>/yaks/<id>.md` at the farm-branch root (schema 9; the default
+    // herd here is `yak`).
     let herd = id.split_once('-').unwrap().0;
     assert!(
-        path.ends_with(&format!(".yaks/{herd}/yaks/{id}.md")),
-        "path {path} should end with .yaks/{herd}/yaks/{id}.md"
+        path.ends_with(&format!("/{herd}/yaks/{id}.md")) && !path.contains(".yaks/"),
+        "path {path} should end with /{herd}/yaks/{id}.md, with no .yaks/"
     );
     assert!(
         std::path::Path::new(path).is_file(),
