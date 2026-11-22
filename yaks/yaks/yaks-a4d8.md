@@ -1,11 +1,11 @@
 ---
 id: yaks-a4d8
 title: Yaks changelog
-status: shaving
+status: shorn
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-22T00:15:36Z'
+updated: '2026-11-22T00:15:37Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -82,3 +82,15 @@ Done (herd-files, 2026-11-22). The changelog is built as designed in [/doks/desi
 Follow-ups outside the family: yaks-bfb2 (changelog speed, per-link git calls), yaks-6554 (TUI shows HTML comments), yaks-879e (`yaks commit` false error), and under yaks-64c4: yaks-bda5, yaks-c059. Still open: Joel's browser check of yaks-a4d8/lfs-render-test.md (whether relative LFS image links render on GitHub).
 
 Workers: change-1, lfs-1, rel-1, rdok-1, clog-1, all claude-sonnet-5-5; every landing reproduced with the coordinator's build; follow-up fixes by the coordinator in c20ad225 (`--change` on a shorn yak was dropped silently) and 6ae40a60 (`--release` planned every tag).
+
+#### 2026-11-22T00:15:37Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-22T00:15:37Z
+
+*herd-files · kind: change · section: added*
+
+yaks keeps its own changelog: a change line per yak at shear, release membership computed from commits, a release dok per version, and a generated CHANGELOG.md.
