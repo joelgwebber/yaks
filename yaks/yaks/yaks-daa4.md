@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:34:00Z'
+updated: '2026-11-22T17:34:09Z'
 tags:
 - docs
 - tui
@@ -94,3 +94,9 @@ landed: [c763a393](https://github.com/joelgwebber/yaks/commit/c763a3939b71980530
 *herd-files*
 
 Landed c763a393 (herd-files). Rasterized and read tui-archive-tree, tui-archive-member, tui-line-range: they show what docs/tui.md says. Filed yaks-7ed9: archive member and directory headers name the farm path (yak/yaks/yak-1a2b/...) where an attachment reads yak-1a2b/file.
+
+#### 2026-11-22T17:34:09Z
+
+*herd-files · kind: change*
+
+The documentation's TUI screenshots are refreshed, with new frames for browsing a zip attachment and for a narrowed line range.
