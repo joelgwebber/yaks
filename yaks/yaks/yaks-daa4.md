@@ -5,7 +5,7 @@ status: shaving
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T16:43:19Z'
+updated: '2026-11-22T17:05:03Z'
 tags:
 - docs
 - tui
@@ -35,3 +35,5 @@ Claim (herd-files): worker shots-1 (Sonnet), base 6ae40a60, batch before v0.0.41
 *shots-1*
 
 Start 2026-11-22T16:43:18Z. Checkout /Users/joel/src/yaks/.delta/worktrees/d3wvgsm9qny3/yaks, base 6ae40a60. Farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-daa4.md. Plan: regenerate all docshots, eyeball a sample, add archive-member + line-range scenes, check Sheds tab shots.
+
+![tui-archive-tree](yaks-daa4/tui-archive-tree.png "New docshot tui-archive-tree: a zip attachment as a directory in the directory view (rasterized)")
