@@ -46,3 +46,9 @@ Decision: two-part fix, both in the one rule "nothing to commit means nothing". 
 Decision: `lock_for_commit` locks only when `farm_git(root)` says it is a farm branch; a plain `lock_uncommitted` on a YAKS_DIR/in-tree farm creates an untracked `.lock` the `.gitignore` never names, and broke `tui::tests::memo::w_on_a_clean_farm_says_so...` (the commit then saw `farm config`). Only a farm branch autocommits, so only there is there a writer to wait for. Rejected: always lock_uncommitted (that test failure); `store::lock` (it would autocommit on release and snapshot first).
 Decision: in `yaks sync` the lock is held for the commit step only, in a block, because `pull` takes the (non-reentrant) lock itself. `--dry-run` takes no lock (it only reads). No git calls added to writes; the spawn-budget test passes.
 Decision: test uses a `git` shim on PATH that makes the writer's commit land exactly when `yaks commit` runs `git add -A` (deterministic), rather than a timing loop. It exercises the post-add check, not the lock.
+
+#### 2026-11-22T17:15:04Z
+
+*commit-1*
+
+Evidence: new test `commit_is_not_an_error_when_a_commit_took_the_change_meanwhile` (tests/autocommit.rs) FAILED before the fix with "Error: git commit failed (exit status: 1); ... nothing to commit, working tree clean", passes after. Scratch race loop after the final binary (60 writes vs 150 commits, scratch farm): fails=0, "nothing to commit under the farm" x150, errors=0 (before: 42 failures; after post-add check only: 5 errors, git add vs index.lock).
