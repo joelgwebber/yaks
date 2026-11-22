@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:15:04Z'
+updated: '2026-11-22T17:15:10Z'
 tags:
 - git
 - cli
@@ -52,3 +52,9 @@ Decision: test uses a `git` shim on PATH that makes the writer's commit land exa
 *commit-1*
 
 Evidence: new test `commit_is_not_an_error_when_a_commit_took_the_change_meanwhile` (tests/autocommit.rs) FAILED before the fix with "Error: git commit failed (exit status: 1); ... nothing to commit, working tree clean", passes after. Scratch race loop after the final binary (60 writes vs 150 commits, scratch farm): fails=0, "nothing to commit under the farm" x150, errors=0 (before: 42 failures; after post-add check only: 5 errors, git add vs index.lock).
+
+#### 2026-11-22T17:15:10Z
+
+*herd-files*
+
+Coordinator datapoint, 2026-11-22 ~17:10Z, real farm: `yaks update yaks-6554 --note ...` (autocommitted) immediately followed by `yaks commit` gave the false failure again. No attachment or LFS file in that write: a plain yak-file note. So hypothesis 3 (LFS) is not needed to trigger it; look at `changes::read` vs the per-write autocommit (stat/racy-clean index right after a commit in the same second?).
