@@ -5,7 +5,7 @@ status: shaving
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T16:40:41Z'
+updated: '2026-11-22T16:41:01Z'
 tags:
 - docs
 - tui
@@ -23,3 +23,9 @@ yaks-85a6 committed only the four `tui-doks*.svg` it changed. Regenerate the res
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-22T16:41:01Z
+
+*herd-files*
+
+Claim (herd-files): worker shots-1 (Sonnet), base 6ae40a60, batch before v0.0.41. Scope: src/tui/docshots.rs, docs/assets/*.svg, the docs that embed them. Judge: herd-files at landing.
