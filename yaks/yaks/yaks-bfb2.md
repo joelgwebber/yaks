@@ -5,8 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-22T00:12:59Z'
-updated: '2026-11-22T00:12:59Z'
-parent: yaks-a4d8
+updated: '2026-11-22T00:15:35Z'
 tags:
 - perf
 - release
