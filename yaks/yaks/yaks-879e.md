@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:24:46Z'
+updated: '2026-11-22T17:25:43Z'
 tags:
 - git
 - cli
@@ -88,3 +88,9 @@ yaks commit holds the farm lock while it reads and stages, and says 'nothing to 
 *herd-files · kind: landed · commit: 876170b5364117109bd50fbf0f659e3677074e02 · source: 81b50a7d857f51ff0bd196d386f46ec2c24a90f4 · branch: main*
 
 landed: [876170b5](https://github.com/joelgwebber/yaks/commit/876170b5364117109bd50fbf0f659e3677074e02) yaks-879e: yaks commit takes the farm lock and treats an empty stage as nothing to commit
+
+#### 2026-11-22T17:25:43Z
+
+*herd-probe*
+
+race probe 1
