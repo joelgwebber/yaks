@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-11-21T05:22:42Z'
-updated: '2026-11-21T05:29:53Z'
+updated: '2026-11-22T17:50:51Z'
 tags:
 - tui
 ---
@@ -35,3 +35,9 @@ Evidence: `cargo test` 1271 pass, the 1 failure is the pre-existing `land::...ch
 *tui-design · kind: move · from: shaving · to: shorn · thread: ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T17:50:51Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change.
