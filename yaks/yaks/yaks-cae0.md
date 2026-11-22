@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:23:41Z'
+updated: '2026-11-22T17:27:19Z'
 tags:
 - git
 - init
@@ -56,3 +56,9 @@ Evidence: new test tests/init_modes.rs::init_writes_a_fresh_farm_at_the_branch_r
   git ls-tree -r --name-only yaks: .gitignore config.yaml schema yak/yaks/yak-2db6.md
   yaks doctor: All clear: no farm-integrity issues found.  yaks check: All clear.
 Docs parity: grep `.yaks` over docs/ README.md .agents/skills/ src/init.rs help: remaining mentions describe pre-9 farms/migration, nothing calls a fresh farm `.yaks/`; no doc change needed. Flaky under parallel load (not touched by this change, passed on rerun): needs_loop, commits.
+
+#### 2026-11-22T17:27:19Z
+
+*init-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
