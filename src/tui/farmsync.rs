@@ -291,14 +291,16 @@ impl App {
             return;
         };
         let result = match op {
-            FarmOp::Commit => commit::run(&root, None, false).map(|outcome| match outcome {
-                commit::Outcome::Nothing => "nothing to commit".to_string(),
-                commit::Outcome::Done(plan) => format!(
-                    "committed {} {}",
-                    plan.commit.as_deref().unwrap_or("?"),
-                    plan.message.lines().next().unwrap_or_default()
-                ),
-            }),
+            FarmOp::Commit => store::lock_for_commit(&root)
+                .and_then(|_lock| commit::run(&root, None, false))
+                .map(|outcome| match outcome {
+                    commit::Outcome::Nothing => "nothing to commit".to_string(),
+                    commit::Outcome::Done(plan) => format!(
+                        "committed {} {}",
+                        plan.commit.as_deref().unwrap_or("?"),
+                        plan.message.lines().next().unwrap_or_default()
+                    ),
+                }),
             FarmOp::Sync => sync::run(&root, &sync::Opts::default()).map(|report| {
                 report
                     .render()

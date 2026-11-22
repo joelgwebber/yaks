@@ -385,3 +385,74 @@ fn commit_refuses_during_a_cherry_pick_in_either_ref_format() {
         common::cleanup(&f.dir);
     }
 }
+
+/// yaks-879e: `yaks commit` reads the farm's changes, then stages them. A
+/// writer's per-change commit that lands in between leaves nothing to stage,
+/// and `git commit` then fails with "nothing to commit". That is the correct
+/// outcome (nothing to commit), not an error. A `git` shim on `PATH` makes the
+/// writer's commit land exactly when `yaks commit` runs `git add`.
+#[cfg(unix)]
+#[test]
+fn commit_is_not_an_error_when_a_commit_took_the_change_meanwhile() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Farm::new("commit-race");
+    let id = f.create("me", "Raced");
+    append(&path_of(&f, &id), "\nhand edit\n");
+    assert!(f.git(&["status", "--porcelain"]).contains(&id));
+
+    let real = String::from_utf8(
+        std::process::Command::new("sh")
+            .args(["-c", "command -v git"])
+            .output()
+            .unwrap()
+            .stdout,
+    )
+    .unwrap();
+    let shim = f.dir.with_file_name(format!(
+        "{}-shim",
+        f.dir.file_name().unwrap().to_string_lossy()
+    ));
+    let _ = std::fs::remove_dir_all(&shim);
+    std::fs::create_dir_all(&shim).unwrap();
+    let script = shim.join("git");
+    let (real, wt) = (real.trim(), f.wt());
+    std::fs::write(
+        &script,
+        format!(
+            "#!/bin/sh\n\
+             case \" $* \" in\n\
+             *\" add -A \"*) '{real}' -C '{wt}' -c user.name=w -c user.email=w@w \
+             commit -q -am 'writer got there first' ;;\n\
+             esac\n\
+             exec '{real}' \"$@\"\n",
+            wt = wt.display()
+        ),
+    )
+    .unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let path = format!(
+        "{}:{}",
+        shim.display(),
+        std::env::var("PATH").unwrap_or_default()
+    );
+    let o = Command::cargo_bin("yaks")
+        .unwrap()
+        .current_dir(&f.dir)
+        .env("PATH", path)
+        .env("XDG_DATA_HOME", common::data_home(&f.dir))
+        .env("YAKS_SKILLS_AUTOSYNC", "0")
+        .env_remove("YAKS_NO_AUTOCOMMIT")
+        .env("YAKS_ACTOR", "me")
+        .args(["commit"])
+        .output()
+        .unwrap();
+    let _ = std::fs::remove_dir_all(&shim);
+    let (out, err) = (
+        String::from_utf8_lossy(&o.stdout),
+        String::from_utf8_lossy(&o.stderr),
+    );
+    assert!(o.status.success(), "stdout: {out}\nstderr: {err}");
+    assert!(out.contains("nothing to commit"), "{out}");
+    assert_eq!(f.subjects()[0], "writer got there first");
+    assert!(f.git(&["status", "--porcelain"]).is_empty());
+}

@@ -1526,7 +1526,8 @@ enum Command {
     /// `git commit`, so the repo's hooks apply; never pushes. Fails in a private
     /// farm (nothing in the farm tracked by git) and while a merge or
     /// cherry-pick is in progress (git forbids a partial commit then; finish it
-    /// with a plain `git commit`); a farm with no changes is a no-op that exits 0.
+    /// with a plain `git commit`); a farm with no changes (or none left once
+    /// a concurrent write has committed them) is a no-op that exits 0.
     ///
     /// When the farm is a branch (yaks-73f4) this commits in the farm's own
     /// worktree, on that branch, whatever the cwd: no code checkout is touched.
@@ -3881,6 +3882,12 @@ fn main() -> Result<()> {
             dry_run,
             as_actor,
         } => {
+            // Under the farm lock, so a writer's per-change commit cannot
+            // land between the read and the stage (yaks-879e); a dry run
+            // only reads.
+            let _lock = (!dry_run)
+                .then(|| store::lock_for_commit(farm.root()))
+                .transpose()?;
             match commit::run_as(
                 farm.root(),
                 message.as_deref(),

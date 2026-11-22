@@ -1680,6 +1680,16 @@ pub fn lock_uncommitted(root: &Path) -> Result<FarmLock> {
     })
 }
 
+/// The lock `yaks commit` holds while it reads the farm's changes and stages
+/// them, so a writer's per-change commit cannot land in between and leave
+/// `git commit` nothing to take (yaks-879e). Only a farm branch commits per
+/// change, so only there is there anything to wait for; any other farm is
+/// not locked, as taking the lock would leave an untracked `.lock` in a tree
+/// whose `.gitignore` never named it.
+pub fn lock_for_commit(root: &Path) -> Result<Option<FarmLock>> {
+    farm_git(root).map(|_| lock_uncommitted(root)).transpose()
+}
+
 /// Make sure `.yaks/.gitignore` ignores the lock file, so a committed farm
 /// never shows or commits it. Creates the file if missing, appends the line if
 /// the file exists without it, and never rewrites anything else in it.

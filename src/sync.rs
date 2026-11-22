@@ -217,7 +217,13 @@ pub fn run(root: &Path, opts: &Opts) -> Result<Report> {
     if opts.no_commit {
         r.say("commit skipped (--no-commit)");
     } else {
-        match commit::run(root, opts.message.as_deref(), false)? {
+        // Held for the commit only (the lock is not re-entrant, and `pull`
+        // takes it again), so a writer cannot interleave (yaks-879e).
+        let outcome = {
+            let _lock = store::lock_for_commit(root)?;
+            commit::run(root, opts.message.as_deref(), false)?
+        };
+        match outcome {
             commit::Outcome::Nothing => r.say("nothing to commit"),
             commit::Outcome::Done(plan) => r.say(format!(
                 "committed {} {}",

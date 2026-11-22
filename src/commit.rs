@@ -123,6 +123,18 @@ pub fn run_as(
     // under the TUI too, where stray output corrupts the screen. A failure
     // carries it in the error.
     check(git(&["add", "-A", "--", "."])?, "git add")?;
+    // `changes::read` above is a look at the farm, not a hold on it: a writer's
+    // per-change commit (or a no-op rewrite) can land between it and the add,
+    // leaving nothing for `git commit` to take, which it reports as an error.
+    // Git's own verdict on what is staged under the farm is the authority: if
+    // it matches HEAD there is nothing to commit, and nothing was staged.
+    // (`--quiet` exits 1 on a difference, 0 on none.)
+    let staged = git(&["diff", "--cached", "--quiet", "--", "."])?;
+    match staged.status.code() {
+        Some(0) => return Ok(Outcome::Nothing),
+        Some(1) => {}
+        _ => check(staged, "git diff --cached").map(drop)?,
+    }
     // A machine with no git identity (a CI runner, a fresh box) still
     // commits, as the actor, the same way per-change commits do.
     let actor = stamp.clone().unwrap_or_else(|| {

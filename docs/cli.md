@@ -978,7 +978,7 @@ The message is generated from the changed files, one verb per yak (`created`, `s
 
 `--as <actor>` stamps the commit as that actor's: a `Yaks-Actor: <actor>` trailer (and, on a machine with no git identity, that name as the committer), so the commit shows up in `yaks session touched --by <actor>` and `yaks undo --by <actor>` and in the actor's generated `## Saved`. Without `--as` nothing changes: a plain `yaks commit` stays unstamped, because the checkout's `whoami` name may be a person's and the commit would claim their edits for whoever ran it. The stamp covers everything the commit holds, so use it for edits that are yours. An empty `--as` is an error.
 
-A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0.
+A normal `git commit`, so the repo's hooks run (and may fail it: the farm changes are then left staged and the hook's output is in the error); git's and the hooks' output is captured, so a successful commit prints only yaks' own summary (and never garbles the TUI); it never pushes. A clean farm prints `nothing to commit` and exits 0. It holds the farm lock while it reads and stages, so a write that commits itself at that moment cannot make it fail with git's own "nothing to commit"; if nothing is left to commit once staged, it says `nothing to commit` too (yaks-879e).
 
 While a merge or cherry-pick is in progress in the farm worktree it refuses, stages nothing and says why. A `YAKS_DIR` farm outside git is an error.
 
