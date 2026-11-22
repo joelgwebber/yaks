@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T16:41:00Z'
+updated: '2026-11-22T16:43:04Z'
 tags:
 - git
 - init
@@ -28,3 +28,9 @@ moved: hairy -> shaving
 *herd-files*
 
 Claim (herd-files): worker init-1 (Sonnet), base 6ae40a60, batch before v0.0.41. Scope: src/init.rs and whatever writes a fresh farm's files (store::farm_root_in / the root-vs-.yaks choice), tests. Judge: herd-files at landing.
+
+#### 2026-11-22T16:43:04Z
+
+*init-1*
+
+Start 2026-11-22T16:43:03Z; checkout /Users/joel/src/yaks/.delta/worktrees/zmnswq3xa7y3/yaks; farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-cae0.md
