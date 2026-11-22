@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-11-22T16:42:25Z'
-updated: '2026-11-22T17:57:19Z'
+updated: '2026-11-22T18:56:19Z'
 tags:
 - release
 ---
@@ -39,3 +39,15 @@ Ready to publish (herd-files), main f47196f6 on local main, installed:
 - `origin/main` had five commits of Joel's not in our main (the toque extraction: yaks-67ef, yaks-2e7c, yaks-20a5, yaks-2141). Merged in c0e1ba76; conflicts in imageview.rs (toque's ImageView kept, plus this branch's `rev` and `from_bytes`), keymap.rs (toque's rule with RowKind::Place), the yaks-working skill (both changes) and Cargo.lock (origin's, rebuilt at 0.0.41). After the merge: docshots regenerate byte-identical, the pinned LFS image still opens in the image viewer, `cargo test --workspace --locked` with an empty HOME passes (1580, 0 failed), fmt clean.
 - Change lines: three toque yaks `--no-change`, yaks-2141 a line (headless `svg`/`png` frames). `release changes --check` ok; release dok up to date; CHANGELOG.md regenerated (f47196f6).
 - main fast-forwards origin/main.
+
+#### 2026-11-22T18:56:19Z
+
+*herd-files*
+
+Released v0.0.41 (herd-files, Joel 2026-11-22: "let's do it").
+
+- The first dry run (run 45054387367 on f47196f6) failed in `test`: `tests/land_change_warning.rs` (yaks-045c) ran `yaks land` with no git identity, which CI lacks; an empty HOME on macOS had hidden it. Fixed in 64d2ebf9 (the test sets GIT_AUTHOR/COMMITTER like tests/land_continue.rs) and the whole suite was re-run under `user.useConfigOnly` with an empty HOME: 1580 passed, 0 failed.
+- Dry run 45055040927 on 64d2ebf9: test, five builds and publish dry-run all green.
+- Tag `v0.0.41` on 64d2ebf9, pushed to origin and local; release run https://github.com/joelgwebber/yaks/actions/runs/45055792612 succeeded (test, 5 builds, publish). `npm view @j15r/yaks` gives version 0.0.41, latest 0.0.41.
+- GitHub Release https://github.com/joelgwebber/yaks/releases/tag/v0.0.41 with the body from `yaks release changelog --release v0.0.41`.
+- Release dok rerun after tagging: range v0.0.40..v0.0.41, tag recorded.
