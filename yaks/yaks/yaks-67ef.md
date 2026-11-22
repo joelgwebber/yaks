@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-21T04:57:11Z'
-updated: '2026-11-21T05:10:37Z'
+updated: '2026-11-22T17:50:50Z'
 tags:
 - tui
 ---
@@ -37,3 +37,9 @@ Committed and pushed against toque ed595ee (now on origin). Snapshots unchanged;
 *tui-design · kind: move · from: shaving · to: shorn · thread: ksQQ8ThW0PX0SAyxtEBqIr2N1ZLOAHSsupIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T17:50:50Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change.
