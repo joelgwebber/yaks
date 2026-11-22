@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-14T02:56:44Z'
-updated: '2026-10-14T03:08:18Z'
+updated: '2026-11-22T00:10:36Z'
 tags:
 - release
 ---
@@ -33,3 +33,9 @@ Released 0.0.18. Dry run 38503789625 and tag run 38504041394 green on all five t
 *delta-lead*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:36Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
