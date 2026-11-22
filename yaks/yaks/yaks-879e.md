@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:15:02Z'
+updated: '2026-11-22T17:15:03Z'
 tags:
 - git
 - cli
@@ -32,3 +32,9 @@ Claim (herd-files): worker commit-1 (Sonnet), base 6ae40a60, batch before v0.0.4
 Start 2026-11-22T16:42:20Z. Checkout /Users/joel/src/yaks/.delta/worktrees/bak75rh27hds/yaks. Farm file: ~/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-879e.md
 
 Reproduced (scratch repo, release binary before the fix). Hypotheses 1 (no-op rewrite/touch) and LFS (lfs enabled, PNG attached) do NOT reproduce: 3x `yaks commit` each -> "nothing to commit under the farm", exit 0. Real cause is hypothesis 2, a race: `yaks commit` took NO farm lock, so a concurrent writer's per-change commit (autocommit on lock release) could land between `changes::read` and `git add`/`git commit`. Run: a loop of 60 `yaks update --note` writes against 150 concurrent `yaks commit`: 42 exit 1, e.g. "Error: git commit failed (exit status: 1); the farm changes are staged, not committed: On branch yaks / nothing to commit, working tree clean".
+
+#### 2026-11-22T17:15:03Z
+
+*commit-1*
+
+Decision: two-part fix, both in the one rule "nothing to commit means nothing". (1) `yaks commit`, `yaks sync`'s commit step and the TUI `W` take the farm lock (new `store::lock_for_commit`, = `lock_uncommitted` on a farm branch, none elsewhere) around read+stage+commit, so no autocommit can interleave. (2) after `git add`, `git diff --cached --quiet -- .` is git's own verdict: clean -> `Outcome::Nothing` (covers a hand revert/no-op the status read missed, and any writer that doesn't take the lock, e.g. a person committing by hand). Rejected: only (2) (a first lock-free run still hit `git add` failing on index.lock held by the writer's `reset`: 5 of 150 runs errored); only (1) (leaves the hole for non-yaks committers); a retry loop on "nothing to commit" (string-matching git's text); catching the commit failure and re-reading status (extra git spawns in the error path, same race).
