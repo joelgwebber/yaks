@@ -94,3 +94,9 @@ landed: [876170b5](https://github.com/joelgwebber/yaks/commit/876170b5364117109b
 *herd-probe*
 
 race probe 1
+
+#### 2026-11-22T17:25:43Z
+
+*herd-probe*
+
+race probe 2
