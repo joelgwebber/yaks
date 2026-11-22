@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T16:40:41Z'
+updated: '2026-11-22T16:41:00Z'
 tags:
 - git
 - init
@@ -22,3 +22,9 @@ Fix: a fresh farm is written at the worktree root; an existing branch keeps its 
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-22T16:41:00Z
+
+*herd-files*
+
+Claim (herd-files): worker init-1 (Sonnet), base 6ae40a60, batch before v0.0.41. Scope: src/init.rs and whatever writes a fresh farm's files (store::farm_root_in / the root-vs-.yaks choice), tests. Judge: herd-files at landing.
