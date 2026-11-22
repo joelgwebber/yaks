@@ -1,0 +1,16 @@
+yaks-bfb2 evidence (release build, this farm, at 7c1452bd)
+
+`yaks release changelog --release v0.0.6` (51 yak links), GIT_TRACE count of git processes:
+  before (0.0.41): 630  (rev-parse --verify 144, remote get-url 106, config --bool yaks.private 102,
+                         config --get yaks.host 54, branch.yaks.remote 52, is-bare 51, branch -r --contains 51)
+  after:           130  (cat-file -e 51 = the kept per-link "is the file on the remote" check,
+                         rev-parse --verify 44 = one per tag in release planning)
+  output: byte-identical (cmp)
+
+`yaks release changelog -o` (full, 41 releases):
+  before: ~64 s
+  after:  7.7-8.7 s; output identical to the committed CHANGELOG.md and to 0.0.41's output
+  remaining git calls: 522 cat-file -e (one per link), 45 rev-parse, 41 log -1
+
+Gate: tests/release_changelog.rs many_links_cost_about_one_git_call_each
+  12 links: 158 git calls before, 48 after; bound <= 60.
