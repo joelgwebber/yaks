@@ -5,7 +5,7 @@ status: shaving
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:18:38Z'
+updated: '2026-11-22T17:18:55Z'
 tags:
 - docs
 - tui
@@ -51,3 +51,16 @@ verify: `cargo test --workspace` -> FAIL (exit 101)
 *shots-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-22T17:18:55Z
+
+*shots-1*
+
+Decision: regenerate all docshots in one pass (`cargo test -p yaks docshots -- --ignored`, 15 generators, second run byte-identical) and commit the drifted SVGs together. Rejected: committing only the frames whose content changed; the point of the yak is that later runs touch only what a change touches.
+Decision: tui-image-viewer scene fixed, not its caption. Since the `Attachments:` row came in, Tab+Enter opens the directory view, not the image, so the frame showed a one-file directory under the caption "Enter on an image attachment: shown in the pane". The scene now presses Enter a second time to open the file. Rejected: re-captioning (the doc text about image attachments is right).
+Decision: two new generators folded into one test, `docshots_archive`, writing tui-archive-tree, tui-archive-member and tui-line-range. The zip is built in the scene with `entries::fixtures::zip` (a cfg(test) helper, same as tests.rs), so no binary fixture is checked in. Range scene uses a plain run.log attachment (`yak-1a2b/run.log#L10-L16`), not `code:`, to keep the scene independent of a git checkout; the header is `lines 10–16 · w whole file`. Rejected: a code: link (needs `git init` in the scene, already covered by tui-code-viewer/tui-take-out which show `lines 4–9`).
+Decision: docs/tui.md embeds: tui-line-range under "A line-range link opens narrowed", tui-archive-tree under "Archives read as read-only directories". tui-archive-member is generated and viewed but not embedded (it is a plain text viewer frame; two new embeds were asked for). Rejected: embedding all three.
+Decision: fixed a stale glyph in docs/tui.md's Sheds section (🛦 -> 🛖, what the tab shows). Rejected: leaving it, it is the same doc text the Sheds shots caption.
+Finding: Sheds tab shots (tui-sheds, -detail, -yak) already show the actor-based tree (actor roots, claimed/recent yak children, farm footer) from the checked-in scene; after regeneration only tui-sheds-yak changed (one line), the other two are byte-identical. Looked at all three rasterized.
+Looked at rasterized: tui-sheds*, tui-detail, tui-take-out, tui-image-viewer/-inline/-caption, tui-dir-row, tui-doks, tui-archive-*, tui-line-range. All match their captions after the viewer fix. Drift confirmed as the "O:take out" hint, doks source path, peek title, line-range header, plus toque's SVG output.
+Gate: cargo fmt --check clean; cargo test -p yaks all 42 binaries ok. `yaks verify` failed once on tests/release_dok (a git commit inside the test returned nothing, other workers were running), passed on rerun: PASS.
