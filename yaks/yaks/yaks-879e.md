@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:15:10Z'
+updated: '2026-11-22T17:20:24Z'
 tags:
 - git
 - cli
@@ -58,3 +58,9 @@ Evidence: new test `commit_is_not_an_error_when_a_commit_took_the_change_meanwhi
 *herd-files*
 
 Coordinator datapoint, 2026-11-22 ~17:10Z, real farm: `yaks update yaks-6554 --note ...` (autocommitted) immediately followed by `yaks commit` gave the false failure again. No attachment or LFS file in that write: a plain yak-file note. So hypothesis 3 (LFS) is not needed to trigger it; look at `changes::read` vs the per-write autocommit (stat/racy-clean index right after a commit in the same second?).
+
+#### 2026-11-22T17:20:24Z
+
+*commit-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
