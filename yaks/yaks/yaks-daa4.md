@@ -1,11 +1,11 @@
 ---
 id: yaks-daa4
 title: 'Refresh every docshot: docs/assets SVGs drift from the current toque output'
-status: shaving
+status: shorn
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:18:55Z'
+updated: '2026-11-22T17:18:56Z'
 tags:
 - docs
 - tui
@@ -64,3 +64,15 @@ Decision: fixed a stale glyph in docs/tui.md's Sheds section (🛦 -> 🛖, what
 Finding: Sheds tab shots (tui-sheds, -detail, -yak) already show the actor-based tree (actor roots, claimed/recent yak children, farm footer) from the checked-in scene; after regeneration only tui-sheds-yak changed (one line), the other two are byte-identical. Looked at all three rasterized.
 Looked at rasterized: tui-sheds*, tui-detail, tui-take-out, tui-image-viewer/-inline/-caption, tui-dir-row, tui-doks, tui-archive-*, tui-line-range. All match their captions after the viewer fix. Drift confirmed as the "O:take out" hint, doks source path, peek title, line-range header, plus toque's SVG output.
 Gate: cargo fmt --check clean; cargo test -p yaks all 42 binaries ok. `yaks verify` failed once on tests/release_dok (a git commit inside the test returned nothing, other workers were running), passed on rerun: PASS.
+
+#### 2026-11-22T17:18:56Z
+
+*shots-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHgPcJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-22T17:18:56Z
+
+*shots-1 · kind: change*
+
+Doc screenshots refreshed for the current TUI, with new frames for browsing a zip attachment and for a narrowed line range
