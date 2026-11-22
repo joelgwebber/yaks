@@ -1739,6 +1739,41 @@ enum ReleaseCmd {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Print a Keep a Changelog file for the checked-out branch, from the
+    /// farm's release doks.
+    ///
+    /// It holds the releases whose tags HEAD reaches (the `v*` tags, or `git
+    /// config yaks.releaseTags <glob>`), newest version first, under a short
+    /// header; then an `## [Unreleased]` section for the last tag up to HEAD
+    /// when it has commits. When the release dok of a version not tagged yet
+    /// (`yaks release dok v0.0.42`) has a range ending at HEAD, that release
+    /// leads instead, as `## [v0.0.42] - Unreleased`.
+    ///
+    /// A release with a dok (`doks/releases/<tag>.md`) is its dok: the
+    /// headlines and the changes block, without the title, the markers or the
+    /// placeholder, headings one level down (`## Added` becomes `### Added`);
+    /// `yanked: true` marks it `[YANKED]`. A release with no dok gets the
+    /// entries a dok would hold, computed now, or `No change lines recorded.`
+    ///
+    /// Links into the farm (yaks, doks, sources, attachments) become web URLs
+    /// at the farm branch, as `yaks url` gives them; one that cannot (no
+    /// remote, an unknown host, a private farm, a farm branch not pushed) is
+    /// written as its text, and stderr says so once. An image pinned with
+    /// `@<sha>` becomes the host's raw URL at that commit
+    /// (`github.com/<o>/<r>/raw/<sha>/<path>`, which serves Git LFS content).
+    ///
+    /// Read-only on the farm; it runs in the code repository, as `release
+    /// changes` does. Commit the file with the version bump.
+    Changelog {
+        /// Write the file here (relative to where yaks was started) instead
+        /// of printing it: `CHANGELOG.md`.
+        #[arg(short, long, value_name = "FILE")]
+        output: Option<PathBuf>,
+        /// Print only this release's section, with no header: the body of
+        /// its GitHub Release (`v0.0.41`, or `Unreleased`).
+        #[arg(long, value_name = "VERSION")]
+        release: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -2640,6 +2675,12 @@ fn main() -> Result<()> {
                 &version,
                 range.as_deref(),
                 dry_run,
+            )?,
+            ReleaseCmd::Changelog { output, release } => release::changelog_cli(
+                &farm,
+                &env::current_dir()?,
+                output.as_deref(),
+                release.as_deref(),
             )?,
             ReleaseCmd::Changes { range, json, check } => {
                 let code =

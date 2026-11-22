@@ -19,6 +19,9 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
+mod changelog;
+pub use changelog::cli as changelog_cli;
+
 use anyhow::{Context, Result, bail};
 use serde_json::{Value, json};
 
@@ -638,7 +641,16 @@ fn oldest_first(i: &Item) -> (Option<String>, String) {
 /// changes` and `yaks check`, not for readers of the release. Nothing in it
 /// varies with the commits' hashes, so rewriting it twice changes nothing.
 pub fn block(r: &Report) -> String {
-    let mut out = format!("{BLOCK_START}\n");
+    let inside = entries(r).unwrap_or_else(|| "\n_No change lines in this range._\n".to_string());
+    format!("{BLOCK_START}\n{inside}\n{BLOCK_END}\n")
+}
+
+/// What [`block`] holds between its markers: the sections of entries, each
+/// opening with a blank line and its `## ` heading; `None` when the report
+/// has no entry and no gap. `yaks release changelog` writes the same text for a
+/// release with no dok.
+fn entries(r: &Report) -> Option<String> {
+    let mut out = String::new();
     let mut any = false;
     for s in section_order(r) {
         let top = top_entries(r, s);
@@ -666,11 +678,7 @@ pub fn block(r: &Report) -> String {
             ));
         }
     }
-    if !any {
-        out.push_str("\n_No change lines in this range._\n");
-    }
-    out.push_str(&format!("\n{BLOCK_END}\n"));
-    out
+    any.then_some(out)
 }
 
 /// The byte span of the block in `body`, markers included (the end marker's

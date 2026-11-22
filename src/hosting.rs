@@ -163,6 +163,22 @@ impl Repo {
     }
 }
 
+impl Repo {
+    /// The URL that serves the bytes of file `path` (repo-relative) at commit
+    /// `sha`, the form an `<img>` can load: GitHub's `raw/<sha>/<path>` (which,
+    /// unlike `raw.githubusercontent.com`, serves Git LFS content rather than
+    /// its pointer), GitLab's `-/raw/` and Gitea's `raw/commit/`.
+    pub fn raw_url(&self, sha: &str, path: &str) -> String {
+        let path = encode(path, false);
+        let base = format!("https://{}/{}", self.host, self.path);
+        match self.forge {
+            Forge::GitHub => format!("{base}/raw/{sha}/{path}"),
+            Forge::GitLab => format!("{base}/-/raw/{sha}/{path}"),
+            Forge::Gitea => format!("{base}/raw/commit/{sha}/{path}"),
+        }
+    }
+}
+
 /// What a URL on a repository's host names (yaks-274c): a commit, or a file
 /// at a commit with its line fragment. A file at a *branch* is not here: it
 /// moves, so it stays a plain URL.
@@ -432,6 +448,26 @@ mod tests {
         assert_eq!(
             r.file_url(Ref::Commit("abc1234"), "src/a.rs", &Frag::Lines(100, 120)),
             "https://codeberg.org/o/r/src/commit/abc1234/src/a.rs#L100-L120"
+        );
+    }
+
+    #[test]
+    fn raw_templates() {
+        assert_eq!(
+            repo("https://github.com/o/r").raw_url("abc1234", "doks/a b.png"),
+            "https://github.com/o/r/raw/abc1234/doks/a%20b.png"
+        );
+        assert_eq!(
+            repo("git@github.corp.example:o/r.git").raw_url("abc1234", "x.png"),
+            "https://github.corp.example/o/r/raw/abc1234/x.png"
+        );
+        assert_eq!(
+            repo("https://gitlab.com/g/s/r").raw_url("abc1234", "a/x.png"),
+            "https://gitlab.com/g/s/r/-/raw/abc1234/a/x.png"
+        );
+        assert_eq!(
+            repo("https://codeberg.org/o/r").raw_url("abc1234", "a/x.png"),
+            "https://codeberg.org/o/r/raw/commit/abc1234/a/x.png"
         );
     }
 

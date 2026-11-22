@@ -141,3 +141,13 @@ to ask), and it goes in this order:
 ## Version bump
 
 Keep `Cargo.toml`, `npm/yaks/package.json`, and the tag in lockstep.
+
+Regenerate the changelog in the same commit as the bump, from the code
+checkout: `yaks release changelog -o CHANGELOG.md`. It is a projection of the
+farm's release doks (a Keep a Changelog file for the checked-out branch: the
+release tags `HEAD` reaches, newest first, with an `Unreleased` section, or the
+release about to be cut when its dok exists and ends at `HEAD`). Never edit it
+by hand; fix the release dok or the change line and regenerate. Farm links in it
+are web URLs only when the farm branch is pushed, so run `yaks sync` first, or
+the links drop to plain text (stderr says so). The GitHub Release's body is one
+release's section: `yaks release changelog --release vX.Y.Z`.

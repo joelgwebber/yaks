@@ -97,6 +97,7 @@ break, a list or a code fence is not run-on). They compose, and back `list`, `se
 | `refs <id> --incoming [--json]` | The reverse: every yak that points AT this one, one line per reference (`child`, `depends` or `mention`), then the doks and session notes that link it. Computed by scanning the farm on demand. `--json`. The TUI's `B` key opens the same list. [Details](#refs) |
 | `commits <id> [--fetch] [--json]` | Git commits linked to a yak — shas recorded in its notes (`yaks land` writes them), the branches they record (`--fetch` fetches first), those naming its id in the code repository (all branches), then the yak file's own history on the farm. [Details](#commits) |
 | `release changes [<range>] [--json] [--check]` | What a release's commit range names: shorn yaks by change line and section, shorn yaks with none (gaps), open yaks the commits name, commits naming no yak. `--check` exits 1 on a gap. [Details](#release) |
+| `release changelog [-o <file>] [--release <version>]` | Print (or write) a Keep a Changelog file for the checked-out branch from the farm's release doks, farm links as web URLs; `--release` prints one release's section. [Details](#release) |
 | `release dok <version> [<range>] [--dry-run]` | Write the release dok `doks/releases/<version>.md` with a generated block of its changes (kind `release`); a rerun rewrites only the block. [Details](#release) |
 | `rollup` | Group yaks by the external issue they roll up to (`--keys` lists the external keys). |
 | `scan-ids [file]` | Scan text/stdin for real yak-ids; prints `line:col  id`, exits non-zero if any found — a leak check for a private farm's commits (pre-commit / PR hook). |
@@ -1080,6 +1081,49 @@ farm lock. `--dry-run` prints the dok it would write.
 Correcting a change line (`yaks update <id> --note ... --meta kind=change`) and
 rerunning updates the release. [`yaks check`](#check) lists a release dok whose
 block differs from what this command would write now (`stale-release`).
+
+`release changelog [-o <file>] [--release <version>]`
+
+Print a [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) file for the
+checked-out branch, projected from the farm's release doks and never stored
+there. It runs in the code repository, read-only on the farm. `-o CHANGELOG.md`
+writes the file (relative to where yaks was started) instead of printing it;
+commit it with the version bump (`RELEASING.md`).
+
+**Which releases.** The release tags `HEAD` reaches (`git tag --merged HEAD`,
+the `v*` glob or `yaks.releaseTags`), newest *version* first (`v:refname`
+order, not tag date, which a late tag or a backport would break). An
+`## [Unreleased]` section for the latest tag up to `HEAD` leads when that range
+has commits; when instead a release dok exists for a version that is not tagged
+yet and its `range:` ends at `HEAD` (`yaks release dok v0.0.42` before the
+tag), that release leads as `## [v0.0.42] - Unreleased`.
+
+**Each release.** `## [<version>] - <date>` (the tag's day; ` [YANKED]` when the
+dok has `yanked: true`), then the release dok's body: the headlines and the
+changes block, without the `# title`, the `<!-- yaks:changes -->` markers or the
+headlines placeholder, and every heading one level down (`## Added` becomes
+`### Added`). A tag with no release dok gets the entries a dok block would hold,
+computed now, or `No change lines recorded.` when there are none, so every
+release appears.
+
+**Links.** Every link into the farm (`/yaks/yaks/<id>.md`, `/doks/...`,
+`/sources/...`, attachments) becomes the web URL `yaks url` gives it, at the
+farm branch (`https://github.com/o/r/blob/yaks/yaks/yaks/yaks-1234.md`); they
+are living records, so they are not pinned. A link that has no URL (no remote,
+an unrecognised host, a private farm, a farm branch the remote lacks) is
+written as its text, and stderr says so once. An image pinned with `@<sha>`
+becomes the host's raw file URL at that commit (GitHub
+`https://github.com/<owner>/<repo>/raw/<sha>/<path>`, GitLab `-/raw/`, Gitea
+`raw/commit/`), which serves Git LFS content where `raw.githubusercontent.com`
+serves only the pointer.
+
+`--release <version>` prints just that release's section with no header (also
+`Unreleased`): the body of its GitHub Release. It names a tag `HEAD` reaches or
+the leading unreleased version.
+
+A tag with no release dok is generated from its commit range, about a second
+and a half each, so a first run over a long history with few doks takes a
+while.
 
 ### `land`
 

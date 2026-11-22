@@ -78,7 +78,7 @@ The worker's model is a cost decision, and the coordinator makes it per yak. The
    showing the picture it shipped with), and leave the block between
    `<!-- yaks:changes -->` and `<!-- /yaks:changes -->` alone. Rerun it after
    correcting a change line (it rewrites only the block); `yaks check` lists a
-   release dok whose block is out of date. Then bump and tag.
+   release dok whose block is out of date. Then bump, regenerate `yaks release changelog -o CHANGELOG.md` and commit it with the bump, and tag; `yaks release changelog --release <version>` is the GitHub Release body.
 
 ## 7. Asks
 
