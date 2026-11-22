@@ -1,11 +1,11 @@
 ---
 id: yaks-d3df
 title: Cut v0.0.41
-status: shaving
+status: shorn
 type: task
 priority: 1
 created: '2026-11-22T16:42:25Z'
-updated: '2026-11-22T18:56:19Z'
+updated: '2026-11-22T18:56:20Z'
 tags:
 - release
 ---
@@ -51,3 +51,15 @@ Released v0.0.41 (herd-files, Joel 2026-11-22: "let's do it").
 - Tag `v0.0.41` on 64d2ebf9, pushed to origin and local; release run https://github.com/joelgwebber/yaks/actions/runs/45055792612 succeeded (test, 5 builds, publish). `npm view @j15r/yaks` gives version 0.0.41, latest 0.0.41.
 - GitHub Release https://github.com/joelgwebber/yaks/releases/tag/v0.0.41 with the body from `yaks release changelog --release v0.0.41`.
 - Release dok rerun after tagging: range v0.0.40..v0.0.41, tag recorded.
+
+#### 2026-11-22T18:56:20Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-22T18:56:20Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change.
