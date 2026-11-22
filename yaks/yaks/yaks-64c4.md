@@ -5,7 +5,7 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-09-09T00:38:19Z'
-updated: '2026-11-21T17:42:34Z'
+updated: '2026-11-22T00:15:09Z'
 tags:
 - cli
 - search
@@ -46,3 +46,13 @@ Case study (2026-10-27, for yaks-a99f): Joel asked "do we still support an in-tr
 - **Scope of a retirement.** Nothing records which surfaces a "retire X" change touched and which it left alone (here: skills yes; `init` defaults, discovery, README no). The SHA plus `--stat` reconstructs it, but only when someone thinks to look.
 - **Retirement vs code.** A "retired" concept that is still live in code (`Mode::Team` in `src/init.rs`, `brief.rs`, `preflight.rs`) can only be found by grepping the code against the yak's claim. A check like "this yak says retired; these symbols still exist" would be a useful archaeology primitive.
 - `cut -c1-N` on yak files was needed to keep descriptions readable. The one-paragraph body style of older yaks (yaks-64c4 itself) is hard to skim.
+
+#### 2026-11-22T00:15:09Z
+
+*herd-files*
+
+From the changelog backfill (yaks-3696, 2026-11-22): releases are now a chronological spine. `doks/releases/vX.md` exists for every tag, and `yaks release changes <tag>` computes any release's yaks from its commits. Lessons for archaeology:
+
+- The release yaks were the only narrative for most old releases, and half of them (yaks-3479, yaks-7faf and others) hold nothing but the bump. Headlines lived in descriptions when they existed at all.
+- Membership from commit messages works back to v0.0.5 (about 87% of commits name a yak), so "which release shipped yak X" is answerable for almost the whole history. A yak→release lookup is the next primitive (yaks-bda5 wants it).
+- Yak titles alone make a skimmable changelog for old releases: 527 undescribed entries read fine as titles. The change line matters most for titles that drifted from what shipped.
