@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-19T03:20:23Z'
-updated: '2026-10-19T03:20:50Z'
+updated: '2026-11-22T00:10:38Z'
 tags:
 - release
 ---
@@ -33,3 +33,9 @@ Gate: `cargo test --release` green except tests/attachment_sheds.rs (fails ident
 *delta:farm-bootstrap*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:38Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
