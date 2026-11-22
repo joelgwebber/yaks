@@ -77,6 +77,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="959.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text xml:space="preserve" y="977.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text xml:space="preserve" y="995.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text xml:space="preserve" y="1013.5"><tspan x="10.0" class="s6">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit</tspan></text>
+<text xml:space="preserve" y="1013.5"><tspan x="10.0" class="s6">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/</tspan></text>
 </g>
 </svg>

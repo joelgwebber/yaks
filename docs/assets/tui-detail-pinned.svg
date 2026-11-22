@@ -32,6 +32,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="275.5"><tspan x="10.0" class="s1">│</tspan><tspan x="26.8">Go with the hourglass; ship it.</tspan></text>
 <text xml:space="preserve" y="293.5"><tspan x="10.0" class="s1">│</tspan></text>
 <text xml:space="preserve" y="311.5"><tspan x="10.0" class="s1">│</tspan></text>
-<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s5">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:st</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s5">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment</tspan></text>
 </g>
 </svg>

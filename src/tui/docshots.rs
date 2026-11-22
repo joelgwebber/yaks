@@ -912,8 +912,9 @@ fn docshots_image_viewer() {
     view_to(&mut app, "status:shaving");
     press_key(&mut app, KeyCode::Enter); // focus the detail pane
     let _ = toque::render_to_svg(&app, w, h); // measure the pane width
-    press_key(&mut app, KeyCode::Tab); // cursor onto the attachment link
-    press_key(&mut app, KeyCode::Enter); // open it
+    press_key(&mut app, KeyCode::Tab); // cursor onto the `Attachments:` row
+    press_key(&mut app, KeyCode::Enter); // its directory view, on the one file
+    press_key(&mut app, KeyCode::Enter); // open the image
     write_svg("tui-image-viewer", &app, w, h);
 }
 
@@ -1177,6 +1178,78 @@ fn docshots_dir_view() {
     press(&mut app, 'G');
     press_key(&mut app, KeyCode::Enter);
     write_svg("tui-dir-archive", &app, w, h);
+}
+
+/// An archive attachment browsed in the pane, and a file inside it opened
+/// (yaks-93ee), into `docs/assets/tui-archive-tree.svg` and
+/// `tui-archive-member.svg`; and a line-range link opened narrowed (yaks-15dc)
+/// into `docs/assets/tui-line-range.svg`. The archive is built with the
+/// `zip` crate in the scene's temp farm, so nothing checked in is needed.
+/// Ignored by default; run explicitly:
+/// `cargo test -p yaks docshots_archive -- --ignored`.
+#[test]
+#[ignore = "asset generator; run with --ignored to refresh docs/assets/tui-archive-*.svg and tui-line-range.svg"]
+fn docshots_archive() {
+    use crate::tui::test_support::temp_farm;
+
+    let mut y = t(
+        "yak-1a2b",
+        "Try a faster tokenizer",
+        "task",
+        2,
+        Status::Shaving,
+        None,
+    );
+    y.body = "The experiment is zipped in [code.zip](yak-1a2b/code.zip/). \
+              The failure is in [the run log](yak-1a2b/run.log#L10-L16)."
+        .into();
+    let (_dir, farm) = temp_farm(&[y]);
+    let a = crate::store::artifact_dir(farm.root(), "yak-1a2b");
+    std::fs::create_dir_all(&a).unwrap();
+    crate::entries::fixtures::zip(
+        &a.join("code.zip"),
+        &[
+            ("Cargo.toml", b"[package]\nname = \"tokenizer\"\n"),
+            ("README.md", b"# tokenizer\n\nA faster one.\n"),
+            (
+                "src/lib.rs",
+                b"pub mod scan;\n\n/// Split `s` on word boundaries.\npub fn split(s: &str) -> Vec<&str> {\n    s.split_whitespace().collect()\n}\n",
+            ),
+            ("src/scan.rs", b"pub fn scan() {}\n"),
+            ("benches/split.rs", b"fn main() {}\n"),
+        ],
+    );
+    let log: String = (1..=24)
+        .map(|i| match i {
+            12 => "error: split() returned 3 tokens, expected 4\n".to_string(),
+            _ => format!("[run 1] step {i} ok\n"),
+        })
+        .collect();
+    std::fs::write(a.join("run.log"), log).unwrap();
+    let (w, h) = (110u16, 24u16);
+    let mut app = App::with_farm(farm).unwrap();
+    app.farm_sync = None;
+    HeadlessApp::on_resize(&mut app, w, h);
+    view_to(&mut app, "status:shaving");
+    press_key(&mut app, KeyCode::Enter);
+    // The pane's `Attachments:` row opens the directory view; the archive is
+    // its first row (files sort by name). Unfold it, then `src/`, and rest
+    // on `lib.rs`.
+    press_key(&mut app, KeyCode::Tab);
+    press_key(&mut app, KeyCode::Enter);
+    press_key(&mut app, KeyCode::Enter);
+    for _ in 0..2 {
+        press(&mut app, 'j');
+    }
+    press_key(&mut app, KeyCode::Enter);
+    press(&mut app, 'j');
+    write_svg("tui-archive-tree", &app, w, h);
+    // The member opens in the viewer like any file, read-only.
+    press_key(&mut app, KeyCode::Enter);
+    write_svg("tui-archive-member", &app, w, h);
+    // A range link opens narrowed: only the lines, the header says so.
+    app.open_dest("yak-1a2b/run.log#L10-L16");
+    write_svg("tui-line-range", &app, w, h);
 }
 
 /// A commit link opened in the commit view, the squashed worker commit that

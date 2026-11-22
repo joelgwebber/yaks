@@ -9,37 +9,37 @@ text{white-space:pre}
 .s3{fill:#8abeb7}
 .s4{fill:#8abeb7;font-weight:bold}
 .s5{fill:#969896}
-.s6{fill:#969896;font-style:italic}
-.s7{fill:#b294bb}
+.s6{fill:#f0c674}
+.s7{fill:#969896;font-style:italic}
 .s8{fill:#81a2be}
-.s9{fill:#f0c674}
+.s9{fill:#b294bb}
 </style>
 <rect x="0" y="0" width="860" height="416" rx="8" fill="#1d1f21"/>
 <rect class="b0" x="10.0" y="10.0" width="17.3" height="18.0"/>
 <rect class="b0" x="35.2" y="10.0" width="92.9" height="18.0"/>
-<rect class="b1" x="26.8" y="118.0" width="42.5" height="18.0"/>
+<rect class="b1" x="26.8" y="64.0" width="42.5" height="18.0"/>
 <g fill="#c5c8c6">
 <text xml:space="preserve" y="23.5"><tspan x="10.0" class="s0"> 🦬</tspan><tspan x="35.2" class="s0"> Hairy (1)</tspan><tspan x="136.0" class="s1"> 🪒</tspan><tspan x="161.2" class="s1"> Shaving (0)</tspan><tspan x="278.8" class="s1"> 🐑</tspan><tspan x="304.0" class="s1"> Shorn (0)</tspan><tspan x="404.8" class="s1"> 🕒</tspan><tspan x="430.0" class="s1"> Recent (1)</tspan><tspan x="539.2" class="s1"> ⭐</tspan><tspan x="564.4" class="s1"> Starred (0)</tspan><tspan x="682.0" class="s1"> 📖</tspan><tspan x="707.2" class="s1"> Doks (0)</tspan><tspan x="799.6" class="s1"> 🛖</tspan><tspan x="824.8" class="s1"> Sh</tspan></text>
-<text xml:space="preserve" y="41.5"><tspan x="10.0" class="s2">viewing src/lib.rs:L4-L9</tspan></text>
-<text xml:space="preserve" y="59.5"><tspan x="10.0" class="s3">◂</tspan><tspan x="26.8" class="s4">{ } code:src/lib.rs</tspan><tspan x="203.2" class="s5">code</tspan></text>
-<text xml:space="preserve" y="77.5"><tspan x="10.0" class="s3">│</tspan><tspan x="35.2" class="s5">1 │</tspan><tspan x="68.8" class="s6">//! Where a link points.</tspan></text>
-<text xml:space="preserve" y="95.5"><tspan x="10.0" class="s3">│</tspan><tspan x="35.2" class="s5">2 │</tspan></text>
-<text xml:space="preserve" y="113.5"><tspan x="10.0" class="s3">│</tspan><tspan x="35.2" class="s5">3 │</tspan><tspan x="68.8" class="s7">use</tspan><tspan x="102.4">std::path::</tspan><tspan x="194.8" class="s8">Path</tspan><tspan x="228.4">;</tspan></text>
-<text xml:space="preserve" y="131.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 4 │</tspan></text>
-<text xml:space="preserve" y="149.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 5 │</tspan><tspan x="68.8" class="s6">/// What a link resolves to.</tspan></text>
-<text xml:space="preserve" y="167.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 6 │</tspan><tspan x="68.8">#[derive(</tspan><tspan x="144.4" class="s8">Debug</tspan><tspan x="186.4">)]</tspan></text>
-<text xml:space="preserve" y="185.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 7 │</tspan><tspan x="68.8" class="s7">pub</tspan><tspan x="102.4" class="s7">enum</tspan><tspan x="144.4" class="s8">Place</tspan><tspan x="194.8">{</tspan></text>
-<text xml:space="preserve" y="203.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 8 │</tspan><tspan x="102.4" class="s8">Yak</tspan><tspan x="127.6">(</tspan><tspan x="136.0" class="s8">String</tspan><tspan x="186.4">),</tspan></text>
-<text xml:space="preserve" y="221.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 9 │</tspan><tspan x="102.4" class="s8">CodeFile</tspan><tspan x="178.0">{ rel:</tspan><tspan x="236.8" class="s8">String</tspan><tspan x="287.2">, line:</tspan><tspan x="354.4" class="s8">Option</tspan><tspan x="404.8">&lt;</tspan><tspan x="413.2" class="s8">u32</tspan><tspan x="438.4">&gt; },</tspan></text>
-<text xml:space="preserve" y="239.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">10 │</tspan><tspan x="68.8">}</tspan></text>
-<text xml:space="preserve" y="257.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">11 │</tspan></text>
-<text xml:space="preserve" y="275.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">12 │</tspan><tspan x="68.8" class="s6">/// The path of a place, when it is a file.</tspan></text>
-<text xml:space="preserve" y="293.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">13 │</tspan><tspan x="68.8" class="s7">pub</tspan><tspan x="102.4" class="s7">fn</tspan><tspan x="127.6">path(place: &amp;</tspan><tspan x="236.8" class="s8">Place</tspan><tspan x="278.8">, root: &amp;</tspan><tspan x="354.4" class="s8">Path</tspan><tspan x="388.0">) -&gt;</tspan><tspan x="430.0" class="s8">Option</tspan><tspan x="480.4">&lt;</tspan><tspan x="488.8" class="s8">String</tspan><tspan x="539.2">&gt; {</tspan></text>
-<text xml:space="preserve" y="311.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">14 │</tspan><tspan x="102.4" class="s7">match</tspan><tspan x="152.8">place {</tspan></text>
-<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">15 │</tspan><tspan x="136.0" class="s8">Place</tspan><tspan x="178.0">::</tspan><tspan x="194.8" class="s8">CodeFile</tspan><tspan x="270.4">{ rel, .. } =&gt;</tspan><tspan x="396.4" class="s8">Some</tspan><tspan x="430.0">(rel.clone()),</tspan></text>
-<text xml:space="preserve" y="347.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">16 │</tspan><tspan x="136.0" class="s8">Place</tspan><tspan x="178.0">::</tspan><tspan x="194.8" class="s8">Yak</tspan><tspan x="220.0">(id) =&gt;</tspan><tspan x="287.2" class="s8">Some</tspan><tspan x="320.8">(format!(</tspan><tspan x="396.4" class="s9">&quot;{}/{id}.md&quot;</tspan><tspan x="497.2">, root.display())),</tspan></text>
-<text xml:space="preserve" y="365.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">17 │</tspan><tspan x="102.4">}</tspan></text>
-<text xml:space="preserve" y="383.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s5">18 │</tspan><tspan x="68.8">}</tspan></text>
+<text xml:space="preserve" y="41.5"><tspan x="10.0" class="s2">viewing code:src/lib.rs:L4-L9</tspan></text>
+<text xml:space="preserve" y="59.5"><tspan x="10.0" class="s3">◂</tspan><tspan x="26.8" class="s4">{ } code:src/lib.rs</tspan><tspan x="203.2" class="s5">code</tspan><tspan x="253.6" class="s6">lines 4–9 · w whole file</tspan></text>
+<text xml:space="preserve" y="77.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 4 │</tspan></text>
+<text xml:space="preserve" y="95.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 5 │</tspan><tspan x="68.8" class="s7">/// What a link resolves to.</tspan></text>
+<text xml:space="preserve" y="113.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 6 │</tspan><tspan x="68.8">#[derive(</tspan><tspan x="144.4" class="s8">Debug</tspan><tspan x="186.4">)]</tspan></text>
+<text xml:space="preserve" y="131.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 7 │</tspan><tspan x="68.8" class="s9">pub</tspan><tspan x="102.4" class="s9">enum</tspan><tspan x="144.4" class="s8">Place</tspan><tspan x="194.8">{</tspan></text>
+<text xml:space="preserve" y="149.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 8 │</tspan><tspan x="102.4" class="s8">Yak</tspan><tspan x="127.6">(</tspan><tspan x="136.0" class="s8">String</tspan><tspan x="186.4">),</tspan></text>
+<text xml:space="preserve" y="167.5"><tspan x="10.0" class="s3">│</tspan><tspan x="26.8" class="s2"> 9 │</tspan><tspan x="102.4" class="s8">CodeFile</tspan><tspan x="178.0">{ rel:</tspan><tspan x="236.8" class="s8">String</tspan><tspan x="287.2">, line:</tspan><tspan x="354.4" class="s8">Option</tspan><tspan x="404.8">&lt;</tspan><tspan x="413.2" class="s8">u32</tspan><tspan x="438.4">&gt; },</tspan></text>
+<text xml:space="preserve" y="185.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="203.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="221.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="239.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="257.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="275.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="293.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="311.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="329.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="347.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="365.5"><tspan x="10.0" class="s3">│</tspan></text>
+<text xml:space="preserve" y="383.5"><tspan x="10.0" class="s3">│</tspan></text>
 <text xml:space="preserve" y="401.5"><tspan x="10.0" class="s5">j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc clo</tspan></text>
 </g>
 </svg>

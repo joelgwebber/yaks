@@ -31,7 +31,7 @@ text{white-space:pre}
 <text xml:space="preserve" y="257.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text xml:space="preserve" y="275.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">The experiment is in</tspan><tspan x="203.2" class="s6">📎</tspan><tspan x="220.0" class="s6"> tokenizer/</tspan><tspan x="312.4">; the first run's output is</tspan><tspan x="547.6" class="s6">📎</tspan><tspan x="564.4" class="s6"> runs.tgz</tspan><tspan x="640.0">.</tspan></text>
 <text xml:space="preserve" y="293.5"><tspan x="10.0" class="s2">│</tspan></text>
-<text xml:space="preserve" y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">── peek: yak/yaks/yak-1a2b/ ───────────────────────────────────────────────────────────────────────────────</tspan></text>
+<text xml:space="preserve" y="311.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">── peek: yak-1a2b/ ────────────────────────────────────────────────────────────────────────────────────────</tspan></text>
 <text xml:space="preserve" y="329.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">tokenizer/</tspan></text>
 <text xml:space="preserve" y="347.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">notes.md</tspan></text>
 <text xml:space="preserve" y="365.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">runs.tgz</tspan></text>

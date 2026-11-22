@@ -22,8 +22,8 @@ text{white-space:pre}
 <text xml:space="preserve" y="77.5"><tspan x="18.4" class="s2">Full-text search</tspan><tspan x="245.2" class="s3">topic</tspan><tspan x="320.8" class="s4">#search</tspan><tspan x="497.2" class="s0">doks/topics/full-text-search.md</tspan></text>
 <text xml:space="preserve" y="95.5"><tspan x="18.4" class="s2">Vector search in Postgres</tspan><tspan x="245.2" class="s3">topic</tspan><tspan x="320.8" class="s4">#databases #search</tspan><tspan x="497.2" class="s0">doks/topics/vector-search.md</tspan></text>
 <text xml:space="preserve" y="113.5"><tspan x="18.4" class="s2">TUI layout</tspan><tspan x="245.2" class="s3">note</tspan><tspan x="320.8" class="s4">#tui</tspan><tspan x="497.2" class="s0">yaks/doks/tui-layout.md</tspan></text>
-<text xml:space="preserve" y="131.5"><tspan x="18.4" class="s2">pgvector README</tspan><tspan x="245.2" class="s5">source</tspan><tspan x="497.2" class="s0">sources/2026-10-22-1a2b3c4d</tspan></text>
+<text xml:space="preserve" y="131.5"><tspan x="18.4" class="s2">pgvector README</tspan><tspan x="245.2" class="s5">source</tspan><tspan x="497.2" class="s0">sources/2026-10-22-1a2b3c4d.md</tspan></text>
 <text xml:space="preserve" y="149.5"><tspan x="18.4" class="s2">Pick an index</tspan><tspan x="245.2" class="s6">session</tspan><tspan x="497.2" class="s0">sessions/2026/10/herd-2026-10-23-0915-pick-an-index.md</tspan></text>
-<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s7">Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  ?:help  q:quit</tspan></text>
+<text xml:space="preserve" y="545.5"><tspan x="10.0" class="s7">Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  O:take out  ?:help  q:quit</tspan></text>
 </g>
 </svg>

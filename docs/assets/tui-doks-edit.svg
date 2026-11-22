@@ -32,7 +32,7 @@ text{white-space:pre}
 <text xml:space="preserve" y="131.5"><tspan x="18.4" class="s2">pgvector README</tspan><tspan x="203.2" class="s8">source</tspan><tspan x="396.4" class="s0">sourc</tspan><tspan x="438.4" class="s3">│</tspan><tspan x="455.2">description: pgvector, indexes and when to use them.</tspan></text>
 <text xml:space="preserve" y="149.5"><tspan x="18.4" class="s2">Pick an index</tspan><tspan x="203.2" class="s9">session</tspan><tspan x="396.4" class="s0">sessi</tspan><tspan x="438.4" class="s3">│</tspan><tspan x="455.2">tags: [databases, search]</tspan></text>
 <text xml:space="preserve" y="167.5"><tspan x="438.4" class="s3">│</tspan><tspan x="455.2">sources:</tspan></text>
-<text xml:space="preserve" y="185.5"><tspan x="438.4" class="s3">│</tspan><tspan x="472.0" class="s3">-</tspan><tspan x="488.8">sources/2026-10-22-1a2b3c4d/source.md</tspan></text>
+<text xml:space="preserve" y="185.5"><tspan x="438.4" class="s3">│</tspan><tspan x="472.0" class="s3">-</tspan><tspan x="488.8">sources/2026-10-22-1a2b3c4d.md</tspan></text>
 <text xml:space="preserve" y="203.5"><tspan x="438.4" class="s3">│</tspan><tspan x="455.2">---</tspan></text>
 <text xml:space="preserve" y="221.5"><tspan x="438.4" class="s3">│</tspan></text>
 <text xml:space="preserve" y="239.5"><tspan x="438.4" class="s3">│</tspan><tspan x="455.2" class="s10">#</tspan><tspan x="472.0" class="s11">Vector search</tspan></text>

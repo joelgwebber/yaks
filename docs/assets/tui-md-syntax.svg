@@ -51,6 +51,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="563.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text xml:space="preserve" y="581.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s4">brainfuck</tspan></text>
 <text xml:space="preserve" y="599.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8" class="s7">+++[&gt;++&lt;-] unknown languages stay one flat colour</tspan></text>
-<text xml:space="preserve" y="617.5"><tspan x="10.0" class="s4">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:st</tspan></text>
+<text xml:space="preserve" y="617.5"><tspan x="10.0" class="s4">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment</tspan></text>
 </g>
 </svg>

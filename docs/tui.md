@@ -765,6 +765,8 @@ links, peek and `O` work in the narrowed view as in the whole file. A single
 line (`#L100`) opens the whole file on that line. `o`/`i` bring a narrowed view
 back narrowed.
 
+![A log attachment opened from a #L10-L16 link: only those lines, the header saying lines 10–16 · w whole file](assets/tui-line-range.svg)
+
 When a pinned commit is not in this checkout (an agent on another machine
 dropped it, or never pushed it) the viewer shows one line, `commit abc1234 is
 not in this checkout; fetch it or open on the host`, instead of a blank pane. A
@@ -917,6 +919,10 @@ archive over 50 MiB, or one that does not open, is a plain file. The
 take-out menu (`O`, above) on a member gives `p` the archive's
 path plus the member's and `r` the path through it, extracts a read-only temp
 copy for `e` and `o`, and answers `g` that a host cannot link into an archive.
+
+![A zip attachment listed as a directory in the directory view: archive marked, its src/ folder unfolded, the cursor on a member](assets/tui-archive-tree.svg)
+
+![The member opened from the zip: the viewer's header shows the path through the archive](assets/tui-archive-member.svg)
 
 **Any other archive is never opened from the TUI.** `Enter` on a `.7z`, `.gz`,
 `.bz2` or `.xz` (or a `.tgz` that is not really one; in the tree, or following a
@@ -1076,7 +1082,7 @@ one that is gone says so.
 
 ## Sheds tab
 
-The **🛦 Sheds** tab is `yaks sheds` on screen: a tree whose roots are the
+The **🛖 Sheds** tab is `yaks sheds` on screen: a tree whose roots are the
 **actors**, the workers in the farm (the `[actor]` stamp on notes and moves),
 live, so you can see what each worker is doing without opening a terminal. It
 is read from the farm alone (no git checkouts, no Delta), so it shows the same

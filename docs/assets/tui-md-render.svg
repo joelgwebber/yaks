@@ -84,6 +84,6 @@ text{white-space:pre}
 <text xml:space="preserve" y="1103.5"><tspan x="10.0" class="s2">│</tspan></text>
 <text xml:space="preserve" y="1121.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">I believe it's the markdown norm to only consider paragraph breaks with a newline. But that's also worth</tspan></text>
 <text xml:space="preserve" y="1139.5"><tspan x="10.0" class="s2">│</tspan><tspan x="26.8">double-checking.</tspan></text>
-<text xml:space="preserve" y="1157.5"><tspan x="10.0" class="s4">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  i/o:fwd/back  E:edit  M:comment  D:dep  S:state  f:filter</tspan></text>
+<text xml:space="preserve" y="1157.5"><tspan x="10.0" class="s4">Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:dep  S:stat</tspan></text>
 </g>
 </svg>
