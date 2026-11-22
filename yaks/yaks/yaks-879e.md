@@ -1,11 +1,11 @@
 ---
 id: yaks-879e
 title: yaks commit errors 'git commit failed ... nothing to commit' when an autocommit already took the change
-status: shaving
+status: shorn
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:20:35Z'
+updated: '2026-11-22T17:20:36Z'
 tags:
 - git
 - cli
@@ -70,3 +70,15 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 *commit-1*
 
 Coordinator's datapoint (plain `update` then `yaks commit`, no LFS): a sequential pair cannot race itself, but the real farm has several agents and a TUI writing at once, so a writer's autocommit landing between `commit`'s status read and its `git add` is the same race (the farm lock fix); and any case where status reads a change that `git add` then finds identical to HEAD (racily-clean stat) is what the post-add `git diff --cached --quiet` check covers. I could not reproduce a purely sequential failure in a scratch farm (touch, rewrite, LFS PNG attach, then commit x3: all clean). Summary: lock around commit's read+stage, git-verdict check after `git add`, docs/cli.md + clap help updated; gate green.
+
+#### 2026-11-22T17:20:36Z
+
+*commit-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHgQcZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-22T17:20:36Z
+
+*commit-1 · kind: change*
+
+yaks commit holds the farm lock while it reads and stages, and says 'nothing to commit' when git finds nothing staged, instead of failing
