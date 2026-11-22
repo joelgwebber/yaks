@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:23:40Z'
+updated: '2026-11-22T17:23:41Z'
 tags:
 - git
 - init
@@ -46,3 +46,13 @@ Decision: fresh farm root is `farm_root_in(&worktree).unwrap_or_else(|| worktree
 *init-1*
 
 Decision: updated existing tests that encoded the old layout (init_modes, autocommit, cli create json path, sync, weight) rather than leaving them: their helpers did `path.parent()` or joined `.yaks/` to reach the worktree. Left alone: tests that build `.yaks/` farms by hand (migration, preflight, links, status, ...), which test pre-9 behaviour.
+
+#### 2026-11-22T17:23:41Z
+
+*init-1*
+
+Evidence: new test tests/init_modes.rs::init_writes_a_fresh_farm_at_the_branch_root. Proved it fails before the fix (stashed src/init.rs): panicked listing `.yaks/.gitignore .yaks/config.yaml .yaks/schema`. Passes after. Scratch run with my binary, fresh repo, `init --no-skills`, `create`:
+  ls -a $(yaks path): . .. .git .gitignore .lock config.yaml schema yak
+  git ls-tree -r --name-only yaks: .gitignore config.yaml schema yak/yaks/yak-2db6.md
+  yaks doctor: All clear: no farm-integrity issues found.  yaks check: All clear.
+Docs parity: grep `.yaks` over docs/ README.md .agents/skills/ src/init.rs help: remaining mentions describe pre-9 farms/migration, nothing calls a fresh farm `.yaks/`; no doc change needed. Flaky under parallel load (not touched by this change, passed on rerun): needs_loop, commits.
