@@ -1,7 +1,7 @@
 ---
 id: yaks-0cfb
 title: 'Docshots: regenerate every doc SVG once to absorb toque renderer drift; refresh the Sheds tab shots'
-status: hairy
+status: dead
 type: chore
 priority: 3
 created: '2026-10-31T17:12:34Z'
@@ -20,3 +20,9 @@ Fix: regenerate all docshots once in their own commit (after checking that the d
 *herd-files*
 
 Duplicate of yaks-daa4 (same docshot refresh, filed twice); worked there in the pre-v0.0.41 batch, which also covers the Sheds tab shots this one names.
+
+#### 2026-11-22T16:40:59Z
+
+*herd-files · kind: move · from: hairy · to: dead · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> dead
