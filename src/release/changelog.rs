@@ -135,19 +135,24 @@ fn commit_count(repo: &Path, range: &Range) -> usize {
     .unwrap_or(0)
 }
 
-/// Every section of the file, newest first.
-fn plan(farm: &Farm, repo: &Path) -> Result<Vec<Release>> {
+/// Every section of the file, newest first; with `only`, just the section of
+/// that name (the others' ranges and dates are never computed, so `--release`
+/// costs one release, not the whole history). An unknown `only` gives none.
+fn plan(farm: &Farm, repo: &Path, only: Option<&str>) -> Result<Vec<Release>> {
+    let wanted = |name: &str| only.is_none_or(|o| o.eq_ignore_ascii_case(name));
     let zone = farm.zone();
     let tags = reachable_tags(repo)?;
     let mut out = Vec::new();
     if let Some(dok) = untagged_dok(farm, repo) {
         let v = version_of(&dok);
-        out.push(Release {
-            heading: format!("## [{v}] - Unreleased"),
-            name: v,
-            source: Source::Dok(dok),
-        });
-    } else {
+        if wanted(&v) {
+            out.push(Release {
+                heading: format!("## [{v}] - Unreleased"),
+                name: v,
+                source: Source::Dok(dok),
+            });
+        }
+    } else if wanted("Unreleased") {
         let range = resolve_range(repo, None)?;
         if commit_count(repo, &range) > 0 {
             out.push(Release {
@@ -158,6 +163,9 @@ fn plan(farm: &Farm, repo: &Path) -> Result<Vec<Release>> {
         }
     }
     for tag in tags {
+        if !wanted(&tag) {
+            continue;
+        }
         let dok = (doks::path_problem(&dok_path(&tag)).is_none())
             .then(|| farm.dok(&dok_path(&tag)).ok().flatten())
             .flatten()
@@ -179,6 +187,18 @@ fn plan(farm: &Farm, repo: &Path) -> Result<Vec<Release>> {
         });
     }
     Ok(out)
+}
+
+/// The names `--release` accepts, newest first, without computing any range:
+/// for the message when it names none of them.
+fn plan_names(farm: &Farm, repo: &Path) -> Result<Vec<String>> {
+    let mut names = Vec::new();
+    match untagged_dok(farm, repo) {
+        Some(dok) => names.push(version_of(&dok)),
+        None => names.push("Unreleased".into()),
+    }
+    names.extend(reachable_tags(repo)?);
+    Ok(names)
 }
 
 // ---- text ------------------------------------------------------------------
@@ -480,12 +500,14 @@ pub fn cli(farm: &Farm, cwd: &Path, out: Option<&Path>, only: Option<&str>) -> R
             "release changelog reads the releases of the code repository: run it in your checkout"
         );
     };
-    let releases = plan(farm, &repo)?;
+    let releases = plan(farm, &repo, only)?;
     let mut cx = Cx::new(farm, &repo);
     let text = match only {
         Some(v) => {
             let Some(r) = releases.iter().find(|r| r.name.eq_ignore_ascii_case(v)) else {
-                let names: Vec<&str> = releases.iter().map(|r| r.name.as_str()).collect();
+                let mut names: Vec<String> = plan_names(farm, &repo)?;
+                names.dedup();
+                let names: Vec<&str> = names.iter().map(String::as_str).collect();
                 bail!(
                     "{v}: not a release this branch reaches (it has: {})",
                     if names.is_empty() {
