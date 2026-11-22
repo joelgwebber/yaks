@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-10-22T01:16:51Z'
-updated: '2026-10-22T01:54:26Z'
+updated: '2026-11-22T00:10:38Z'
 tags:
 - release
 ---
@@ -31,3 +31,9 @@ Released 0.0.22.
 *delta:herd-dirs*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:38Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
