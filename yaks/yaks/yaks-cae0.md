@@ -1,11 +1,11 @@
 ---
 id: yaks-cae0
 title: yaks init still writes a fresh farm under .yaks/ (schema 10 in the pre-9 layout)
-status: shaving
+status: shorn
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:27:26Z'
+updated: '2026-11-22T17:27:27Z'
 tags:
 - git
 - init
@@ -68,3 +68,15 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 *init-1*
 
 Summary: yaks init now writes a fresh farm at the worktree root (config.yaml, schema, .gitignore, <herd>/yaks/); an existing pre-9 .yaks/ branch keeps its layout. One-line fix in src/init.rs; five test files updated; new integration test. fmt + cargo test -p yaks green, verify PASS.
+
+#### 2026-11-22T17:27:27Z
+
+*init-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHgO5JIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-22T17:27:27Z
+
+*init-1 · kind: change*
+
+yaks init now writes a fresh farm at the branch root (config.yaml, schema, <herd>/yaks/) instead of under .yaks/; an existing .yaks/ farm keeps its layout.
