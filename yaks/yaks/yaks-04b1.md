@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-09-02T21:25:36Z'
-updated: '2026-09-02T21:26:05Z'
+updated: '2026-11-22T00:10:29Z'
 tags:
 - release
 ---
@@ -15,3 +15,9 @@ Bump Cargo.toml + npm/yaks/package.json to 0.0.5, commit, tag v0.0.5, push tag t
 #### 2026-09-02T21:26:05Z
 
 Bumped Cargo.toml, Cargo.lock, and npm/yaks/package.json to 0.0.5. Committing + tagging v0.0.5; push of the tag triggers release.yml (OIDC publish of the six npm packages).
+
+#### 2026-11-22T00:10:29Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
