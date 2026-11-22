@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 1
 created: '2026-11-22T16:42:25Z'
-updated: '2026-11-22T17:43:53Z'
+updated: '2026-11-22T17:57:19Z'
 tags:
 - release
 ---
@@ -29,3 +29,13 @@ moved: hairy -> shaving
 *herd-files*
 
 Prepared (herd-files): batch landed (eed4dd5e, c763a393, 876170b5, fe2b473d) plus 668232a1 (the release being cut leads CHANGELOG.md with its dok's date); `release changes --check` ok; v0.0.41 dok has headlines and a pinned archive-browser image (farm f4211aaa, on origin; raw URL serves image/png); bump + CHANGELOG.md committed as 7986845c, pushed to local main, installed (yaks 0.0.41). Gate: fmt clean, 1587 passed, 0 failed. Waiting on Joel's go-ahead to push main and tag v0.0.41 to origin (publishes to npm).
+
+#### 2026-11-22T17:57:19Z
+
+*herd-files*
+
+Ready to publish (herd-files), main f47196f6 on local main, installed:
+
+- `origin/main` had five commits of Joel's not in our main (the toque extraction: yaks-67ef, yaks-2e7c, yaks-20a5, yaks-2141). Merged in c0e1ba76; conflicts in imageview.rs (toque's ImageView kept, plus this branch's `rev` and `from_bytes`), keymap.rs (toque's rule with RowKind::Place), the yaks-working skill (both changes) and Cargo.lock (origin's, rebuilt at 0.0.41). After the merge: docshots regenerate byte-identical, the pinned LFS image still opens in the image viewer, `cargo test --workspace --locked` with an empty HOME passes (1580, 0 failed), fmt clean.
+- Change lines: three toque yaks `--no-change`, yaks-2141 a line (headless `svg`/`png` frames). `release changes --check` ok; release dok up to date; CHANGELOG.md regenerated (f47196f6).
+- main fast-forwards origin/main.
