@@ -199,17 +199,23 @@ fn commits_after_the_last_tag_make_an_unreleased_section() {
 }
 
 #[test]
-fn an_untagged_release_dok_ending_at_head_leads_as_unreleased() {
+fn an_untagged_release_dok_ending_at_head_leads_with_its_date() {
     let (r, ..) = two_releases("untagged");
     let more = r.create("More", "feature", None);
     r.run(&["shorn", &more, "--change", "Adds more."]);
     r.commit(&format!("{more}: more"));
     r.run(&["release", "dok", "v0.3.0"]);
+    // The release being cut carries its dok's date, so the file committed
+    // with the bump, before the tag exists, is already right.
+    let dok: serde_json::Value =
+        serde_json::from_str(&r.run(&["dok", "show", "doks/releases/v0.3.0.md", "--json"]))
+            .unwrap();
+    let date = dok["fields"]["date"].as_str().unwrap().to_string();
     let (text, _) = changelog(&r, &[]);
-    assert!(text.contains("## [v0.3.0] - Unreleased\n"), "{text}");
-    assert!(!text.contains("## [Unreleased]"), "{text}");
+    assert!(text.contains(&format!("## [v0.3.0] - {date}\n")), "{text}");
+    assert!(!text.contains("Unreleased"), "{text}");
     let (one, _) = changelog(&r, &["--release", "v0.3.0"]);
-    assert!(one.starts_with("## [v0.3.0] - Unreleased\n"), "{one}");
+    assert!(one.starts_with(&format!("## [v0.3.0] - {date}\n")), "{one}");
     // Once it is tagged it is an ordinary release with the tag's date.
     r.git(&["tag", "v0.3.0"]);
     let (text, _) = changelog(&r, &[]);

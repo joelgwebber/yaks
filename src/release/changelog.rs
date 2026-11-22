@@ -146,8 +146,12 @@ fn plan(farm: &Farm, repo: &Path, only: Option<&str>) -> Result<Vec<Release>> {
     if let Some(dok) = untagged_dok(farm, repo) {
         let v = version_of(&dok);
         if wanted(&v) {
+            // The release being cut: its dok's date, so the CHANGELOG.md
+            // committed with the bump (before the tag can exist) is already
+            // right; `Unreleased` only when the dok has none.
+            let date = dok.str_field("date").unwrap_or_else(|| "Unreleased".into());
             out.push(Release {
-                heading: format!("## [{v}] - Unreleased"),
+                heading: format!("## [{v}] - {date}"),
                 name: v,
                 source: Source::Dok(dok),
             });

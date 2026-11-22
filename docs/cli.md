@@ -1096,7 +1096,7 @@ order, not tag date, which a late tag or a backport would break). An
 `## [Unreleased]` section for the latest tag up to `HEAD` leads when that range
 has commits; when instead a release dok exists for a version that is not tagged
 yet and its `range:` ends at `HEAD` (`yaks release dok v0.0.42` before the
-tag), that release leads as `## [v0.0.42] - Unreleased`.
+tag), that release leads as `## [v0.0.42] - <date>`, the dok's `date:` (so the file committed with the version bump, before the tag exists, is already right; `Unreleased` when the dok has no date).
 
 **Each release.** `## [<version>] - <date>` (the tag's day; ` [YANKED]` when the
 dok has `yanked: true`), then the release dok's body: the headlines and the
