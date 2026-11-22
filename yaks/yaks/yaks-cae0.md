@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T17:27:19Z'
+updated: '2026-11-22T17:27:26Z'
 tags:
 - git
 - init
@@ -62,3 +62,9 @@ Docs parity: grep `.yaks` over docs/ README.md .agents/skills/ src/init.rs help:
 *init-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-22T17:27:26Z
+
+*init-1*
+
+Summary: yaks init now writes a fresh farm at the worktree root (config.yaml, schema, .gitignore, <herd>/yaks/); an existing pre-9 .yaks/ branch keeps its layout. One-line fix in src/init.rs; five test files updated; new integration test. fmt + cargo test -p yaks green, verify PASS.
