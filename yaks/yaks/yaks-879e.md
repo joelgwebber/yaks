@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:25:44Z'
+updated: '2026-11-22T17:25:45Z'
 tags:
 - git
 - cli
@@ -106,3 +106,9 @@ race probe 2
 *herd-probe*
 
 race probe 3
+
+#### 2026-11-22T17:25:45Z
+
+*herd-probe*
+
+race probe 4
