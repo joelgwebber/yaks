@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 3
 created: '2026-09-22T00:35:59Z'
-updated: '2026-09-22T00:37:13Z'
+updated: '2026-11-22T00:10:31Z'
 ---
 
 Cut v0.0.9: the multi-herd farm feature set (one .yaks/ holding several herds) plus follow-ups. Highlights since v0.0.8: multi-herd farms with per-yak --herd routing; yaks merge; out-of-tree .yaks pointer discovery; per-herd config cascade (global->herd); --herd filter; TUI per-herd id colour, create/edit herd picker, drawer herd chip row, H move key + detail Herd field; farm/herd/family vocabulary migration (--herd, rename-herd, config herd:); and a config-parser fix (comments inside verify:/herds: blocks).
@@ -15,3 +15,9 @@ Cut v0.0.9: the multi-herd farm feature set (one .yaks/ holding several herds) p
 *agent*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-22T00:10:31Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
