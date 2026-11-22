@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 1
 created: '2026-11-01T17:32:03Z'
-updated: '2026-11-01T17:41:13Z'
+updated: '2026-11-22T00:10:41Z'
 tags:
 - release
 ---
@@ -45,3 +45,9 @@ thread: ksQQtfBVdv4DR2eA_txRWzEtg5LOADbbFpIBxBCA0aLJyrhJPreUvVwLftHG
 ---
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:41Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
