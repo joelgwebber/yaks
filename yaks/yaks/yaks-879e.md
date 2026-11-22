@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 3
 created: '2026-11-22T00:15:23Z'
-updated: '2026-11-22T17:15:03Z'
+updated: '2026-11-22T17:15:04Z'
 tags:
 - git
 - cli
@@ -38,3 +38,11 @@ Reproduced (scratch repo, release binary before the fix). Hypotheses 1 (no-op re
 *commit-1*
 
 Decision: two-part fix, both in the one rule "nothing to commit means nothing". (1) `yaks commit`, `yaks sync`'s commit step and the TUI `W` take the farm lock (new `store::lock_for_commit`, = `lock_uncommitted` on a farm branch, none elsewhere) around read+stage+commit, so no autocommit can interleave. (2) after `git add`, `git diff --cached --quiet -- .` is git's own verdict: clean -> `Outcome::Nothing` (covers a hand revert/no-op the status read missed, and any writer that doesn't take the lock, e.g. a person committing by hand). Rejected: only (2) (a first lock-free run still hit `git add` failing on index.lock held by the writer's `reset`: 5 of 150 runs errored); only (1) (leaves the hole for non-yaks committers); a retry loop on "nothing to commit" (string-matching git's text); catching the commit failure and re-reading status (extra git spawns in the error path, same race).
+
+#### 2026-11-22T17:15:04Z
+
+*commit-1*
+
+Decision: `lock_for_commit` locks only when `farm_git(root)` says it is a farm branch; a plain `lock_uncommitted` on a YAKS_DIR/in-tree farm creates an untracked `.lock` the `.gitignore` never names, and broke `tui::tests::memo::w_on_a_clean_farm_says_so...` (the commit then saw `farm config`). Only a farm branch autocommits, so only there is there a writer to wait for. Rejected: always lock_uncommitted (that test failure); `store::lock` (it would autocommit on release and snapshot first).
+Decision: in `yaks sync` the lock is held for the commit step only, in a block, because `pull` takes the (non-reentrant) lock itself. `--dry-run` takes no lock (it only reads). No git calls added to writes; the spawn-budget test passes.
+Decision: test uses a `git` shim on PATH that makes the writer's commit land exactly when `yaks commit` runs `git add -A` (deterministic), rather than a timing loop. It exercises the post-add check, not the lock.
