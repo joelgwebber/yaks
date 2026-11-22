@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-18T15:36:22Z'
-updated: '2026-11-22T16:43:04Z'
+updated: '2026-11-22T17:23:40Z'
 tags:
 - git
 - init
@@ -34,3 +34,9 @@ Claim (herd-files): worker init-1 (Sonnet), base 6ae40a60, batch before v0.0.41.
 *init-1*
 
 Start 2026-11-22T16:43:03Z; checkout /Users/joel/src/yaks/.delta/worktrees/zmnswq3xa7y3/yaks; farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-cae0.md
+
+#### 2026-11-22T17:23:40Z
+
+*init-1*
+
+Decision: fresh farm root is `farm_root_in(&worktree).unwrap_or_else(|| worktree.clone())` in src/init.rs (ensure_branch_farm). That one line covers every path that creates a farm: own farm, `--branch`, and an existing branch (farm_root_in finds it, so a pre-9 `.yaks/` branch keeps its layout). Rejected: a flag or config key for the layout (the layout is schema 9, not a choice); touching store::init's `legacy_dir` test (it only fires for a root named `.yaks`, which init no longer passes, and migration/Farm::at still use it for old farms). `--farm` (shared farm) never creates a farm, and first-use bootstrap only adds a worktree for an existing branch, so nothing else writes a fresh farm.
