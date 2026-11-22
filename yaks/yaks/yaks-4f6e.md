@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-12T23:02:13Z'
-updated: '2026-10-12T23:13:52Z'
+updated: '2026-11-22T00:10:35Z'
 tags:
 - release
 ---
@@ -39,3 +39,9 @@ verify: `cargo test --workspace` -> PASS (exit 0)
 *delta-lead*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:35Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
