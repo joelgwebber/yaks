@@ -1,0 +1,32 @@
+## [v0.0.41] - Unreleased
+
+Everything in the farm is now one place to browse: yaks, doks, sources, attachments, directories, archives, commits and files all open in the same pane, link the same way and star the same way. This release also starts yaks' own changelog: every yak records a change line when it is shorn, and releases are computed from the commits that name them.
+
+- **Archives open in place.** A `.zip` or `.tar.gz` attachment browses like a directory, and a link can point at a line inside one of its files.
+- **One link grammar for lines.** `path:10`, `:10-14` and `#L10-L14` work on every kind of link; a range opens narrowed to those lines, and `w` shows the whole file.
+- **Change lines and release notes.** `yaks shorn --change` records what changed for a reader; `yaks release changes --check` and `yaks release dok` turn them into this page. The design is [the changelog design](https://github.com/joelgwebber/yaks/blob/yaks/doks/design/changelog.md).
+- **Pinned images from Git LFS.** A link pinned to a commit shows the image as it was then, not its LFS pointer.
+
+### Added
+
+- Archive attachments (`.zip`, `.tar`, `.tar.gz`, `.tgz`) browse read-only like directories, and links reach files inside them (`<id>/code.zip/src/main.rs#L2`). ([yaks-93ee](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-93ee.md))
+- `*` stars whatever the pane shows: a yak, a dok, a source, an attachment, a directory or a file inside an archive. ([yaks-4381](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-4381.md))
+- `yaks shorn --change "<line>"` records a yak's change line (and `--no-change` says there is none); the TUI shear prompt offers the title to edit as that line. ([yaks-bcb8](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-bcb8.md))
+- `yaks release changes [<range>] [--json] [--check]` lists the yaks a release's commits name, by change line and section, with the gaps, open yaks and commits naming no yak; `--check` exits 1 on a gap. `yaks land` warns when it records a landing on a shorn yak with no change line. ([yaks-045c](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-045c.md))
+- `yaks release dok <version>` writes the release dok `doks/releases/<version>.md` (kind `release`) with a generated block of its changes by section, families nested and each entry linking its yak; a rerun rewrites only the block, and `yaks check` flags a release dok whose block is out of date. Dok names may now hold dots (`v0.0.41.md`). ([yaks-c708](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-c708.md))
+
+### Changed
+
+- Links take a line or range in any spelling (`path:10`, `:10-14`, `#L10-L14`), on every link kind; a range opens narrowed to those lines (`w` widens), and a single line opens the whole file at that line. ([yaks-15dc](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-15dc.md))
+
+### Fixed
+
+- Following a link to a dok's heading lands on that heading the first time the viewer opens, not at the bottom. ([yaks-b4d7](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-b4d7.md))
+- Links to a dok's or source's directory (`x/sketches/`) resolve: `peek` reads them and `doctor` no longer reports them as `../`. ([yaks-1d2b](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-1d2b.md))
+- A markdown file opened through a `code:` link renders as markdown. ([yaks-9f55](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-9f55.md))
+- `yaks commit` and `yaks land` see a pending merge or cherry-pick in a repository using the reftable ref format (`init.defaultRefFormat=reftable`). ([yaks-0a0a](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-0a0a.md))
+- Links pinned to a commit (`path@<rev>`) show files stored in Git LFS (images included) instead of their LFS pointer. ([yaks-c955](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-c955.md))
+
+### Security
+
+- `yaks attach <dir>` and `yaks source add <dir>` no longer follow symlinks out of the tree; a link is listed as skipped. ([yaks-8218](https://github.com/joelgwebber/yaks/blob/yaks/yaks/yaks/yaks-8218.md))
