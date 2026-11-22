@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-22T03:56:16Z'
-updated: '2026-10-22T03:58:28Z'
+updated: '2026-11-22T00:10:39Z'
 tags:
 - release
 verify: cargo test --release
@@ -34,3 +34,9 @@ verify: `cargo test --release` -> PASS (exit 0)
 *delta:sheds-review*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:39Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
