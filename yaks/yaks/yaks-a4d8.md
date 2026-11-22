@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-10-10T13:49:16Z'
-updated: '2026-11-21T23:20:41Z'
+updated: '2026-11-22T00:15:36Z'
 ---
 
 Add tools for rolling up information about recent changes, for an agent to boil down into a changelog.
@@ -65,3 +65,20 @@ Release dok for the next release: [v0.0.41](/doks/releases/v0.0.41.md).
 *herd-files*
 
 yaks-c708 landed e1cf16c1 + f6494008 (rdok-1); local main f6494008, installed. Real release dok written: /doks/releases/v0.0.41.md. Follow-up yaks-6554 (TUI shows HTML comment markers). Batch 4 (base f6494008): clog-1 on yaks-7278 (claude-sonnet-5-5, thread ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHe7GpIBxBCA0aLJyrhJPreUvVwLftHG).
+
+#### 2026-11-22T00:15:36Z
+
+*herd-files*
+
+Done (herd-files, 2026-11-22). The changelog is built as designed in [/doks/design/changelog.md](/doks/design/changelog.md):
+
+- yaks-bcb8 change lines (`shorn --change/--no-change/--section`, TUI prompt pre-filled with the title), d63203fc + c20ad225
+- yaks-c955 `@rev` reads LFS content, d2a9936c
+- yaks-045c `yaks release changes [--check]`, land warns, 5d8a524c
+- yaks-c708 `yaks release dok`, e1cf16c1 + f6494008
+- yaks-7278 `yaks release changelog` (CHANGELOG.md, `--release` for the GitHub body), 53d8eb8a + 6ae40a60
+- yaks-3696 backfill: release doks for v0.0.1–v0.0.40; the next release's is [/doks/releases/v0.0.41.md](/doks/releases/v0.0.41.md)
+
+Follow-ups outside the family: yaks-bfb2 (changelog speed, per-link git calls), yaks-6554 (TUI shows HTML comments), yaks-879e (`yaks commit` false error), and under yaks-64c4: yaks-bda5, yaks-c059. Still open: Joel's browser check of yaks-a4d8/lfs-render-test.md (whether relative LFS image links render on GitHub).
+
+Workers: change-1, lfs-1, rel-1, rdok-1, clog-1, all claude-sonnet-5-5; every landing reproduced with the coordinator's build; follow-up fixes by the coordinator in c20ad225 (`--change` on a shorn yak was dropped silently) and 6ae40a60 (`--release` planned every tag).
