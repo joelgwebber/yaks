@@ -5,7 +5,7 @@ status: shorn
 type: task
 priority: 2
 created: '2026-10-27T12:58:55Z'
-updated: '2026-10-27T13:10:39Z'
+updated: '2026-11-22T00:10:40Z'
 tags:
 - release
 ---
@@ -36,3 +36,9 @@ In this release: ask/answer use the full editor (yaks-ce5e); `yaks request` plus
 *delta-lead*
 
 moved: shaving -> shorn
+
+#### 2026-11-22T00:10:40Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
