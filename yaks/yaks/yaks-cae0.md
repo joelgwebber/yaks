@@ -40,3 +40,9 @@ Start 2026-11-22T16:43:03Z; checkout /Users/joel/src/yaks/.delta/worktrees/zmnsw
 *init-1*
 
 Decision: fresh farm root is `farm_root_in(&worktree).unwrap_or_else(|| worktree.clone())` in src/init.rs (ensure_branch_farm). That one line covers every path that creates a farm: own farm, `--branch`, and an existing branch (farm_root_in finds it, so a pre-9 `.yaks/` branch keeps its layout). Rejected: a flag or config key for the layout (the layout is schema 9, not a choice); touching store::init's `legacy_dir` test (it only fires for a root named `.yaks`, which init no longer passes, and migration/Farm::at still use it for old farms). `--farm` (shared farm) never creates a farm, and first-use bootstrap only adds a worktree for an existing branch, so nothing else writes a fresh farm.
+
+#### 2026-11-22T17:23:40Z
+
+*init-1*
+
+Decision: updated existing tests that encoded the old layout (init_modes, autocommit, cli create json path, sync, weight) rather than leaving them: their helpers did `path.parent()` or joined `.yaks/` to reach the worktree. Left alone: tests that build `.yaks/` farms by hand (migration, preflight, links, status, ...), which test pre-9 behaviour.
