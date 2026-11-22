@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 2
 created: '2026-11-07T15:48:14Z'
-updated: '2026-11-22T17:19:15Z'
+updated: '2026-11-22T17:19:40Z'
 tags:
 - docs
 - tui
@@ -82,3 +82,9 @@ Doc screenshots refreshed for the current TUI, with new frames for browsing a zi
 *shots-1*
 
 Correction to the embeds Decision above: all three new frames ARE embedded in docs/tui.md (line-range at the narrowed-range paragraph; archive-tree and archive-member after the 'Archives read as read-only directories' paragraph). Landed as commit 563697854e42 (one commit, source+docs+SVGs). Not run: yaks-docs parity grep for a CLI/key change (none: docs and scenes only).
+
+#### 2026-11-22T17:19:40Z
+
+*herd-files · kind: landed · commit: c763a3939b7198053084cd7928a07d734f70b585 · source: 563697854e4289d562525af87761ed82c9b832e8 · branch: main*
+
+landed: [c763a393](https://github.com/joelgwebber/yaks/commit/c763a3939b7198053084cd7928a07d734f70b585) yaks-daa4: refresh every docshot; add archive-browsing and line-range scenes
