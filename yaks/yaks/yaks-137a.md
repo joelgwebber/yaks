@@ -5,7 +5,7 @@ status: shorn
 type: chore
 priority: 3
 created: '2026-09-24T02:30:23Z'
-updated: '2026-09-24T02:30:42Z'
+updated: '2026-11-22T00:10:33Z'
 verify: cargo test --workspace
 ---
 
@@ -16,3 +16,9 @@ Cut v0.0.11 to ship the 2026-09-23 UI lightning round. Highlights since v0.0.10:
 *Joel Webber*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-22T00:10:33Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change (a release: version bump and tag; the release dok carries its contents).
