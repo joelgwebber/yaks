@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-23T00:16:34Z'
-updated: '2026-11-23T00:20:26Z'
+updated: '2026-11-23T01:40:27Z'
 tags:
 - links
 - images
@@ -43,3 +43,15 @@ Batch (herd-files, base 7c1452bd, both claude-sonnet-5-5):
 - yaks-bc4a: `inlineimg-1`. The TUI draws images in list items and quotes, and pinned images, through the one resolver. Owns `src/tui/` and `docs/tui.md`.
 
 They meet at `App::resolve` → `Space::read_url`: once both land, a host-URL image is drawn by the TUI. I check that end to end after landing both.
+
+#### 2026-11-23T01:40:27Z
+
+*herd-files*
+
+End to end (herd-files), with my build at `4f09d2d2`. Scratch repo with remote `https://github.com/o/r.git`; the farm commit carries a real 1888×904 PNG; afterwards the working file was replaced with a 40×20 green one.
+
+- `yaks update --note` with `![shot](/doks/shot.png@fe60ac7a)` under a bullet was stored as `![shot](https://github.com/o/r/raw/fe60ac7a…/doks/shot.png)`. A bare `[other](yak-5ac8)` was stored as `/yak/yaks/yak-5ac8.md`.
+- `yaks peek <that raw URL>` reads `── doks/shot.png@fe60ac7` back: the URL resolves to the pinned farm file.
+- In the TUI, that host-URL image is drawn in place under its bullet, and it is the pinned 1888×904 screenshot, not the green working copy: [frame](yaks-e387/coord-e387-hosturl-image-drawn.png). The two workers' halves meet at `App::resolve` → `read_url` as planned.
+
+All three children are shorn. The 17 bare-id links already in the farm stay as written: rewriting them is Joel's call.
