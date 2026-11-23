@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-23T23:01:47Z'
-updated: '2026-11-23T23:20:53Z'
+updated: '2026-11-23T23:21:46Z'
 tags:
 - tui
 ---
@@ -19,3 +19,5 @@ TODO:
 - Mouse range selection across yaks + doks.
 - Quick lookup (either by `#` or another affordance) for doks/sources/et-al.
 - Generalized search, *not* view-scoped. Maybe the same structure as search/filter?
+- Filter for doks, much the same as for yaks.
+- Structured editing for doks metadata.
