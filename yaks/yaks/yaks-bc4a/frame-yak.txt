@@ -1,0 +1,105 @@
+=== frame 0 · 100x50 · focus=list · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-6860 · blocked=- · collapsed=0 · filter=(all) · overlay=none ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+ yak-6860 p3 task     🦬 Pics
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filte
+=== end ===
+=== frame 1 · 100x50 · focus=detail · view=🦬 Hairy · cursor=0 · rows=1 · sel=yak-6860 · blocked=- · collapsed=0 · filter=(all) · overlay=none · detail_scroll=0 · pinned=no ===
+ 🦬 Hairy (1)   🪒 Shaving (0)   🐑 Shorn (0)   🕒 Recent (1)   ⭐ Starred (0)   📖 Doks (1)   🛖 Sh
+
+◂ Task: yak-6860
+│
+│ Title:       Pics
+│ Status:      🦬 hairy
+│ Type:        task
+│ Priority:    p3
+│ Created:     just now
+│ Updated:     just now
+│ Tags:        -
+│
+│ Intro.
+│
+│ • A list item:
+│
+│   🖼 Today, in a list
+│
+│
+│
+│
+│
+│   Unpinned: the green file on disk
+│
+│ • Pinned, in a list: 🖼 Then, pinned
+│
+│
+│
+│
+│
+│   Pinned: red and blue, as committed
+│
+│ ▎ A quote.
+│ ▎
+│ ▎ ▎ ![Nested quote](/doks/shot.png@89b311d74360983377489aa5a48ce2813e04de21 =30% "Nested,
+│ ▎ ▎ pinned")
+│
+│ table │ cell
+│ ──────┼────────────
+│ a     │ 🖼 in a cell
+│
+│ Open the pinned dok.
+│ ── peek ─────────────────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+Esc:list  j/k:move  Tab:link  Enter:follow  p:peek  O:take out  i/o:fwd/back  E:edit  M:comment  D:d
+=== end ===
+=== wrote ../frame-yak.svg ===

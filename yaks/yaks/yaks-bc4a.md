@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:11:49Z'
+updated: '2026-11-23T01:11:51Z'
 parent: yaks-e387
 tags:
 - tui
@@ -70,3 +70,5 @@ Start 2026-11-23T00:20:26Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/13mq
 [rel41](yaks-bc4a/rel41.txt "Text frames of the same headless run (v0.0.41 dok)")
 
 ![list-quote-pinned](yaks-bc4a/list-quote-pinned.png "Scratch farm: image in a list item (unpinned, green on disk), a pinned @sha image in a list (red/blue as committed, working copy is green), a nested-quote pinned image at =30% with the quote bars beside it; the table-cell image stays a link row (scrolled just off)")
+
+[frame-yak](yaks-bc4a/frame-yak.txt "Text frame (100x50) of the scratch yak")
