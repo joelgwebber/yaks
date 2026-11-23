@@ -1,11 +1,11 @@
 ---
 id: yaks-bc4a
 title: 'TUI draws an image wherever GitHub does: list items, quotes, pinned and host-URL images'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T00:18:31Z'
+updated: '2026-11-23T00:19:09Z'
 parent: yaks-e387
 tags:
 - tui
@@ -23,3 +23,9 @@ Want:
 - An image's target resolves through the one resolver (link -> `Place`, applying `Space::read_url`) instead of the string forms in mdrender, so whatever a link can name, an image can show: an attachment, a farm file, a pinned farm file (`@sha`, and the host-URL form a sibling yak adds to `read_url`). A pinned image reads its bytes at the commit (`links::read_bytes_at`, LFS smudged, as `farm_image_at` does), so the inline cache key must include the rev, not only path and mtime.
 - A pinned document's own images (the viewer of `x.md@sha`) are drawn at that commit, which lifts the "pinned document draws no images" rule in `handlers.rs`.
 - docs/tui.md's inline-image section; a docshot or an attached frame of a list image and a pinned image drawn.
+
+#### 2026-11-23T00:19:09Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
