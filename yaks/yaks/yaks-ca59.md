@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:29:58Z'
+updated: '2026-11-23T01:40:26Z'
 parent: yaks-e387
 tags:
 - links
@@ -147,3 +147,18 @@ Writers now store links a markdown host can follow: bare yak ids become `/<herd>
 *herd-files · kind: landed · commit: fd35a6e48514a7db0b66143332b1d3998899ee11 · source: 9c9cfc6037fc141a926e832ed513c3d00e70d794 · branch: main*
 
 landed: [fd35a6e4](https://github.com/joelgwebber/yaks/commit/fd35a6e48514a7db0b66143332b1d3998899ee11) yaks-ca59: writers store links the host can follow (canonicalise on save, pinned farm links as host URLs)
+
+#### 2026-11-23T01:40:26Z
+
+*herd-files*
+
+Landed `fd35a6e4` (herd-files). I also landed a follow-up of my own, `4f09d2d2`.
+
+The worker left out the TUI's in-place editor for doks and markdown attachments (`commit_attachment_edit`): it saved through `doks::save` without the canonicaliser. It now calls `locate::stored_text` with the view's own `From`. A non-markdown attachment is still written byte for byte.
+
+Test `a_dok_edited_in_the_tui_stores_a_bare_yak_id_as_its_path`: it fails without the fix, where the saved text keeps `See [it](yak-040c).`
+
+Gate on the result:
+
+- `cargo fmt --check`: clean.
+- `cargo test -p yaks`: 1594 passed, 0 failed.
