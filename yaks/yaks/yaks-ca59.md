@@ -72,3 +72,14 @@ Start: Mon Nov 23 00:20:07 UTC 2026. Farm file: `/Users/joel/.local/share/yaks/f
 *hostlinks-1*
 
 Decision: a farm URL and a code URL in one shared repository (this one) are told apart by which history has the commit: `Space::read_url` reads a `blob/` or `raw/` URL as a farm link when the commit is an ancestor of the farm branch (`git merge-base --is-ancestor`, memoised in `Space`), else as the code's. Rejected: telling them apart by path prefix (a farm path and a code path can coincide), and by the farm remote alone (it is the same remote when they share a repo). With a repository of its own the farm needs no test.
+
+#### 2026-11-23T01:25:53Z
+
+*hostlinks-1*
+
+Decision: writers covered, all through one `Farm::stored` call (`locate::stored_text`) on only the text handed in, never the rest of the farm:
+
+- `create` description, `update` description and note, `ask`/`answer`/`request`/`pickup` text, the `shorn --change` note;
+- `dok new` body, `dok set` body and `--new`, `dok row set` cells, `session note` body.
+
+Not covered, said so here: `attach --caption` (a markdown title, not a destination, so no link to canonicalise); the TUI's direct file editor (`tui/handlers.rs` `commit_attachment_edit`, inside yaks-bc4a's files; it writes through `doks::save`/`atomic_write`, not a `Farm` method), `release_dok_save`, `source_set`, `promote`, `rename_attachment`, which rewrite generated or existing text.
