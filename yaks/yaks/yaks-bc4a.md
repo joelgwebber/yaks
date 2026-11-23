@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T00:19:36Z'
+updated: '2026-11-23T00:20:27Z'
 parent: yaks-e387
 tags:
 - tui
@@ -58,3 +58,9 @@ A table-cell image stays a link row.
 - if the docs gain a scene, a docshot (`cargo test -p yaks docshots -- --ignored`).
 
 **Decisions to record, not ask:** the indent and gutter rule; whether table cells could ever draw; the cache key.
+
+#### 2026-11-23T00:20:27Z
+
+*inlineimg-1*
+
+Start 2026-11-23T00:20:26Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/13mq924tg7fh/yaks. Farm: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-bc4a.md. Base 7c1452bd.
