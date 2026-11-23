@@ -1,0 +1,421 @@
+=== frame 0 · 120x40 · focus=list · view=🧺 All · cursor=0 · rows=934 · sel=yaks-bc4a · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ yaks-bc4a p2 feature  🪒 TUI draws an image wherever GitHub does: list items, quotes, pinned an [tui, images, markdown]
+ yaks-e387 p2 task     🪒 Images and links resolve the same in the TUI and on GitHub                [links, images, tui]
+ yaks-ca59 p2 feature  🪒 Writers store links the host can follow: canonicalise on save, pinned farm links  [links, cli]
+ yaks-c019 p2 chore    🐑 Fix /doks/releases/v0.0.41.md's hero image: drop the @sha pin                [release, images]
+ yaks-b6e3 p3 bug      🦬 session note: report every missing required section at once, not one per run    [cli, doks] ⭐
+ yaks-bfb2 p3 task     🐑 release changelog: one web_url costs ~12 git calls; cache per-run remot [perf, release, links]
+ yaks-d3df p1 task     🐑 Cut v0.0.41                                                                          [release]
+ yaks-2141 p2 task     🐑 Ask for one rendered frame on every TUI yak                                           [skills]
+ yaks-2e7c p2 task     🐑 Take the command table mechanism from toque                                              [tui]
+ yaks-20a5 p2 task     🐑 Take the image pane from toque                                                           [tui]
+ yaks-67ef p3 task     🐑 Take theme surfaces from toque                                                           [tui]
+ yaks-daa4 p2 chore    🐑 Refresh every docshot: docs/assets SVGs drift from the current toque output        [docs, tui]
+ yaks-879e p3 bug      🐑 yaks commit errors 'git commit failed ... nothing to commit' when an autocommit alr [git, cli]
+ yaks-6554 p3 bug      🐑 TUI markdown: hide HTML comments (release dok block markers show as literal te [tui, markdown]
+ yaks-cae0 p1 bug      🐑 yaks init still writes a fresh farm under .yaks/ (schema 10 in the pre-9 layout)   [git, init]
+ yaks-4ed6 p3 bug      🦬 update --as stamps the note's actor but the farm commit's Yaks-Actor trailer come [git, agent]
+ yaks-7ed9 p3 bug      🦬 Archive member and directory headers show the farm path (yak/yaks/yak-1a2b/code.zip/...) [tui]
+ yaks-0cfb p3 chore    💀 Docshots: regenerate every doc SVG once to absorb toque renderer drift; refresh th [docs, tui]
+ yaks-a4d8 p3 feature  🐑 Yaks changelog
+ yaks-3696 p3 task     🐑 Backfill release doks for v0.0.1 to v0.0.40, best effort                 [release, doks, meta]
+ yaks-64c4 p4 idea     🦬 Yak archaeology: fast retrieval of past reasoning & provenance stitching      [cli, search] ⭐
+ yaks-bdec p1 task     🐑 Release 0.0.31: attachment-relative links, attach --no-link/--caption, inline images [release]
+ yaks-a5f8 p1 task     🐑 Release 0.0.29: the farm as a knowledge store (schema 7)                             [release]
+ yaks-04b8 p1 task     🐑 Release v0.0.28                                                                      [release]
+ yaks-dcf7 p2 task     🐑 Release v0.0.24                                                                      [release]
+ yaks-6423 p2 task     🐑 Release v0.0.25                                                                      [release]
+ yaks-0b8a p2 task     🐑 Release 0.0.23                                                                       [release]
+ yaks-dc63 p2 task     🐑 Release 0.0.21                                                                       [release]
+ yaks-9bd1 p1 task     🐑 Release 0.0.22: farm branch lifecycle, schema 6, skills 8 to 4                       [release]
+ yaks-ade2 p2 task     🐑 Release 0.0.20                                                                       [release]
+ yaks-9974 p2 task     🐑 Release v0.0.19                                                                      [release]
+ yaks-d64e p2 task     🐑 Release v0.0.18                                                                      [release]
+ yaks-8577 p2 task     🐑 Release v0.0.16                                                                      [release]
+ yaks-4f6e p2 task     🐑 Release v0.0.17                                                                      [release]
+ yaks-7faf p3 task     🐑 Release v0.0.15                                                                      [release]
+ yaks-3479 p3 task     🐑 Release v0.0.13                                                                      [release]
+ yaks-137a p3 chore    🐑 Release v0.0.11
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 1 · 120x40 · focus=list · view=⭐ Starred · cursor=0 · rows=11 · sel=yaks-abdc · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ yaks-abdc p3 idea     🦬 Reconsider design for moving among tabs while in detail mode                          [tui] ⭐
+ yaks-b7f4 p3 feature  🦬 Keyboard affordances for start/end of horizontally scrollable blocks                  [tui] ⭐
+ yaks-df6b p3 feature  🦬 In-app settings/config editor                                              [config, tui] ✅ ⭐
+ yaks-76ce p3 bug      🦬 Editor: search (n)ext doesn't update location after edits                      [tui, edtui] ⭐
+ yaks-07bd p3 feature  🦬 Stack pin comments to the detail header                                               [tui] ⭐
+ yaks-feaf p3 task     🦬 Collect yaks feedback from other farms                            [meta, skills] 2026-11-17 ⭐
+ yaks-7183 p3 feature  🦬 Mix all file types into "All" list                                                    [tui] ⭐
+ yaks-3a2a p3 task     🦬 Show starred-status in detail view                                                    [tui] ⭐
+ yaks-64c4 p4 idea     🦬 Yak archaeology: fast retrieval of past reasoning & provenance stitching      [cli, search] ⭐
+ yaks-1588 p3 task     🦬 Cross-farm links                                                                            ⭐
+ yaks-b6e3 p3 bug      🦬 session note: report every missing required section at once, not one per run    [cli, doks] ⭐
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 2 · 120x40 · focus=list · view=📥 Inbox · cursor=0 · rows=3 · sel=yaks-a1dc · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=inbox · overlay=none ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ yaks-a1dc p2 idea     🦬 Act on the No AI Slop findings: review notes, recorded authorship, heartbe [design, skills] ⏳
+ yaks-24be p2 task     🦬 Feedback acknowledgement: record every triaged feedback-to-yaks entr [skills, design, meta] ✅
+ yaks-df6b p3 feature  🦬 In-app settings/config editor                                              [config, tui] ✅ ⭐
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 3 · 120x40 · focus=list · view=🦬 Hairy · cursor=0 · rows=78 · sel=yaks-e61e · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ yaks-e61e       p1 bug      🦬 TUI startup is quadratic in farm size (10k yaks: seconds; 50k: up to a minut [tui, perf]
+ yaks-5250       p2 bug      🦬 whoami --set names only the checkout it ran in: the farm worktree, t [cli, agent, delta]
+ yaks-a1dc       p2 idea     🦬 Act on the No AI Slop findings: review notes, recorded authorship, h [design, skills] ⏳
+ yaks-00c4       p3 feature  🦬 Affordance for auto-creating a yak from an upstream issue
+ yaks-02ac       p3 feature  🦬 Draft yaks                                                                         [tui]
+ yaks-039b       p3 feature  🪒 Sheds from notes, remote work visibility, and structured comments        [sheds, design]
+   yaks-7d57     p2 task     🦬 Trial: cheaper-model workers follow the sync, heartbeat, actor and branc [skills, agent]
+   yaks-19c3     p3 idea     🦬 TUI: an activity log view of the farm (yaks log, newest first, with the shed each  [tui]
+   yaks-8003     p3 idea     🦬 Idea: a stable thread id in harness actor stamps (pending evidence from  [sheds, schema]
+     yaks-ded9   p3 bug      🦬 Human-created Delta threads get the creator as their name                        [sheds]
+   yaks-59bf     p3 bug      🦬 yaks commits fails on a branch farm with no commits yet                       [git, cli]
+ yaks-0686       p3 task     🦬 Tidy the doks                                                          [meta] 2026-11-17
+ yaks-07bd       p3 feature  🦬 Stack pin comments to the detail header                                         [tui] ⭐
+ yaks-0ef9       p3 task     🦬 Per-user yaks state: one home for TUI views, the stale-skills marker and a [cli, design]
+ yaks-0f16       p3 task     🦬 Some way to override `needs:` state                                           [tui, cli]
+ yaks-1588       p3 task     🦬 Cross-farm links                                                                      ⭐
+ yaks-182f       p3 task     🦬 Integrate merged edtui features: git-dep, then swap to release + delet [edtui, upstream]
+ yaks-2c16       p3 idea     🦬 CLI/MCP affordance to attach to a running yaks tui                                 [cli]
+ yaks-329a       p3 bug      🦬 source add: .mdx gets no text; treat it (and other markdown dialects) as pro [cli, doks]
+ yaks-3a2a       p3 task     🦬 Show starred-status in detail view                                              [tui] ⭐
+ yaks-3e1d       p3 feature  🦬 Embedded web UI in the TUI                                  [web, markdown, images, tui]
+ yaks-43dc       p3 task     🦬 Skills: reconcile pointer-farm shared/private and commit-message id rules       [skills]
+ yaks-44b3       p3 feature  🪒 Doks: pages, sources and schemas beside yaks (the data layer under a pers [design, doks]
+   yaks-1c89     p2 feature  🪒 Upkeep: session notes, session review and housekeeping (Hearth's knowledg [doks, skills]
+     yaks-3f35   p2 task     🪒 Feedback from the schism import: session notes, doks and imports          [doks, skills]
+       yaks-0fa7 p2 feature  🦬 Backdate session notes and promotions for imported history                   [cli, doks]
+       yaks-3fc6 p2 bug      🦬 session note records the Delta thread under another --harness                      [cli]
+       yaks-d11e p2 feature  🦬 Generated ## Saved: scope it to the session, not the actor's last 12 hours   [cli, doks]
+       yaks-a096 p2 task     🦬 Skills: importing a repo's docs and history into a farm                   [skills, doks]
+     yaks-24be   p2 task     🦬 Feedback acknowledgement: record every triaged feedback-to-yak [skills, design, meta] ✅
+*    yaks-323b   p3 feature  🦬 session list --since <date>: a reflection round's notes, reviewed or not           [cli]
+   yaks-bdc3     p3 bug      🦬 Ticks on two machines: one regrow per occurrence after a merge                     [git]
+   yaks-e3b1     p3 idea     🦬 The --json shapes as a stated contract for harnesses                               [cli]
+ yaks-456c       p3 feature  🦬 Per-herd config: upstream issue tracker                                   [cli, tracker]
+ yaks-4736       p3 task     🦬 Editor parity: audit and fill edtui's emacs/standard bindings against its vim set  [tui]
+ yaks-4ed6       p3 bug      🦬 update --as stamps the note's actor but the farm commit's Yaks-Actor traile [git, agent]
+ yaks-50b7       p3 bug      🦬 Flaky test: init_modes uses a fixed temp path for its worktree                    [test]
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 4 · 120x40 · focus=list · view=🪒 Shaving · cursor=0 · rows=22 · sel=yaks-e387 · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ yaks-e387       p2 task     🪒 Images and links resolve the same in the TUI and on GitHub          [links, images, tui]
+   yaks-ca59     p2 feature  🪒 Writers store links the host can follow: canonicalise on save, pinned farm  [links, cli]
+   yaks-bc4a     p2 feature  🪒 TUI draws an image wherever GitHub does: list items, quotes, pin [tui, images, markdown]
+ yaks-039b       p3 feature  🪒 Sheds from notes, remote work visibility, and structured comments        [sheds, design]
+   yaks-7d57     p2 task     🦬 Trial: cheaper-model workers follow the sync, heartbeat, actor and branc [skills, agent]
+   yaks-19c3     p3 idea     🦬 TUI: an activity log view of the farm (yaks log, newest first, with the shed each  [tui]
+   yaks-8003     p3 idea     🦬 Idea: a stable thread id in harness actor stamps (pending evidence from  [sheds, schema]
+     yaks-ded9   p3 bug      🦬 Human-created Delta threads get the creator as their name                        [sheds]
+   yaks-59bf     p3 bug      🦬 yaks commits fails on a branch farm with no commits yet                       [git, cli]
+ yaks-44b3       p3 feature  🪒 Doks: pages, sources and schemas beside yaks (the data layer under a pers [design, doks]
+   yaks-1c89     p2 feature  🪒 Upkeep: session notes, session review and housekeeping (Hearth's knowledg [doks, skills]
+     yaks-3f35   p2 task     🪒 Feedback from the schism import: session notes, doks and imports          [doks, skills]
+       yaks-0fa7 p2 feature  🦬 Backdate session notes and promotions for imported history                   [cli, doks]
+       yaks-3fc6 p2 bug      🦬 session note records the Delta thread under another --harness                      [cli]
+       yaks-d11e p2 feature  🦬 Generated ## Saved: scope it to the session, not the actor's last 12 hours   [cli, doks]
+       yaks-a096 p2 task     🦬 Skills: importing a repo's docs and history into a farm                   [skills, doks]
+     yaks-24be   p2 task     🦬 Feedback acknowledgement: record every triaged feedback-to-yak [skills, design, meta] ✅
+*    yaks-323b   p3 feature  🦬 session list --since <date>: a reflection round's notes, reviewed or not           [cli]
+   yaks-bdc3     p3 bug      🦬 Ticks on two machines: one regrow per occurrence after a merge                     [git]
+   yaks-e3b1     p3 idea     🦬 The --json shapes as a stated contract for harnesses                               [cli]
+ yaks-b231       p3 task     🪒 Another round of keyboard updates                                                  [tui]
+ yaks-ec00       p3 task     🪒 Research and plan: cloud runners always run a current yaks binary and cu [skills, agent]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:detail  F:family  `:views  c/C:new  E:edit  X:del  S:state  D:dep  f:filter  /:search  ?:help
+=== end ===
+=== frame 5 · 120x40 · focus=list · view=📖 Doks · cursor=0 · rows=111 · sel=- · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none · doks=111 · entry=doks/design/changelog.md ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ Changelog: release notes that read breadth-first  topic    #design #release #changelog     doks/design/changelog.md
+ Farm layout and links: making the farm browsable  topic    #links #design                  doks/design/farm-layout-and-
+ Files, directories and archives: one way to name  topic    #links #tui #design             doks/design/files-directorie
+ The farm as a knowledge store                     topic    #doks #design                   doks/design/knowledge-store.
+ Note format: anchors that render on GitHub        topic    #links #design                  doks/design/note-format.md
+ Scheduling: ticks, recurring yaks and watchers    topic    #design #cli #skills            doks/design/scheduling.md
+ Reflecting on sessions                            topic    #design #doks                   doks/design/session-reflecti
+ TUI keys: organizing principles                   topic    #tui #design                    doks/design/tui-keys.md
+ TUI design: one model for views, panes, history,  topic    #tui #design                    doks/design/tui-model.md
+ Fetching web pages, X posts, repos and videos to  howto    #research #agent                doks/howto/fetching-web-and-
+ Migrate a farm to a new schema                    howto    #wiki                           doks/howto/migrate-a-farm.md
+ Lessons: how to work in this project              topic    #skills #meta                   doks/lessons.md
+ yaks v0.0.1                                       release                                  doks/releases/v0.0.1.md
+ yaks v0.0.10                                      release                                  doks/releases/v0.0.10.md
+ yaks v0.0.11                                      release                                  doks/releases/v0.0.11.md
+ yaks v0.0.12                                      release                                  doks/releases/v0.0.12.md
+ yaks v0.0.13                                      release                                  doks/releases/v0.0.13.md
+ yaks v0.0.14                                      release                                  doks/releases/v0.0.14.md
+ yaks v0.0.15                                      release                                  doks/releases/v0.0.15.md
+ yaks v0.0.16                                      release                                  doks/releases/v0.0.16.md
+ yaks v0.0.17                                      release                                  doks/releases/v0.0.17.md
+ yaks v0.0.18                                      release                                  doks/releases/v0.0.18.md
+ yaks v0.0.19                                      release                                  doks/releases/v0.0.19.md
+ yaks v0.0.2                                       release                                  doks/releases/v0.0.2.md
+ yaks v0.0.20                                      release                                  doks/releases/v0.0.20.md
+ yaks v0.0.21                                      release                                  doks/releases/v0.0.21.md
+ yaks v0.0.22                                      release                                  doks/releases/v0.0.22.md
+ yaks v0.0.23                                      release                                  doks/releases/v0.0.23.md
+ yaks v0.0.24                                      release                                  doks/releases/v0.0.24.md
+ yaks v0.0.25                                      release                                  doks/releases/v0.0.25.md
+ yaks v0.0.26                                      release                                  doks/releases/v0.0.26.md
+ yaks v0.0.27                                      release                                  doks/releases/v0.0.27.md
+ yaks v0.0.28                                      release                                  doks/releases/v0.0.28.md
+ yaks v0.0.29                                      release                                  doks/releases/v0.0.29.md
+ yaks v0.0.3                                       release                                  doks/releases/v0.0.3.md
+ yaks v0.0.30                                      release                                  doks/releases/v0.0.30.md
+ yaks v0.0.31                                      release                                  doks/releases/v0.0.31.md
+Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  O:take out  ?:help  q:quit
+=== end ===
+=== frame 6 · 120x40 · focus=list · view=📖 Doks · cursor=0 · rows=111 · sel=- · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=search · doks=111 · entry=doks/design/changelog.md ===
+ 🧺 All (934)   ⭐ Starred (11)   📥 Inbox (3)   🦬 Hairy (74)   🪒 Shaving (9)   📖 Doks (61)   🛖 Sheds (10)       ⏰3
+
+ Changelog: release notes that read breadth-first  topic    #design #release #changelog     doks/design/changelog.md
+ Farm layout and links: making the farm browsable  topic    #links #design                  doks/design/farm-layout-and-
+ Files, directories and archives: one way to name  topic    #links #tui #design             doks/design/files-directorie
+ The farm as a knowledge store                     topic    #doks #design                   doks/design/knowledge-store.
+ Note format: anchors that render on GitHub        topic    #links #design                  doks/design/note-format.md
+ Scheduling: ticks, recurring yaks and watchers    topic    #design #cli #skills            doks/design/scheduling.md
+ Reflecting on sessions                            topic    #design #doks                   doks/design/session-reflecti
+ TUI keys: organizing principles                   topic    #tui #design                    doks/design/tui-keys.md
+ TUI design: one model for views, panes, history,  topic    #tui #design                    doks/design/tui-model.md
+ Fetching web pages, X posts, repos and videos to  howto    #research #agent                doks/howto/fetching-web-and-
+ Migrate a farm to a new schema                    howto    #wiki                           doks/howto/migrate-a-farm.md
+ Lessons: how to work in this project              topic    #skills #meta                   doks/lessons.md
+ yaks v0.0.1                                       release                                  doks/releases/v0.0.1.md
+ yaks v0.0.10                                      release                                  doks/releases/v0.0.10.md
+ yaks v0.0.11                                      release                                  doks/releases/v0.0.11.md
+ yaks v0.0.12                                      release                                  doks/releases/v0.0.12.md
+ yaks v0.0.13                                      release                                  doks/releases/v0.0.13.md
+ yaks v0.0.14                                      release                                  doks/releases/v0.0.14.md
+ yaks v0.0.15                                      release                                  doks/releases/v0.0.15.md
+ yaks v0.0.16                                      release                                  doks/releases/v0.0.16.md
+ yaks v0.0.17                                      release                                  doks/releases/v0.0.17.md
+ yaks v0.0.18                                      release                                  doks/releases/v0.0.18.md
+ yaks v0.0.19                                      release                                  doks/releases/v0.0.19.md
+ yaks v0.0.2                                       release                                  doks/releases/v0.0.2.md
+ yaks v0.0.20                                      release                                  doks/releases/v0.0.20.md
+ yaks v0.0.21                                      release                                  doks/releases/v0.0.21.md
+ yaks v0.0.22                                      release                                  doks/releases/v0.0.22.md
+ yaks v0.0.23                                      release                                  doks/releases/v0.0.23.md
+ yaks v0.0.24                                      release                                  doks/releases/v0.0.24.md
+ yaks v0.0.25                                      release                                  doks/releases/v0.0.25.md
+ yaks v0.0.26                                      release                                  doks/releases/v0.0.26.md
+ yaks v0.0.27                                      release                                  doks/releases/v0.0.27.md
+ yaks v0.0.28                                      release                                  doks/releases/v0.0.28.md
+ yaks v0.0.29                                      release                                  doks/releases/v0.0.29.md
+ yaks v0.0.3                                       release                                  doks/releases/v0.0.3.md
+ yaks v0.0.30                                      release                                  doks/releases/v0.0.30.md
+ yaks v0.0.31                                      release                                  doks/releases/v0.0.31.md
+/
+=== end ===
+=== frame 7 · 120x40 · focus=list · view=📖 Doks · cursor=0 · rows=4 · sel=- · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=search · doks=4 · entry=doks/releases/v0.0.41.md ===
+ 🧺 All (18)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (0)   🪒 Shaving (3)   📖 Doks (1)   🛖 Sheds (3)   /"v0.0.41" ·
+
+ yaks v0.0.41                                      release  doks/releases/v0.0.41.md
+ Changelog: research, design and the release comm  session  sessions/2026/11/herd-files-2026-11-22-0016-changelog-resear
+ v0.0.41 release and changelog link memo (yaks-bf  session  sessions/2026/11/herd-files-2026-11-22-2348-v0-0-41-release-
+ Link handling round 2 and landing yaks-bfb2       session  sessions/2026/11/herd-files-2026-11-22-2351-link-handling-ro
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/v0.0.41
+=== end ===
+=== frame 8 · 120x40 · focus=list · view=📖 Doks · cursor=0 · rows=4 · sel=- · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none · doks=4 · entry=doks/releases/v0.0.41.md ===
+ 🧺 All (18)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (0)   🪒 Shaving (3)   📖 Doks (1)   🛖 Sheds (3)   /"v0.0.41" ·
+
+ yaks v0.0.41                                      release  doks/releases/v0.0.41.md
+ Changelog: research, design and the release comm  session  sessions/2026/11/herd-files-2026-11-22-0016-changelog-resear
+ v0.0.41 release and changelog link memo (yaks-bf  session  sessions/2026/11/herd-files-2026-11-22-2348-v0-0-41-release-
+ Link handling round 2 and landing yaks-bfb2       session  sessions/2026/11/herd-files-2026-11-22-2351-link-handling-ro
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Tab:view  j/k:move  Enter:open  E:edit  c:new dok  /:search  y:copy path  O:take out  ?:help  q:quit
+=== end ===
+=== frame 9 · 120x40 · focus=detail · view=📖 Doks · cursor=0 · rows=4 · sel=- · blocked=[yaks-323b,yaks-d262] · collapsed=74 · filter=(all) · overlay=none · doc=text · doks=4 · entry=doks/releases/v0.0.41.md ===
+ 🧺 All (18)   ⭐ Starred (0)   📥 Inbox (0)   🦬 Hairy (0)   🪒 Shaving (3)   📖 Doks (1)   🛖 Sheds (3)   /"v0.0.41" ·
+
+◂ 📖 doks/releases/v0.0.41.md  release
+│ type:        release
+│ title:       yaks v0.0.41
+│ description: What changed in v0.0.41: the headlines, then every change by section
+│ created:     2026-11-21T23:17:48Z
+│ version:     v0.0.41
+│ date:        2026-11-22
+│ range:       v0.0.40..v0.0.41
+│ tag:         v0.0.41
+│ Attachments: 1 file
+│
+│ yaks v0.0.41
+│
+│ Everything in the farm is now one place to browse: yaks, doks, sources, attachments, directories, archives, commits
+│ and files all open in the same pane, link the same way and star the same way. This release also starts yaks' own
+│ changelog: every yak records a change line when it is shorn, and releases are computed from the commits that name
+│ them.
+│
+│ • Archives open in place. A .zip or .tar.gz attachment browses like a directory, and a link can point at a line
+│   inside one of its files.
+│
+│   🖼 A zip attachment browsed in the pane: its directories, files and sizes, read-only
+│   ▄▄▄▄▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄▄  ▄
+│    ▀▀▀▀▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀▀
+│    ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+│    ▄▀▀▀▄▄▄▀▀▀▄▀▀▀▀▀▀▀▀▀▀ ▀▀▀▀▀▀▀                                                       ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+│     ▀▀▄▀▄▄▄▄▄▄▄▄                                                                       ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+│       ▄▄▄▄▄▄▀▀▀▀
+│     ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+│     ▀▀▀▀▀▀▄▄▄▄▀▄▄▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▄▄
+│ ── peek ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+│
+│
+│
+│
+│
+│
+j/k · Tab:link Enter:follow · o/i back/fwd · p:peek · / find · v sel · E edit · O take out · Esc close · q quit
+=== end ===
+=== wrote target/rel41.svg ===

@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:11:46Z'
+updated: '2026-11-23T01:11:48Z'
 parent: yaks-e387
 tags:
 - tui
@@ -66,3 +66,5 @@ A table-cell image stays a link row.
 Start 2026-11-23T00:20:26Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/13mq924tg7fh/yaks. Farm: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-bc4a.md. Base 7c1452bd.
 
 ![rel41](yaks-bc4a/rel41.png "The real /doks/releases/v0.0.41.md: its screenshot drawn under the 'Archives open in place' bullet, in the bullet's gutter, with its caption")
+
+[rel41](yaks-bc4a/rel41.txt "Text frames of the same headless run (v0.0.41 dok)")
