@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:29:15Z'
+updated: '2026-11-23T01:29:25Z'
 parent: yaks-e387
 tags:
 - links
@@ -108,3 +108,24 @@ Decision: an image is stored as `raw/<sha>/...` and anything else as `blob/<sha>
 *hostlinks-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-23T01:29:25Z
+
+*hostlinks-1*
+
+Summary: every farm writer now saves links a markdown host can follow.
+
+- `links::canonical_dest` is the one yak/attachment canonicaliser (moved out of `migrate.rs`, which wraps it with its own namespace and source steps).
+- `locate::stored_text` rewrites only the text a writer is given, in one pass over inline links, code spans and fences untouched; `Farm::stored` is the call every writer makes.
+- A pinned farm or `code:` link becomes `Space::host_form`: `raw/<sha>/...` for an image, `blob/<sha>/...[#anchor]` otherwise, only with a recognised host remote and (farm) not private.
+- `Space::read_url` reads the farm's own `blob/` and `raw/` URLs back as pinned farm links; `hosting::Repo::parse_url` now parses `raw/` and a heading fragment. A shared repo is split by `git merge-base --is-ancestor <sha> <farm branch>`.
+- Docs: `docs/cli.md`, `docs/README.md`, the `yaks` skill's links section, the brief's notes line. No clap flag changed.
+
+Evidence:
+
+- `cargo test -p yaks`: all green, `cargo fmt --check` clean; `yaks verify` recorded PASS.
+- `tests/stored_links.rs` (7 tests through the real binary): create/update, dok new/set, session note, no remote or local remote, private farm, read-back of blob and raw URLs plus a code URL in the shared repo, idempotence.
+- Manual run in a scratch repo with a `git@github.com:o/r.git` remote: stored `raw/<sha>/doks/x/s.png`, `yaks peek` of the blob, raw and `@sha` forms print the same, `yaks url` works.
+- `gh api markdown -f mode=gfm -f context=joelgwebber/yaks` on the stored text: attached as `hl-gh-render.txt`. The yak links come out as `/yaks/yaks/<id>.md` (root-absolute, followable) and the image as an `<img src>` of the `raw/<sha>/` URL; the same links as typed stay `yaks-0b16` and `...png@<sha>`, relative and 404 on GitHub.
+
+Not done: the TUI's direct file editor and the generated writers (see the Decision note on coverage); old text is not rewritten (out of scope: bulk).
