@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-23T00:16:34Z'
-updated: '2026-11-23T00:18:38Z'
+updated: '2026-11-23T00:20:26Z'
 tags:
 - links
 - images
@@ -31,3 +31,15 @@ Children:
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-23T00:20:26Z
+
+*herd-files*
+
+Batch (herd-files, base 7c1452bd, both claude-sonnet-5-5):
+
+- yaks-c019 (the v0.0.41 dok's pin): done by the coordinator and shorn. GitHub now serves the image (200 image/png).
+- yaks-ca59: `hostlinks-1`. Writers canonicalise links on save; pinned farm links are stored as host URLs; `read_url` reads them back. Owns the link layer: `links`, `locate`, `hosting`, `migrate`.
+- yaks-bc4a: `inlineimg-1`. The TUI draws images in list items and quotes, and pinned images, through the one resolver. Owns `src/tui/` and `docs/tui.md`.
+
+They meet at `App::resolve` → `Space::read_url`: once both land, a host-URL image is drawn by the TUI. I check that end to end after landing both.
