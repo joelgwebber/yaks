@@ -1,11 +1,11 @@
 ---
 id: yaks-bc4a
 title: 'TUI draws an image wherever GitHub does: list items, quotes, pinned and host-URL images'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:17:16Z'
+updated: '2026-11-23T01:17:17Z'
 parent: yaks-e387
 tags:
 - tui
@@ -125,3 +125,15 @@ Evidence:
 - New tests: `an_image_carries_its_containers_gutter`, `a_list_items_image_is_on_the_last_row_of_its_text`, `an_image_in_a_list_item_or_a_quote_is_drawn_in_the_containers_gutter`, `a_pinned_image_is_drawn_as_it_was_at_its_commit` and `a_pinned_document_draws_its_images_at_its_commit`.
 
 Not tested: the host-URL form (yaks-ca59 is unlanded). `Target::Url` is preserved for images, so it should work once `read_url` handles it.
+
+#### 2026-11-23T01:17:17Z
+
+*inlineimg-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHlYeZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-23T01:17:17Z
+
+*inlineimg-1 · kind: change*
+
+The TUI draws a markdown image wherever GitHub does except a table cell: in list items and quotes (nested too), at the container's gutter with its caption, and a pinned @sha image (or a pinned document's own images) is drawn as it was at that commit
