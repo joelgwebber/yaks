@@ -1,11 +1,11 @@
 ---
 id: yaks-e387
 title: Images and links resolve the same in the TUI and on GitHub
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-23T00:16:34Z'
-updated: '2026-11-23T01:40:27Z'
+updated: '2026-11-23T01:40:28Z'
 tags:
 - links
 - images
@@ -55,3 +55,15 @@ End to end (herd-files), with my build at `4f09d2d2`. Scratch repo with remote `
 - In the TUI, that host-URL image is drawn in place under its bullet, and it is the pinned 1888×904 screenshot, not the green working copy: [frame](yaks-e387/coord-e387-hosturl-image-drawn.png). The two workers' halves meet at `App::resolve` → `read_url` as planned.
 
 All three children are shorn. The 17 bare-id links already in the farm stay as written: rewriting them is Joel's call.
+
+#### 2026-11-23T01:40:28Z
+
+*herd-files · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-23T01:40:28Z
+
+*herd-files · kind: change · section: none*
+
+No user-facing change.
