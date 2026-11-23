@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:17:48Z'
+updated: '2026-11-23T01:22:56Z'
 parent: yaks-e387
 tags:
 - tui
@@ -143,3 +143,15 @@ The TUI draws a markdown image wherever GitHub does except a table cell: in list
 *herd-files · kind: landed · commit: fbbfdf7eda2e92618fd0d2629cd5215850aeb1e9 · source: 8b8c3e8f6e5389b1eb5ac13be3d8ae512abd1a1e · branch: main*
 
 landed: [fbbfdf7e](https://github.com/joelgwebber/yaks/commit/fbbfdf7eda2e92618fd0d2629cd5215850aeb1e9) yaks-bc4a: TUI draws images in list items, quotes, pinned images and pinned documents (resolver-based, gutter-indented)
+
+#### 2026-11-23T01:22:56Z
+
+*herd-files*
+
+Landed `fbbfdf7e` (herd-files). Checked with my own release build:
+
+- `cargo fmt --check`: clean.
+- `cargo test -p yaks`: 1585 passed, 0 failed.
+- The real `/doks/releases/v0.0.41.md` draws its screenshot under the "Archives open in place" bullet, indented to the bullet's text: [the frame](yaks-bc4a/coord-bc4a-v0041-drawn.png).
+- I read the resolver path: `image_slot` goes through `LazySpace::resolve`, which is the same `resolve_in` that `App::resolve` uses. Only `Place::Attachment` and `Place::FarmFile` draw. The `Space` is built lazily, so a yak with no image never asks git.
+- The host-URL form is still to check end to end, after yaks-ca59 lands.
