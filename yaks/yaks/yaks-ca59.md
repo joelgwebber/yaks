@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T00:19:08Z'
+updated: '2026-11-23T00:19:35Z'
 parent: yaks-e387
 tags:
 - links
@@ -32,3 +32,29 @@ Want:
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-23T00:19:35Z
+
+*herd-files*
+
+Claim (herd-files): worker `hostlinks-1` (claude-sonnet-5-5), base `7c1452bd`, in parallel with `inlineimg-1` on yaks-bc4a.
+
+**Scope:** the description's four points: one shared canonicaliser that every farm writer applies on save; pinned farm links stored as host URLs; `Space::read_url` reads the farm's own host URLs back; docs.
+
+**Files you own:** `src/migrate.rs` (move the rules out), `src/links.rs`, `src/locate.rs` (`read_url` and its helpers), `src/hosting.rs`, the writer paths in `src/farm.rs` / `src/main.rs` / `src/session*.rs`, `docs/cli.md`, `docs/README.md`, the `yaks` skill's link sections, `src/brief.rs`'s notes line.
+
+**Not yours:** anything under `src/tui/` (the TUI goes through `Farm` methods, so it gets canonicalisation for free) and `docs/tui.md`. Those belong to yaks-bc4a.
+
+**Judge:** a reviewer can write `[b](yaks-1a2b)` and `![s](doks/x/s.png@<sha>)` through `yaks update --note`, `yaks dok set` and `yaks create`, then:
+
+- read the stored form in the file: `/<herd>/yaks/<id>.md`, and the `raw/<sha>/` host URL when the farm has a GitHub remote;
+- see `yaks peek` / `yaks url` still resolve both;
+- confirm that a farm without a remote, or a private farm, keeps `@sha` as written.
+
+**Evidence:**
+
+- integration tests through the real binary for each writer;
+- a `gh api markdown -f mode=gfm -f context=<o>/<r>` render of a canonicalised text, showing GitHub would follow the links. Attach the output; `gh` is authenticated on this machine, and the call has no side effects;
+- the unit tests for `canonical_dest` keep passing.
+
+**Decisions to record, not ask:** how to tell a farm URL from a code URL when both share one repo, and which writers you covered. **Ask (`yaks ask`) before** rewriting existing farm text in bulk: that is not in scope.
