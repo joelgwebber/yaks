@@ -95,3 +95,9 @@ Decision: a pinned `code:` link is stored as a host URL too (decision 4 of yaks-
 *hostlinks-1*
 
 Decision: one canonicaliser `links::canonical_dest` (yak and attachment rules moved out of `migrate.rs`); the migration keeps only its own namespace and source-slug steps around it, so its tests pass unchanged. Host form lives in `Space::host_form`, not `links` (it needs git facts and the memo). The writers call `locate::stored_text`, which does both rules in one `links::rewrite_kind` pass (a new variant that tells the callback whether the link is an image).
+
+#### 2026-11-23T01:25:55Z
+
+*hostlinks-1*
+
+Decision: an image is stored as `raw/<sha>/...` and anything else as `blob/<sha>/...[#anchor]`, judged by the markdown syntax (`![..](..)`), not the extension. A pinned link to a directory, an unpinned link, a commit the checkout lacks, no remote, a local-path or unknown host, and a private farm all stay as written (never an error: the writer must not refuse a note for it).
