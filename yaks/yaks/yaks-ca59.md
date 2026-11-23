@@ -5,11 +5,12 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:25:55Z'
+updated: '2026-11-23T01:26:01Z'
 parent: yaks-e387
 tags:
 - links
 - cli
+verify: cargo test -p yaks
 ---
 
 Under yaks-e387 (TUI and GitHub resolve links the same way).
