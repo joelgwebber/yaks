@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:25:53Z'
+updated: '2026-11-23T01:25:54Z'
 parent: yaks-e387
 tags:
 - links
@@ -83,3 +83,9 @@ Decision: writers covered, all through one `Farm::stored` call (`locate::stored_
 - `dok new` body, `dok set` body and `--new`, `dok row set` cells, `session note` body.
 
 Not covered, said so here: `attach --caption` (a markdown title, not a destination, so no link to canonicalise); the TUI's direct file editor (`tui/handlers.rs` `commit_attachment_edit`, inside yaks-bc4a's files; it writes through `doks::save`/`atomic_write`, not a `Farm` method), `release_dok_save`, `source_set`, `promote`, `rename_attachment`, which rewrite generated or existing text.
+
+#### 2026-11-23T01:25:54Z
+
+*hostlinks-1*
+
+Decision: a pinned `code:` link is stored as a host URL too (decision 4 of yaks-1151; its write side had not shipped, only the reader). Same `host_form` path, on the code checkout's remote. Rejected: leaving `code:` pins as written, since they 404 on GitHub the same way and `read_url` already reads them.
