@@ -1,11 +1,11 @@
 ---
 id: yaks-e387
 title: Images and links resolve the same in the TUI and on GitHub
-status: hairy
+status: shaving
 type: task
 priority: 2
 created: '2026-11-23T00:16:34Z'
-updated: '2026-11-23T00:16:34Z'
+updated: '2026-11-23T00:18:38Z'
 tags:
 - links
 - images
@@ -25,3 +25,9 @@ Children:
 - fix the v0.0.41 dok (drop the needless pin, the changelog pins images itself);
 - the pinned-farm-link form (`path@sha`) is yaks-only: GitHub 404s it. Decide its stored form, as decision 4 of [the layout plan](/doks/design/farm-layout-and-links.md) did for pinned `code:` links (host URL, read back by `Space::read_url`);
 - the TUI draws an image wherever GitHub does: in list items and quotes, pinned or not, and a host URL to this farm's own file.
+
+#### 2026-11-23T00:18:38Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
