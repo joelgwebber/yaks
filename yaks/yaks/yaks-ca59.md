@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:25:54Z'
+updated: '2026-11-23T01:25:55Z'
 parent: yaks-e387
 tags:
 - links
@@ -89,3 +89,9 @@ Not covered, said so here: `attach --caption` (a markdown title, not a destinati
 *hostlinks-1*
 
 Decision: a pinned `code:` link is stored as a host URL too (decision 4 of yaks-1151; its write side had not shipped, only the reader). Same `host_form` path, on the code checkout's remote. Rejected: leaving `code:` pins as written, since they 404 on GitHub the same way and `read_url` already reads them.
+
+#### 2026-11-23T01:25:55Z
+
+*hostlinks-1*
+
+Decision: one canonicaliser `links::canonical_dest` (yak and attachment rules moved out of `migrate.rs`); the migration keeps only its own namespace and source-slug steps around it, so its tests pass unchanged. Host form lives in `Space::host_form`, not `links` (it needs git facts and the memo). The writers call `locate::stored_text`, which does both rules in one `links::rewrite_kind` pass (a new variant that tells the callback whether the link is an image).
