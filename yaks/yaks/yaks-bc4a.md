@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:12:20Z'
+updated: '2026-11-23T01:12:22Z'
 parent: yaks-e387
 tags:
 - tui
@@ -76,3 +76,23 @@ Start 2026-11-23T00:20:26Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/13mq
 ![pinned-dok](yaks-bc4a/pinned-dok.png "Pinned document doks/pics.md@89b311d: its own image drawn at that commit (red/blue) although the working copy is green")
 
 ![scrolled-quote-table](yaks-bc4a/scrolled-quote-table.png "Same scratch yak scrolled: the nested-quote pinned image with its caption and both quote bars running beside it; the table-cell image stays a link row")
+
+#### 2026-11-23T01:12:22Z
+
+*inlineimg-1*
+
+Decision: the gutter and indent rule. Each `MdImage` carries the prefix stack of its containers as they read on a *continuation* row (`MdGutter`: text + styled spans, from the same `Container::cont` the blank rows use). The picture, its reserved rows and its caption all start at `gutter.cols()`, the column the container's text hangs at; the reserved and caption rows begin with the gutter text, so a quote's bar runs down beside the picture. The pane width the picture is sized against is `width - gutter`. Rejected:
+- first-row prefix (`• `): puts the picture under the bullet glyph;
+- a draw offset only, rows left blank: a quote's bar would break at every picture.
+
+Decision: where the image's rows go. An image rides on the last row of the inline text it is in (`flush`), not the first row of its marker and not "the blank row after the paragraph" as before. A paragraph's blank row is no longer the trigger, because a tight list item has no blank row after it. Rejected: keeping the pending list drained at the next blank row: it puts an image at the end of a whole tight list.
+
+Decision: table cells never draw. A table is emitted as aligned grid rows sharing one no-wrap block that scrolls sideways; a picture needs N reserved rows that the grid cannot hold, and its caption would break the column widths. The renderer drops the cell's image (`TagEnd::Table` clears them), so it stays the `🖼 alt` link row and has no caption; docs/tui.md says so. Rejected: drawing it under the whole table (it would detach from its cell).
+
+Decision: the cache key is `(path, rev, mtime, cols, rows)`. A pinned image has mtime 0 (a commit never changes), an unpinned one the file's mtime as before; the rev is in the key because a pinned and an unpinned image of one path are different pictures (test: two entries). Rejected: keying on path+mtime only (a pinned image would show today's file once cached), or hashing content (needs the bytes before the lookup).
+
+Decision: sizing a pinned image reads its bytes at layout time. A header read needs the bytes, so `pinned_dims` calls `links::read_bytes_at` and memoises the (farm, path, rev) -> pixel size in a thread-local, so a resize or a keypress that rebuilds the layout does not ask git again. Rejected: sizing from the working copy (wrong aspect when the pin differs).
+
+Decision: resolution goes through `App::resolve`. mdrender keeps the link's own `Target` (a URL stays `Target::Url` so `Space::read_url` can read a farm host URL back once yaks-ca59 lands); `ImageEnv.resolve` is a closure over a `LazySpace` (follow.rs) that makes the `Space` on the first image of a layout, since building one asks git where the code checkout is. Only `Place::Attachment` and `Place::FarmFile` draw; anything else (URL, code file, commit, directory, missing) stays the link row.
+
+Decision: a pinned document draws its images at its rev unless an image pins another (`ImageEnv.rev`). A code file with a rev is excluded: its rev is a commit of the code repo, not of the farm its links read.
