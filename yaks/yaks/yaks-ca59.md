@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:25:39Z'
+updated: '2026-11-23T01:25:53Z'
 parent: yaks-e387
 tags:
 - links
@@ -66,3 +66,9 @@ Claim (herd-files): worker `hostlinks-1` (claude-sonnet-5-5), base `7c1452bd`, i
 Start: Mon Nov 23 00:20:07 UTC 2026. Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-ca59.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/rp3x6aw18wgt/yaks`.
 
 [hl-gh-render](yaks-ca59/hl-gh-render.txt)
+
+#### 2026-11-23T01:25:53Z
+
+*hostlinks-1*
+
+Decision: a farm URL and a code URL in one shared repository (this one) are told apart by which history has the commit: `Space::read_url` reads a `blob/` or `raw/` URL as a farm link when the commit is an ancestor of the farm branch (`git merge-base --is-ancestor`, memoised in `Space`), else as the code's. Rejected: telling them apart by path prefix (a farm path and a code path can coincide), and by the farm remote alone (it is the same remote when they share a repo). With a repository of its own the farm needs no test.
