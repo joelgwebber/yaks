@@ -1,11 +1,11 @@
 ---
 id: yaks-ca59
 title: 'Writers store links the host can follow: canonicalise on save, pinned farm links as host URLs'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T00:18:30Z'
+updated: '2026-11-23T00:19:08Z'
 parent: yaks-e387
 tags:
 - links
@@ -26,3 +26,9 @@ Want:
 - `Space::read_url` reads this farm's own host URLs back (blob and raw, at a sha) as pinned farm links, as it does for code. The farm and the code repo can share one GitHub repo (this one does): tell them apart by which repository has the commit, or by the farm remote when `yaks.farm` points elsewhere.
 - `@sha` stays readable forever (old text).
 - Docs: the yaks skill's link section and "Notes and descriptions", `docs/cli.md`, the notes line in `src/brief.rs`.
+
+#### 2026-11-23T00:19:08Z
+
+*herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
