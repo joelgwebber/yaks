@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:12:22Z'
+updated: '2026-11-23T01:16:53Z'
 parent: yaks-e387
 tags:
 - tui
@@ -96,3 +96,9 @@ Decision: sizing a pinned image reads its bytes at layout time. A header read ne
 Decision: resolution goes through `App::resolve`. mdrender keeps the link's own `Target` (a URL stays `Target::Url` so `Space::read_url` can read a farm host URL back once yaks-ca59 lands); `ImageEnv.resolve` is a closure over a `LazySpace` (follow.rs) that makes the `Space` on the first image of a layout, since building one asks git where the code checkout is. Only `Place::Attachment` and `Place::FarmFile` draw; anything else (URL, code file, commit, directory, missing) stays the link row.
 
 Decision: a pinned document draws its images at its rev unless an image pins another (`ImageEnv.rev`). A code file with a rev is excluded: its rev is a commit of the code repo, not of the farm its links read.
+
+#### 2026-11-23T01:16:53Z
+
+*inlineimg-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
