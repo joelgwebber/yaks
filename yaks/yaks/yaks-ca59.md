@@ -1,11 +1,11 @@
 ---
 id: yaks-ca59
 title: 'Writers store links the host can follow: canonicalise on save, pinned farm links as host URLs'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:29:25Z'
+updated: '2026-11-23T01:29:26Z'
 parent: yaks-e387
 tags:
 - links
@@ -129,3 +129,15 @@ Evidence:
 - `gh api markdown -f mode=gfm -f context=joelgwebber/yaks` on the stored text: attached as `hl-gh-render.txt`. The yak links come out as `/yaks/yaks/<id>.md` (root-absolute, followable) and the image as an `<img src>` of the `raw/<sha>/` URL; the same links as typed stay `yaks-0b16` and `...png@<sha>`, relative and 404 on GitHub.
 
 Not done: the TUI's direct file editor and the generated writers (see the Decision note on coverage); old text is not rewritten (out of scope: bulk).
+
+#### 2026-11-23T01:29:26Z
+
+*hostlinks-1 · kind: move · from: shaving · to: shorn · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAHlT4ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-23T01:29:26Z
+
+*hostlinks-1 · kind: change*
+
+Writers now store links a markdown host can follow: bare yak ids become `/<herd>/yaks/<id>.md`, and a pinned `path@<sha>` becomes the farm's host URL at that commit (`raw/<sha>/…` for an image) when the farm has a recognised remote and is not private; the host URLs read back as pinned links.
