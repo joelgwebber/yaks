@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:11:52Z'
+updated: '2026-11-23T01:12:20Z'
 parent: yaks-e387
 tags:
 - tui
@@ -74,3 +74,5 @@ Start 2026-11-23T00:20:26Z. Checkout: /Users/joel/src/yaks/.delta/worktrees/13mq
 [frame-yak](yaks-bc4a/frame-yak.txt "Text frame (100x50) of the scratch yak")
 
 ![pinned-dok](yaks-bc4a/pinned-dok.png "Pinned document doks/pics.md@89b311d: its own image drawn at that commit (red/blue) although the working copy is green")
+
+![scrolled-quote-table](yaks-bc4a/scrolled-quote-table.png "Same scratch yak scrolled: the nested-quote pinned image with its caption and both quote bars running beside it; the table-cell image stays a link row")
