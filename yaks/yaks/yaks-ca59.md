@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T00:19:35Z'
+updated: '2026-11-23T00:20:07Z'
 parent: yaks-e387
 tags:
 - links
@@ -58,3 +58,9 @@ Claim (herd-files): worker `hostlinks-1` (claude-sonnet-5-5), base `7c1452bd`, i
 - the unit tests for `canonical_dest` keep passing.
 
 **Decisions to record, not ask:** how to tell a farm URL from a code URL when both share one repo, and which writers you covered. **Ask (`yaks ask`) before** rewriting existing farm text in bulk: that is not in scope.
+
+#### 2026-11-23T00:20:07Z
+
+*hostlinks-1*
+
+Start: Mon Nov 23 00:20:07 UTC 2026. Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-ca59.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/rp3x6aw18wgt/yaks`.
