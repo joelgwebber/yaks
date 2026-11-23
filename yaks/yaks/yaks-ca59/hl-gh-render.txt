@@ -1,0 +1,7 @@
+# stored text (what the writers saved)
+see [b](/yaks/yaks/yaks-0b16.md) [n](/yaks/yaks/yaks-0b16.md#2026-11-04t221303z) ![s](https://github.com/o/r/raw/6535e5a5b2f84d7f898f717c92644038f659dfa9/doks/x/s.png) [d](https://github.com/o/r/blob/6535e5a5b2f84d7f898f717c92644038f659dfa9/doks/x.md#top) `[c](yaks-0b16)`
+
+# gh api markdown -f mode=gfm -f context=joelgwebber/yaks, of the stored text
+<p dir="auto">see <a href="/yaks/yaks/yaks-0b16.md">b</a> <a href="/yaks/yaks/yaks-0b16.md#2026-11-04t221303z">n</a> <a target="_blank" rel="noopener noreferrer" href="https://github.com/o/r/raw/6535e5a5b2f84d7f898f717c92644038f659dfa9/doks/x/s.png"><img src="https://github.com/o/r/raw/6535e5a5b2f84d7f898f717c92644038f659dfa9/doks/x/s.png" alt="s" style="max-width: 100%;"></a> <a href="https://github.com/o/r/blob/6535e5a5b2f84d7f898f717c92644038f659dfa9/doks/x.md#top">d</a> <code class="notranslate">[c](yaks-0b16)</code></p>
+# the same links as typed (bare id, @sha): GitHub keeps them relative and 404s
+<p dir="auto">see <a href="yaks-0b16">b</a> <a target="_blank" rel="noopener noreferrer" href="doks/x/s.png@6535e5a5b2f84d7f898f717c92644038f659dfa9"><img src="doks/x/s.png@6535e5a5b2f84d7f898f717c92644038f659dfa9" alt="s" style="max-width: 100%;"></a></p>
