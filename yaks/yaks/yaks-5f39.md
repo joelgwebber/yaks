@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-23T23:01:47Z'
-updated: '2026-11-23T23:08:21Z'
+updated: '2026-11-23T23:20:53Z'
 tags:
 - tui
 ---
@@ -17,3 +17,5 @@ TODO:
 - Ensure doks are fs-watched for changes, just like yaks are (I think?)
 - No mouse selection support on doks.
 - Mouse range selection across yaks + doks.
+- Quick lookup (either by `#` or another affordance) for doks/sources/et-al.
+- Generalized search, *not* view-scoped. Maybe the same structure as search/filter?
