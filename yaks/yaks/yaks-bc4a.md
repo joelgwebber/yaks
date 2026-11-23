@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T00:19:09Z'
+updated: '2026-11-23T00:19:36Z'
 parent: yaks-e387
 tags:
 - tui
@@ -29,3 +29,32 @@ Want:
 *herd-files · kind: move · from: hairy · to: shaving · thread: ksQQ7I2z8nJeT6a6hDJ07WHX45LOAG9SR5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-23T00:19:36Z
+
+*herd-files*
+
+Claim (herd-files): worker `inlineimg-1` (claude-sonnet-5-5), base `7c1452bd`, in parallel with `hostlinks-1` on yaks-ca59.
+
+**Scope:** the description's four points: images in list items and quotes drawn in place; image targets resolved through the one resolver; pinned images drawn at their commit, with the cache keyed on the rev; a pinned document's own images drawn.
+
+**Files you own:** `src/tui/mdrender.rs`, `src/tui/detail.rs`, `src/tui/imageview.rs`, `src/tui/handlers.rs`, `src/tui/follow.rs` (you may call `App::resolve`; don't change its contract), `src/tui/render.rs`, `src/tui/tests.rs` + snapshots, `src/tui/docshots.rs`, `docs/tui.md`, `docs/assets/`.
+
+**Not yours:** `src/locate.rs`, `src/links.rs`, `src/hosting.rs`, `src/migrate.rs`. yaks-ca59 is adding a farm host URL form to `Space::read_url` there. Resolve images through `App::resolve` (which applies `read_url`) and you pick it up for free; don't parse URLs yourself.
+
+**Judge:** the real dok `/doks/releases/v0.0.41.md` shows its screenshot drawn under the "Archives open in place" bullet. In a scratch farm, the following each draw in place:
+
+- an image in a list item;
+- an image in a nested quote;
+- a pinned `@sha` image whose working file differs from the pin (the drawn picture is the pinned one);
+- the images of a pinned dok.
+
+A table-cell image stays a link row.
+
+**Evidence:**
+
+- `yaks tui --headless` frames written with `svg <path>` / `png <path>` and attached. Look at them (`yaks render x.svg -o x.png`, or the png). The headless half-block renderer does draw pictures; see the `doc=image` frames;
+- whole-frame tests in `src/tui/tests.rs`;
+- if the docs gain a scene, a docshot (`cargo test -p yaks docshots -- --ignored`).
+
+**Decisions to record, not ask:** the indent and gutter rule; whether table cells could ever draw; the cache key.
