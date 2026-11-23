@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-23T00:18:31Z'
-updated: '2026-11-23T01:17:17Z'
+updated: '2026-11-23T01:17:48Z'
 parent: yaks-e387
 tags:
 - tui
@@ -137,3 +137,9 @@ moved: shaving -> shorn
 *inlineimg-1 · kind: change*
 
 The TUI draws a markdown image wherever GitHub does except a table cell: in list items and quotes (nested too), at the container's gutter with its caption, and a pinned @sha image (or a pinned document's own images) is drawn as it was at that commit
+
+#### 2026-11-23T01:17:48Z
+
+*herd-files · kind: landed · commit: fbbfdf7eda2e92618fd0d2629cd5215850aeb1e9 · source: 8b8c3e8f6e5389b1eb5ac13be3d8ae512abd1a1e · branch: main*
+
+landed: [fbbfdf7e](https://github.com/joelgwebber/yaks/commit/fbbfdf7eda2e92618fd0d2629cd5215850aeb1e9) yaks-bc4a: TUI draws images in list items, quotes, pinned images and pinned documents (resolver-based, gutter-indented)
