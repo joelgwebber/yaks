@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-23T00:18:30Z'
-updated: '2026-11-23T01:26:01Z'
+updated: '2026-11-23T01:29:15Z'
 parent: yaks-e387
 tags:
 - links
@@ -102,3 +102,9 @@ Decision: one canonicaliser `links::canonical_dest` (yak and attachment rules mo
 *hostlinks-1*
 
 Decision: an image is stored as `raw/<sha>/...` and anything else as `blob/<sha>/...[#anchor]`, judged by the markdown syntax (`![..](..)`), not the extension. A pinned link to a directory, an unpinned link, a commit the checkout lacks, no remote, a local-path or unknown host, and a private farm all stay as written (never an error: the writer must not refuse a note for it).
+
+#### 2026-11-23T01:29:15Z
+
+*hostlinks-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
