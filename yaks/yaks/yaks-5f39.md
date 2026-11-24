@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-23T23:01:47Z'
-updated: '2026-11-23T23:21:46Z'
+updated: '2026-11-24T00:27:27Z'
 tags:
 - tui
 ---
@@ -21,3 +21,4 @@ TODO:
 - Generalized search, *not* view-scoped. Maybe the same structure as search/filter?
 - Filter for doks, much the same as for yaks.
 - Structured editing for doks metadata.
+- Inline dok-link autocompletion (like prefix-[tab] for yaks).
