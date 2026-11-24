@@ -5,7 +5,7 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-23T23:01:47Z'
-updated: '2026-11-24T00:27:27Z'
+updated: '2026-11-24T00:40:42Z'
 tags:
 - tui
 ---
@@ -22,3 +22,4 @@ TODO:
 - Filter for doks, much the same as for yaks.
 - Structured editing for doks metadata.
 - Inline dok-link autocompletion (like prefix-[tab] for yaks).
+- Get agents to stop writing thread ids into comment headers.
