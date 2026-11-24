@@ -1,16 +1,18 @@
 ---
 id: yaks-20ff
 title: Reflect on the week's sessions
-status: shorn
+status: hairy
 type: task
 priority: 3
 created: '2026-11-10T17:57:10Z'
-updated: '2026-11-10T17:57:29Z'
+updated: '2026-11-24T05:03:54Z'
 tags:
 - meta
-due: 2026-11-17
+needs: agent
+due: 2026-12-01
 every: P1W
 wake: agent
+regrown: 2026-11-24T05:03:54Z
 ---
 
 Reflect on the sessions since the last round (the yaks-upkeep skill, "Reflecting on sessions"): check last round's fixes, keep /doks/lessons.md within its budget, file friction as yaks, at most one instruction-file proposal as an ask, shear with the account.
@@ -59,3 +61,23 @@ None as an ask this round; yaks-2788 (cheaper-model delegation in `yaks-coordina
 *herd-unlock · kind: move · from: shaving · to: shorn · thread: ksQQUQUvLIRxSc62aHEDNt0G0pLOAFQ8T5IBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: shaving -> shorn
+
+#### 2026-11-24T05:03:54Z
+
+*sched-1 · kind: move · from: shorn · to: hairy*
+
+moved: shorn -> hairy
+
+#### 2026-11-24T05:03:54Z
+
+*sched-1 · kind: regrow · occurrence: '2026-11-24'*
+
+regrew for the 2026-11-24 occurrence (0 skipped)
+
+#### 2026-11-24T05:03:54Z
+
+*sched-1 · kind: request*
+
+requested: needs agent
+
+Recurring: regrew for the 2026-11-24 occurrence. Its description is the standing instruction.
