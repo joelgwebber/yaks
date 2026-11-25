@@ -1,17 +1,19 @@
 ---
 id: yaks-feaf
 title: Collect yaks feedback from other farms
-status: shorn
+status: hairy
 type: task
 priority: 3
 created: '2026-11-10T18:45:04Z'
-updated: '2026-11-25T04:40:56Z'
+updated: '2026-11-25T05:05:25Z'
 tags:
 - meta
 - skills
-due: 2026-11-24
+needs: agent
+due: 2026-11-26
 every: P1D
 wake: agent
+regrown: 2026-11-25T05:05:24Z
 ---
 
 Collect other farms' friction with yaks (design: yaks-20fe; acknowledgement: yaks-24be; the convention: the `yaks-upkeep` skill, "Yaks feedback"). **Read only: never write to another farm.** Every entry triaged is recorded once, whatever came of it, in this farm's ledger [/doks/feedback-triage.md](/doks/feedback-triage.md) (its body says the columns and outcomes).
@@ -37,3 +39,23 @@ Round 2026-11-25 (with yaks-24be's ledger): cowpaths/joel 9 entries: 1 new (yaks
 *feedback-triage · kind: move · from: hairy · to: shorn · thread: ksQQpRfd3SiPQbKzhUOE_ITXyJLOAG5JQpIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shorn
+
+#### 2026-11-25T05:05:25Z
+
+*sched-1 · kind: move · from: shorn · to: hairy*
+
+moved: shorn -> hairy
+
+#### 2026-11-25T05:05:25Z
+
+*sched-1 · kind: regrow · occurrence: '2026-11-25'*
+
+regrew for the 2026-11-25 occurrence (0 skipped)
+
+#### 2026-11-25T05:05:25Z
+
+*sched-1 · kind: request*
+
+requested: needs agent
+
+Recurring: regrew for the 2026-11-25 occurrence. Its description is the standing instruction.
