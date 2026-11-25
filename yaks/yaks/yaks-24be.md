@@ -1,11 +1,11 @@
 ---
 id: yaks-24be
 title: 'Feedback acknowledgement: record every triaged feedback-to-yaks entry once, whatever its outcome'
-status: shaving
+status: shorn
 type: task
 priority: 2
 created: '2026-11-18T14:44:16Z'
-updated: '2026-11-25T04:24:12Z'
+updated: '2026-11-25T04:24:13Z'
 parent: yaks-1c89
 tags:
 - skills
@@ -97,3 +97,9 @@ Done as answered (B), tested on the 2026-11-25 round.
 - **Collector:** yaks-feaf's description rewritten around the ledger (both farm layouts, repo keys, the update rule, a second pass that must be empty).
 - **Test:** the attached `feedback-pending.sh` (reads every farm's dok, prints entries with no row or a newer Update). First pass: 5 NEW (1 cowpaths/joel, 4 fullstorydev/surveyor) and 1 UPDATED (cowpaths/joel 11-18), with the 7 other rows skipped. Triaged: yaks-6a2c, yaks-e0cd, yaks-b2e9, yaks-dc7c, yaks-3c55 new; yaks-837d linked again. Second pass: nothing pending.
 - Left for later: the script is a stopgap. If the collector proves useful, `yaks feedback pending` could mechanize steps 1-3 (yaks-20fe's "no new command yet").
+
+#### 2026-11-25T04:24:13Z
+
+*feedback-triage · kind: move · from: shaving · to: shorn · thread: ksQQpRfd3SiPQbKzhUOE_ITXyJLOAG5JQpIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
