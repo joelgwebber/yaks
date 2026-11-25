@@ -20,3 +20,4 @@ Write a row with `yaks dok row set 'doks/feedback-triage.md#<entry>' --set outco
 | cowpaths/joel#2026-11-10: `session touched` missed sources committed under the harness actor | linked | yaks-d11e | 2026-11-18 | thread selection would catch them |
 | cowpaths/joel#2026-11-10: an unset actor stamps commits with the harness name, even after `whoami --set` | new | yaks-5250 | 2026-11-18 | whoami --set writes only the git config of the checkout it ran in |
 | cowpaths/joel#2026-11-12: `yaks check` flags an email autolink as a broken link | new | yaks-9dc2 | 2026-11-18 |  |
+| cowpaths/joel#2026-11-13: `dok row set` stamps `as_of` on every row it touches, even when only one field was checked | not-a-bug |  | 2026-11-18 | row set leaves other cells alone; the agent's helper passed --set as_of on every call |
