@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-09T15:37:41Z'
-updated: '2026-11-18T14:43:02Z'
+updated: '2026-11-25T04:22:20Z'
 tags:
 - cli
 ---
@@ -23,3 +23,9 @@ Seen again in cowpaths/joel: its feedback dok's entry `2026-11-18: a recurring y
 - The daily round regrows in the afternoon (11-17 16:17Z, `due: 2026-11-18`); the agent works it the next morning and shears it at 13:43Z on 11-18, the due day. A regrown yak counts from `due:` with k from 0, so the 11-18 occurrence is already past and the next tick regrows it at once. Each day's round is one behind, which is this yak exactly.
 - The entry says `due:` "was already tomorrow" when sheared; the commits show `due: 2026-11-18` at the shear, and 11-19 only after the regrow.
 - The `yaks-scheduling` skill's "shear it on its due day and it waits for the next one" holds for a never-regrown yak (k from 1) and not for a regrown one (k from 0). Whatever the fix, the rule and the skill must say the same thing: that inconsistency is what the reporter hit.
+
+#### 2026-11-25T04:22:20Z
+
+*feedback-triage*
+
+cowpaths/joel's entry has an **Update 2026-11-24**: since its review-watch skill told agents to re-shear, the same-day reopen stopped. From 11-19 each round was sheared with `due:` already tomorrow, and it regrew once a day at the next occurrence; a missed weekend counted once (`1 skipped`). That matches this yak's analysis: the bug is a shear while `due:` is still today, after a regrow. Still open: the rule and the `yaks-scheduling` text disagree for that case, and the workaround (re-shear) lives in another farm's skill.
