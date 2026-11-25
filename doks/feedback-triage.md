@@ -28,3 +28,4 @@ Write a row with `yaks dok row set 'doks/feedback-triage.md#<entry>' --set outco
 | fullstorydev/surveyor#2026-11-24: `--as` is documented as a global flag but refused | new | yaks-b2e9 | 2026-11-25 |  |
 | fullstorydev/surveyor#2026-11-24: `YAKS_DIR` at the wrong directory gives a misleading schema refusal | new | yaks-dc7c | 2026-11-25 |  |
 | fullstorydev/surveyor#2026-11-24: commits that reach origin in the background look like someone else's push | new | yaks-e0cd | 2026-11-25 | the skill says nothing syncs on its own; yaks tui does |
+| fullstorydev/surveyor#2026-11-24: say in the skills that feedback is always welcome | new | yaks-3c55 | 2026-11-25 |  |
