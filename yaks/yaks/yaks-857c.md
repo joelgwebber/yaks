@@ -1,11 +1,11 @@
 ---
 id: yaks-857c
 title: 'Research: Vercel Board compared with yaks, and ideas to take'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-25T04:22:56Z'
-updated: '2026-11-25T04:25:43Z'
+updated: '2026-11-25T04:25:44Z'
 tags:
 - agent
 - research
@@ -36,3 +36,9 @@ Filed:
 - yaks-a621 design: `verify` runs a command another actor wrote, p2
 
 Checks: `yaks check` has no finding on the new dok, sources or yaks; `yaks doctor`'s three findings predate this (yaks-5e8d, yaks-d262, yaks-5250).
+
+#### 2026-11-25T04:25:44Z
+
+*board-research · kind: move · from: shaving · to: shorn · thread: ksQQfm5rf80wSIadFOvm9ZYAHpLOAHAjwZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
