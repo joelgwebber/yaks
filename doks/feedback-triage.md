@@ -16,3 +16,4 @@ Write a row with `yaks dok row set 'doks/feedback-triage.md#<entry>' --set outco
 
 | entry | outcome | yak | triaged | note |
 | --- | --- | --- | --- | --- |
+| cowpaths/joel#2026-11-10: `dok new` and `source add` fail when run from outside a farm checkout | linked | yaks-76a3 | 2026-11-18 | second farm to hit it; raised to p3 |
