@@ -5,7 +5,7 @@ status: shaving
 type: task
 priority: 2
 created: '2026-11-18T14:44:16Z'
-updated: '2026-11-25T04:17:31Z'
+updated: '2026-11-25T04:24:12Z'
 parent: yaks-1c89
 tags:
 - skills
@@ -83,3 +83,5 @@ picked up
 *feedback-triage · kind: move · from: hairy · to: shaving · thread: ksQQpRfd3SiPQbKzhUOE_ITXyJLOAG5JQpIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+[feedback-pending](yaks-24be/feedback-pending.sh)
