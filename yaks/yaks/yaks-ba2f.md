@@ -2,10 +2,10 @@
 id: yaks-ba2f
 title: 'Plan files: create a family of yaks with dependencies from one file (create --file)'
 status: hairy
-type: feature
+type: idea
 priority: 2
 created: '2026-11-25T04:24:40Z'
-updated: '2026-11-25T04:24:40Z'
+updated: '2026-11-25T04:30:44Z'
 tags:
 - cli
 - agent
