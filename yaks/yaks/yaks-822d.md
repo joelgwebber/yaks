@@ -1,7 +1,7 @@
 ---
 id: yaks-822d
 title: 'Research: Notion''s A New Shape for Work (context systems, factories) and what fits yaks'
-status: shaving
+status: shorn
 type: task
 priority: 3
 created: '2026-11-25T04:31:33Z'
@@ -27,3 +27,9 @@ Filed with Joel's agreement in chat:
 - yaks-ff8e: run notes, a rough idea for making recurring and skill-driven jobs reviewable from the farm
 
 Not filed: a project-like grouping node (Joel: farms, herds, families and tags are enough; recorded under "Out of scope"). `yaks check` and `yaks doctor` show nothing new; doctor's three findings predate this.
+
+#### 2026-11-25T04:32:37Z
+
+*notion-review · kind: move · from: shaving · to: shorn · thread: ksQQMmSllRncTy2GcQkjfbQn1pLOAHV57ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
