@@ -2,10 +2,10 @@
 id: yaks-7a25
 title: 'Exclusive claims on one machine: shave --exclusive, next --claim, take over a stale claim'
 status: hairy
-type: feature
+type: idea
 priority: 2
 created: '2026-11-25T04:24:41Z'
-updated: '2026-11-25T04:24:41Z'
+updated: '2026-11-25T04:31:31Z'
 tags:
 - cli
 - agent
