@@ -5,11 +5,11 @@ status: shorn
 type: task
 priority: 3
 created: '2026-11-10T18:45:04Z'
-updated: '2026-11-25T04:24:21Z'
+updated: '2026-11-25T04:24:36Z'
 tags:
 - meta
 - skills
-due: 2026-11-17
+due: 2026-11-24
 every: P1W
 wake: agent
 ---
