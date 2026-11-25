@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-09T15:37:41Z'
-updated: '2026-11-25T04:22:20Z'
+updated: '2026-11-25T04:24:37Z'
 tags:
 - cli
 ---
@@ -29,3 +29,9 @@ Seen again in cowpaths/joel: its feedback dok's entry `2026-11-18: a recurring y
 *feedback-triage*
 
 cowpaths/joel's entry has an **Update 2026-11-24**: since its review-watch skill told agents to re-shear, the same-day reopen stopped. From 11-19 each round was sheared with `due:` already tomorrow, and it regrew once a day at the next occurrence; a missed weekend counted once (`1 skipped`). That matches this yak's analysis: the bug is a shear while `due:` is still today, after a regrow. Still open: the rule and the `yaks-scheduling` text disagree for that case, and the workaround (re-shear) lives in another farm's skill.
+
+#### 2026-11-25T04:24:37Z
+
+*feedback-triage*
+
+Hit again here on 2026-11-25: yaks-feaf (P1W, never regrown, due 2026-11-17) sheared a week late; `regrow-due --dry-run` then said it would regrow for 2026-11-24 at once. Workaround: `--due 2026-11-24` (the occurrence the round covered), after which it waits for 12-01. The fix should let a late shear say which occurrence it covered.
