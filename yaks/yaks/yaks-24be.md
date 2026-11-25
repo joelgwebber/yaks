@@ -85,3 +85,15 @@ picked up
 moved: hairy -> shaving
 
 [feedback-pending](yaks-24be/feedback-pending.sh)
+
+#### 2026-11-25T04:24:12Z
+
+*feedback-triage*
+
+Done as answered (B), tested on the 2026-11-25 round.
+
+- **Ledger:** [/doks/feedback-triage.md](/doks/feedback-triage.md), one row per triaged entry keyed `<owner/repo>#<heading>`; outcomes new / linked / not-a-bug / duplicate / done / wontfix. Backfilled with the 11-18 round's 8 rows. Written with `dok row set`, read with `dok query --rows` (checked first on a scratch farm: keys with `#`, backticks and `|` round-trip).
+- **Re-triage rule:** an entry gets another look only when it has an `**Update YYYY-MM-DD:**` bullet later than its row's `triaged`. The `yaks-upkeep` skill now tells reporters to append such a bullet rather than edit (branch `yaks-24be-feedback-ledger`, not landed).
+- **Collector:** yaks-feaf's description rewritten around the ledger (both farm layouts, repo keys, the update rule, a second pass that must be empty).
+- **Test:** the attached `feedback-pending.sh` (reads every farm's dok, prints entries with no row or a newer Update). First pass: 5 NEW (1 cowpaths/joel, 4 fullstorydev/surveyor) and 1 UPDATED (cowpaths/joel 11-18), with the 7 other rows skipped. Triaged: yaks-6a2c, yaks-e0cd, yaks-b2e9, yaks-dc7c, yaks-3c55 new; yaks-837d linked again. Second pass: nothing pending.
+- Left for later: the script is a stopgap. If the collector proves useful, `yaks feedback pending` could mechanize steps 1-3 (yaks-20fe's "no new command yet").
