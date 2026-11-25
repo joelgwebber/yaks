@@ -5,13 +5,12 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-18T14:44:16Z'
-updated: '2026-11-19T20:31:29Z'
+updated: '2026-11-25T04:17:30Z'
 parent: yaks-1c89
 tags:
 - skills
 - design
 - meta
-needs: agent
 ---
 
 Joel, 2026-11-18: "I also don't see an explicit pattern for acknowledging feedback and ensuring we don't waste time revisiting already-triaged feedback ... just editing the upstream feedback notes with a yak reference? Or just creating a simple local 'database' in a dok / doks that keeps the acknowledgement in this repo, in the event we don't have write access to the source."
@@ -72,3 +71,9 @@ Acknowledgement: A (write back to the source entry), B (a ledger table dok here,
 *sched-1 · kind: answer · needs: agent*
 
 Agreed, I think (B) will be cleaner overall. We need just barely enough structure to ensure we don't re-triage every time we scan another farm's feedback.
+
+#### 2026-11-25T04:17:30Z
+
+*feedback-triage · kind: pickup*
+
+picked up
