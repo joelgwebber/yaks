@@ -23,4 +23,4 @@ Write a row with `yaks dok row set 'doks/feedback-triage.md#<entry>' --set outco
 | cowpaths/joel#2026-11-13: `dok row set` stamps `as_of` on every row it touches, even when only one field was checked | not-a-bug |  | 2026-11-18 | row set leaves other cells alone; the agent's helper passed --set as_of on every call |
 | cowpaths/joel#2026-11-13: a `.mdx` source gets no `extracted.md` | new | yaks-329a | 2026-11-18 |  |
 | cowpaths/joel#2026-11-16: the schema 9 move left `.yaks/.activity/` behind, and `check` asks for a `git mv` that cannot work | new | yaks-8a49 | 2026-11-18 |  |
-| cowpaths/joel#2026-11-18: a recurring yak regrows right after it is sheared, so "shear it and it waits for the next one" does not hold | linked | yaks-837d | 2026-11-18 | shorn while due: was still today |
+| cowpaths/joel#2026-11-18: a recurring yak regrows right after it is sheared, so "shear it and it waits for the next one" does not hold | linked | yaks-837d | 2026-11-25 | Update 2026-11-24: no recurrence once shorn with due: tomorrow; rule and skill still disagree |
