@@ -1,7 +1,7 @@
 ---
 id: yaks-feaf
 title: Collect yaks feedback from other farms
-status: hairy
+status: shorn
 type: task
 priority: 3
 created: '2026-11-10T18:45:04Z'
@@ -31,3 +31,9 @@ Collect other farms' friction with yaks (design: yaks-20fe; acknowledgement: yak
 *feedback-triage*
 
 Round 2026-11-25 (with yaks-24be's ledger): cowpaths/joel 9 entries: 1 new (yaks-6a2c), 1 re-triaged for its Update (yaks-837d, linked), 7 skipped as acknowledged. fullstorydev/surveyor 4 entries, all new: yaks-e0cd, yaks-b2e9, yaks-dc7c, yaks-3c55. Ledger: /doks/feedback-triage.md, 14 rows. Second pass: nothing pending.
+
+#### 2026-11-25T04:24:21Z
+
+*feedback-triage · kind: move · from: hairy · to: shorn · thread: ksQQpRfd3SiPQbKzhUOE_ITXyJLOAG5JQpIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shorn
