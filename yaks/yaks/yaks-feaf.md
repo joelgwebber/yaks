@@ -5,7 +5,7 @@ status: hairy
 type: task
 priority: 3
 created: '2026-11-10T18:45:04Z'
-updated: '2026-11-25T04:23:02Z'
+updated: '2026-11-25T04:24:21Z'
 tags:
 - meta
 - skills
@@ -25,3 +25,9 @@ Collect other farms' friction with yaks (design: yaks-20fe; acknowledgement: yak
    - not a yaks problem, already fixed, a duplicate of another entry, or won't fix: outcome `not-a-bug` / `done` / `duplicate` / `wontfix`, with the reason in `note`.
 5. **Write the row**: `yaks dok row set 'doks/feedback-triage.md#<key>' --set outcome=... --set yak=... --set triaged=<today> --set 'note=...'`. Then a second pass (steps 1-3) must find nothing pending.
 6. Shear with the account: per farm, entries seen, new, linked, other outcomes (with the yaks).
+
+#### 2026-11-25T04:24:21Z
+
+*feedback-triage*
+
+Round 2026-11-25 (with yaks-24be's ledger): cowpaths/joel 9 entries: 1 new (yaks-6a2c), 1 re-triaged for its Update (yaks-837d, linked), 7 skipped as acknowledged. fullstorydev/surveyor 4 entries, all new: yaks-e0cd, yaks-b2e9, yaks-dc7c, yaks-3c55. Ledger: /doks/feedback-triage.md, 14 rows. Second pass: nothing pending.
