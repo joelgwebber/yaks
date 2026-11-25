@@ -26,4 +26,5 @@ Write a row with `yaks dok row set 'doks/feedback-triage.md#<entry>' --set outco
 | cowpaths/joel#2026-11-18: a recurring yak regrows right after it is sheared, so "shear it and it waits for the next one" does not hold | linked | yaks-837d | 2026-11-25 | Update 2026-11-24: no recurrence once shorn with due: tomorrow; rule and skill still disagree |
 | cowpaths/joel#2026-11-24: the skills don't say when a yak whose code is in a PR is done, or to record the PR in `prs:` | new | yaks-6a2c | 2026-11-25 |  |
 | fullstorydev/surveyor#2026-11-24: `--as` is documented as a global flag but refused | new | yaks-b2e9 | 2026-11-25 |  |
+| fullstorydev/surveyor#2026-11-24: `YAKS_DIR` at the wrong directory gives a misleading schema refusal | new | yaks-dc7c | 2026-11-25 |  |
 | fullstorydev/surveyor#2026-11-24: commits that reach origin in the background look like someone else's push | new | yaks-e0cd | 2026-11-25 | the skill says nothing syncs on its own; yaks tui does |
