@@ -142,7 +142,7 @@ Decided 2026-11-27:
 - **One derived per-user cache** ([yaks-8f50](/yaks/yaks/yaks-8f50.md)) serving four needs: positional text postings (phrases), every link edge (backlinks, rewrites, [yaks-bda5](/yaks/yaks/yaks-bda5.md)), parsed field values (queries) and modified times (sorting, staleness). Rebuildable, never committed. Archaeology ([yaks-64c4](/yaks/yaks/yaks-64c4.md)) builds on it afterwards.
 - **Modified time comes from git for every kind** (decided 2026-11-27): the last commit touching the file, or the file's mtime while it is uncommitted. Commits marked mechanical by a trailer (migrations, rewrites, bulk renames) are skipped, which also fixes `yaks check` staleness resetting at every layout move. **The yak `updated:` field retires** in the schema bump. This reverses yaks-8384's "updated stays on yaks" and agrees with yaks-c316's reason ("updated goes stale under hand edits"). Filesystem mtime alone is ruled out: a clone resets it.
 - Brute-force `find` (no index) takes 0.16–0.2 s on this farm's 3 MB; the index is justified more by backlinks, sorting and as-you-type search than by text search itself. No trigram index: positional postings give phrases.
-- **Storage is open** (section 13): SQLite with FTS5, tantivy, or our own postings.
+- **Storage** (decided 2026-11-27): a prototype compares tantivy and SQLite FTS5 against the whole job (postings, edges, times) and measures a cold-cache build; tantivy wins only if it needs no second store.
 
 ## 10. TUI
 
