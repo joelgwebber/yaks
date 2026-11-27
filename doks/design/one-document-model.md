@@ -192,7 +192,7 @@ Existing yaks to pull in (triage, 2026-11-27): [yaks-0f3a](/yaks/yaks/yaks-0f3a.
 
 - [x] Prose mentions: section 5 as written (completion inserts inline links; schema 11 converts existing mentions; the TUI stops autolinking). Joel, 2026-11-27, on yaks-7e32.
 - [x] Index storage: prototype first. tantivy only if it solves the whole problem (postings, link edges, times) with no second store; otherwise SQLite with FTS5 (`rusqlite`, bundled), accepting the C dependency. The prototype measures a cold-cache build of the whole index. Joel, 2026-11-27.
-- [ ] Recent and All: merge them ([yaks-7350](/yaks/yaks/yaks-7350.md)), revisiting tui-model decisions 3 and 7?
+- [x] Recent and All: merge them ([yaks-7350](/yaks/yaks/yaks-7350.md)), overriding tui-model decisions 3 and 7 ("both just weren't useful"). Joel, 2026-11-27.
 
 ## Rejected
 
