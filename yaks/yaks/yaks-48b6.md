@@ -10,6 +10,7 @@ parent: yaks-7e32
 depends_on:
 - yaks-3b08
 - yaks-8fb0
+- yaks-da00
 tags:
 - git
 ---
