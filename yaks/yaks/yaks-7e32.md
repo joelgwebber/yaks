@@ -5,7 +5,7 @@ status: hairy
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:23:11Z'
+updated: '2026-11-27T02:25:02Z'
 tags:
 - design
 - doks
@@ -36,4 +36,4 @@ Open questions from [the design dok](/doks/design/one-document-model.md#13-open-
 
 1. Perfect.
 2. Works for me; I'd be ok with a heavy rust crate if it solved the whole problem without an external dep. But if tantivy doesn't solve the whole problem, then I'd rather live with the C dep for SQLite. When we're prototyping, let's also try and get an estimate of cold-cache indexing build time, so at least we have a sense for the worst case.
-3.
+3. Yes, agreed. Both just weren't useful. Agreed on overriding those old decisions.
