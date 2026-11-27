@@ -5,7 +5,7 @@ status: hairy
 type: bug
 priority: 3
 created: '2026-11-08T21:41:05Z'
-updated: '2026-11-08T21:41:05Z'
+updated: '2026-11-27T02:09:43Z'
 ---
 
 Found importing a real record into a scratch farm (Hearth's design dok /doks/design/calcifer-import.md in the Hearth farm).
@@ -15,3 +15,9 @@ A dok whose frontmatter has a nested map (the college records: `engagement: {hou
 - `yaks dok query --where 'engagement.coop_participation_pct=>90'` and `--where 'engagement=~coop'` both return nothing, with no error.
 
 Decide: support a `map` type with dotted `--where` paths, or say plainly in `dok query` (an error for a path into a map) and in the yaks-research skill that fields are flat. Whichever, the silent empty result should go.
+
+#### 2026-11-27T02:09:43Z
+
+*unify-design*
+
+Decision (Joel, 2026-11-26): retire. Fields stay flat; no `map` type. It came from importing poorly-shaped external docs. The one piece kept: a dotted path in a query (`--where a.b=…`) becomes an error rather than a silent empty result, part of the one query engine in [/doks/design/one-document-model.md](/doks/design/one-document-model.md#6-fields-schemas-and-tags) (yaks-7e32).
