@@ -5,7 +5,8 @@ status: hairy
 type: bug
 priority: 2
 created: '2026-11-25T04:22:33Z'
-updated: '2026-11-25T04:22:33Z'
+updated: '2026-11-27T02:39:05Z'
+parent: yaks-da00
 tags:
 - cli
 - skills
