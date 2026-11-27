@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 3
 created: '2026-11-01T18:52:36Z'
-updated: '2026-11-11T21:13:27Z'
+updated: '2026-11-27T02:39:48Z'
 tags:
 - design
 - doks
@@ -110,3 +110,9 @@ Landed on `main` as de32523, a squash of `wiki` (Joel, 2026-11-02). Installed wi
 *delta:farm-wiki*
 
 Shipped in 0.0.30 (npm `latest`). The yaks and joel farms are migrated to schema 7 and published, and joel's main has dropped the Hearth layout. Open follow-ups: yaks-9f5e (import-hearth skips dot-files) and yaks-7058 (git calls per write).
+
+#### 2026-11-27T02:39:48Z
+
+*herd-unify*
+
+Closing (yakherd `herd-unify`, 2026-11-27). The knowledge layer shipped in 0.0.30; its successor is [the one document model](/doks/design/one-document-model.md), yaks-7e32, which unifies yaks, doks, sessions and sources on one set of constructs. Rehomed: yaks-0fa7 and yaks-323b went under the new plan (yaks-8fb0, yaks-23c9); yaks-1c89 (upkeep, with yaks-3f35's open children) and yaks-bdc3 graduated to the top level as independent work.
