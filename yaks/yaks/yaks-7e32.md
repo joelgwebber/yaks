@@ -5,7 +5,7 @@ status: shaving
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:36:26Z'
+updated: '2026-11-27T02:38:22Z'
 tags:
 - design
 - doks
@@ -62,3 +62,17 @@ Also added (Joel, 2026-11-27): one picker to open or link any document, yaks-958
 *herd-unify · kind: move · from: hairy · to: shaving · child: yaks-3b08 · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-27T02:38:22Z
+
+*herd-unify*
+
+Batch 1 (yakherd `herd-unify`, base `4f09d2d2`, local `main` fast-forwarded to include yaks-ca59):
+
+| worker | yak | model | thread |
+|---|---|---|---|
+| `desc-1` | yaks-2c10 | claude-sonnet-5-5 | ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK5vJIBxBCA0aLJyrhJPreUvVwLftHG |
+| `pick-1` | yaks-958d | claude-sonnet-5-5 | ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK58ZIBxBCA0aLJyrhJPreUvVwLftHG |
+| `relink-1` | yaks-3b08 | claude-opus-5-5 (shared engine) | ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK7O5IBxBCA0aLJyrhJPreUvVwLftHG |
+
+Briefs: `~/.local/share/yaks/briefs/<worker>.md`. yaks-0b10 waits for yaks-3b08 (its repair renames through the rewrite engine).
