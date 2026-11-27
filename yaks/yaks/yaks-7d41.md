@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T02:43:26Z'
+updated: '2026-11-27T02:43:41Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -27,3 +27,9 @@ Evidence: unit tests for each rule above (accents, `ß`, `İ`, offset mapping, i
 *herd-unify · kind: move · from: hairy · to: shaving · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-27T02:43:41Z
+
+*herd-unify*
+
+Claim (yakherd `herd-unify`). Owner: worker `match-1` (claude-sonnet-5-5), base `4f09d2d2`. Scope: the description; a new module only, plus its `mod` line in `src/main.rs`. **Allowed exception to the brief:** add `unicode-normalization` and `unicode-segmentation` (and a case-folding crate if needed) to `Cargo.toml`, with the `Cargo.lock` change; nothing else in either file. Judge: the yakherd at landing.
