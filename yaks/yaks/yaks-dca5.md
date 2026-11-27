@@ -1,11 +1,11 @@
 ---
 id: yaks-dca5
 title: 'dok fields: nested maps in schemas and --where'
-status: hairy
+status: dead
 type: bug
 priority: 3
 created: '2026-11-08T21:41:05Z'
-updated: '2026-11-27T02:09:43Z'
+updated: '2026-11-27T02:09:44Z'
 ---
 
 Found importing a real record into a scratch farm (Hearth's design dok /doks/design/calcifer-import.md in the Hearth farm).
@@ -21,3 +21,9 @@ Decide: support a `map` type with dotted `--where` paths, or say plainly in `dok
 *unify-design*
 
 Decision (Joel, 2026-11-26): retire. Fields stay flat; no `map` type. It came from importing poorly-shaped external docs. The one piece kept: a dotted path in a query (`--where a.b=…`) becomes an error rather than a silent empty result, part of the one query engine in [/doks/design/one-document-model.md](/doks/design/one-document-model.md#6-fields-schemas-and-tags) (yaks-7e32).
+
+#### 2026-11-27T02:09:44Z
+
+*unify-design · kind: move · from: hairy · to: dead · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> dead
