@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:49:22Z'
+updated: '2026-11-27T02:54:49Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -56,3 +56,9 @@ Decision: existing tests that asserted the old behaviour were updated (`inline_t
 Scratch-farm run (release binary): create with description d1, `--note n1`, `update --description d2`: show prints `d2`, then the n1 note, `notes: 1`. `update --description ""` leaves `notes: 1`.
 
 Test: `update_description_keeps_the_notes` (tests/body_input.rs) fails on the old code (body is just `new`) and passes now.
+
+#### 2026-11-27T02:54:49Z
+
+*desc-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
