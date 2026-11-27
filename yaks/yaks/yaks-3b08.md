@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T14:47:29Z'
+updated: '2026-11-27T15:03:48Z'
 parent: yaks-7e32
 tags:
 - links
@@ -78,3 +78,9 @@ Progress: engine in place, unit tests green (`cargo test -p yaks --bin yaks -- f
 - `rename`/`rename-herd`, `mv`, `promote`, `rename-attachment` call `relocate::run`; removed `rewrite_links_to`, `dok_move`'s `fix`, `replace_link`, `replace_path_token`, and the `refs::rewrite` loop in `rename_many_locked`.
 
 Next: integration matrix in `tests/`, docs, farm-copy check.
+
+#### 2026-11-27T15:03:48Z
+
+*relink-1*
+
+Decision: the engine is a new module `src/relocate.rs` (`Move`, `Relocation`, `run`), not methods on `Farm`. `Farm` validates and takes the lock, then calls it. Rejected: one `Farm::relocate` method (`farm.rs` is already 6k lines, and the migration and collision repair will call the engine without a `Farm`); extending `links.rs` (it is the grammar and stays pure).
