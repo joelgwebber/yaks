@@ -11,7 +11,7 @@ tags:
 
 # One document model: yaks, doks, sessions and sources on one set of constructs
 
-Status: **in design** with Joel, started 2026-11-26. Tracked by [yaks-7e32](/yaks/yaks/yaks-7e32.md). This dok records the decisions as they settle; the open ones are at the end and asked on the umbrella yak.
+Status: **agreed** with Joel, 2026-11-27 (started 2026-11-26). Tracked by [yaks-7e32](/yaks/yaks/yaks-7e32.md). This dok records the decisions as they settle; the open ones are at the end and asked on the umbrella yak.
 
 Read this before changing how any farm document is parsed, written, linked, queried, searched, shown or laid out on disk.
 
