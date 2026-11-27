@@ -1,11 +1,11 @@
 ---
 id: yaks-7d41
 title: 'Matcher core: normalization, identifier-aware tokens, query parser (pure, tested)'
-status: hairy
+status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T02:43:24Z'
+updated: '2026-11-27T02:43:26Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -21,3 +21,9 @@ The pure core of the shared matcher in [the design, section 8](/doks/design/one-
 Out of scope: wiring into `find`, `--search`, the TUI or pickers; the index.
 
 Evidence: unit tests for each rule above (accents, `ß`, `İ`, offset mapping, identifier tokens, phrase across a newline, `-word`, scopes, garbage input). Gate `cargo test -p yaks`, `cargo fmt --check`.
+
+#### 2026-11-27T02:43:26Z
+
+*herd-unify · kind: move · from: hairy · to: shaving · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
