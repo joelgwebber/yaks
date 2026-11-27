@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:54:58Z'
+updated: '2026-11-27T02:55:52Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -82,3 +82,9 @@ moved: shaving -> shorn
 *desc-1 · kind: change*
 
 yaks update --description now replaces only the description and keeps the yak's notes
+
+#### 2026-11-27T02:55:52Z
+
+*herd-unify · kind: landed · commit: f1dc3b5ca66e5687e1584f944928ddf5dfb19e34 · source: e9c0af49438c2f4077bd85f47b1f554c5f00dfba · branch: main*
+
+landed: [f1dc3b5c](https://github.com/joelgwebber/yaks/commit/f1dc3b5ca66e5687e1584f944928ddf5dfb19e34) yaks-2c10: update --description keeps the notes
