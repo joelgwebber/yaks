@@ -122,3 +122,5 @@ Decision: link-typed frontmatter is edited in the raw lines (`Fields::raw`/`set_
 Decision: `RenamePlan.edits` is now `Vec<relocate::Edit>` (doc, to, yak, fields, lines, refs) instead of the yak-only `RenameEdit`. `rename` can now touch doks, attachments, sessions and sources, and its report lists them. The text output keeps its shape (`id`, `parent`, `body:L1`; non-yak docs show `-> <new path>` when they moved). `rename-attachment` now reports `links rewritten in N document(s)` instead of `yak(s)`.
 
 [farm-copy-check](yaks-3b08/farm-copy-check.txt)
+
+[matrix-on-base-4f09d2d2](yaks-3b08/matrix-on-base-4f09d2d2.txt)

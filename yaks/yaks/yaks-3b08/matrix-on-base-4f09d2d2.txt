@@ -1,0 +1,12 @@
+test refs_read_a_path_form_link ... FAILED
+test mv_rewrites_doks_sessions_sources_attachments_and_link_fields ... FAILED
+test rename_herd_moves_the_herd_segment_and_its_doks ... FAILED
+test rename_rewrites_every_form_in_every_file_kind ... FAILED
+test promote_rewrites_every_form_in_every_file_kind ... FAILED
+test rename_attachment_rewrites_every_form_in_every_file_kind ... FAILED
+missing "[p](/doks/topics/a.md@abcdef1)" in:
+missing "[a](/ww/yaks/ww-c56b.md)" in:
+missing "doks/a.md" in:
+missing "[a](/doks/finding.md#x)" in:
+missing "[b](/zz/yaks/zz-ffca/pic.png#L1)" in:
+test result: FAILED. 0 passed; 6 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.14s
