@@ -38,7 +38,7 @@ moved: hairy -> shaving
 
 *herd-unify*
 
-Claim (yakherd `herd-unify`). Owner: worker `links-1` (Opus 5.5: it is the shared engine later work builds on), base `4f09d2d2`.
+Claim (yakherd `herd-unify`). Owner: worker `relink-1` (Opus 5.5: it is the shared engine later work builds on), base `4f09d2d2`.
 
 Scope, following [the design, section 5](/doks/design/one-document-model.md#5-links-and-references):
 
