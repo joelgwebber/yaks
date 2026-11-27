@@ -1,11 +1,11 @@
 ---
 id: yaks-2c10
 title: update --description deletes the yak's notes
-status: shaving
+status: shorn
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:54:57Z'
+updated: '2026-11-27T02:54:58Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -70,3 +70,15 @@ verify: `cargo test -p yaks` -> PASS (exit 0)
 Summary: `update --description`/`--description-file` now replace the description only and keep every note byte for byte, per yak (`update_many` in src/main.rs uses `store::with_description` plus `base`). Clap help, `docs/cli.md`, README and the `yaks` skill's command table are updated. `cargo test -p yaks` PASS via `yaks verify`; `cargo fmt --check` clean. New test `update_description_keeps_the_notes` fails on the old code and passes now.
 
 Follow-up idea: an explicit whole-body replace flag, if anyone needs one.
+
+#### 2026-11-27T02:54:58Z
+
+*desc-1 · kind: move · from: shaving · to: shorn · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK5vJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-27T02:54:58Z
+
+*desc-1 · kind: change*
+
+yaks update --description now replaces only the description and keeps the yak's notes
