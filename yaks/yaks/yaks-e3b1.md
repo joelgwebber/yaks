@@ -5,8 +5,8 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-11-07T16:57:33Z'
-updated: '2026-11-07T16:57:33Z'
-parent: yaks-44b3
+updated: '2026-11-27T02:39:04Z'
+parent: yaks-da00
 tags:
 - cli
 ---
