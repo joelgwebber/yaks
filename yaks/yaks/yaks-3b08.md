@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:04:36Z'
+updated: '2026-11-27T15:04:37Z'
 parent: yaks-7e32
 tags:
 - links
@@ -124,3 +124,5 @@ Decision: `RenamePlan.edits` is now `Vec<relocate::Edit>` (doc, to, yak, fields,
 [farm-copy-check](yaks-3b08/farm-copy-check.txt)
 
 [matrix-on-base-4f09d2d2](yaks-3b08/matrix-on-base-4f09d2d2.txt)
+
+![backrefs-path-link](yaks-3b08/backrefs-path-link.png "TUI B on zz-4800: zz-2c8a links it by path (/zz/yaks/zz-4800.md) and is now listed; yaks 0.0.41 listed only the prose mention zz-2ac6")
