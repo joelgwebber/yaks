@@ -5,8 +5,8 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-06T21:36:36Z'
-updated: '2026-11-06T21:37:28Z'
-parent: yaks-3f35
+updated: '2026-11-27T02:39:06Z'
+parent: yaks-8fb0
 tags:
 - cli
 - doks
