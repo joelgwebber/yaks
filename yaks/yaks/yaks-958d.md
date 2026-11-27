@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T02:36:27Z'
+updated: '2026-11-27T02:36:57Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -29,3 +29,17 @@ Design: [section 10 of the dok](/doks/design/one-document-model.md#10-tui). Can 
 *herd-unify · kind: move · from: hairy · to: shaving · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-27T02:36:57Z
+
+*herd-unify*
+
+Claim (yakherd `herd-unify`). Owner: worker `pick-1` (Sonnet 5.5), base `4f09d2d2`.
+
+Scope: one picker over yaks, doks, sources and sessions in `src/tui/fuzzy.rs` (replace the yak-only `fuzzy_candidates` and `dok_candidates` with one candidate list whose rows carry a kind and a link destination; fix the `doks/` seed bug), `FuzzyAction::Goto` opening a document through the existing opener used for following a link to a farm file (find it in `src/tui/follow.rs` / `history.rs` `App::jump`, so `o` goes back), editor completion (`src/tui/editor.rs` `CompleteKind`) inserting a markdown link for every kind, `AddDep`/`Reparent` filtered to yaks. Help lines in `src/tui/keymap.rs` (`NavGoto`), `docs/tui.md`, the `yaks` skill if it mentions `#`.
+
+Ranking: keep today's tiers (exact id/path prefix, then substring of id/path, then title), applied across kinds. Do not build a new matcher.
+
+Out of scope: the shared matcher/tokenizer, the CLI, anything outside `src/tui/` plus docs.
+
+Evidence: unit tests for the candidate list (a dok found by title, the prefix tier matching `doks/...`, reparent showing yaks only); insta snapshots updated; a toque headless frame of the `#` picker showing a yak and a dok row, attached as SVG (`yaks render` to PNG to check it). Gate `cargo test -p yaks`. Judge: the yakherd, by looking at the frame.
