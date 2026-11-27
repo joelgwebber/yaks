@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:08:13Z'
+updated: '2026-11-27T15:08:34Z'
 parent: yaks-7e32
 tags:
 - links
@@ -132,3 +132,29 @@ Decision: `RenamePlan.edits` is now `Vec<relocate::Edit>` (doc, to, yak, fields,
 *relink-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-27T15:08:34Z
+
+*relink-1*
+
+Summary (relink-1).
+
+Shape of the fix:
+
+- **References read through links.** `links::yak_mentions` returns, by line, every markdown link that resolves to a yak (short form, path form, `#note`, attachment, pinned path), plus bare id mentions with link destinations masked out. `Farm::refs` and `backrefs_in` use it, so `refs`, `refs --incoming` and the TUI `B` picker see path links. The TUI code itself is unchanged.
+- **One rewrite engine**, `src/relocate.rs`: `Move::{Yak, Attachment, Promoted, Path}`. `run` covers every yak (title, body, `parent`/`depends_on`, schema link fields), markdown attachment, dok, session note and source. It rewrites body links in every form (anchor kept, canonical output, pins never moved), link-typed frontmatter edited in the raw lines, and bare ids for a yak rename. It also moves the files.
+- `rename`, `rename-herd` (now also `<herd>/doks/` and the `/<herd>/` segment), `mv`, `promote` and `rename-attachment` all call it. Removed `rewrite_links_to`, `dok_move`'s `fix`, `replace_link`, `replace_path_token` and the `refs::rewrite` loop in `rename_many_locked`. `links::rewrite_spans` is the one span rewriter (dest, label, image `!`); `rewrite`/`rewrite_kind` wrap it.
+- The `rename-attachment` error and success lines print `<herd>/yaks/<id>/...` from the farm root (no stale `.yaks/`).
+
+Evidence:
+
+- `tests/relocate.rs`, 6 tests, one per rewriter plus refs, each across every link form and file kind. All 6 fail on base `4f09d2d2` ([matrix-on-base-4f09d2d2.txt](/yaks/yaks/yaks-3b08/matrix-on-base-4f09d2d2.txt)) and pass now. There are also 5 engine unit tests in `relocate::tests`.
+- Farm copy ([farm-copy-check.txt](/yaks/yaks/yaks-3b08/farm-copy-check.txt)): `rename yaks-38dc yaks-f0f0` rewrote 31 files, then renamed back. `doctor` shows the same 3 pre-existing issues before, after and after-back. The only leftover `yaks-38dc` text is GitHub blob URLs in a CHANGELOG attachment, which are not farm links.
+- TUI `B` frame: ![backrefs](/yaks/yaks/yaks-3b08/backrefs-path-link.png). Yaks 0.0.41 shows 1 match on the same farm; this build shows 2.
+- Gate: `cargo test -p yaks` passed (1605 passed, 0 failed), recorded by `yaks verify`. `cargo fmt --check` is clean.
+- Docs: `docs/cli.md` gains a "Moving things keeps links right" section and updated `refs`/`rename`/`rename-herd`/`mv`/`promote`/`rename-attachment` text. Also updated: README `refs` row, `yaks` skill Links paragraph, clap `--help` for `refs`, `rename`, `rename-herd`, `mv`.
+
+Follow-ups, not done:
+
+- Collision repair and the migration should call `relocate::run` (design section 5).
+- `store::attachment_link` is now unused (a warning only, kept for the TUI worker's area).
