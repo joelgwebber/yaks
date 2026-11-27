@@ -140,4 +140,4 @@ The audit's size and file scopes are in [the audit](/yaks/yaks/yaks-9714/audit.m
 - [ ] Does GitHub match `#fragment` to anchor ids case-sensitively in the browser?
 
 > [!NOTE]
-> Being revisited by [the one document model](/doks/design/one-document-model.md) (yaks-7e32, 2026-11-26):  echo 'every kind built from one set of constructs, schemas for every kind, a derived index; the rules here all hold.';; farm-layout-and-links) echo 'decision 6 (sharding) is reversed: shard by id, cascading with id length; a reference becomes a markdown link that resolves.';; note-format) echo 'the note log becomes a capability any kind can switch on, with this parser.';; files-directories-archives) echo 'a subject named by its link destination becomes the identity of every row and pane.';; tui-model) echo 'decisions 3 and 7 (All unpinned, Recent yaks-only) are reopened; one row type and pane shell.';; esac)
+> Being revisited by [the one document model](/doks/design/one-document-model.md) (yaks-7e32, 2026-11-26): decision 6 (sharding) is reversed: shard by id, cascading with id length; a reference becomes a markdown link that resolves.
