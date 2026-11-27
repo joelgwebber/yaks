@@ -1,11 +1,11 @@
 ---
 id: yaks-3b08
 title: Path-form yak links are invisible to refs, backrefs and rename; rewriters cover different files
-status: shaving
+status: shorn
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:12:21Z'
+updated: '2026-11-27T15:12:32Z'
 parent: yaks-7e32
 tags:
 - links
@@ -170,3 +170,15 @@ Removed the now-unused `store::attachment_link` (its doc moved onto `attachment_
 *relink-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-27T15:12:32Z
+
+*relink-1 · kind: move · from: shaving · to: shorn · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK7O5IBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-27T15:12:32Z
+
+*relink-1 · kind: change*
+
+refs, refs --incoming and the TUI backrefs see path-form yak links; rename, rename-herd, mv, promote and rename-attachment share one rewrite engine that rewrites every link form and link-typed frontmatter in yaks, attachments, doks, session notes and sources
