@@ -5,8 +5,10 @@ status: hairy
 type: task
 priority: 2
 created: '2026-11-27T02:38:26Z'
-updated: '2026-11-27T02:38:26Z'
+updated: '2026-11-27T02:38:53Z'
 parent: yaks-7e32
+depends_on:
+- yaks-3b08
 tags:
 - git
 ---
