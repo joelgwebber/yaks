@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T02:36:57Z'
+updated: '2026-11-27T02:38:03Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -43,3 +43,9 @@ Ranking: keep today's tiers (exact id/path prefix, then substring of id/path, th
 Out of scope: the shared matcher/tokenizer, the CLI, anything outside `src/tui/` plus docs.
 
 Evidence: unit tests for the candidate list (a dok found by title, the prefix tier matching `doks/...`, reparent showing yaks only); insta snapshots updated; a toque headless frame of the `#` picker showing a yak and a dok row, attached as SVG (`yaks render` to PNG to check it). Gate `cargo test -p yaks`. Judge: the yakherd, by looking at the frame.
+
+#### 2026-11-27T02:38:03Z
+
+*pick-1*
+
+Start Fri Nov 27 02:38:02 UTC 2026. farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-958d.md. checkout: /Users/joel/src/yaks/.delta/worktrees/xca7593y2jw6/yaks
