@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-14T11:21:03Z'
-updated: '2026-11-18T23:08:06Z'
+updated: '2026-11-27T02:38:56Z'
+parent: yaks-48b6
 tags:
 - links
 - git
