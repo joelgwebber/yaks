@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:12:19Z'
+updated: '2026-11-27T03:12:31Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -53,3 +53,21 @@ verify: `cargo test -p yaks` -> FAIL (exit 101)
 *match-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-27T03:12:31Z
+
+*match-1*
+
+Decision: case folding is the standard library's (lowercase, uppercase, lowercase), no caseless crate. Rejected `caseless`/`unicode-case-mapping`: the only difference is dotless `ı`, which folds to `i` here; the friendlier answer for search.
+
+Decision: accent folding = drop combining marks in the Unicode blocks 0300-036F, 1AB0-1AFF, 1DC0-1DFF, 20D0-20FF and FE20-FE2F after NFD, then NFC. Rejected dropping all `Mn` (would erase Indic vowel signs). Kana voiced marks (3099/309A) and Hangul jamo are kept. `ø`, `đ`, `ł` are not folded (no decomposition).
+
+Decision: offset map is per grapheme cluster, so a folded range widens to whole original clusters (`ß`->`ss` both map to `ß`). Rejected a per-char map (breaks at composition). Pure ASCII takes an identity fast path.
+
+Decision: tokens split UAX #29 words further at `.`, `_`, `:`; parts joined by `/ \ - _ . : @ #` with no spaces form an identifier chain, emitted as a Whole plus its Parts. Camel case is not split.
+
+Decision: the query tree is `All | Text | Field | Not | And`, and parse never fails (broken scopes, unterminated quotes, `http://x` degrade to words). Prefix is the last term only, never when quoted or followed by whitespace. A bare identifier term is a phrase of its parts. `id_prefix` is set only for `Field::id` fields whose folded text starts with the raw typed term.
+
+Decision: `Field` names are caller-chosen and compared folded; the matcher does not alias `tag`/`tags`. Phrases never cross fields.
+
+Decision: `src/matcher.rs` has `#![allow(dead_code, unused_imports)]` until the callers land (as `fields.rs` does).
