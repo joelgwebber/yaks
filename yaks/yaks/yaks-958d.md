@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T03:20:27Z'
+updated: '2026-11-27T03:20:28Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -103,3 +103,9 @@ One picker over yaks, doks, sources and sessions: # opens any of them and Tab co
 landed: [501ff03b](https://github.com/joelgwebber/yaks/commit/501ff03b417423b671010b4f13c322795fba3c93) yaks-958d: one picker to open or link any yak, dok, source or session
 
 ![pick](yaks-958d/pick.png "Yakherd check: # then 'design' on a copy of the real farm: doks, a session, a source and yaks in one list, each with its kind")
+
+#### 2026-11-27T03:20:28Z
+
+*herd-unify*
+
+Landed as `501ff03b` (herd-unify). Coordinator check with its own release build: full gate green, `cargo fmt --check` clean. On a copy of the real farm, `#` then `design` lists doks, a session, a source and yaks with their kinds (frame above); `#`, `one-document`, Enter opens the dok in the pane, and `o` returns to the list. Follow-up from pick-1: the yak path `/<herd>/yaks/<id>.md` is now built in three places; fold into the link engine once yaks-3b08 lands.
