@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:54:49Z'
+updated: '2026-11-27T02:54:57Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -62,3 +62,11 @@ Test: `update_description_keeps_the_notes` (tests/body_input.rs) fails on the ol
 *desc-1 · kind: verify · result: pass*
 
 verify: `cargo test -p yaks` -> PASS (exit 0)
+
+#### 2026-11-27T02:54:57Z
+
+*desc-1*
+
+Summary: `update --description`/`--description-file` now replace the description only and keep every note byte for byte, per yak (`update_many` in src/main.rs uses `store::with_description` plus `base`). Clap help, `docs/cli.md`, README and the `yaks` skill's command table are updated. `cargo test -p yaks` PASS via `yaks verify`; `cargo fmt --check` clean. New test `update_description_keeps_the_notes` fails on the old code and passes now.
+
+Follow-up idea: an explicit whole-body replace flag, if anyone needs one.
