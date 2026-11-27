@@ -9,6 +9,7 @@ updated: '2026-11-27T02:38:52Z'
 parent: yaks-7e32
 depends_on:
 - yaks-23c9
+- yaks-362d
 tags:
 - cli
 ---
