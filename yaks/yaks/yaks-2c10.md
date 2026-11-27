@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:37:59Z'
+updated: '2026-11-27T02:49:22Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -40,3 +40,19 @@ Evidence: a test that fails before (create, note, `update --description` drops t
 *desc-1*
 
 Start: Fri Nov 27 02:37:59 UTC 2026; farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-2c10.md; checkout /Users/joel/src/yaks/.delta/worktrees/xab5c0v8bns4/yaks
+
+#### 2026-11-27T02:49:22Z
+
+*desc-1*
+
+Decision: reuse `store::with_description` inside `update_many` (main.rs), per yak, rather than change `Farm::update` or `TaskEdit` semantics. Rejected: changing `TaskEdit::description` itself (the TUI's block editor and `release.rs` pass whole bodies on purpose), and a new whole-body flag (out of scope; follow-up idea).
+
+Decision: the CLI also sets `base: Some(old body)`, so a note appended between the read and the write is kept (yaks-9f5c rebase) and a concurrent rewrite is refused (exit 1) instead of overwritten. Rejected: no base, which would race a concurrent note.
+
+Decision: `--description ""` clears the description and keeps the notes (`with_description` semantics). Rejected: treating it as "clear the whole body".
+
+Decision: existing tests that asserted the old behaviour were updated (`inline_text_is_unchanged` in tests/body_input.rs, `create_and_update_store_links_a_host_can_follow` in tests/stored_links.rs).
+
+Scratch-farm run (release binary): create with description d1, `--note n1`, `update --description d2`: show prints `d2`, then the n1 note, `notes: 1`. `update --description ""` leaves `notes: 1`.
+
+Test: `update_description_keeps_the_notes` (tests/body_input.rs) fails on the old code (body is just `new`) and passes now.
