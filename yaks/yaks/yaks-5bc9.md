@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-11-25T04:24:42Z'
-updated: '2026-11-25T04:24:42Z'
+updated: '2026-11-27T02:39:07Z'
+parent: yaks-8fb0
 tags:
 - cli
 - agent
