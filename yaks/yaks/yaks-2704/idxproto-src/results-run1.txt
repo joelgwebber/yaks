@@ -1,0 +1,174 @@
+######## sqlite on real-src: build on a FRESH COPY (first build), then warm rebuild
+[sqlite-fts5] build 1142 docs, 3462 link edges, 5.1 MB body text
+  scan+parse files       185.5 ms
+  git log + status      1632.3 ms
+  index build            227.9 ms
+    - insert rows+fts      170.5 ms
+    - btree indexes          1.1 ms
+    - fts optimize+ckpt      54.3 ms
+  TOTAL                 2045.8 ms
+  index size on disk     12.37 MB (1 files)
+  index build            283.7 ms
+  TOTAL                  786.5 ms
+[sqlite-fts5] open 1.673 ms; 1142 docs; backlink targets: top=sources/2026-11-25-1d5e649b-vercelboard-specmd-v1-draft-at-6d49814.md (65 in), p75=yaks/yaks/yaks-7cb3.md (2 in)
+  word rare   `rkyv`                 hits(top20)=3   first=   0.137 ms  median=   0.009 ms  p95=   0.010 ms
+  word common `task`                 hits(top20)=20  first=   0.123 ms  median=   0.073 ms  p95=   0.193 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.185 ms  median=   0.017 ms  p95=   0.017 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   0.376 ms  median=   0.279 ms  p95=   0.327 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.118 ms  median=   0.085 ms  p95=   0.103 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   0.175 ms  median=   0.096 ms  p95=   0.108 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.304 ms  median=   0.046 ms  p95=   0.158 ms
+  phrase "derived index"             hits(top20)=7   first=   0.033 ms  median=   0.017 ms  p95=   0.018 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   0.448 ms  median=   0.348 ms  p95=   0.970 ms
+  field tags:tui                     hits(top20)=20  first=   0.123 ms  median=   0.086 ms  p95=   0.248 ms
+  field tags:tui AND word `keyboard` hits(top20)=7   first=   0.049 ms  median=   0.030 ms  p95=   0.108 ms
+  backlinks (top target)             hits(top20)=2   first=   0.072 ms  median=   0.014 ms  p95=   0.038 ms
+  backlinks (p75 target)             hits(top20)=2   first=   0.023 ms  median=   0.007 ms  p95=   0.008 ms
+[sqlite-fts5] list all (path, mtime): 1142 rows in 0.15 ms
+[sqlite-fts5] upsert 50 files in one commit: 10.9 ms
+[sqlite-fts5] upsert 1000 files in one commit: 1376.6 ms
+######## tantivy on real-src: build on a FRESH COPY (first build), then warm rebuild
+[tantivy] build 1142 docs, 3462 link edges, 5.1 MB body text
+  scan+parse files       276.9 ms
+  git log + status      1941.9 ms
+  index build            660.7 ms
+    - add docs               1.5 ms
+    - commit               503.4 ms
+    - merge wait + gc      113.0 ms
+  TOTAL                 2879.5 ms
+  index size on disk      2.21 MB (10 files)
+  index build            669.1 ms
+  TOTAL                 1968.0 ms
+[tantivy] open 0.845 ms; 1142 docs; backlink targets: top=sources/2026-11-25-1d5e649b-vercelboard-specmd-v1-draft-at-6d49814.md (65 in), p75=yaks/yaks/yaks-7cb3.md (2 in)
+  word rare   `rkyv`                 hits(top20)=3   first=   0.084 ms  median=   0.003 ms  p95=   0.003 ms
+  word common `task`                 hits(top20)=20  first=   0.077 ms  median=   0.020 ms  p95=   0.021 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.189 ms  median=   0.059 ms  p95=   0.196 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   0.755 ms  median=   0.523 ms  p95=   1.363 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.581 ms  median=   0.516 ms  p95=   0.564 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   0.716 ms  median=   0.489 ms  p95=   1.274 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.533 ms  median=   0.522 ms  p95=   1.473 ms
+  phrase "derived index"             hits(top20)=7   first=   0.132 ms  median=   0.032 ms  p95=   0.053 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   0.265 ms  median=   0.170 ms  p95=   0.279 ms
+  field tags:tui                     hits(top20)=20  first=   0.024 ms  median=   0.011 ms  p95=   0.042 ms
+  field tags:tui AND word `keyboard` hits(top20)=7   first=   0.021 ms  median=   0.006 ms  p95=   0.016 ms
+  backlinks (top target)             hits(top20)=2   first=   0.023 ms  median=   0.011 ms  p95=   0.049 ms
+  backlinks (p75 target)             hits(top20)=2   first=   0.006 ms  median=   0.004 ms  p95=   0.005 ms
+[tantivy] list all (path, mtime): 1142 rows in 10.82 ms
+[tantivy] upsert 50 files in one commit: 88.1 ms
+[tantivy] upsert 1000 files in one commit: 156.7 ms
+######## tv-lite on real-src: build on a FRESH COPY (first build), then warm rebuild
+[tantivy] build 1142 docs, 3462 link edges, 5.1 MB body text
+  scan+parse files        52.4 ms
+  git log + status       797.6 ms
+  index build            602.2 ms
+    - add docs               1.6 ms
+    - commit               435.7 ms
+    - merge wait + gc      132.0 ms
+  TOTAL                 1452.2 ms
+  index size on disk      2.23 MB (10 files)
+  index build            607.5 ms
+  TOTAL                 1073.2 ms
+[tantivy] open 0.439 ms; 1142 docs; backlink targets: top=sources/2026-11-25-1d5e649b-vercelboard-specmd-v1-draft-at-6d49814.md (65 in), p75=yaks/yaks/yaks-7cb3.md (2 in)
+  word rare   `rkyv`                 hits(top20)=3   first=   0.101 ms  median=   0.003 ms  p95=   0.003 ms
+  word common `task`                 hits(top20)=20  first=   0.082 ms  median=   0.020 ms  p95=   0.023 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.145 ms  median=   0.058 ms  p95=   0.064 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   0.752 ms  median=   0.476 ms  p95=   0.522 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.520 ms  median=   0.463 ms  p95=   0.525 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   0.479 ms  median=   0.466 ms  p95=   0.498 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.497 ms  median=   0.460 ms  p95=   0.494 ms
+  phrase "derived index"             hits(top20)=7   first=   0.046 ms  median=   0.012 ms  p95=   0.012 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   0.142 ms  median=   0.063 ms  p95=   0.066 ms
+  field tags:tui                     hits(top20)=20  first=   0.023 ms  median=   0.009 ms  p95=   0.010 ms
+  field tags:tui AND word `keyboard` hits(top20)=7   first=   0.017 ms  median=   0.006 ms  p95=   0.006 ms
+  backlinks (top target)             hits(top20)=2   first=   0.021 ms  median=   0.011 ms  p95=   0.011 ms
+  backlinks (p75 target)             hits(top20)=2   first=   0.007 ms  median=   0.004 ms  p95=   0.004 ms
+[tantivy] list all (path, mtime): 1142 rows in 1.54 ms
+[tantivy] upsert 50 files in one commit: 77.6 ms
+[tantivy] upsert 1000 files in one commit: 155.7 ms
+######## sqlite on synth: build on a FRESH COPY (first build), then warm rebuild
+[sqlite-fts5] build 10000 docs, 66868 link edges, 24.0 MB body text
+  scan+parse files       283.3 ms
+  git log + status      9507.9 ms
+  index build           1841.9 ms
+    - insert rows+fts     1465.1 ms
+    - btree indexes         23.6 ms
+    - fts optimize+ckpt     349.4 ms
+  TOTAL                11633.1 ms
+  index size on disk     62.32 MB (1 files)
+  index build           1747.2 ms
+  TOTAL                10753.7 ms
+[sqlite-fts5] open 0.418 ms; 10000 docs; backlink targets: top=doks/design/dok-25.md (287 in), p75=yaks/yaks/yaks-61f1.md (5 in)
+  word rare   `rkyv`                 hits(top20)=20  first=   0.288 ms  median=   0.044 ms  p95=   0.051 ms
+  word common `task`                 hits(top20)=20  first=   1.025 ms  median=   0.829 ms  p95=   1.007 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.451 ms  median=   0.102 ms  p95=   0.141 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   3.175 ms  median=   3.041 ms  p95=   3.287 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.916 ms  median=   0.710 ms  p95=   0.864 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   1.003 ms  median=   0.804 ms  p95=   0.953 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.367 ms  median=   0.265 ms  p95=   0.314 ms
+  phrase "derived index"             hits(top20)=20  first=   0.100 ms  median=   0.073 ms  p95=   0.076 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   3.114 ms  median=   2.955 ms  p95=   3.165 ms
+  field tags:tui                     hits(top20)=20  first=   0.907 ms  median=   0.718 ms  p95=   0.916 ms
+  field tags:tui AND word `keyboard` hits(top20)=20  first=   0.243 ms  median=   0.182 ms  p95=   0.197 ms
+  backlinks (top target)             hits(top20)=20  first=   2.749 ms  median=   0.065 ms  p95=   0.073 ms
+  backlinks (p75 target)             hits(top20)=5   first=   0.021 ms  median=   0.008 ms  p95=   0.010 ms
+[sqlite-fts5] list all (path, mtime): 10000 rows in 1.06 ms
+[sqlite-fts5] upsert 50 files in one commit: 74.8 ms
+[sqlite-fts5] upsert 1000 files in one commit: 1464.6 ms
+######## tantivy on synth: build on a FRESH COPY (first build), then warm rebuild
+[tantivy] build 10000 docs, 66868 link edges, 24.0 MB body text
+  scan+parse files       265.4 ms
+  git log + status      9291.8 ms
+  index build            769.0 ms
+    - add docs              12.1 ms
+    - commit               458.0 ms
+    - merge wait + gc      271.6 ms
+  TOTAL                10326.4 ms
+  index size on disk     10.56 MB (10 files)
+  index build            738.0 ms
+  TOTAL                 9914.7 ms
+[tantivy] open 0.657 ms; 10000 docs; backlink targets: top=doks/design/dok-25.md (287 in), p75=yaks/yaks/yaks-61f1.md (5 in)
+  word rare   `rkyv`                 hits(top20)=20  first=   0.464 ms  median=   0.019 ms  p95=   0.021 ms
+  word common `task`                 hits(top20)=20  first=   0.132 ms  median=   0.031 ms  p95=   0.037 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.173 ms  median=   0.027 ms  p95=   0.034 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   1.397 ms  median=   0.534 ms  p95=   0.594 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.594 ms  median=   0.473 ms  p95=   0.498 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   0.620 ms  median=   0.485 ms  p95=   0.507 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.541 ms  median=   0.479 ms  p95=   0.566 ms
+  phrase "derived index"             hits(top20)=20  first=   0.098 ms  median=   0.028 ms  p95=   0.031 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   0.976 ms  median=   0.731 ms  p95=   0.856 ms
+  field tags:tui                     hits(top20)=20  first=   0.072 ms  median=   0.021 ms  p95=   0.027 ms
+  field tags:tui AND word `keyboard` hits(top20)=20  first=   0.119 ms  median=   0.022 ms  p95=   0.027 ms
+  backlinks (top target)             hits(top20)=20  first=   0.090 ms  median=   0.015 ms  p95=   0.018 ms
+  backlinks (p75 target)             hits(top20)=5   first=   0.032 ms  median=   0.005 ms  p95=   0.006 ms
+[tantivy] list all (path, mtime): 10000 rows in 55.22 ms
+[tantivy] upsert 50 files in one commit: 79.3 ms
+[tantivy] upsert 1000 files in one commit: 134.3 ms
+######## tv-lite on synth: build on a FRESH COPY (first build), then warm rebuild
+[tantivy] build 10000 docs, 66868 link edges, 24.0 MB body text
+  scan+parse files       238.2 ms
+  git log + status      9450.1 ms
+  index build            770.0 ms
+    - add docs              14.3 ms
+    - commit               464.9 ms
+    - merge wait + gc      262.5 ms
+  TOTAL                10458.5 ms
+  index size on disk     10.62 MB (10 files)
+  index build            762.7 ms
+  TOTAL                 9724.0 ms
+[tantivy] open 0.394 ms; 10000 docs; backlink targets: top=doks/design/dok-25.md (287 in), p75=yaks/yaks/yaks-61f1.md (5 in)
+  word rare   `rkyv`                 hits(top20)=20  first=   0.634 ms  median=   0.019 ms  p95=   0.022 ms
+  word common `task`                 hits(top20)=20  first=   0.184 ms  median=   0.026 ms  p95=   0.031 ms
+  word `index` + sorted by mtime     hits(top20)=20  first=   0.864 ms  median=   0.025 ms  p95=   0.027 ms
+  prefix `ta*` (2 chars)             hits(top20)=20  first=   1.333 ms  median=   0.539 ms  p95=   0.582 ms
+  prefix `ind*` (3)                  hits(top20)=20  first=   0.597 ms  median=   0.489 ms  p95=   0.531 ms
+  prefix `docum*` (5)                hits(top20)=20  first=   0.596 ms  median=   0.486 ms  p95=   0.524 ms
+  prefix `deriv*` (5, rarer)         hits(top20)=20  first=   0.491 ms  median=   0.474 ms  p95=   0.497 ms
+  phrase "derived index"             hits(top20)=20  first=   0.106 ms  median=   0.028 ms  p95=   0.035 ms
+  phrase "the farm" (common words)   hits(top20)=20  first=   0.967 ms  median=   0.710 ms  p95=   0.832 ms
+  field tags:tui                     hits(top20)=20  first=   0.061 ms  median=   0.021 ms  p95=   0.022 ms
+  field tags:tui AND word `keyboard` hits(top20)=20  first=   0.102 ms  median=   0.022 ms  p95=   0.024 ms
+  backlinks (top target)             hits(top20)=20  first=   0.077 ms  median=   0.014 ms  p95=   0.015 ms
+  backlinks (p75 target)             hits(top20)=5   first=   0.022 ms  median=   0.005 ms  p95=   0.005 ms
+[tantivy] list all (path, mtime): 10000 rows in 18.50 ms
+[tantivy] upsert 50 files in one commit: 87.3 ms
+[tantivy] upsert 1000 files in one commit: 124.2 ms

@@ -1,0 +1,9 @@
+[package]
+name = "idx-sqlite"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+rusqlite = { version = "0.43", features = ["bundled"] }
+libsqlite3-sys = "*"

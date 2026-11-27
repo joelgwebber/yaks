@@ -1,0 +1,8 @@
+[package]
+name = "idx-tv-lite"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+tantivy = { version = "0.27", default-features = false, features = ["mmap", "lz4-compression"] }
