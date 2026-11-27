@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:03:49Z'
+updated: '2026-11-27T15:03:50Z'
 parent: yaks-7e32
 tags:
 - links
@@ -108,3 +108,9 @@ Decision: a pinned link (`@<rev>`) is never moved, by any command. It names the 
 *relink-1*
 
 Decision: `rename-herd` moves `<old>/doks/` to `<new>/doks/` (one `Move::Path` for the directory, links following) and refuses when `<new>/doks/` already exists, rather than merging two dok trees. A single `rename` that happens to empty a herd moves no doks.
+
+#### 2026-11-27T15:03:50Z
+
+*relink-1*
+
+Decision: link-typed frontmatter is edited in the raw lines (`Fields::raw`/`set_raw`), replacing only the value text, so quotes, flow lists and a source's `sources:` provenance map keep their exact shape. The keys are `parent`, `depends_on`, `sources`, `part_of`, `superseded_by` and any schema `link` field. Rejected: `Fields::set`, which reflowed the whole entry (it turned a source's provenance map into flow style).
