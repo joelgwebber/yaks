@@ -102,3 +102,9 @@ Decision: a rewritten attachment link is written canonically (`links::canonical_
 *relink-1*
 
 Decision: a pinned link (`@<rev>`) is never moved, by any command. It names the path as it was at that commit. `mv` used to rewrite the path and keep the `@rev`, which pointed at a path that never existed at that commit. A pinned link inside a moved dok is still rewritten for position (relative to root), rev kept.
+
+#### 2026-11-27T15:03:49Z
+
+*relink-1*
+
+Decision: `rename-herd` moves `<old>/doks/` to `<new>/doks/` (one `Move::Path` for the directory, links following) and refuses when `<new>/doks/` already exists, rather than merging two dok trees. A single `rename` that happens to empty a herd moves no doks.
