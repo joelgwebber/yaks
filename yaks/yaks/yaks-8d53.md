@@ -5,7 +5,8 @@ status: hairy
 type: task
 priority: 3
 created: '2026-08-23T03:43:20Z'
-updated: '2026-10-16T20:09:00Z'
+updated: '2026-11-27T02:39:06Z'
+parent: yaks-da00
 tags:
 - cli
 - agent
