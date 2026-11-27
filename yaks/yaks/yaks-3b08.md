@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:12:32Z'
+updated: '2026-11-27T15:13:11Z'
 parent: yaks-7e32
 tags:
 - links
@@ -182,3 +182,9 @@ moved: shaving -> shorn
 *relink-1 · kind: change*
 
 refs, refs --incoming and the TUI backrefs see path-form yak links; rename, rename-herd, mv, promote and rename-attachment share one rewrite engine that rewrites every link form and link-typed frontmatter in yaks, attachments, doks, session notes and sources
+
+#### 2026-11-27T15:13:11Z
+
+*herd-unify · kind: landed · commit: 4c91ebbf4a8fa814ed358000e7f541658d861c2f · source: fb8b0cffbf1109c7ab9777852d9e45775153084d · branch: main*
+
+landed: [4c91ebbf](https://github.com/joelgwebber/yaks/commit/4c91ebbf4a8fa814ed358000e7f541658d861c2f) yaks-3b08: one rewrite engine (src/relocate.rs) for rename, rename-herd, mv, promote and rename-attachment; refs and backrefs read yak links in every form
