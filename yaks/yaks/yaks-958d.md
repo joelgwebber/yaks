@@ -1,11 +1,11 @@
 ---
 id: yaks-958d
 title: 'One picker to open or link any document: # and completion over yaks, doks, sources and sessions'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T03:06:18Z'
+updated: '2026-11-27T03:06:19Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -83,3 +83,15 @@ Decision: `Candidate::dest` builds `/herd/yaks/id.md` itself (as `release.rs` an
 Decision: sources and sessions are offered with their file path as the key, as the Doks tab lists them; no new matcher, per scope.
 
 Decision: the Doks entries are loaded when the picker opens, if the Doks tab has not loaded them (`ensure_doks_loaded`), not on every keystroke.
+
+#### 2026-11-27T03:06:19Z
+
+*pick-1 · kind: move · from: shaving · to: shorn · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK58ZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-27T03:06:19Z
+
+*pick-1 · kind: change*
+
+One picker over yaks, doks, sources and sessions: # opens any of them and Tab completion inserts a markdown link to any of them
