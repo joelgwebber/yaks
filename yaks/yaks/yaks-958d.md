@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T03:06:17Z'
+updated: '2026-11-27T03:06:18Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -71,3 +71,15 @@ Summary: one picker over yaks, doks, sources and session notes.
 - Help lines, `docs/tui.md` and the editor `Tab` rows updated. The skills do not mention `#` or completion, so they are unchanged.
 
 Evidence: `cargo test -p yaks` passes, `cargo fmt --check` clean, frame attached (goto-picker.svg; rendered to PNG with `yaks render` and looked at).
+
+#### 2026-11-27T03:06:18Z
+
+*pick-1*
+
+Decision: a yak completes as `[id](/herd/yaks/id.md)`, a document as `[title](path)`. Rejected: keeping the bare id for yaks (design dok section 5 says writers insert links, not mentions) and a title-text yak link (ids are the stable name).
+
+Decision: `Candidate::dest` builds `/herd/yaks/id.md` itself (as `release.rs` and `links.rs` do) rather than calling a shared helper, because the helper would sit in `links.rs`/`refs.rs`, which relink-1 owns. A follow-up can fold the three copies together.
+
+Decision: sources and sessions are offered with their file path as the key, as the Doks tab lists them; no new matcher, per scope.
+
+Decision: the Doks entries are loaded when the picker opens, if the Doks tab has not loaded them (`ensure_doks_loaded`), not on every keystroke.
