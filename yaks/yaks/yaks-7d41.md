@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:00:58Z'
+updated: '2026-11-27T03:05:56Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -41,3 +41,9 @@ Claim (yakherd `herd-unify`). Owner: worker `match-1` (claude-sonnet-5-5), base 
 Start: Fri Nov 27 02:44:09 UTC 2026. Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-7d41.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/aefczrq61170/yaks`.
 
 Implemented in `src/matcher.rs` + `src/matcher/{normalize,tokens,query,search}.rs`; 58 unit tests pass.
+
+#### 2026-11-27T03:05:56Z
+
+*match-1 · kind: verify · result: fail*
+
+verify: `cargo test -p yaks` -> FAIL (exit 101)
