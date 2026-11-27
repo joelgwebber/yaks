@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:36:57Z'
+updated: '2026-11-27T02:37:59Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -34,3 +34,9 @@ Scope: `yaks update --description` / `--description-file` replace the descriptio
 Out of scope: `create` (no notes yet), `bulk`, any new whole-body flag (note it as a follow-up idea instead), `dok set --body`.
 
 Evidence: a test that fails before (create, note, `update --description` drops the note) and passes after; the gate `cargo test -p yaks`; a scratch-farm run pasted in a note. Judge: the yakherd at landing.
+
+#### 2026-11-27T02:37:59Z
+
+*desc-1*
+
+Start: Fri Nov 27 02:37:59 UTC 2026; farm file /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-2c10.md; checkout /Users/joel/src/yaks/.delta/worktrees/xab5c0v8bns4/yaks
