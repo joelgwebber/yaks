@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:12:31Z'
+updated: '2026-11-27T03:12:32Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -71,3 +71,9 @@ Decision: the query tree is `All | Text | Field | Not | And`, and parse never fa
 Decision: `Field` names are caller-chosen and compared folded; the matcher does not alias `tag`/`tags`. Phrases never cross fields.
 
 Decision: `src/matcher.rs` has `#![allow(dead_code, unused_imports)]` until the callers land (as `fields.rs` does).
+
+#### 2026-11-27T03:12:32Z
+
+*match-1*
+
+Summary: new pure module src/matcher/ (normalize with offset map, tokens, query parser, field matching; 58 unit tests). Gate cargo test -p yaks PASS (verify note), cargo fmt --check clean. Deps unicode-normalization 0.1 and unicode-segmentation 1 added.
