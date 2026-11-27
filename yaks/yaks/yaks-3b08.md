@@ -84,3 +84,9 @@ Next: integration matrix in `tests/`, docs, farm-copy check.
 *relink-1*
 
 Decision: the engine is a new module `src/relocate.rs` (`Move`, `Relocation`, `run`), not methods on `Farm`. `Farm` validates and takes the lock, then calls it. Rejected: one `Farm::relocate` method (`farm.rs` is already 6k lines, and the migration and collision repair will call the engine without a `Farm`); extending `links.rs` (it is the grammar and stays pure).
+
+#### 2026-11-27T15:03:48Z
+
+*relink-1*
+
+Decision: a bare path in prose (`see yaks-1a2b/shot.png`, no link) is no longer rewritten by `rename-attachment`. The old `replace_path_token` did rewrite it. This follows the design: "a reference is a markdown link that resolves". Bare yak *ids* in prose are still rewritten on `rename`. Rejected: keeping a second, text-token rewriter for attachment paths only. The unit test `rename_attachment_moves_file_and_rewrites_links` changed to match.
