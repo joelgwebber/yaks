@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:36:26Z'
+updated: '2026-11-27T02:36:57Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -22,3 +22,15 @@ Fix: `update --description` replaces the description only (through `with_descrip
 *herd-unify · kind: move · from: hairy · to: shaving · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
 
 moved: hairy -> shaving
+
+#### 2026-11-27T02:36:57Z
+
+*herd-unify*
+
+Claim (yakherd `herd-unify`). Owner: worker `desc-1` (Sonnet 5.5), base `4f09d2d2`.
+
+Scope: `yaks update --description` / `--description-file` replace the description only and keep the note blocks byte for byte, via `store::with_description` (what the TUI already does). Code: `Command::Update` in `src/main.rs` (and `update_many` if the replacement must happen per yak, since each yak has its own notes); clap help for those flags; `docs/cli.md`; the `yaks` skill if it describes the flag; check yaks-139b's warning text in skills.
+
+Out of scope: `create` (no notes yet), `bulk`, any new whole-body flag (note it as a follow-up idea instead), `dok set --body`.
+
+Evidence: a test that fails before (create, note, `update --description` drops the note) and passes after; the gate `cargo test -p yaks`; a scratch-farm run pasted in a note. Judge: the yakherd at landing.
