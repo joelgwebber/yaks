@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-10T22:03:47Z'
+updated: '2026-11-27T02:39:45Z'
 parent: yaks-44b3
 tags:
 - doks
@@ -175,3 +175,9 @@ Batch 2 by herd-unlock-2, 2026-11-10 (Joel's second starred set plus three gate/
 Coordinator's own: yaks-464b (knowledge-store dok rewritten), `schemas/yak.md` known tags for yaks-f04d.
 
 Re-checked at landing with my build: unknown-tag warning on the real farm; dok star end to end headless (writes the dok path into `working_set.json`, listed in Starred); All view with shorn off on a copy of the real farm (129 rows, no shorn); keystroke bench ~3 ms (All, `j`); tag picker on a copy of the real farm (known tags first, with descriptions). Full `cargo test --workspace` green on `709ec3c5` (34 binaries); `cargo fmt --check` clean.
+
+#### 2026-11-27T02:39:45Z
+
+*herd-unify*
+
+Graduated from yaks-44b3 (knowledge layer, shipped in 0.0.30) to the top level by `herd-unify`, 2026-11-27: yaks-44b3 closes as the predecessor of the one document model (yaks-7e32). This work is independent of it.
