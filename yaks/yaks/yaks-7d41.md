@@ -1,7 +1,7 @@
 ---
 id: yaks-7d41
 title: 'Matcher core: normalization, identifier-aware tokens, query parser (pure, tested)'
-status: shaving
+status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
@@ -77,3 +77,15 @@ Decision: `src/matcher.rs` has `#![allow(dead_code, unused_imports)]` until the 
 *match-1*
 
 Summary: new pure module src/matcher/ (normalize with offset map, tokens, query parser, field matching; 58 unit tests). Gate cargo test -p yaks PASS (verify note), cargo fmt --check clean. Deps unicode-normalization 0.1 and unicode-segmentation 1 added.
+
+#### 2026-11-27T03:12:32Z
+
+*match-1 · kind: move · from: shaving · to: shorn · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAILelJIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: shaving -> shorn
+
+#### 2026-11-27T03:12:32Z
+
+*match-1 · kind: change · section: none*
+
+No user-facing change.
