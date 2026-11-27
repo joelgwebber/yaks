@@ -114,3 +114,9 @@ Decision: `rename-herd` moves `<old>/doks/` to `<new>/doks/` (one `Move::Path` f
 *relink-1*
 
 Decision: link-typed frontmatter is edited in the raw lines (`Fields::raw`/`set_raw`), replacing only the value text, so quotes, flow lists and a source's `sources:` provenance map keep their exact shape. The keys are `parent`, `depends_on`, `sources`, `part_of`, `superseded_by` and any schema `link` field. Rejected: `Fields::set`, which reflowed the whole entry (it turned a source's provenance map into flow style).
+
+#### 2026-11-27T15:03:50Z
+
+*relink-1*
+
+Decision: `RenamePlan.edits` is now `Vec<relocate::Edit>` (doc, to, yak, fields, lines, refs) instead of the yak-only `RenameEdit`. `rename` can now touch doks, attachments, sessions and sources, and its report lists them. The text output keeps its shape (`id`, `parent`, `body:L1`; non-yak docs show `-> <new path>` when they moved). `rename-attachment` now reports `links rewritten in N document(s)` instead of `yak(s)`.
