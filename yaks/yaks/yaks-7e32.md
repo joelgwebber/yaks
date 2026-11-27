@@ -5,7 +5,7 @@ status: hairy
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:28:25Z'
+updated: '2026-11-27T02:28:37Z'
 tags:
 - design
 - doks
@@ -44,3 +44,15 @@ Open questions from [the design dok](/doks/design/one-document-model.md#13-open-
 picked up
 
 Recording the three answers in the design dok: links inserted by completion and prose converted in schema 11; index storage prototyped (tantivy only if it covers postings, edges and times alone, else SQLite FTS5), with a cold-cache build time measured; Recent and All merged, overriding tui-model decisions 3 and 7.
+
+#### 2026-11-27T02:28:37Z
+
+*unify-design*
+
+Decision (Joel, 2026-11-27, answering the ask): all three settled and recorded in [the dok](/doks/design/one-document-model.md#13-open-questions).
+
+- Prose mentions: completion inserts inline links; schema 11 converts the existing mentions; the TUI stops autolinking.
+- Index storage: prototype tantivy against SQLite FTS5 over the whole job (postings, edges, times), measuring a cold-cache build; tantivy only if it needs no second store.
+- Recent and All merge (yaks-7350), overriding tui-model decisions 3 and 7.
+
+Also added (Joel, 2026-11-27): one picker to open or link any document, yaks-958d. The design is agreed; next is the implementation plan as children.
