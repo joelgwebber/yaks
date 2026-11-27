@@ -5,8 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-06T04:27:55Z'
-updated: '2026-11-27T02:39:45Z'
-parent: yaks-44b3
+updated: '2026-11-27T02:39:46Z'
 tags:
 - doks
 - skills
