@@ -1,11 +1,11 @@
 ---
 id: yaks-7e32
 title: 'One document model: yaks, doks, sessions and sources on one set of constructs'
-status: hairy
+status: shaving
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:28:37Z'
+updated: '2026-11-27T02:36:26Z'
 tags:
 - design
 - doks
@@ -56,3 +56,9 @@ Decision (Joel, 2026-11-27, answering the ask): all three settled and recorded i
 - Recent and All merge (yaks-7350), overriding tui-model decisions 3 and 7.
 
 Also added (Joel, 2026-11-27): one picker to open or link any document, yaks-958d. The design is agreed; next is the implementation plan as children.
+
+#### 2026-11-27T02:36:26Z
+
+*herd-unify · kind: move · from: hairy · to: shaving · child: yaks-3b08 · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving

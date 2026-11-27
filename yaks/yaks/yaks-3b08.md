@@ -1,11 +1,11 @@
 ---
 id: yaks-3b08
 title: Path-form yak links are invisible to refs, backrefs and rename; rewriters cover different files
-status: hairy
+status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T02:09:07Z'
+updated: '2026-11-27T02:36:26Z'
 parent: yaks-7e32
 tags:
 - links
@@ -27,3 +27,9 @@ Schema 9 stores a yak link as `/<herd>/yaks/<id>.md`, and yaks-ca59 (`fd35a6e4`,
 ## Fix
 
 The design's one rewrite engine (section 5 of the dok): `relocate(old, new)` over body links, link-typed fields and the short form, across every document and markdown attachment; and `refs` reading references through `links.rs`, with `refs.rs` kept only for non-markdown text. Gate: a scratch-farm test per rewriter and link form, and `yaks doctor` clean on a copy of this farm after a rename.
+
+#### 2026-11-27T02:36:26Z
+
+*herd-unify · kind: move · from: hairy · to: shaving · thread: ksQQvf9tyN_TT6-lYi87QcE1GpLOAHx7AZIBxBCA0aLJyrhJPreUvVwLftHG*
+
+moved: hairy -> shaving
