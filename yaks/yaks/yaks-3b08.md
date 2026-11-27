@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:03:48Z'
+updated: '2026-11-27T15:03:49Z'
 parent: yaks-7e32
 tags:
 - links
@@ -90,3 +90,9 @@ Decision: the engine is a new module `src/relocate.rs` (`Move`, `Relocation`, `r
 *relink-1*
 
 Decision: a bare path in prose (`see yaks-1a2b/shot.png`, no link) is no longer rewritten by `rename-attachment`. The old `replace_path_token` did rewrite it. This follows the design: "a reference is a markdown link that resolves". Bare yak *ids* in prose are still rewritten on `rename`. Rejected: keeping a second, text-token rewriter for attachment paths only. The unit test `rename_attachment_moves_file_and_rewrites_links` changed to match.
+
+#### 2026-11-27T15:03:49Z
+
+*relink-1*
+
+Decision: a rewritten attachment link is written canonically (`links::canonical_dest`) when the old form would not resolve from where it sits. A link in another herd's yak, or in a dok, becomes `/<herd>/yaks/<id>/<file>`. Before, `rename` left `yaks-0001/a.png` in a `yak-` herd yak, and `promote --dok` left `<id>/<file>` in the dok. A link already in farm-path form stays a farm path; a bare sibling stays bare. Rejected: always keeping the form as written, which reproduces the bug where `rename-attachment` turned `/zz/yaks/A/shot.png` into a relative `A/pic.png` inside another yak's attachment. Two unit tests changed (`rename_moves_the_attachment_dir_and_fixes_links`, `an_evidence_document_links_its_sibling_attachments_by_bare_name`).
