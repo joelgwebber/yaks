@@ -1,0 +1,74 @@
+# copy of /Users/joel/.local/share/yaks/farms/yaks-539d3edb, YAKS_DIR=$copy, binary target/release/yaks
+$ yaks doctor   # before
+Found 3 farm-integrity issues:
+
+Dangling depends_on:
+  yaks-5e8d depends_on yaks-0079,yaks-bdae,yaks-a041 but no such yak exists
+  yaks-d262 depends_on yaks-7058,yaks-bcd4,yaks-1ebf but no such yak exists
+
+Broken link (a farm path or attachment that does not exist, or a ../ link):
+  yaks-5250:L1: (/sessions/2026/11/claude-2026-11-10-1653-personal-agent-protocol-sources-browser.md) no such file in the farm
+exit 1
+$ yaks rename yaks-38dc yaks-f0f0
+Renamed:
+  yaks-38dc -> yaks-f0f0
+Reference edits: 31 file(s)
+  yaks-07fe      parent, body:L1
+  yaks-19c3      body:L1
+  yaks-1b39      parent
+  yaks-22f1      parent
+  yaks-2883      parent, body:L15
+  yaks-29e9      parent
+  yaks-37fa      parent
+  yaks-38dc      id, body:L69,L107
+  yaks-3bcd      body:L1
+  yaks-7204      parent, body:L52
+  yaks-7422      parent, body:L88,L96
+  yaks-8814      parent
+  yaks-8b7a      body:L1,L43
+  yaks-93fe      parent
+  yaks-98f1      parent
+  yaks-99ec      body:L1,L7
+  yaks-a3d2      body:L105
+  yaks-b5a0      body:L35
+  yaks-c1f8      parent, body:L58,L63,L90,L95
+  yaks-c29a      parent
+  yaks-d738      parent
+  yaks-dfca      parent
+  yaks-e545      parent, body:L1
+  yaks-ee0a      body:L136
+  doks/releases/v0.0.13.md body:L27
+  doks/releases/v0.0.15.md body:L10
+  doks/releases/v0.0.16.md body:L9
+  doks/releases/v0.0.18.md body:L9
+  doks/releases/v0.0.21.md body:L13
+  yaks-7278/CHANGELOG.md 
+  yaks-df61/observation-log.md 
+$ rg -c yaks-38dc   # left after rename (GitHub URLs in a CHANGELOG attachment, not farm links)
+./yaks/yaks/yaks-7278/CHANGELOG.md:5
+$ yaks doctor   # after rename
+Found 3 farm-integrity issues:
+
+Dangling depends_on:
+  yaks-5e8d depends_on yaks-0079,yaks-bdae,yaks-a041 but no such yak exists
+  yaks-d262 depends_on yaks-7058,yaks-bcd4,yaks-1ebf but no such yak exists
+
+Broken link (a farm path or attachment that does not exist, or a ../ link):
+  yaks-5250:L1: (/sessions/2026/11/claude-2026-11-10-1653-personal-agent-protocol-sources-browser.md) no such file in the farm
+exit 1
+$ yaks refs yaks-f0f0 --incoming | wc -l
+      37
+$ yaks rename yaks-f0f0 yaks-38dc
+Renamed:
+  yaks-f0f0 -> yaks-38dc
+Reference edits: 31 file(s)
+$ yaks doctor   # after rename back
+Found 3 farm-integrity issues:
+
+Dangling depends_on:
+  yaks-5e8d depends_on yaks-0079,yaks-bdae,yaks-a041 but no such yak exists
+  yaks-d262 depends_on yaks-7058,yaks-bcd4,yaks-1ebf but no such yak exists
+
+Broken link (a farm path or attachment that does not exist, or a ../ link):
+  yaks-5250:L1: (/sessions/2026/11/claude-2026-11-10-1653-personal-agent-protocol-sources-browser.md) no such file in the farm
+exit 1

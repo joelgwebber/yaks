@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:03:50Z'
+updated: '2026-11-27T15:04:36Z'
 parent: yaks-7e32
 tags:
 - links
@@ -120,3 +120,5 @@ Decision: link-typed frontmatter is edited in the raw lines (`Fields::raw`/`set_
 *relink-1*
 
 Decision: `RenamePlan.edits` is now `Vec<relocate::Edit>` (doc, to, yak, fields, lines, refs) instead of the yak-only `RenameEdit`. `rename` can now touch doks, attachments, sessions and sources, and its report lists them. The text output keeps its shape (`id`, `parent`, `body:L1`; non-yak docs show `-> <new path>` when they moved). `rename-attachment` now reports `links rewritten in N document(s)` instead of `yak(s)`.
+
+[farm-copy-check](yaks-3b08/farm-copy-check.txt)
