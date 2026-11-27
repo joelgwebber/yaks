@@ -5,11 +5,10 @@ status: hairy
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:25:02Z'
+updated: '2026-11-27T02:28:25Z'
 tags:
 - design
 - doks
-needs: agent
 ---
 
 Umbrella for unifying yaks, doks, sessions, sources and release doks on one set of constructs: fields and schemas, fields with behaviour, links, notes, attachments, queries and a derived index. Kinds stay registered in Rust with their own capabilities and opinionated views; the parts under them are shared.
@@ -37,3 +36,11 @@ Open questions from [the design dok](/doks/design/one-document-model.md#13-open-
 1. Perfect.
 2. Works for me; I'd be ok with a heavy rust crate if it solved the whole problem without an external dep. But if tantivy doesn't solve the whole problem, then I'd rather live with the C dep for SQLite. When we're prototyping, let's also try and get an estimate of cold-cache indexing build time, so at least we have a sense for the worst case.
 3. Yes, agreed. Both just weren't useful. Agreed on overriding those old decisions.
+
+#### 2026-11-27T02:28:25Z
+
+*unify-design · kind: pickup*
+
+picked up
+
+Recording the three answers in the design dok: links inserted by completion and prose converted in schema 11; index storage prototyped (tantivy only if it covers postings, edges and times alone, else SQLite FTS5), with a cold-cache build time measured; Recent and All merged, overriding tui-model decisions 3 and 7.
