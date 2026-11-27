@@ -96,3 +96,9 @@ Decision: a bare path in prose (`see yaks-1a2b/shot.png`, no link) is no longer 
 *relink-1*
 
 Decision: a rewritten attachment link is written canonically (`links::canonical_dest`) when the old form would not resolve from where it sits. A link in another herd's yak, or in a dok, becomes `/<herd>/yaks/<id>/<file>`. Before, `rename` left `yaks-0001/a.png` in a `yak-` herd yak, and `promote --dok` left `<id>/<file>` in the dok. A link already in farm-path form stays a farm path; a bare sibling stays bare. Rejected: always keeping the form as written, which reproduces the bug where `rename-attachment` turned `/zz/yaks/A/shot.png` into a relative `A/pic.png` inside another yak's attachment. Two unit tests changed (`rename_moves_the_attachment_dir_and_fixes_links`, `an_evidence_document_links_its_sibling_attachments_by_bare_name`).
+
+#### 2026-11-27T15:03:49Z
+
+*relink-1*
+
+Decision: a pinned link (`@<rev>`) is never moved, by any command. It names the path as it was at that commit. `mv` used to rewrite the path and keep the `@rev`, which pointed at a path that never existed at that commit. A pinned link inside a moved dok is still rewritten for position (relative to root), rev kept.
