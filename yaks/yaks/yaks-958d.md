@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T03:06:03Z'
+updated: '2026-11-27T03:06:17Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -57,3 +57,17 @@ Start Fri Nov 27 02:38:02 UTC 2026. farm file: /Users/joel/.local/share/yaks/far
 *pick-1 · kind: verify · result: pass*
 
 verify: `cargo test --workspace` -> PASS (exit 0)
+
+#### 2026-11-27T03:06:17Z
+
+*pick-1*
+
+Summary: one picker over yaks, doks, sources and session notes.
+
+- `src/tui/fuzzy.rs`: `candidates(app, fp)` replaces `fuzzy_candidates` and `dok_candidates`. A row is a `Candidate` (kind, key, title, status) with `dest()` (the farm-root link destination) and `link()` (the markdown link). Tiers unchanged: id/path prefix, then substring, then title, then priority (yaks first), then key. Each row shows its kind.
+- `#` (`FuzzyAction::Goto`): a yak goes through `goto_task`, any other kind through `open_farm_doc` (the link opener, so `o` comes back).
+- Completion (`CompleteKind::Link`): inserts `[id](/herd/yaks/id.md)` or `[title](/doks/…)`; right after `](` it inserts only the destination. A typed `/doks/…`, `/sources/…` or `/sessions/…` path now seeds the query whole, which fixes the dead prefix tier (the old seed dropped `doks/`, the paths kept it).
+- `D`, `R` and `B` stay yaks-only (`offers_docs`).
+- Help lines, `docs/tui.md` and the editor `Tab` rows updated. The skills do not mention `#` or completion, so they are unchanged.
+
+Evidence: `cargo test -p yaks` passes, `cargo fmt --check` clean, frame attached (goto-picker.svg; rendered to PNG with `yaks render` and looked at).
