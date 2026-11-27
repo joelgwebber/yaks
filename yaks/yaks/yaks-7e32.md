@@ -5,7 +5,7 @@ status: shaving
 type: design
 priority: 2
 created: '2026-11-27T02:09:06Z'
-updated: '2026-11-27T02:38:22Z'
+updated: '2026-11-27T02:43:42Z'
 tags:
 - design
 - doks
@@ -76,3 +76,9 @@ Batch 1 (yakherd `herd-unify`, base `4f09d2d2`, local `main` fast-forwarded to i
 | `relink-1` | yaks-3b08 | claude-opus-5-5 (shared engine) | ksQQvf9tyN_TT6-lYi87QcE1GpLOAIK7O5IBxBCA0aLJyrhJPreUvVwLftHG |
 
 Briefs: `~/.local/share/yaks/briefs/<worker>.md`. yaks-0b10 waits for yaks-3b08 (its repair renames through the rewrite engine).
+
+#### 2026-11-27T02:43:42Z
+
+*herd-unify*
+
+Batch 1b (herd-unify): `idxproto-1` on yaks-2704 (claude-sonnet-5-5, scratch project, no repo commit); `match-1` on yaks-7d41 (claude-sonnet-5-5, base `4f09d2d2`). Design pass for yaks-8fb0 recorded on it; it waits for yaks-3b08.
