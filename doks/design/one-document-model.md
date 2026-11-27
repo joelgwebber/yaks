@@ -151,7 +151,7 @@ Keep the opinionated views and the yak detail pane; share what is under them.
 - One row type, keyed by the subject's link destination ([files-directories-archives](/doks/design/files-directories-archives.md)), with shared columns and sort keys.
 - One pane shell: a header the kind supplies, the body, then notes when the kind has them. One field-row renderer, one tag style.
 - **One picker for opening and linking anything** (Joel, 2026-11-27). Today `#` (`NavGoto`) and yak-ref completion share a yak-only picker (`fuzzy_candidates`), and dok-link completion is a second one (`dok_candidates`) whose prefix tier never matches. One picker over every kind, ranked by the shared matcher (section 8): `#` opens the pick in the pane through the one opener, completion inserts its link (section 5), and add-dependency and reparent use it filtered to yaks. Each row shows its kind. Filed as [yaks-958d](/yaks/yaks/yaks-958d.md).
-- The All list mixes every kind by modified time ([yaks-7183](/yaks/yaks/yaks-7183.md)). Merging Recent and All ([yaks-7350](/yaks/yaks/yaks-7350.md)) reverses decisions 3 and 7 of [tui-model](/doks/design/tui-model.md) and is decided with [yaks-6905](/yaks/yaks/yaks-6905.md).
+- The All list mixes every kind by modified time ([yaks-7183](/yaks/yaks/yaks-7183.md)). Recent and All merge into one list ([yaks-7350](/yaks/yaks/yaks-7350.md), decided 2026-11-27), overriding decisions 3 and 7 of [tui-model](/doks/design/tui-model.md); the rest of the view rules settle in [yaks-6905](/yaks/yaks/yaks-6905.md).
 
 ## 11. CLI
 
