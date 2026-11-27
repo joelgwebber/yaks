@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:08:55Z'
+updated: '2026-11-27T15:12:21Z'
 parent: yaks-7e32
 tags:
 - links
@@ -164,3 +164,9 @@ Follow-ups, not done:
 *relink-1*
 
 Removed the now-unused `store::attachment_link` (its doc moved onto `attachment_link_titled`) instead of listing it as a follow-up; re-running the gate.
+
+#### 2026-11-27T15:12:21Z
+
+*relink-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
