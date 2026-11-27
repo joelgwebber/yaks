@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T02:38:21Z'
+updated: '2026-11-27T12:47:20Z'
 parent: yaks-7e32
 tags:
 - links
@@ -59,3 +59,9 @@ Started (relink-1).
 - `date -u`: Fri Nov 27 02:38:03 UTC 2026
 - `yaks path yaks-3b08`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3b08.md
 - checkout: /Users/joel/src/yaks/.delta/worktrees/9cs3xapk1bba/yaks (HEAD 4f09d2d2)
+
+#### 2026-11-27T12:47:20Z
+
+*relink-1*
+
+Resumed after a network drop: no edits had been made yet (clean tree). Read the four rewriters, `refs`, `backrefs_in` and `links.rs`; design next note, then code.
