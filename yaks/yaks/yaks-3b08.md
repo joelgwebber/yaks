@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T12:47:20Z'
+updated: '2026-11-27T14:47:29Z'
 parent: yaks-7e32
 tags:
 - links
@@ -65,3 +65,16 @@ Started (relink-1).
 *relink-1*
 
 Resumed after a network drop: no edits had been made yet (clean tree). Read the four rewriters, `refs`, `backrefs_in` and `links.rs`; design next note, then code.
+
+#### 2026-11-27T14:47:29Z
+
+*relink-1*
+
+Progress: engine in place, unit tests green (`cargo test -p yaks --bin yaks -- farm::tests`: 70 passed).
+
+- New `src/relocate.rs`: `Move` (Yak, Attachment, Promoted, Path), `Relocation` (rewrites one text: links via `links::rewrite_spans`, link-typed frontmatter, prose ids outside link destinations) and `run` (every yak, markdown attachment, dok, session, source; moves the files; writes each document once).
+- `links.rs`: `rewrite_spans` (dest, label, image `!`), `dest_ranges`, `yak_mentions` (links resolving to a yak in any form plus bare mentions outside destinations); `rewrite`/`rewrite_kind` now wrap `rewrite_spans`.
+- `Farm::refs` and `backrefs_in` read bodies through `yak_mentions`.
+- `rename`/`rename-herd`, `mv`, `promote`, `rename-attachment` call `relocate::run`; removed `rewrite_links_to`, `dok_move`'s `fix`, `replace_link`, `replace_path_token`, and the `refs::rewrite` loop in `rename_many_locked`.
+
+Next: integration matrix in `tests/`, docs, farm-copy check.
