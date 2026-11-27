@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T02:43:41Z'
+updated: '2026-11-27T03:00:58Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -33,3 +33,11 @@ moved: hairy -> shaving
 *herd-unify*
 
 Claim (yakherd `herd-unify`). Owner: worker `match-1` (claude-sonnet-5-5), base `4f09d2d2`. Scope: the description; a new module only, plus its `mod` line in `src/main.rs`. **Allowed exception to the brief:** add `unicode-normalization` and `unicode-segmentation` (and a case-folding crate if needed) to `Cargo.toml`, with the `Cargo.lock` change; nothing else in either file. Judge: the yakherd at landing.
+
+#### 2026-11-27T03:00:58Z
+
+*match-1*
+
+Start: Fri Nov 27 02:44:09 UTC 2026. Farm file: `/Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-7d41.md`. Checkout: `/Users/joel/src/yaks/.delta/worktrees/aefczrq61170/yaks`.
+
+Implemented in `src/matcher.rs` + `src/matcher/{normalize,tokens,query,search}.rs`; 58 unit tests pass.
