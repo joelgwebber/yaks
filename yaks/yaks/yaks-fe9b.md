@@ -5,10 +5,11 @@ status: hairy
 type: feature
 priority: 2
 created: '2026-11-27T02:38:25Z'
-updated: '2026-11-27T02:38:50Z'
+updated: '2026-11-27T02:38:51Z'
 parent: yaks-7e32
 depends_on:
 - yaks-8fb0
+- yaks-362d
 tags:
 - tui
 ---
