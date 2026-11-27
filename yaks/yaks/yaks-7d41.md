@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:12:32Z'
+updated: '2026-11-27T03:13:06Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -89,3 +89,9 @@ moved: shaving -> shorn
 *match-1 · kind: change · section: none*
 
 No user-facing change.
+
+#### 2026-11-27T03:13:06Z
+
+*herd-unify · kind: landed · commit: 5d5b71bd9e5188dfbe01f38b461cb582482349a8 · source: a44d4b8f1addf48d07a73fb6fdb77908dc5e59d0 · branch: main*
+
+landed: [5d5b71bd](https://github.com/joelgwebber/yaks/commit/5d5b71bd9e5188dfbe01f38b461cb582482349a8) yaks-7d41: matcher core: normalization, identifier-aware tokens, query parser, field matching
