@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T03:06:19Z'
+updated: '2026-11-27T03:12:57Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -95,3 +95,9 @@ moved: shaving -> shorn
 *pick-1 · kind: change*
 
 One picker over yaks, doks, sources and sessions: # opens any of them and Tab completion inserts a markdown link to any of them
+
+#### 2026-11-27T03:12:57Z
+
+*herd-unify · kind: landed · commit: 501ff03b417423b671010b4f13c322795fba3c93 · source: 31fa07aa0470ebcae1a8119fbb479c8c2274ad1e · branch: main*
+
+landed: [501ff03b](https://github.com/joelgwebber/yaks/commit/501ff03b417423b671010b4f13c322795fba3c93) yaks-958d: one picker to open or link any yak, dok, source or session
