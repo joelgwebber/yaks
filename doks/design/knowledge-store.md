@@ -51,3 +51,6 @@ Every clone of a code repository fetches the farm branch too. `yaks weight` meas
 - [x] Fewer git calls per write ([yaks-7058](/yaks/yaks/yaks-7058.md)).
 - [x] Which of Hearth's jobs (nightly check, session review, reflection) become yaks commands: `yaks check`, `yaks session`, and the `yaks-upkeep` skill (yaks-1c89).
 - [ ] A `yaks check` finding for doks whose cited code changed since the pin ([yaks-6cf2](/yaks/yaks/yaks-6cf2.md)): the drift this dok itself suffered.
+
+> [!NOTE]
+> Being revisited by [the one document model](/doks/design/one-document-model.md) (yaks-7e32, 2026-11-26):  echo 'every kind built from one set of constructs, schemas for every kind, a derived index; the rules here all hold.';; farm-layout-and-links) echo 'decision 6 (sharding) is reversed: shard by id, cascading with id length; a reference becomes a markdown link that resolves.';; note-format) echo 'the note log becomes a capability any kind can switch on, with this parser.';; files-directories-archives) echo 'a subject named by its link destination becomes the identity of every row and pane.';; tui-model) echo 'decisions 3 and 7 (All unpinned, Recent yaks-only) are reopened; one row type and pane shell.';; esac)
