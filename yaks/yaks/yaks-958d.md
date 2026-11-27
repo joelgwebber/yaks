@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:27:48Z'
-updated: '2026-11-27T02:59:01Z'
+updated: '2026-11-27T03:06:03Z'
 parent: yaks-7e32
 tags:
 - tui
@@ -51,3 +51,9 @@ Evidence: unit tests for the candidate list (a dok found by title, the prefix ti
 Start Fri Nov 27 02:38:02 UTC 2026. farm file: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-958d.md. checkout: /Users/joel/src/yaks/.delta/worktrees/xca7593y2jw6/yaks
 
 ![goto-picker](yaks-958d/goto-picker.svg "# picker typed 'layout': a dok row (path hit) and a yak row (title hit), each showing its kind")
+
+#### 2026-11-27T03:06:03Z
+
+*pick-1 · kind: verify · result: pass*
+
+verify: `cargo test --workspace` -> PASS (exit 0)
