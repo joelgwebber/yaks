@@ -5,7 +5,9 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-09-09T00:38:19Z'
-updated: '2026-11-22T00:15:09Z'
+updated: '2026-11-27T02:39:10Z'
+depends_on:
+- yaks-9bcd
 tags:
 - cli
 - search
