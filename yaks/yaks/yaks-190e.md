@@ -5,7 +5,9 @@ status: hairy
 type: idea
 priority: 4
 created: '2026-11-27T02:09:11Z'
-updated: '2026-11-27T02:09:11Z'
+updated: '2026-11-27T02:10:52Z'
+depends_on:
+- yaks-e052
 tags:
 - doks
 - agent
