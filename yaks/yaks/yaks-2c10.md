@@ -5,7 +5,7 @@ status: shorn
 type: bug
 priority: 1
 created: '2026-11-27T02:09:08Z'
-updated: '2026-11-27T02:55:52Z'
+updated: '2026-11-27T03:20:29Z'
 parent: yaks-7e32
 tags:
 - cli
@@ -88,3 +88,9 @@ yaks update --description now replaces only the description and keeps the yak's 
 *herd-unify · kind: landed · commit: f1dc3b5ca66e5687e1584f944928ddf5dfb19e34 · source: e9c0af49438c2f4077bd85f47b1f554c5f00dfba · branch: main*
 
 landed: [f1dc3b5c](https://github.com/joelgwebber/yaks/commit/f1dc3b5ca66e5687e1584f944928ddf5dfb19e34) yaks-2c10: update --description keeps the notes
+
+#### 2026-11-27T03:20:29Z
+
+*herd-unify*
+
+Landed as `f1dc3b5c` (herd-unify). Coordinator check with its own release build in a scratch farm: create with `d1`, note `n1`, `update --description d2` leaves `d2` then the `n1` note; full gate green.
