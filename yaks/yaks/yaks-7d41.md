@@ -5,7 +5,7 @@ status: shaving
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:05:56Z'
+updated: '2026-11-27T03:12:19Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -47,3 +47,9 @@ Implemented in `src/matcher.rs` + `src/matcher/{normalize,tokens,query,search}.r
 *match-1 · kind: verify · result: fail*
 
 verify: `cargo test -p yaks` -> FAIL (exit 101)
+
+#### 2026-11-27T03:12:19Z
+
+*match-1 · kind: verify · result: pass*
+
+verify: `cargo test -p yaks` -> PASS (exit 0)
