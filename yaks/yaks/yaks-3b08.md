@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T02:36:57Z'
+updated: '2026-11-27T02:38:21Z'
 parent: yaks-7e32
 tags:
 - links
@@ -49,3 +49,13 @@ Scope, following [the design, section 5](/doks/design/one-document-model.md#5-li
 Out of scope: changing stored formats, prose-to-link conversion, sharding, the TUI beyond what backrefs need. Ask before touching `src/tui/` otherwise.
 
 Evidence: an integration test matrix (each rewriter × each link form × each file kind) in `tests/`, failing before; `refs`/`refs --incoming` on a path link; then on a copy of the real farm (`cp -r $(yaks path) $TMPDIR/f`, `YAKS_DIR=...`): `yaks rename` one well-linked yak and back, `yaks doctor` reports no new broken links. Gate `cargo test -p yaks`, `cargo fmt --check`. Judge: the yakherd, re-running the farm-copy check.
+
+#### 2026-11-27T02:38:21Z
+
+*relink-1*
+
+Started (relink-1).
+
+- `date -u`: Fri Nov 27 02:38:03 UTC 2026
+- `yaks path yaks-3b08`: /Users/joel/.local/share/yaks/farms/yaks-539d3edb/yaks/yaks/yaks-3b08.md
+- checkout: /Users/joel/src/yaks/.delta/worktrees/9cs3xapk1bba/yaks (HEAD 4f09d2d2)
