@@ -5,7 +5,7 @@ status: shaving
 type: bug
 priority: 1
 created: '2026-11-27T02:09:07Z'
-updated: '2026-11-27T15:08:34Z'
+updated: '2026-11-27T15:08:55Z'
 parent: yaks-7e32
 tags:
 - links
@@ -158,3 +158,9 @@ Follow-ups, not done:
 
 - Collision repair and the migration should call `relocate::run` (design section 5).
 - `store::attachment_link` is now unused (a warning only, kept for the TUI worker's area).
+
+#### 2026-11-27T15:08:55Z
+
+*relink-1*
+
+Removed the now-unused `store::attachment_link` (its doc moved onto `attachment_link_titled`) instead of listing it as a follow-up; re-running the gate.
