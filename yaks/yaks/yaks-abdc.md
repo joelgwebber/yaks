@@ -5,7 +5,8 @@ status: hairy
 type: idea
 priority: 3
 created: '2026-11-14T16:12:26Z'
-updated: '2026-11-14T16:12:26Z'
+updated: '2026-11-27T02:39:02Z'
+parent: yaks-fe9b
 tags:
 - tui
 ---
