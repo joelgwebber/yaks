@@ -174,7 +174,7 @@ Code refactors land first and change no bytes; everything that changes the forma
 - Gate for every refactor step: load and save every file of a copy of this farm, **zero diff**; and a startup bench at 10k yaks (yaks-e61e).
 - Schema 11 holds: sharding, `sources:` as links, prose mentions converted to links, the converged writer (quoting, key order), `updated:` retired, the mechanical-commit trailer.
 
-Proposed order:
+Filed 2026-11-27 as children of yaks-7e32 (the umbrella's tree is the live plan): link engine yaks-3b08, notes keep yaks-2c10, id collisions yaks-0b10, the picker yaks-958d, substrate yaks-8fb0, query and matcher yaks-23c9, kind registry and tags yaks-362d, index yaks-9bcd, TUI yaks-fe9b, CLI yaks-da00, schema 11 yaks-48b6, notes on doks yaks-e052. The order:
 
 1. Link fixes and the one rewrite engine; `refs` through `links.rs`; `--description` keeps notes; the id-collision safety net.
 2. The document substrate (`Task` as a view over `Fields`).
