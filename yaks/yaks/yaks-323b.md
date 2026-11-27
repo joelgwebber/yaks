@@ -5,8 +5,8 @@ status: hairy
 type: feature
 priority: 3
 created: '2026-11-06T23:46:33Z'
-updated: '2026-11-06T23:46:33Z'
-parent: yaks-1c89
+updated: '2026-11-27T02:38:59Z'
+parent: yaks-23c9
 depends_on:
 - yaks-3f35
 tags:
