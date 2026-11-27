@@ -5,7 +5,7 @@ status: shorn
 type: feature
 priority: 2
 created: '2026-11-27T02:43:24Z'
-updated: '2026-11-27T03:13:06Z'
+updated: '2026-11-27T03:20:29Z'
 parent: yaks-23c9
 tags:
 - cli
@@ -95,3 +95,9 @@ No user-facing change.
 *herd-unify · kind: landed · commit: 5d5b71bd9e5188dfbe01f38b461cb582482349a8 · source: a44d4b8f1addf48d07a73fb6fdb77908dc5e59d0 · branch: main*
 
 landed: [5d5b71bd](https://github.com/joelgwebber/yaks/commit/5d5b71bd9e5188dfbe01f38b461cb582482349a8) yaks-7d41: matcher core: normalization, identifier-aware tokens, query parser, field matching
+
+#### 2026-11-27T03:20:29Z
+
+*herd-unify*
+
+Landed as `5d5b71bd` (herd-unify). Coordinator check: full gate green including 58 matcher tests; fmt clean. Not wired into any command yet (yaks-23c9). The flaky `release_changes::yaks_release_tags_overrides_the_glob` match-1 saw did not recur in my run.
